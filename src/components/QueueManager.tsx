@@ -127,12 +127,21 @@ Please provide optimized content in this exact JSON format:
           }
         });
 
+        console.log('Edge function response:', { data, error });
+
         if (error) {
-          throw new Error(error.message);
+          console.error('Edge function error:', error);
+          throw new Error(`Edge function error: ${error.message}`);
         }
 
-        if (data.error) {
+        if (data?.error) {
+          console.error('Data error:', data.error);
           throw new Error(data.error);
+        }
+
+        if (!data?.success) {
+          console.error('Unexpected response format:', data);
+          throw new Error('Unexpected response from AI optimization service');
         }
 
         // Step 3: Update local database
