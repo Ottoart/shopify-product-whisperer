@@ -48,7 +48,7 @@ export const QueueManager = ({
   onRetryProduct
 }: QueueManagerProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
-  const [chatGptUrl, setChatGptUrl] = useState('https://chatgpt.com/share/686d6a64-6330-8013-a445-b6b90fce4589');
+  const [chatGptUrl, setChatGptUrl] = useState('https://chatgpt.com/g/g-6837c28c521c81918f8f1d319eb87f9a-shopify');
   const [processingDelay, setProcessingDelay] = useState(15000);
   const [currentProcessing, setCurrentProcessing] = useState<{
     productId: string;
