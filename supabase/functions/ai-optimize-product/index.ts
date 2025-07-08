@@ -14,31 +14,56 @@ serve(async (req) => {
   }
 
   try {
-    const { productHandle, productData } = await req.json();
+    console.log('=== AI Optimize Product Function Started ===');
+    console.log('Request method:', req.method);
+    console.log('Request headers:', Object.fromEntries(req.headers.entries()));
+    
+    const requestBody = await req.json();
+    console.log('Request body:', JSON.stringify(requestBody, null, 2));
+    
+    const { productHandle, productData } = requestBody;
     
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+    console.log('OpenAI API key configured:', !!openAIApiKey);
     
     if (!openAIApiKey) {
+      console.error('OpenAI API key not configured');
       throw new Error('OpenAI API key not configured');
     }
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    console.log('Supabase URL configured:', !!supabaseUrl);
+    console.log('Supabase Service Key configured:', !!supabaseServiceKey);
+    
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get user from authorization header
     const authHeader = req.headers.get('authorization');
+    console.log('Authorization header present:', !!authHeader);
+    
     if (!authHeader) {
+      console.error('No authorization header provided');
       throw new Error('No authorization header');
     }
 
     const token = authHeader.replace('Bearer ', '');
+    console.log('Token extracted, length:', token.length);
+    
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     
-    if (userError || !user) {
-      throw new Error('Invalid user token');
+    if (userError) {
+      console.error('User authentication error:', userError);
+      throw new Error(`User authentication failed: ${userError.message}`);
     }
+    
+    if (!user) {
+      console.error('No user found');
+      throw new Error('No user found');
+    }
+    
+    console.log('User authenticated:', user.id);
 
     console.log(`Starting optimization for product: ${productData.title}`);
 
@@ -178,9 +203,20 @@ Always return responses in valid JSON format only.`
     );
 
   } catch (error) {
-    console.error('Error in ai-optimize-product function:', error);
+    console.error('=== ERROR in ai-optimize-product function ===');
+    console.error('Error type:', error.constructor.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    
+    // Return more detailed error information
+    const errorResponse = {
+      error: error.message,
+      timestamp: new Date().toISOString(),
+      function: 'ai-optimize-product'
+    };
+    
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify(errorResponse),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
