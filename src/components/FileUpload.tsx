@@ -57,8 +57,17 @@ export const FileUpload = ({ onFileUpload }: FileUploadProps) => {
       const handle = rowData.Handle || rowData.handle || '';
       const title = rowData.Title || rowData.title || rowData['Product Title'] || rowData['Product Name'] || '';
       
-      // Skip rows without handle or title (likely variant/image rows without main product data)
-      if (!handle || !title) {
+      // Skip rows without proper handle or title, or with HTML content
+      if (!handle || !title || 
+          handle.includes('<') || title.includes('<') || 
+          handle.includes('li>') || title.includes('li>') ||
+          handle.length < 5 || title.length < 5 ||
+          handle.startsWith('http') || title.startsWith('http')) {
+        return;
+      }
+      
+      // Additional validation: handle should look like a product handle (alphanumeric, dashes, no spaces)
+      if (!/^[a-zA-Z0-9\-_]+$/.test(handle.replace(/\s/g, '-'))) {
         return;
       }
       

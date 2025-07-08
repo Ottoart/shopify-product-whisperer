@@ -261,7 +261,7 @@ export const QueueManager = ({
         <Alert>
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription className="text-xs">
-            This is a demo implementation. In production, this would integrate with your ChatGPT API and Shopify API.
+            Products will be updated with AI-optimized titles, descriptions, and tags. Processing simulates real API calls.
           </AlertDescription>
         </Alert>
       </div>

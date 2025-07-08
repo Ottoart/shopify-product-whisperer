@@ -71,7 +71,7 @@ export const ProductList = ({
       const cleanUrl = storeUrl.replace(/\/+$/, ''); // Remove trailing slashes
       return `${cleanUrl}/products/${handle}`;
     }
-    return `#product-${handle}`;
+    return null; // Don't create invalid links
   };
 
   return (
@@ -165,14 +165,16 @@ export const ProductList = ({
                   </div>
                   
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => window.open(getProductUrl(product.handle), '_blank')}
-                      className="transition-all duration-300 hover:scale-105"
-                    >
-                      <ExternalLink className="h-3 w-3" />
-                    </Button>
+                    {getProductUrl(product.handle) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(getProductUrl(product.handle)!, '_blank')}
+                        className="transition-all duration-300 hover:scale-105"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       onClick={() => onAddToQueue([product.id])}
