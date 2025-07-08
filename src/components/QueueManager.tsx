@@ -17,7 +17,8 @@ import {
   Settings,
   ExternalLink,
   AlertTriangle,
-  X
+  X,
+  RefreshCw
 } from 'lucide-react';
 import { Product, UpdatedProduct } from '@/pages/Index';
 import { useToast } from '@/hooks/use-toast';
@@ -35,6 +36,7 @@ interface QueueManagerProps {
   onUpdateStatus: (productId: string, status: 'pending' | 'processing' | 'completed' | 'error', error?: string) => void;
   onUpdateProduct: (productId: string, updatedData: UpdatedProduct) => void;
   onRemoveFromQueue: (productId: string) => void;
+  onRetryProduct?: (productId: string) => void;
 }
 
 export const QueueManager = ({ 
@@ -42,7 +44,8 @@ export const QueueManager = ({
   products, 
   onUpdateStatus, 
   onUpdateProduct,
-  onRemoveFromQueue
+  onRemoveFromQueue,
+  onRetryProduct
 }: QueueManagerProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [chatGptUrl, setChatGptUrl] = useState('https://chatgpt.com/share/686d6a64-6330-8013-a445-b6b90fce4589');
@@ -204,6 +207,23 @@ export const QueueManager = ({
     setIsProcessing(false);
   };
 
+  const retryProduct = (productId: string) => {
+    onUpdateStatus(productId, 'pending');
+    if (onRetryProduct) {
+      onRetryProduct(productId);
+    }
+  };
+
+  const retryAllErrors = () => {
+    const errorItems = queueItems.filter(item => item.status === 'error');
+    errorItems.forEach(item => {
+      onUpdateStatus(item.productId, 'pending');
+      if (onRetryProduct) {
+        onRetryProduct(item.productId);
+      }
+    });
+  };
+
   const resetQueue = () => {
     queueItems.forEach(item => {
       if (item.status !== 'completed') {
@@ -339,6 +359,17 @@ export const QueueManager = ({
           >
             <RotateCcw className="h-4 w-4" />
           </Button>
+          
+          {errorCount > 0 && (
+            <Button 
+              onClick={retryAllErrors} 
+              variant="outline"
+              disabled={isProcessing}
+              className="text-destructive hover:text-destructive"
+            >
+              Retry All Errors ({errorCount})
+            </Button>
+          )}
         </div>
 
         {/* Settings */}
@@ -409,6 +440,17 @@ export const QueueManager = ({
                     </h4>
                     <div className="flex items-center gap-2">
                       {getStatusBadge(item.status)}
+                      {item.status === 'error' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => retryProduct(item.productId)}
+                          className="h-6 w-6 p-0 hover:bg-accent/10 hover:text-accent"
+                          title="Retry this product"
+                        >
+                          <RefreshCw className="h-3 w-3" />
+                        </Button>
+                      )}
                       {(item.status === 'pending' || item.status === 'error') && (
                         <Button
                           variant="ghost"
