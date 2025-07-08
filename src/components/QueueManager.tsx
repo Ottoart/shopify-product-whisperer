@@ -6,6 +6,8 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import { 
   Play, 
   Pause, 
@@ -50,6 +52,20 @@ export const QueueManager = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [chatGptUrl, setChatGptUrl] = useState('https://chatgpt.com/g/g-6837c28c521c81918f8f1d319eb87f9a-shopify');
   const [processingDelay, setProcessingDelay] = useState(15000);
+  const [useDirectAI, setUseDirectAI] = useState(false);
+  const [customPromptTemplate, setCustomPromptTemplate] = useState(`Optimize this Shopify product for better conversions and SEO:
+
+Product Title: {title}
+Product Type: {type}
+Current Description: {description}
+Current Tags: {tags}
+
+Please provide optimized content in this exact JSON format:
+{
+  "title": "SEO-optimized title (max 70 characters)",
+  "description": "Compelling product description with benefits and features (100-300 words)",
+  "tags": "comma-separated relevant tags for search and categorization"
+}`);
   const [currentProcessing, setCurrentProcessing] = useState<{
     productId: string;
     step: string;
@@ -85,7 +101,7 @@ export const QueueManager = ({
         // Step 2: Custom GPT Optimization
         setCurrentProcessing({
           productId: item.productId,
-          step: `Processing ${i + 1}/${pendingItems.length}: Sending to Custom GPT...`,
+          step: `Processing ${i + 1}/${pendingItems.length}: Sending to ${useDirectAI ? 'AI' : 'Custom GPT'}...`,
           progress: 30
         });
 
@@ -93,7 +109,7 @@ export const QueueManager = ({
 
         setCurrentProcessing({
           productId: item.productId,
-          step: `Processing ${i + 1}/${pendingItems.length}: Custom GPT analyzing product...`,
+          step: `Processing ${i + 1}/${pendingItems.length}: ${useDirectAI ? 'AI' : 'Custom GPT'} analyzing product...`,
           progress: 50
         });
 
@@ -105,7 +121,9 @@ export const QueueManager = ({
               type: product.type,
               description: product.bodyHtml,
               tags: product.tags
-            }
+            },
+            useDirectAI: useDirectAI,
+            customPromptTemplate: useDirectAI ? customPromptTemplate : undefined
           }
         });
 
@@ -387,24 +405,54 @@ export const QueueManager = ({
             <Label className="text-sm font-medium">Settings</Label>
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="chatgpt-url" className="text-xs">ChatGPT URL</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                id="chatgpt-url"
-                value={chatGptUrl}
-                onChange={(e) => setChatGptUrl(e.target.value)}
-                className="text-xs"
-                placeholder="https://chatgpt.com/share/..."
-              />
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => window.open(chatGptUrl, '_blank')}
-              >
-                <ExternalLink className="h-3 w-3" />
-              </Button>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs">AI Mode</Label>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Custom GPT</span>
+                <Switch 
+                  checked={useDirectAI} 
+                  onCheckedChange={setUseDirectAI} 
+                />
+                <span className="text-xs text-muted-foreground">Direct AI</span>
+              </div>
             </div>
+            
+            {!useDirectAI ? (
+              <div className="space-y-2">
+                <Label htmlFor="chatgpt-url" className="text-xs">ChatGPT URL</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="chatgpt-url"
+                    value={chatGptUrl}
+                    onChange={(e) => setChatGptUrl(e.target.value)}
+                    className="text-xs"
+                    placeholder="https://chatgpt.com/share/..."
+                  />
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => window.open(chatGptUrl, '_blank')}
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="custom-prompt" className="text-xs">Custom AI Prompt Template</Label>
+                <Textarea
+                  id="custom-prompt"
+                  value={customPromptTemplate}
+                  onChange={(e) => setCustomPromptTemplate(e.target.value)}
+                  className="text-xs min-h-[120px] font-mono"
+                  placeholder="Enter your custom prompt template. Use {title}, {type}, {description}, {tags} as placeholders."
+                />
+                <p className="text-xs text-muted-foreground">
+                  Use placeholders: {"{title}"}, {"{type}"}, {"{description}"}, {"{tags}"}
+                </p>
+              </div>
+            )}
           </div>
           
             <div className="space-y-2">

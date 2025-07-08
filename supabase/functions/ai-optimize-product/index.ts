@@ -33,9 +33,11 @@ serve(async (req) => {
       );
     }
     
-    const { productHandle, productData } = requestBody;
+    const { productHandle, productData, useDirectAI, customPromptTemplate } = requestBody;
     console.log('Product handle:', productHandle);
     console.log('Product title:', productData?.title);
+    console.log('Use direct AI:', useDirectAI);
+    console.log('Has custom template:', !!customPromptTemplate);
     
     // Check required fields
     if (!productHandle || !productData) {
@@ -117,7 +119,18 @@ serve(async (req) => {
     }
     
     // Create AI prompt
-    const prompt = `Optimize this Shopify product for better conversions and SEO:
+    let prompt;
+    if (useDirectAI && customPromptTemplate) {
+      // Use custom template with placeholder replacement
+      prompt = customPromptTemplate
+        .replace(/\{title\}/g, productData.title || 'No title')
+        .replace(/\{type\}/g, productData.type || 'Not specified')
+        .replace(/\{description\}/g, productData.description || 'No description')
+        .replace(/\{tags\}/g, productData.tags || 'No tags');
+      console.log('Using custom prompt template');
+    } else {
+      // Use default prompt
+      prompt = `Optimize this Shopify product for better conversions and SEO:
 
 Product Title: ${productData.title}
 Product Type: ${productData.type || 'Not specified'}
@@ -130,6 +143,8 @@ Please provide optimized content in this exact JSON format:
   "description": "Compelling product description with benefits and features (100-300 words)",
   "tags": "comma-separated relevant tags for search and categorization"
 }`;
+      console.log('Using default prompt template');
+    }
 
     console.log('Calling OpenAI API...');
     
