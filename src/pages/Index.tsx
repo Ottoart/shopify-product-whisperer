@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useSessionContext } from '@supabase/auth-helpers-react';
 import { Auth } from '@/components/Auth';
-import { FileUpload } from '@/components/FileUpload';
 import { ProductList } from '@/components/ProductList';
 import { QueueManager } from '@/components/QueueManager';
 import { StoreConfig } from '@/components/StoreConfig';
@@ -9,7 +8,7 @@ import { ShopifySync } from '@/components/ShopifySync';
 import { useProducts } from '@/hooks/useProducts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Package, Upload, Zap, LogOut } from 'lucide-react';
+import { Package, LogOut, Store, Zap } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface Product {
@@ -57,12 +56,6 @@ const Index = () => {
   const [queueItems, setQueueItems] = useState<Array<{ productId: string; status: 'pending' | 'processing' | 'completed' | 'error'; error?: string }>>([]);
   const [storeUrl, setStoreUrl] = useState<string>('');
   const [apiKey, setApiKey] = useState<string>('');
-
-  const handleFileUpload = (uploadedProducts: Product[]) => {
-    saveProducts(uploadedProducts);
-    setSelectedProducts(new Set());
-    setQueueItems([]);
-  };
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -129,38 +122,38 @@ const Index = () => {
       </div>
 
       <div className="container mx-auto px-6 py-8 space-y-8">
-        {/* Upload Section */}
+        {/* Welcome Section for New Users */}
         {products.length === 0 && (
           <Card className="shadow-card border-0">
             <CardHeader className="text-center">
               <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-gradient-primary flex items-center justify-center">
-                <Upload className="h-6 w-6 text-primary-foreground" />
+                <Store className="h-6 w-6 text-primary-foreground" />
               </div>
-              <CardTitle className="text-2xl">Upload Your Products</CardTitle>
+              <CardTitle className="text-2xl">Connect Your Shopify Store</CardTitle>
               <CardDescription>
-                Import your Shopify products CSV to get started with AI-powered optimization
+                Import and optimize your products directly from Shopify with AI-powered enhancements
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <FileUpload onFileUpload={handleFileUpload} />
+              <div className="text-center space-y-4">
+                <p className="text-muted-foreground">
+                  Configure your store settings below and start importing products from your Shopify store
+                </p>
+              </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Shopify Integration */}
-        {products.length > 0 && (
-          <ShopifySync onProductsUpdated={handleProductsUpdated} />
-        )}
+        {/* Store Configuration - Show for everyone */}
+        <StoreConfig 
+          storeUrl={storeUrl} 
+          onStoreUrlChange={setStoreUrl}
+          apiKey={apiKey}
+          onApiKeyChange={setApiKey}
+        />
 
-        {/* Store Configuration */}
-        {products.length > 0 && (
-          <StoreConfig 
-            storeUrl={storeUrl} 
-            onStoreUrlChange={setStoreUrl}
-            apiKey={apiKey}
-            onApiKeyChange={setApiKey}
-          />
-        )}
+        {/* Shopify Integration */}
+        <ShopifySync onProductsUpdated={handleProductsUpdated} />
 
         {/* Main Content */}
         {products.length > 0 && (

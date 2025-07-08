@@ -241,8 +241,8 @@ export const ShopifySync = ({ onProductsUpdated }: ShopifySyncProps) => {
         <Alert>
           <Zap className="h-4 w-4" />
           <AlertDescription className="text-xs">
-            Import will fetch all products from your Shopify store and replace your current product list. 
-            Export will update the selected products in your Shopify store with AI-optimized content.
+            Import will fetch products from your Shopify store. You can import all products or filter by brand to prevent timeouts. 
+            Export will update selected products in your Shopify store with AI-optimized content.
           </AlertDescription>
         </Alert>
       </CardContent>
