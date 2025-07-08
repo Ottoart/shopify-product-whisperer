@@ -31,28 +31,20 @@ export const StoreConfig = ({ storeUrl, onStoreUrlChange, apiKey, onApiKeyChange
       onStoreUrlChange(tempUrl);
       onApiKeyChange(tempApiKey);
       
-      // Attempt to save to Supabase (for future implementation)
-      const { data, error } = await supabase.functions.invoke('update-store-config', {
-        body: {
-          shopifyDomain: cleanUrl,
-          shopifyAccessToken: tempApiKey
-        }
-      });
-      
-      if (error) {
-        throw error;
-      }
+      // Save to localStorage as backup
+      localStorage.setItem('shopify_domain', cleanUrl);
+      localStorage.setItem('shopify_access_token', tempApiKey);
       
       toast({
         title: "Configuration Saved",
-        description: "Store settings have been updated successfully.",
+        description: "Store settings saved locally. Please add them to Supabase secrets manually.",
       });
       
     } catch (error: any) {
       console.error('Error saving store config:', error);
       toast({
         title: "Save Failed", 
-        description: "Settings saved locally, but you'll need to manually add Supabase secrets.",
+        description: "Unable to save store configuration. Please try again.",
         variant: "destructive",
       });
     } finally {
