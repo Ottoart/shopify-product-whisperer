@@ -47,23 +47,48 @@ serve(async (req) => {
       case 'fetch': {
         console.log('Fetching products from Shopify...');
         
-        // Fetch products from Shopify
-        const response = await fetch(`${shopifyUrl}products.json?limit=250`, {
-          headers: {
-            'X-Shopify-Access-Token': shopifyToken,
-            'Content-Type': 'application/json',
-          },
-        });
+        let allProducts = [];
+        let hasNextPage = true;
+        let pageInfo = null;
+        
+        // Fetch all products with pagination
+        while (hasNextPage) {
+          let url = `${shopifyUrl}products.json?limit=250`;
+          if (pageInfo) {
+            url += `&page_info=${pageInfo}`;
+          }
+          
+          const response = await fetch(url, {
+            headers: {
+              'X-Shopify-Access-Token': shopifyToken,
+              'Content-Type': 'application/json',
+            },
+          });
 
-        if (!response.ok) {
-          throw new Error(`Shopify API error: ${response.status}`);
+          if (!response.ok) {
+            throw new Error(`Shopify API error: ${response.status}`);
+          }
+
+          const shopifyData = await response.json();
+          allProducts.push(...shopifyData.products);
+          
+          // Check for pagination
+          const linkHeader = response.headers.get('Link');
+          if (linkHeader && linkHeader.includes('rel="next"')) {
+            const nextLink = linkHeader.split(',').find(link => link.includes('rel="next"'));
+            if (nextLink) {
+              const pageInfoMatch = nextLink.match(/page_info=([^&>]+)/);
+              pageInfo = pageInfoMatch ? pageInfoMatch[1] : null;
+            }
+          } else {
+            hasNextPage = false;
+          }
         }
 
-        const shopifyData = await response.json();
-        console.log(`Fetched ${shopifyData.products.length} products from Shopify`);
+        console.log(`Fetched ${allProducts.length} products from Shopify`);
 
         // Transform Shopify products to our format and save to database
-        const transformedProducts = shopifyData.products.map((product: any) => {
+        const transformedProducts = allProducts.map((product: any) => {
           const variant = product.variants[0] || {};
           
           return {

@@ -6,3 +6,6 @@ port = 54321
 
 [functions.shopify-products]
 verify_jwt = false
+
+[functions.ai-optimize-product]
+verify_jwt = false

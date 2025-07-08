@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { Product, UpdatedProduct } from '@/pages/Index';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface QueueItem {
   productId: string;
@@ -60,23 +61,41 @@ export const QueueManager = ({
         onUpdateStatus(item.productId, 'processing');
         
         try {
-          // Simulate API call to ChatGPT
-          await new Promise(resolve => setTimeout(resolve, processingDelay));
-          
-          // Simulate getting updated product data from ChatGPT
+          // Call the AI optimization function
+          const { data, error } = await supabase.functions.invoke('ai-optimize-product', {
+            body: {
+              productHandle: product.handle,
+              productData: {
+                title: product.title,
+                type: product.type,
+                description: product.bodyHtml,
+                tags: product.tags
+              }
+            }
+          });
+
+          if (error) {
+            throw new Error(error.message);
+          }
+
+          if (data.error) {
+            throw new Error(data.error);
+          }
+
+          // Update the product with optimized data
           const updatedProduct: UpdatedProduct = {
-            title: `${product.title} - AI Optimized`,
-            type: product.type || 'Enhanced Product',
-            description: `${product.bodyHtml || 'AI-enhanced product description with SEO optimization and compelling copy that converts.'}`,
-            tags: `${product.tags}, ai-optimized, seo-enhanced`.split(',').filter(Boolean).join(', ')
+            title: data.optimizedData.title,
+            type: product.type,
+            description: data.optimizedData.description,
+            tags: data.optimizedData.tags
           };
 
           onUpdateProduct(item.productId, updatedProduct);
           onUpdateStatus(item.productId, 'completed');
           
           toast({
-            title: "Product Updated",
-            description: `${product.title} has been successfully optimized.`,
+            title: "Product Optimized",
+            description: `${product.title} has been successfully optimized with AI.`,
           });
           
         } catch (error) {
@@ -257,11 +276,11 @@ export const QueueManager = ({
           </div>
         </Card>
 
-        {/* Demo Notice */}
+        {/* AI Notice */}
         <Alert>
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription className="text-xs">
-            Products will be updated with AI-optimized titles, descriptions, and tags. Processing simulates real API calls.
+            Products will be optimized using AI to improve titles, descriptions, and tags for better conversion rates.
           </AlertDescription>
         </Alert>
       </div>
