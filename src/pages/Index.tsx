@@ -66,11 +66,16 @@ const Index = () => {
   }
 
   const addToQueue = (productIds: string[]) => {
-    const newItems = productIds.map(id => ({
-      productId: id,
-      status: 'pending' as const
-    }));
-    setQueueItems(prev => [...prev, ...newItems]);
+    const newItems = productIds
+      .filter(id => !queueItems.some(item => item.productId === id)) // Prevent duplicates
+      .map(id => ({
+        productId: id,
+        status: 'pending' as const
+      }));
+    
+    if (newItems.length > 0) {
+      setQueueItems(prev => [...prev, ...newItems]);
+    }
   };
 
   const updateQueueItemStatus = (productId: string, status: 'pending' | 'processing' | 'completed' | 'error', error?: string) => {
@@ -85,6 +90,10 @@ const Index = () => {
 
   const handleUpdateProduct = (productId: string, updatedData: UpdatedProduct) => {
     updateProduct({ handle: productId, updatedData });
+  };
+
+  const removeFromQueue = (productId: string) => {
+    setQueueItems(prev => prev.filter(item => item.productId !== productId));
   };
 
   const handleProductsUpdated = () => {
@@ -210,6 +219,7 @@ const Index = () => {
                     products={products}
                     onUpdateStatus={updateQueueItemStatus}
                     onUpdateProduct={handleUpdateProduct}
+                    onRemoveFromQueue={removeFromQueue}
                   />
                 </CardContent>
               </Card>

@@ -16,7 +16,8 @@ import {
   Loader,
   Settings,
   ExternalLink,
-  AlertTriangle 
+  AlertTriangle,
+  X
 } from 'lucide-react';
 import { Product, UpdatedProduct } from '@/pages/Index';
 import { useToast } from '@/hooks/use-toast';
@@ -33,13 +34,15 @@ interface QueueManagerProps {
   products: Product[];
   onUpdateStatus: (productId: string, status: 'pending' | 'processing' | 'completed' | 'error', error?: string) => void;
   onUpdateProduct: (productId: string, updatedData: UpdatedProduct) => void;
+  onRemoveFromQueue: (productId: string) => void;
 }
 
 export const QueueManager = ({ 
   queueItems, 
   products, 
   onUpdateStatus, 
-  onUpdateProduct 
+  onUpdateProduct,
+  onRemoveFromQueue
 }: QueueManagerProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [chatGptUrl, setChatGptUrl] = useState('https://chatgpt.com/share/686d6a64-6330-8013-a445-b6b90fce4589');
@@ -311,7 +314,19 @@ export const QueueManager = ({
                     <h4 className="text-sm font-medium truncate">
                       {product.title}
                     </h4>
-                    {getStatusBadge(item.status)}
+                    <div className="flex items-center gap-2">
+                      {getStatusBadge(item.status)}
+                      {(item.status === 'pending' || item.status === 'error') && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onRemoveFromQueue(item.productId)}
+                          className="h-6 w-6 p-0 hover:bg-destructive/10 hover:text-destructive"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
                   
                   {item.error && (
