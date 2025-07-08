@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    const { action, products } = await req.json();
+    const { action, products, brand } = await req.json();
     
     const shopifyDomain = Deno.env.get('SHOPIFY_DOMAIN');
     const shopifyToken = Deno.env.get('SHOPIFY_ACCESS_TOKEN');
@@ -50,13 +50,23 @@ serve(async (req) => {
         let allProducts = [];
         let hasNextPage = true;
         let pageInfo = null;
+        let currentPage = 0;
+        
+        // First, get a sample to identify brands if no brand specified
+        let brandsFilter = '';
+        if (brand) {
+          brandsFilter = `&vendor=${encodeURIComponent(brand)}`;
+        }
         
         // Fetch all products with pagination
         while (hasNextPage) {
-          let url = `${shopifyUrl}products.json?limit=250`;
+          currentPage++;
+          let url = `${shopifyUrl}products.json?limit=250${brandsFilter}`;
           if (pageInfo) {
             url += `&page_info=${pageInfo}`;
           }
+          
+          console.log(`Fetching page ${currentPage} for ${brand || 'all brands'}...`);
           
           const response = await fetch(url, {
             headers: {
@@ -72,6 +82,8 @@ serve(async (req) => {
           const shopifyData = await response.json();
           allProducts.push(...shopifyData.products);
           
+          console.log(`Page ${currentPage}: Got ${shopifyData.products.length} products (total: ${allProducts.length})`);
+          
           // Check for pagination
           const linkHeader = response.headers.get('Link');
           if (linkHeader && linkHeader.includes('rel="next"')) {
@@ -85,7 +97,11 @@ serve(async (req) => {
           }
         }
 
-        console.log(`Fetched ${allProducts.length} products from Shopify`);
+        console.log(`Fetched ${allProducts.length} products from Shopify for ${brand || 'all brands'}`);
+
+        // Get unique brands for the response
+        const allBrands = [...new Set(allProducts.map((p: any) => p.vendor).filter(Boolean))].sort();
+        console.log(`Found ${allBrands.length} unique brands:`, allBrands);
 
         // Transform Shopify products to our format and save to database
         const transformedProducts = allProducts.map((product: any) => {
@@ -123,11 +139,14 @@ serve(async (req) => {
           };
         });
 
-        // Clear existing products and insert new ones
-        const { error: deleteError } = await supabase
-          .from('products')
-          .delete()
-          .eq('user_id', user.id);
+        // Clear existing products for this brand or all if no brand specified
+        let deleteQuery = supabase.from('products').delete().eq('user_id', user.id);
+        
+        if (brand) {
+          deleteQuery = deleteQuery.eq('vendor', brand);
+        }
+        
+        const { error: deleteError } = await deleteQuery;
 
         if (deleteError) {
           console.error('Error deleting existing products:', deleteError);
@@ -141,11 +160,17 @@ serve(async (req) => {
           throw new Error(`Database error: ${insertError.message}`);
         }
 
+        const message = brand 
+          ? `Successfully imported ${transformedProducts.length} products for ${brand} brand`
+          : `Successfully imported ${transformedProducts.length} products from ${allBrands.length} brands`;
+
         return new Response(
           JSON.stringify({ 
             success: true, 
-            message: `Successfully imported ${transformedProducts.length} products from Shopify`,
-            count: transformedProducts.length
+            message,
+            count: transformedProducts.length,
+            brands: allBrands,
+            brand: brand || 'all'
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );

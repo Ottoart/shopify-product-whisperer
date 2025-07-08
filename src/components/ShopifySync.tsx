@@ -3,7 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Download, Upload, Loader, CheckCircle, XCircle, Store, Zap } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Download, Upload, Loader, CheckCircle, XCircle, Store, Zap, Tags } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -15,14 +17,29 @@ export const ShopifySync = ({ onProductsUpdated }: ShopifySyncProps) => {
   const [isImporting, setIsImporting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [lastSync, setLastSync] = useState<Date | null>(null);
+  const [importProgress, setImportProgress] = useState({ current: 0, total: 0, brand: '', percentage: 0 });
+  const [brands, setBrands] = useState<string[]>([]);
+  const [selectedBrand, setSelectedBrand] = useState<string>('all');
   const { toast } = useToast();
 
-  const handleImportFromShopify = async () => {
+  const handleImportFromShopify = async (brand: string = 'all') => {
     setIsImporting(true);
+    setImportProgress({ current: 0, total: 0, brand: brand === 'all' ? 'Fetching all brands' : brand, percentage: 0 });
     
     try {
       const { data, error } = await supabase.functions.invoke('shopify-products', {
-        body: { action: 'fetch' }
+        body: { 
+          action: 'fetch',
+          brand: brand === 'all' ? undefined : brand,
+          onProgress: (progress: any) => {
+            setImportProgress({
+              current: progress.current,
+              total: progress.total,
+              brand: progress.brand || brand,
+              percentage: progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0
+            });
+          }
+        }
       });
 
       if (error) {
@@ -31,6 +48,11 @@ export const ShopifySync = ({ onProductsUpdated }: ShopifySyncProps) => {
 
       if (data.error) {
         throw new Error(data.error);
+      }
+
+      // Update brands list
+      if (data.brands) {
+        setBrands(data.brands);
       }
 
       setLastSync(new Date());
@@ -50,6 +72,7 @@ export const ShopifySync = ({ onProductsUpdated }: ShopifySyncProps) => {
       });
     } finally {
       setIsImporting(false);
+      setImportProgress({ current: 0, total: 0, brand: '', percentage: 0 });
     }
   };
 
@@ -127,41 +150,92 @@ export const ShopifySync = ({ onProductsUpdated }: ShopifySyncProps) => {
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <Button
-            onClick={handleImportFromShopify}
-            disabled={isImporting}
-            className="bg-gradient-primary transition-all duration-300 hover:scale-105"
-          >
-            {isImporting ? (
-              <Loader className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Download className="h-4 w-4 mr-2" />
-            )}
-            {isImporting ? 'Importing...' : 'Import from Shopify'}
-          </Button>
+        {/* Import Progress */}
+        {isImporting && importProgress.total > 0 && (
+          <div className="space-y-3 p-4 bg-secondary/20 rounded-lg">
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-medium">Importing {importProgress.brand}</span>
+              <span className="text-muted-foreground">
+                {importProgress.current}/{importProgress.total} ({importProgress.percentage}%)
+              </span>
+            </div>
+            <Progress value={importProgress.percentage} className="h-2" />
+          </div>
+        )}
 
-          <Button
-            onClick={() => {
-              // This would be called from parent with selected products
-              toast({
-                title: "Feature Available",
-                description: "Export products after selecting them in the product list",
-              });
-            }}
-            disabled={isExporting}
-            variant="outline"
-            className="transition-all duration-300 hover:scale-105"
-          >
-            {isExporting ? (
-              <Loader className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Upload className="h-4 w-4 mr-2" />
-            )}
-            {isExporting ? 'Exporting...' : 'Export to Shopify'}
-          </Button>
-        </div>
+        {/* Import Options */}
+        <Tabs value={selectedBrand} onValueChange={setSelectedBrand} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4">
+            <TabsTrigger value="all" className="gap-2">
+              <Store className="h-4 w-4" />
+              All Brands
+            </TabsTrigger>
+            {brands.slice(0, 3).map((brand) => (
+              <TabsTrigger key={brand} value={brand} className="gap-2">
+                <Tags className="h-4 w-4" />
+                {brand}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          
+          <TabsContent value="all" className="mt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <Button
+                onClick={() => handleImportFromShopify('all')}
+                disabled={isImporting}
+                className="bg-gradient-primary transition-all duration-300 hover:scale-105"
+              >
+                {isImporting ? (
+                  <Loader className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4 mr-2" />
+                )}
+                {isImporting ? 'Importing...' : 'Import All Products'}
+              </Button>
+
+              <Button
+                onClick={() => {
+                  toast({
+                    title: "Feature Available",
+                    description: "Export products after selecting them in the product list",
+                  });
+                }}
+                disabled={isExporting}
+                variant="outline"
+                className="transition-all duration-300 hover:scale-105"
+              >
+                {isExporting ? (
+                  <Loader className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Upload className="h-4 w-4 mr-2" />
+                )}
+                {isExporting ? 'Exporting...' : 'Export to Shopify'}
+              </Button>
+            </div>
+          </TabsContent>
+
+          {brands.map((brand) => (
+            <TabsContent key={brand} value={brand} className="mt-4">
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Import products for {brand} brand only. This helps prevent timeouts with large catalogs.
+                </p>
+                <Button
+                  onClick={() => handleImportFromShopify(brand)}
+                  disabled={isImporting}
+                  className="w-full bg-gradient-primary transition-all duration-300 hover:scale-105"
+                >
+                  {isImporting ? (
+                    <Loader className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4 mr-2" />
+                  )}
+                  {isImporting ? 'Importing...' : `Import ${brand} Products`}
+                </Button>
+              </div>
+            </TabsContent>
+          ))}
+        </Tabs>
 
         {/* Info */}
         <Alert>

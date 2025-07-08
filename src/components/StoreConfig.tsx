@@ -8,13 +8,17 @@ import { Store, Settings } from 'lucide-react';
 interface StoreConfigProps {
   storeUrl: string;
   onStoreUrlChange: (url: string) => void;
+  apiKey: string;
+  onApiKeyChange: (key: string) => void;
 }
 
-export const StoreConfig = ({ storeUrl, onStoreUrlChange }: StoreConfigProps) => {
+export const StoreConfig = ({ storeUrl, onStoreUrlChange, apiKey, onApiKeyChange }: StoreConfigProps) => {
   const [tempUrl, setTempUrl] = useState(storeUrl);
+  const [tempApiKey, setTempApiKey] = useState(apiKey);
 
   const handleSave = () => {
     onStoreUrlChange(tempUrl);
+    onApiKeyChange(tempApiKey);
   };
 
   return (
@@ -46,10 +50,24 @@ export const StoreConfig = ({ storeUrl, onStoreUrlChange }: StoreConfigProps) =>
           </p>
         </div>
         
+        <div className="space-y-2">
+          <Label htmlFor="api-key">Shopify API Key</Label>
+          <Input
+            id="api-key"
+            type="password"
+            value={tempApiKey}
+            onChange={(e) => setTempApiKey(e.target.value)}
+            placeholder="Enter your Shopify API key"
+          />
+          <p className="text-xs text-muted-foreground">
+            Your Shopify API key for importing/exporting products
+          </p>
+        </div>
+        
         <Button 
           onClick={handleSave} 
           className="w-full bg-gradient-primary"
-          disabled={tempUrl === storeUrl}
+          disabled={tempUrl === storeUrl && tempApiKey === apiKey}
         >
           <Settings className="h-4 w-4 mr-2" />
           Save Configuration

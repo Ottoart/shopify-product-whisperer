@@ -56,6 +56,7 @@ const Index = () => {
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [queueItems, setQueueItems] = useState<Array<{ productId: string; status: 'pending' | 'processing' | 'completed' | 'error'; error?: string }>>([]);
   const [storeUrl, setStoreUrl] = useState<string>('');
+  const [apiKey, setApiKey] = useState<string>('');
 
   const handleFileUpload = (uploadedProducts: Product[]) => {
     saveProducts(uploadedProducts);
@@ -156,6 +157,8 @@ const Index = () => {
           <StoreConfig 
             storeUrl={storeUrl} 
             onStoreUrlChange={setStoreUrl}
+            apiKey={apiKey}
+            onApiKeyChange={setApiKey}
           />
         )}
 
