@@ -5,6 +5,7 @@ import { FileUpload } from '@/components/FileUpload';
 import { ProductList } from '@/components/ProductList';
 import { QueueManager } from '@/components/QueueManager';
 import { StoreConfig } from '@/components/StoreConfig';
+import { ShopifySync } from '@/components/ShopifySync';
 import { useProducts } from '@/hooks/useProducts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -51,7 +52,7 @@ export interface UpdatedProduct {
 
 const Index = () => {
   const { session } = useSessionContext();
-  const { products, saveProducts, updateProduct, isSaving } = useProducts();
+  const { products, saveProducts, updateProduct, isSaving, isLoading } = useProducts();
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [queueItems, setQueueItems] = useState<Array<{ productId: string; status: 'pending' | 'processing' | 'completed' | 'error'; error?: string }>>([]);
   const [storeUrl, setStoreUrl] = useState<string>('');
@@ -90,6 +91,11 @@ const Index = () => {
 
   const handleUpdateProduct = (productId: string, updatedData: UpdatedProduct) => {
     updateProduct({ handle: productId, updatedData });
+  };
+
+  const handleProductsUpdated = () => {
+    // This will trigger a refetch of products
+    window.location.reload();
   };
 
   return (
@@ -138,6 +144,11 @@ const Index = () => {
               <FileUpload onFileUpload={handleFileUpload} />
             </CardContent>
           </Card>
+        )}
+
+        {/* Shopify Integration */}
+        {products.length > 0 && (
+          <ShopifySync onProductsUpdated={handleProductsUpdated} />
         )}
 
         {/* Store Configuration */}

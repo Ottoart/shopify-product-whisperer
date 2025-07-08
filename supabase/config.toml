@@ -1,1 +1,8 @@
 project_id = "rtaomiqsnctigleqjojt"
+
+[api]
+enabled = true
+port = 54321
+
+[functions.shopify-products]
+verify_jwt = false
