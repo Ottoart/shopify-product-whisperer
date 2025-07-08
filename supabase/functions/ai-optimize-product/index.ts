@@ -79,7 +79,7 @@ RESPONSE FORMAT (JSON):
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4.1-2025-04-14',
         messages: [
           { role: 'system', content: 'You are an expert e-commerce copywriter who responds only in valid JSON format.' },
           { role: 'user', content: prompt }
