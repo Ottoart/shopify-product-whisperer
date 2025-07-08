@@ -14,169 +14,142 @@ serve(async (req) => {
   }
 
   try {
-    console.log('=== AI Optimize Product Function Started ===');
-    console.log('Request method:', req.method);
-    console.log('Request headers:', Object.fromEntries(req.headers.entries()));
+    console.log('Function called successfully');
     
-    const requestBody = await req.json();
-    console.log('Request body:', JSON.stringify(requestBody, null, 2));
+    // Parse request
+    const { productHandle, productData } = await req.json();
+    console.log('Product handle:', productHandle);
+    console.log('Product title:', productData?.title);
     
-    const { productHandle, productData } = requestBody;
-    
+    // Check environment variables
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-    console.log('OpenAI API key configured:', !!openAIApiKey);
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
     if (!openAIApiKey) {
-      console.error('OpenAI API key not configured');
-      throw new Error('OpenAI API key not configured');
+      console.error('Missing OpenAI API key');
+      return new Response(
+        JSON.stringify({ error: 'OpenAI API key not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
-
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    console.log('Supabase URL configured:', !!supabaseUrl);
-    console.log('Supabase Service Key configured:', !!supabaseServiceKey);
     
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Missing Supabase credentials');
+      return new Response(
+        JSON.stringify({ error: 'Supabase credentials not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    // Initialize Supabase
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Get user from authorization header
-    const authHeader = req.headers.get('authorization');
-    console.log('Authorization header present:', !!authHeader);
     
+    // Get user
+    const authHeader = req.headers.get('authorization');
     if (!authHeader) {
-      console.error('No authorization header provided');
-      throw new Error('No authorization header');
+      console.error('Missing authorization header');
+      return new Response(
+        JSON.stringify({ error: 'No authorization header' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const token = authHeader.replace('Bearer ', '');
-    console.log('Token extracted, length:', token.length);
-    
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     
     if (userError) {
-      console.error('User authentication error:', userError);
-      throw new Error(`User authentication failed: ${userError.message}`);
+      console.error('Auth error:', userError);
+      return new Response(
+        JSON.stringify({ error: `Authentication failed: ${userError.message}` }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
     
     if (!user) {
       console.error('No user found');
-      throw new Error('No user found');
+      return new Response(
+        JSON.stringify({ error: 'User not found' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
     
     console.log('User authenticated:', user.id);
+    
+    // Call OpenAI API
+    console.log('Calling OpenAI API...');
+    
+    const prompt = `Optimize this Shopify product:
+Title: ${productData.title}
+Type: ${productData.type}
+Description: ${productData.description}
+Tags: ${productData.tags}
 
-    console.log(`Starting optimization for product: ${productData.title}`);
-
-    // Create the product URL for the custom GPT
-    const storeUrl = 'https://prohair.ca';
-    const productUrl = `${storeUrl}/products/${productHandle}`;
-
-    console.log(`Product URL: ${productUrl}`);
-    console.log(`Using Custom GPT for optimization...`);
-
-    // Use custom GPT via OpenAI Assistants API or direct chat completion
-    // Since we want to use the custom GPT's specific instructions, we'll call it directly
-    const customGptPrompt = `Please analyze and optimize this Shopify product:
-
-Product URL: ${productUrl}
-Current Title: ${productData.title}
-Current Type: ${productData.type}
-Current Description: ${productData.description}
-Current Tags: ${productData.tags}
-
-Please provide optimized content following your specialized Shopify optimization instructions. Return the response in this exact JSON format:
+Return JSON with optimized title, description, and tags:
 {
-  "title": "optimized title here",
-  "description": "optimized description here", 
-  "tags": "optimized tags here"
+  "title": "optimized title",
+  "description": "optimized description", 
+  "tags": "optimized tags"
 }`;
 
-    const makeCustomGptRequest = async () => {
-      console.log(`Sending request to Custom GPT...`);
-      
-      // For now, we'll use the standard OpenAI API with instructions that mimic your custom GPT
-      // In the future, you could integrate with the Assistants API to use your exact custom GPT
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openAIApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [
-            { 
-              role: 'system', 
-              content: `You are a specialized Shopify product optimization expert. You excel at creating compelling, SEO-optimized product content that converts browsers into buyers. 
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: 'You are a Shopify product optimization expert. Return only valid JSON.' },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 1000,
+      }),
+    });
 
-Your optimization approach:
-- Transform features into benefits that resonate with customers
-- Use psychological triggers and persuasive language
-- Optimize for search engines while maintaining readability
-- Focus on the customer's pain points and desires
-- Create urgency and social proof when appropriate
-- Ensure mobile-friendly formatting
-- Use relevant keywords naturally
-- Make titles compelling and SEO-friendly (max 70 chars)
-- Write descriptions that tell a story and sell the solution (100-300 words)
-- Create comprehensive, searchable tags
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`OpenAI API error ${response.status}:`, errorText);
+      return new Response(
+        JSON.stringify({ error: `OpenAI API error: ${response.status}` }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-Always return responses in valid JSON format only.` 
-            },
-            { role: 'user', content: customGptPrompt }
-          ],
-          temperature: 0.7,
-          max_tokens: 1000,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`Custom GPT API error ${response.status}: ${errorText}`);
-        
-        if (response.status === 429) {
-          throw new Error('OpenAI API rate limit exceeded. Please wait a few minutes and try again.');
-        } else if (response.status === 401) {
-          throw new Error('Invalid OpenAI API key. Please check your API key configuration.');
-        } else {
-          throw new Error(`Custom GPT API error: ${response.status} - ${errorText}`);
-        }
-      }
-
-      console.log(`Custom GPT responded successfully`);
-      return response;
-    };
-
-    const response = await makeCustomGptRequest();
     const aiData = await response.json();
     const aiContent = aiData.choices[0].message.content;
+    console.log('AI response received');
     
-    console.log('Custom GPT Response:', aiContent);
-
-    // Parse AI response
+    // Parse JSON response
     let optimizedData;
     try {
-      // Clean the response in case there's extra text
       const jsonMatch = aiContent.match(/\{[\s\S]*\}/);
-      const jsonString = jsonMatch ? jsonMatch[0] : aiContent;
-      optimizedData = JSON.parse(jsonString);
-    } catch (parseError) {
-      console.error('Failed to parse Custom GPT response:', aiContent);
-      throw new Error('Invalid response format from Custom GPT');
+      optimizedData = JSON.parse(jsonMatch ? jsonMatch[0] : aiContent);
+    } catch (error) {
+      console.error('JSON parse error:', error);
+      return new Response(
+        JSON.stringify({ error: 'Invalid AI response format' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
-
-    // Validate required fields
+    
+    // Validate response
     if (!optimizedData.title || !optimizedData.description || !optimizedData.tags) {
-      console.error('Missing fields in response:', optimizedData);
-      throw new Error('Custom GPT response missing required fields (title, description, tags)');
+      console.error('Missing fields in AI response');
+      return new Response(
+        JSON.stringify({ error: 'AI response missing required fields' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
-
-    // Update product in database
+    
+    // Update database
+    console.log('Updating database...');
     const { error: updateError } = await supabase
       .from('products')
       .update({
         title: optimizedData.title,
-        type: productData.type,
         body_html: optimizedData.description,
         tags: optimizedData.tags,
         updated_at: new Date().toISOString(),
@@ -185,11 +158,15 @@ Always return responses in valid JSON format only.`
       .eq('user_id', user.id);
 
     if (updateError) {
-      throw new Error(`Database update error: ${updateError.message}`);
+      console.error('Database update error:', updateError);
+      return new Response(
+        JSON.stringify({ error: `Database update failed: ${updateError.message}` }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    console.log(`Successfully optimized product with Custom GPT: ${productHandle}`);
-
+    console.log('Success!');
+    
     return new Response(
       JSON.stringify({ 
         success: true,
@@ -203,20 +180,12 @@ Always return responses in valid JSON format only.`
     );
 
   } catch (error) {
-    console.error('=== ERROR in ai-optimize-product function ===');
-    console.error('Error type:', error.constructor.name);
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
-    
-    // Return more detailed error information
-    const errorResponse = {
-      error: error.message,
-      timestamp: new Date().toISOString(),
-      function: 'ai-optimize-product'
-    };
-    
+    console.error('Unexpected error:', error);
     return new Response(
-      JSON.stringify(errorResponse),
+      JSON.stringify({ 
+        error: `Unexpected error: ${error.message}`,
+        stack: error.stack
+      }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
