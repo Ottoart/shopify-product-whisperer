@@ -63,7 +63,7 @@ Focus on:
 - Professional tone
 - Mobile-friendly formatting`;
 
-    const makeOpenAIRequest = async (retries = 3, delay = 1000) => {
+    const makeOpenAIRequest = async (retries = 5, delay = 2000) => {
       for (let attempt = 1; attempt <= retries; attempt++) {
         try {
           const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -87,20 +87,32 @@ Focus on:
             return response;
           }
 
+          const errorText = await response.text();
+          console.log(`OpenAI API error ${response.status}: ${errorText}`);
+
           // Handle rate limiting (429) with exponential backoff
           if (response.status === 429 && attempt < retries) {
-            console.log(`Rate limited (attempt ${attempt}/${retries}), waiting ${delay}ms before retry...`);
-            await new Promise(resolve => setTimeout(resolve, delay));
-            delay *= 2; // Exponential backoff
+            const waitTime = delay * Math.pow(2, attempt - 1); // Exponential backoff
+            console.log(`Rate limited (attempt ${attempt}/${retries}), waiting ${waitTime}ms before retry...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
             continue;
           }
 
-          throw new Error(`OpenAI API error: ${response.status}`);
+          // For other errors, still retry but with shorter delays
+          if (attempt < retries) {
+            console.log(`API error (attempt ${attempt}/${retries}), retrying in ${delay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            continue;
+          }
+
+          throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
         } catch (error) {
-          if (attempt === retries) throw error;
+          if (attempt === retries) {
+            console.error(`Final attempt failed:`, error);
+            throw error;
+          }
           console.log(`Request failed (attempt ${attempt}/${retries}), retrying in ${delay}ms...`);
           await new Promise(resolve => setTimeout(resolve, delay));
-          delay *= 2;
         }
       }
     };

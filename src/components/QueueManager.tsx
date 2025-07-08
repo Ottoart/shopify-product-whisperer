@@ -178,9 +178,13 @@ export const QueueManager = ({
           
       } catch (error: any) {
         console.error(`Error processing ${product.title}:`, error);
-        const errorMessage = error.message.includes('429') 
-          ? 'Rate limited - try again in a moment' 
-          : `Failed: ${error.message}`;
+        let errorMessage = `Failed: ${error.message}`;
+        
+        if (error.message.includes('429') || error.message.includes('rate limit')) {
+          errorMessage = 'OpenAI rate limited - will retry with longer delays';
+        } else if (error.message.includes('non-2xx status code')) {
+          errorMessage = 'API error - check logs for details';
+        }
         
         onUpdateStatus(item.productId, 'error', errorMessage);
         
