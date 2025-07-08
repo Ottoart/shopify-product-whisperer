@@ -44,6 +44,69 @@ serve(async (req) => {
     }
 
     switch (action) {
+      case 'fetch-brands': {
+        console.log('Fetching available brands from Shopify...');
+        
+        // Fetch first few pages to get a comprehensive brand list
+        let allBrands = new Set<string>();
+        let hasNextPage = true;
+        let pageInfo = null;
+        let pageCount = 0;
+        const maxPages = 5; // Limit to prevent timeouts
+        
+        while (hasNextPage && pageCount < maxPages) {
+          pageCount++;
+          let url = `${shopifyUrl}products.json?limit=250&fields=vendor`;
+          if (pageInfo) {
+            url += `&page_info=${pageInfo}`;
+          }
+          
+          const response = await fetch(url, {
+            headers: {
+              'X-Shopify-Access-Token': shopifyToken,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error(`Shopify API error: ${response.status}`);
+          }
+
+          const shopifyData = await response.json();
+          
+          // Collect unique brands
+          shopifyData.products.forEach((product: any) => {
+            if (product.vendor && product.vendor.trim()) {
+              allBrands.add(product.vendor.trim());
+            }
+          });
+          
+          // Check for pagination
+          const linkHeader = response.headers.get('Link');
+          if (linkHeader && linkHeader.includes('rel="next"')) {
+            const nextLink = linkHeader.split(',').find(link => link.includes('rel="next"'));
+            if (nextLink) {
+              const pageInfoMatch = nextLink.match(/page_info=([^&>]+)/);
+              pageInfo = pageInfoMatch ? pageInfoMatch[1] : null;
+            }
+          } else {
+            hasNextPage = false;
+          }
+        }
+
+        const brands = Array.from(allBrands).sort();
+        console.log(`Found ${brands.length} unique brands from ${pageCount} pages`);
+
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            brands,
+            message: `Found ${brands.length} brands`
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       case 'fetch': {
         console.log('Fetching products from Shopify...');
         
