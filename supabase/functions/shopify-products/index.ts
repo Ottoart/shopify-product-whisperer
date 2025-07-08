@@ -14,13 +14,20 @@ serve(async (req) => {
   }
 
   try {
-    const { action, products } = await req.json();
+    const { action, products, vendor } = await req.json();
     
     const shopifyDomain = Deno.env.get('SHOPIFY_DOMAIN');
     const shopifyToken = Deno.env.get('SHOPIFY_ACCESS_TOKEN');
     
     if (!shopifyDomain || !shopifyToken) {
-      throw new Error('Shopify credentials not configured');
+      console.error('Missing Shopify credentials');
+      return new Response(
+        JSON.stringify({ error: 'Shopify credentials not configured' }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
 
     const shopifyUrl = `https://${shopifyDomain}/admin/api/2023-10/`;
@@ -33,19 +40,71 @@ serve(async (req) => {
     // Get user from authorization header
     const authHeader = req.headers.get('authorization');
     if (!authHeader) {
-      throw new Error('No authorization header');
+      console.error('No authorization header');
+      return new Response(
+        JSON.stringify({ error: 'No authorization header' }),
+        { 
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
 
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     
     if (userError || !user) {
-      throw new Error('Invalid user token');
+      console.error('Invalid user token:', userError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid user token' }),
+        { 
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
 
     switch (action) {
+      case 'fetch-vendors': {
+        console.log('Fetching vendors from Shopify...');
+        
+        const response = await fetch(`${shopifyUrl}products.json?limit=250&fields=vendor`, {
+          headers: {
+            'X-Shopify-Access-Token': shopifyToken,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          console.error('Shopify API error:', response.status, await response.text());
+          return new Response(
+            JSON.stringify({ error: `Shopify API error: ${response.status}` }),
+            { 
+              status: response.status,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          );
+        }
+
+        const data = await response.json();
+        const vendors = [...new Set(data.products.map((p: any) => p.vendor).filter(Boolean))];
+        
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            vendors: vendors.sort()
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       case 'fetch': {
         console.log('Fetching products from Shopify...');
+        
+        let vendorFilter = '';
+        if (vendor) {
+          vendorFilter = `&vendor=${encodeURIComponent(vendor)}`;
+        }
         
         let allProducts = [];
         let hasNextPage = true;
@@ -53,7 +112,7 @@ serve(async (req) => {
         
         // Fetch all products with pagination
         while (hasNextPage) {
-          let url = `${shopifyUrl}products.json?limit=250`;
+          let url = `${shopifyUrl}products.json?limit=250${vendorFilter}`;
           if (pageInfo) {
             url += `&page_info=${pageInfo}`;
           }
@@ -66,7 +125,14 @@ serve(async (req) => {
           });
 
           if (!response.ok) {
-            throw new Error(`Shopify API error: ${response.status}`);
+            console.error('Shopify API error:', response.status, await response.text());
+            return new Response(
+              JSON.stringify({ error: `Shopify API error: ${response.status}` }),
+              { 
+                status: response.status,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+              }
+            );
           }
 
           const shopifyData = await response.json();
@@ -85,6 +151,7 @@ serve(async (req) => {
           }
         }
 
+        
         console.log(`Fetched ${allProducts.length} products from Shopify`);
 
         // Transform Shopify products to our format and save to database
@@ -123,14 +190,27 @@ serve(async (req) => {
           };
         });
 
-        // Clear existing products and insert new ones
-        const { error: deleteError } = await supabase
-          .from('products')
-          .delete()
-          .eq('user_id', user.id);
+        // If importing specific vendor, only delete products for that vendor
+        if (vendor) {
+          const { error: deleteError } = await supabase
+            .from('products')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('vendor', vendor);
 
-        if (deleteError) {
-          console.error('Error deleting existing products:', deleteError);
+          if (deleteError) {
+            console.error('Error deleting existing vendor products:', deleteError);
+          }
+        } else {
+          // Clear all existing products
+          const { error: deleteError } = await supabase
+            .from('products')
+            .delete()
+            .eq('user_id', user.id);
+
+          if (deleteError) {
+            console.error('Error deleting existing products:', deleteError);
+          }
         }
 
         const { error: insertError } = await supabase
@@ -138,7 +218,14 @@ serve(async (req) => {
           .insert(transformedProducts);
 
         if (insertError) {
-          throw new Error(`Database error: ${insertError.message}`);
+          console.error('Database error:', insertError);
+          return new Response(
+            JSON.stringify({ error: `Database error: ${insertError.message}` }),
+            { 
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          );
         }
 
         return new Response(

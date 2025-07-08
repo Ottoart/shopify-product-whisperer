@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Store, Settings } from 'lucide-react';
+import { Store, Settings, Key } from 'lucide-react';
 
 interface StoreConfigProps {
   storeUrl: string;
@@ -12,6 +12,7 @@ interface StoreConfigProps {
 
 export const StoreConfig = ({ storeUrl, onStoreUrlChange }: StoreConfigProps) => {
   const [tempUrl, setTempUrl] = useState(storeUrl);
+  const [apiKey, setApiKey] = useState('');
 
   const handleSave = () => {
     onStoreUrlChange(tempUrl);
@@ -43,6 +44,20 @@ export const StoreConfig = ({ storeUrl, onStoreUrlChange }: StoreConfigProps) =>
           />
           <p className="text-xs text-muted-foreground">
             Enter your Shopify store URL to generate correct product links
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="api-key">Admin API Access Token</Label>
+          <Input
+            id="api-key"
+            type="password"
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            placeholder="shpat_..."
+          />
+          <p className="text-xs text-muted-foreground">
+            Your Shopify Admin API access token (stored securely in Supabase secrets)
           </p>
         </div>
         
