@@ -42,35 +42,26 @@ serve(async (req) => {
 
     console.log(`Optimizing product: ${productData.title}`);
 
-    // Create AI prompt for product optimization
-    const prompt = `
-You are an expert e-commerce copywriter. Optimize this product listing for better conversion and SEO:
+    // Create the product URL if store URL is available
+    const storeUrl = 'https://prohair.ca'; // You can make this dynamic later
+    const productUrl = `${storeUrl}/products/${productHandle}`;
 
-CURRENT PRODUCT:
-Title: ${productData.title}
-Type: ${productData.type}
-Tags: ${productData.tags}
-Description: ${productData.description}
+    // Simple prompt that mimics your custom GPT approach
+    const prompt = `Product URL: ${productUrl}
 
-INSTRUCTIONS:
-1. Create an optimized title (max 70 characters) that includes key benefits and is SEO-friendly
-2. Write a compelling description (100-300 words) that highlights benefits, uses persuasive language, and includes relevant keywords
-3. Generate 8-12 relevant tags (comma-separated) for better categorization and search
-
-REQUIREMENTS:
-- Keep the core product identity
-- Use action-oriented, benefit-focused language
-- Include relevant keywords naturally
-- Make it conversion-focused
-- Ensure it's mobile-friendly
-
-RESPONSE FORMAT (JSON):
+Please analyze this product and provide optimized e-commerce content in the following JSON format:
 {
-  "title": "optimized title here",
-  "description": "optimized description here",
-  "tags": "tag1, tag2, tag3, etc"
+  "title": "SEO-optimized product title (max 70 characters)",
+  "description": "Compelling product description with benefits, usage, and key features (100-300 words)",
+  "tags": "comma-separated relevant tags for categorization and search"
 }
-`;
+
+Focus on:
+- Converting features into benefits
+- SEO-friendly language
+- Clear value proposition
+- Professional tone
+- Mobile-friendly formatting`;
 
     const makeOpenAIRequest = async (retries = 3, delay = 1000) => {
       for (let attempt = 1; attempt <= retries; attempt++) {
@@ -84,7 +75,7 @@ RESPONSE FORMAT (JSON):
             body: JSON.stringify({
               model: 'gpt-4.1-2025-04-14',
               messages: [
-                { role: 'system', content: 'You are an expert e-commerce copywriter who responds only in valid JSON format.' },
+                { role: 'system', content: 'You are an expert e-commerce copywriter specialized in product optimization. Analyze product URLs and provide optimized content in valid JSON format only.' },
                 { role: 'user', content: prompt }
               ],
               temperature: 0.7,
