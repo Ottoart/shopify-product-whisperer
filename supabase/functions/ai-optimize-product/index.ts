@@ -63,10 +63,13 @@ Focus on:
 - Professional tone
 - Mobile-friendly formatting`;
 
-    const makeOpenAIRequest = async (retries = 8, baseDelay = 5000) => {
+    const makeOpenAIRequest = async (retries = 4, baseDelay = 10000) => {
       for (let attempt = 1; attempt <= retries; attempt++) {
         try {
-          console.log(`OpenAI API attempt ${attempt}/${retries}`);
+          console.log(`OpenAI API attempt ${attempt}/${retries} - Custom GPT can take 30-60 seconds...`);
+          
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 second timeout for custom GPT
           
           const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
@@ -83,25 +86,28 @@ Focus on:
               temperature: 0.7,
               max_tokens: 1000,
             }),
+            signal: controller.signal
           });
 
+          clearTimeout(timeoutId);
+
           if (response.ok) {
-            console.log(`OpenAI API success on attempt ${attempt}`);
+            console.log(`OpenAI API success on attempt ${attempt} after potentially long wait`);
             return response;
           }
 
           const errorText = await response.text();
           console.log(`OpenAI API error ${response.status} on attempt ${attempt}: ${errorText}`);
 
-          // Handle rate limiting (429) with exponential backoff
+          // Handle rate limiting (429) with much longer delays
           if (response.status === 429) {
             if (attempt < retries) {
-              const waitTime = baseDelay * Math.pow(2, attempt - 1); // Exponential backoff starting from 5s
+              const waitTime = baseDelay * Math.pow(2, attempt - 1); // Start with 10s, exponential backoff
               console.log(`Rate limited - waiting ${waitTime}ms before retry (attempt ${attempt}/${retries})`);
               await new Promise(resolve => setTimeout(resolve, waitTime));
               continue;
             }
-            throw new Error(`OpenAI rate limit exceeded after ${retries} attempts`);
+            throw new Error(`OpenAI rate limit exceeded after ${retries} attempts with extended delays`);
           }
 
           // For other 4xx errors, don't retry
@@ -109,9 +115,9 @@ Focus on:
             throw new Error(`OpenAI API client error: ${response.status} - ${errorText}`);
           }
 
-          // For 5xx errors, retry with shorter delays
+          // For 5xx errors, retry with longer delays
           if (attempt < retries) {
-            const waitTime = 2000; // Fixed 2s delay for server errors
+            const waitTime = 5000; // 5s delay for server errors
             console.log(`Server error - retrying in ${waitTime}ms (attempt ${attempt}/${retries})`);
             await new Promise(resolve => setTimeout(resolve, waitTime));
             continue;
@@ -119,12 +125,21 @@ Focus on:
 
           throw new Error(`OpenAI API server error: ${response.status} - ${errorText}`);
         } catch (error) {
+          if (error.name === 'AbortError') {
+            console.log(`Request timed out after 90 seconds on attempt ${attempt}/${retries}`);
+            if (attempt < retries) {
+              console.log(`Retrying after timeout...`);
+              continue;
+            }
+            throw new Error('Request timed out after 90 seconds - custom GPT taking too long');
+          }
+          
           if (attempt === retries) {
             console.error(`All ${retries} attempts failed:`, error);
             throw error;
           }
           console.log(`Network error on attempt ${attempt}/${retries}, retrying...`);
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 2000));
         }
       }
     };

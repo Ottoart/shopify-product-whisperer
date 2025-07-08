@@ -49,7 +49,7 @@ export const QueueManager = ({
 }: QueueManagerProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [chatGptUrl, setChatGptUrl] = useState('https://chatgpt.com/share/686d6a64-6330-8013-a445-b6b90fce4589');
-  const [processingDelay, setProcessingDelay] = useState(3000);
+  const [processingDelay, setProcessingDelay] = useState(15000);
   const [currentProcessing, setCurrentProcessing] = useState<{
     productId: string;
     step: string;
@@ -82,10 +82,10 @@ export const QueueManager = ({
         onUpdateStatus(item.productId, 'processing');
         
         await new Promise(resolve => setTimeout(resolve, 500)); // Brief pause for UI update
-        // Step 2: AI Optimization
+        // Step 2: AI Optimization (Custom GPT can take 30-60 seconds)
         setCurrentProcessing({
           productId: item.productId,
-          step: `Processing ${i + 1}/${pendingItems.length}: AI optimizing content...`,
+          step: `Processing ${i + 1}/${pendingItems.length}: AI optimizing (this may take 30-60s)...`,
           progress: 40
         });
 
@@ -399,18 +399,21 @@ export const QueueManager = ({
             </div>
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="delay" className="text-xs">Processing Delay (ms)</Label>
-            <Input
-              id="delay"
-              type="number"
-              value={processingDelay}
-              onChange={(e) => setProcessingDelay(Number(e.target.value))}
-              className="text-xs"
-              min="1000"
-              max="10000"
-            />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="delay" className="text-xs">Processing Delay (ms)</Label>
+              <Input
+                id="delay"
+                type="number"
+                value={processingDelay}
+                onChange={(e) => setProcessingDelay(Number(e.target.value))}
+                className="text-xs"
+                min="5000"
+                max="30000"
+              />
+              <p className="text-xs text-muted-foreground">
+                Recommended: 15-20 seconds for custom GPT processing time
+              </p>
+            </div>
         </Card>
 
         {/* AI Notice */}
