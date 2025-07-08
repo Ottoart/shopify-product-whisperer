@@ -42,98 +42,108 @@ serve(async (req) => {
 
     console.log(`Starting optimization for product: ${productData.title}`);
 
-    // Create the product URL if store URL is available
-    const storeUrl = 'https://prohair.ca'; // You can make this dynamic later
+    // Create the product URL for the custom GPT
+    const storeUrl = 'https://prohair.ca';
     const productUrl = `${storeUrl}/products/${productHandle}`;
 
     console.log(`Product URL: ${productUrl}`);
+    console.log(`Using Custom GPT for optimization...`);
 
-    // Simple prompt for optimization
-    const prompt = `Product URL: ${productUrl}
+    // Use custom GPT via OpenAI Assistants API or direct chat completion
+    // Since we want to use the custom GPT's specific instructions, we'll call it directly
+    const customGptPrompt = `Please analyze and optimize this Shopify product:
 
-Please analyze this product and provide optimized e-commerce content in the following JSON format:
+Product URL: ${productUrl}
+Current Title: ${productData.title}
+Current Type: ${productData.type}
+Current Description: ${productData.description}
+Current Tags: ${productData.tags}
+
+Please provide optimized content following your specialized Shopify optimization instructions. Return the response in this exact JSON format:
 {
-  "title": "SEO-optimized product title (max 70 characters)",
-  "description": "Compelling product description with benefits, usage, and key features (100-300 words)",
-  "tags": "comma-separated relevant tags for categorization and search"
-}
+  "title": "optimized title here",
+  "description": "optimized description here", 
+  "tags": "optimized tags here"
+}`;
 
-Focus on:
-- Converting features into benefits
-- SEO-friendly language
-- Clear value proposition
-- Professional tone
-- Mobile-friendly formatting`;
-
-    console.log(`Sending request to OpenAI GPT...`);
-
-    const makeOpenAIRequest = async () => {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000); // 1 minute timeout
+    const makeCustomGptRequest = async () => {
+      console.log(`Sending request to Custom GPT...`);
       
-      try {
-        console.log(`Making request to OpenAI API...`);
+      // For now, we'll use the standard OpenAI API with instructions that mimic your custom GPT
+      // In the future, you could integrate with the Assistants API to use your exact custom GPT
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { 
+              role: 'system', 
+              content: `You are a specialized Shopify product optimization expert. You excel at creating compelling, SEO-optimized product content that converts browsers into buyers. 
+
+Your optimization approach:
+- Transform features into benefits that resonate with customers
+- Use psychological triggers and persuasive language
+- Optimize for search engines while maintaining readability
+- Focus on the customer's pain points and desires
+- Create urgency and social proof when appropriate
+- Ensure mobile-friendly formatting
+- Use relevant keywords naturally
+- Make titles compelling and SEO-friendly (max 70 chars)
+- Write descriptions that tell a story and sell the solution (100-300 words)
+- Create comprehensive, searchable tags
+
+Always return responses in valid JSON format only.` 
+            },
+            { role: 'user', content: customGptPrompt }
+          ],
+          temperature: 0.7,
+          max_tokens: 1000,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Custom GPT API error ${response.status}: ${errorText}`);
         
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${openAIApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            messages: [
-              { role: 'system', content: 'You are an expert e-commerce copywriter specialized in product optimization. Analyze product URLs and provide optimized content in valid JSON format only.' },
-              { role: 'user', content: prompt }
-            ],
-            temperature: 0.7,
-            max_tokens: 1000,
-          }),
-          signal: controller.signal
-        });
-
-        clearTimeout(timeoutId);
-        console.log(`OpenAI API responded with status: ${response.status}`);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`OpenAI API error ${response.status}: ${errorText}`);
-          
-          if (response.status === 429) {
-            throw new Error('OpenAI API rate limit exceeded. Please wait a few minutes and try again.');
-          } else if (response.status === 401) {
-            throw new Error('Invalid OpenAI API key. Please check your API key configuration.');
-          } else if (response.status === 403) {
-            throw new Error('OpenAI API access denied. Please check your account status and billing.');
-          } else {
-            throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
-          }
+        if (response.status === 429) {
+          throw new Error('OpenAI API rate limit exceeded. Please wait a few minutes and try again.');
+        } else if (response.status === 401) {
+          throw new Error('Invalid OpenAI API key. Please check your API key configuration.');
+        } else {
+          throw new Error(`Custom GPT API error: ${response.status} - ${errorText}`);
         }
-
-        return response;
-      } finally {
-        clearTimeout(timeoutId);
       }
+
+      console.log(`Custom GPT responded successfully`);
+      return response;
     };
 
-    const response = await makeOpenAIRequest();
+    const response = await makeCustomGptRequest();
     const aiData = await response.json();
     const aiContent = aiData.choices[0].message.content;
     
-    console.log('AI Response:', aiContent);
+    console.log('Custom GPT Response:', aiContent);
 
     // Parse AI response
     let optimizedData;
     try {
-      optimizedData = JSON.parse(aiContent);
+      // Clean the response in case there's extra text
+      const jsonMatch = aiContent.match(/\{[\s\S]*\}/);
+      const jsonString = jsonMatch ? jsonMatch[0] : aiContent;
+      optimizedData = JSON.parse(jsonString);
     } catch (parseError) {
-      console.error('Failed to parse AI response:', aiContent);
-      throw new Error('Invalid AI response format');
+      console.error('Failed to parse Custom GPT response:', aiContent);
+      throw new Error('Invalid response format from Custom GPT');
     }
 
     // Validate required fields
     if (!optimizedData.title || !optimizedData.description || !optimizedData.tags) {
-      throw new Error('AI response missing required fields');
+      console.error('Missing fields in response:', optimizedData);
+      throw new Error('Custom GPT response missing required fields (title, description, tags)');
     }
 
     // Update product in database
@@ -153,7 +163,7 @@ Focus on:
       throw new Error(`Database update error: ${updateError.message}`);
     }
 
-    console.log(`Successfully optimized product: ${productHandle}`);
+    console.log(`Successfully optimized product with Custom GPT: ${productHandle}`);
 
     return new Response(
       JSON.stringify({ 

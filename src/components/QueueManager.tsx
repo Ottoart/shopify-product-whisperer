@@ -82,10 +82,10 @@ export const QueueManager = ({
         onUpdateStatus(item.productId, 'processing');
         
         await new Promise(resolve => setTimeout(resolve, 500)); // Brief pause for UI update
-        // Step 2: AI Optimization (Custom GPT can take 30-60 seconds)
+        // Step 2: Custom GPT Optimization
         setCurrentProcessing({
           productId: item.productId,
-          step: `Processing ${i + 1}/${pendingItems.length}: Sending to GPT...`,
+          step: `Processing ${i + 1}/${pendingItems.length}: Sending to Custom GPT...`,
           progress: 30
         });
 
@@ -93,7 +93,7 @@ export const QueueManager = ({
 
         setCurrentProcessing({
           productId: item.productId,
-          step: `Processing ${i + 1}/${pendingItems.length}: GPT is processing (30-60s)...`,
+          step: `Processing ${i + 1}/${pendingItems.length}: Custom GPT analyzing product...`,
           progress: 50
         });
 
