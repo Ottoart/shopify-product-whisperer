@@ -53,6 +53,7 @@ export const QueueManager = ({
   const startProcessing = async () => {
     setIsProcessing(true);
     
+    // Process items with delay to avoid rate limiting
     for (const item of queueItems) {
       if (item.status === 'pending') {
         const product = products.find(p => p.id === item.productId);
@@ -98,13 +99,22 @@ export const QueueManager = ({
             description: `${product.title} has been successfully optimized with AI.`,
           });
           
-        } catch (error) {
-          onUpdateStatus(item.productId, 'error', 'Failed to process product');
+        } catch (error: any) {
+          console.error(`Error processing ${product.title}:`, error);
+          const errorMessage = error.message.includes('429') 
+            ? 'Rate limited - try again in a moment' 
+            : 'Failed to process product';
+          onUpdateStatus(item.productId, 'error', errorMessage);
           toast({
             title: "Processing Error",
-            description: `Failed to update ${product.title}`,
+            description: `${product.title}: ${errorMessage}`,
             variant: "destructive",
           });
+        }
+        
+        // Add delay between requests to prevent rate limiting
+        if (queueItems.indexOf(item) < queueItems.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
         }
       }
     }

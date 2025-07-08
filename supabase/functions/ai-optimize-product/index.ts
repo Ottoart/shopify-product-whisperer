@@ -72,26 +72,49 @@ RESPONSE FORMAT (JSON):
 }
 `;
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4.1-2025-04-14',
-        messages: [
-          { role: 'system', content: 'You are an expert e-commerce copywriter who responds only in valid JSON format.' },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.7,
-        max_tokens: 1000,
-      }),
-    });
+    const makeOpenAIRequest = async (retries = 3, delay = 1000) => {
+      for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+          const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${openAIApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'gpt-4.1-2025-04-14',
+              messages: [
+                { role: 'system', content: 'You are an expert e-commerce copywriter who responds only in valid JSON format.' },
+                { role: 'user', content: prompt }
+              ],
+              temperature: 0.7,
+              max_tokens: 1000,
+            }),
+          });
 
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`);
-    }
+          if (response.ok) {
+            return response;
+          }
+
+          // Handle rate limiting (429) with exponential backoff
+          if (response.status === 429 && attempt < retries) {
+            console.log(`Rate limited (attempt ${attempt}/${retries}), waiting ${delay}ms before retry...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            delay *= 2; // Exponential backoff
+            continue;
+          }
+
+          throw new Error(`OpenAI API error: ${response.status}`);
+        } catch (error) {
+          if (attempt === retries) throw error;
+          console.log(`Request failed (attempt ${attempt}/${retries}), retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          delay *= 2;
+        }
+      }
+    };
+
+    const response = await makeOpenAIRequest();
 
     const aiData = await response.json();
     const aiContent = aiData.choices[0].message.content;
