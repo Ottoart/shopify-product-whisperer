@@ -63,9 +63,11 @@ Focus on:
 - Professional tone
 - Mobile-friendly formatting`;
 
-    const makeOpenAIRequest = async (retries = 5, delay = 2000) => {
+    const makeOpenAIRequest = async (retries = 8, baseDelay = 5000) => {
       for (let attempt = 1; attempt <= retries; attempt++) {
         try {
+          console.log(`OpenAI API attempt ${attempt}/${retries}`);
+          
           const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: {
@@ -84,35 +86,45 @@ Focus on:
           });
 
           if (response.ok) {
+            console.log(`OpenAI API success on attempt ${attempt}`);
             return response;
           }
 
           const errorText = await response.text();
-          console.log(`OpenAI API error ${response.status}: ${errorText}`);
+          console.log(`OpenAI API error ${response.status} on attempt ${attempt}: ${errorText}`);
 
           // Handle rate limiting (429) with exponential backoff
-          if (response.status === 429 && attempt < retries) {
-            const waitTime = delay * Math.pow(2, attempt - 1); // Exponential backoff
-            console.log(`Rate limited (attempt ${attempt}/${retries}), waiting ${waitTime}ms before retry...`);
+          if (response.status === 429) {
+            if (attempt < retries) {
+              const waitTime = baseDelay * Math.pow(2, attempt - 1); // Exponential backoff starting from 5s
+              console.log(`Rate limited - waiting ${waitTime}ms before retry (attempt ${attempt}/${retries})`);
+              await new Promise(resolve => setTimeout(resolve, waitTime));
+              continue;
+            }
+            throw new Error(`OpenAI rate limit exceeded after ${retries} attempts`);
+          }
+
+          // For other 4xx errors, don't retry
+          if (response.status >= 400 && response.status < 500) {
+            throw new Error(`OpenAI API client error: ${response.status} - ${errorText}`);
+          }
+
+          // For 5xx errors, retry with shorter delays
+          if (attempt < retries) {
+            const waitTime = 2000; // Fixed 2s delay for server errors
+            console.log(`Server error - retrying in ${waitTime}ms (attempt ${attempt}/${retries})`);
             await new Promise(resolve => setTimeout(resolve, waitTime));
             continue;
           }
 
-          // For other errors, still retry but with shorter delays
-          if (attempt < retries) {
-            console.log(`API error (attempt ${attempt}/${retries}), retrying in ${delay}ms...`);
-            await new Promise(resolve => setTimeout(resolve, delay));
-            continue;
-          }
-
-          throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
+          throw new Error(`OpenAI API server error: ${response.status} - ${errorText}`);
         } catch (error) {
           if (attempt === retries) {
-            console.error(`Final attempt failed:`, error);
+            console.error(`All ${retries} attempts failed:`, error);
             throw error;
           }
-          console.log(`Request failed (attempt ${attempt}/${retries}), retrying in ${delay}ms...`);
-          await new Promise(resolve => setTimeout(resolve, delay));
+          console.log(`Network error on attempt ${attempt}/${retries}, retrying...`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
         }
       }
     };
