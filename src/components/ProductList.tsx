@@ -12,13 +12,15 @@ interface ProductListProps {
   selectedProducts: Set<string>;
   onSelectionChange: (selection: Set<string>) => void;
   onAddToQueue: (productIds: string[]) => void;
+  storeUrl?: string;
 }
 
 export const ProductList = ({ 
   products, 
   selectedProducts, 
   onSelectionChange, 
-  onAddToQueue 
+  onAddToQueue,
+  storeUrl 
 }: ProductListProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -65,7 +67,11 @@ export const ProductList = ({
   };
 
   const getProductUrl = (handle: string) => {
-    return `https://your-store.myshopify.com/products/${handle}`;
+    if (storeUrl && storeUrl.trim()) {
+      const cleanUrl = storeUrl.replace(/\/+$/, ''); // Remove trailing slashes
+      return `${cleanUrl}/products/${handle}`;
+    }
+    return `#product-${handle}`;
   };
 
   return (

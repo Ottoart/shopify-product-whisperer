@@ -18,6 +18,8 @@ export const FileUpload = ({ onFileUpload }: FileUploadProps) => {
     const lines = text.trim().split('\n');
     const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
     
+    console.log('CSV Headers found:', headers);
+    
     // Create a map to group products by handle
     const productMap = new Map<string, Product>();
     
@@ -29,34 +31,44 @@ export const FileUpload = ({ onFileUpload }: FileUploadProps) => {
         rowData[header] = values[i] || '';
       });
 
-      const handle = rowData.Handle || `product-${index}`;
+      const handle = rowData.Handle || rowData.handle || `product-${index}`;
+      const title = rowData.Title || rowData.title || rowData['Product Title'] || rowData['Product Name'] || '';
+      
+      // Debug log for first few products
+      if (index < 3) {
+        console.log(`Row ${index}:`, {
+          handle,
+          title,
+          rawRowData: rowData
+        });
+      }
       
       // If we haven't seen this handle before, create a new product
       if (!productMap.has(handle)) {
         const product: Product = {
           id: handle,
-          title: rowData.Title || '',
+          title: title,
           handle: handle,
-          vendor: rowData.Vendor || '',
-          type: rowData.Type || '',
-          tags: rowData.Tags || '',
-          published: rowData.Published === 'TRUE',
-          option1Name: rowData['Option1 Name'] || '',
-          option1Value: rowData['Option1 Value'] || '',
-          variantSku: rowData['Variant SKU'] || '',
-          variantGrams: parseFloat(rowData['Variant Grams']) || 0,
+          vendor: rowData.Vendor || rowData.vendor || '',
+          type: rowData.Type || rowData.type || rowData['Product Type'] || '',
+          tags: rowData.Tags || rowData.tags || '',
+          published: (rowData.Published || rowData.published || '').toString().toUpperCase() === 'TRUE',
+          option1Name: rowData['Option1 Name'] || rowData['Option 1 Name'] || '',
+          option1Value: rowData['Option1 Value'] || rowData['Option 1 Value'] || '',
+          variantSku: rowData['Variant SKU'] || rowData['SKU'] || '',
+          variantGrams: parseFloat(rowData['Variant Grams'] || rowData['Weight'] || '0') || 0,
           variantInventoryTracker: rowData['Variant Inventory Tracker'] || '',
-          variantInventoryQty: parseInt(rowData['Variant Inventory Qty']) || 0,
+          variantInventoryQty: parseInt(rowData['Variant Inventory Qty'] || rowData['Inventory'] || '0') || 0,
           variantInventoryPolicy: rowData['Variant Inventory Policy'] || '',
           variantFulfillmentService: rowData['Variant Fulfillment Service'] || '',
-          variantPrice: parseFloat(rowData['Variant Price']) || 0,
-          variantCompareAtPrice: parseFloat(rowData['Variant Compare At Price']) || 0,
-          variantRequiresShipping: rowData['Variant Requires Shipping'] === 'TRUE',
-          variantTaxable: rowData['Variant Taxable'] === 'TRUE',
-          variantBarcode: rowData['Variant Barcode'] || '',
-          imagePosition: parseInt(rowData['Image Position']) || 0,
-          imageSrc: rowData['Image Src'] || '',
-          bodyHtml: rowData['Body (HTML)'] || '',
+          variantPrice: parseFloat(rowData['Variant Price'] || rowData['Price'] || '0') || 0,
+          variantCompareAtPrice: parseFloat(rowData['Variant Compare At Price'] || rowData['Compare At Price'] || '0') || 0,
+          variantRequiresShipping: (rowData['Variant Requires Shipping'] || '').toString().toUpperCase() === 'TRUE',
+          variantTaxable: (rowData['Variant Taxable'] || '').toString().toUpperCase() === 'TRUE',
+          variantBarcode: rowData['Variant Barcode'] || rowData['Barcode'] || '',
+          imagePosition: parseInt(rowData['Image Position'] || '0') || 0,
+          imageSrc: rowData['Image Src'] || rowData['Image URL'] || rowData['Image'] || '',
+          bodyHtml: rowData['Body (HTML)'] || rowData['Description'] || rowData['Body'] || '',
           seoTitle: rowData['SEO Title'] || '',
           seoDescription: rowData['SEO Description'] || '',
           googleShoppingCondition: rowData['Google Shopping / Condition'] || '',
@@ -70,22 +82,27 @@ export const FileUpload = ({ onFileUpload }: FileUploadProps) => {
         const existingProduct = productMap.get(handle)!;
         
         // If this row has an image and the existing product doesn't, use this image
-        if (rowData['Image Src'] && !existingProduct.imageSrc) {
-          existingProduct.imageSrc = rowData['Image Src'];
-          existingProduct.imagePosition = parseInt(rowData['Image Position']) || 0;
+        const imageUrl = rowData['Image Src'] || rowData['Image URL'] || rowData['Image'] || '';
+        if (imageUrl && !existingProduct.imageSrc) {
+          existingProduct.imageSrc = imageUrl;
+          existingProduct.imagePosition = parseInt(rowData['Image Position'] || '0') || 0;
         }
         
         // Merge tags if different
-        if (rowData.Tags && rowData.Tags !== existingProduct.tags) {
+        const tags = rowData.Tags || rowData.tags || '';
+        if (tags && tags !== existingProduct.tags) {
           const existingTags = existingProduct.tags ? existingProduct.tags.split(',').map(t => t.trim()) : [];
-          const newTags = rowData.Tags.split(',').map(t => t.trim());
+          const newTags = tags.split(',').map(t => t.trim());
           const allTags = [...new Set([...existingTags, ...newTags])];
           existingProduct.tags = allTags.join(', ');
         }
       }
     });
     
-    return Array.from(productMap.values());
+    const products = Array.from(productMap.values());
+    console.log(`Parsed ${products.length} unique products from ${lines.length - 1} CSV rows`);
+    
+    return products;
   };
 
   const handleFile = async (file: File) => {

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { FileUpload } from '@/components/FileUpload';
 import { ProductList } from '@/components/ProductList';
 import { QueueManager } from '@/components/QueueManager';
+import { StoreConfig } from '@/components/StoreConfig';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Package, Upload, Zap } from 'lucide-react';
 
@@ -47,6 +48,7 @@ const Index = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [queueItems, setQueueItems] = useState<Array<{ productId: string; status: 'pending' | 'processing' | 'completed' | 'error'; error?: string }>>([]);
+  const [storeUrl, setStoreUrl] = useState<string>('');
 
   const handleFileUpload = (uploadedProducts: Product[]) => {
     setProducts(uploadedProducts);
@@ -122,6 +124,14 @@ const Index = () => {
           </Card>
         )}
 
+        {/* Store Configuration */}
+        {products.length > 0 && (
+          <StoreConfig 
+            storeUrl={storeUrl} 
+            onStoreUrlChange={setStoreUrl}
+          />
+        )}
+
         {/* Main Content */}
         {products.length > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -149,6 +159,7 @@ const Index = () => {
                     selectedProducts={selectedProducts}
                     onSelectionChange={setSelectedProducts}
                     onAddToQueue={addToQueue}
+                    storeUrl={storeUrl}
                   />
                 </CardContent>
               </Card>
