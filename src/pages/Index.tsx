@@ -1,10 +1,15 @@
 import { useState } from 'react';
+import { useSessionContext } from '@supabase/auth-helpers-react';
+import { Auth } from '@/components/Auth';
 import { FileUpload } from '@/components/FileUpload';
 import { ProductList } from '@/components/ProductList';
 import { QueueManager } from '@/components/QueueManager';
 import { StoreConfig } from '@/components/StoreConfig';
+import { useProducts } from '@/hooks/useProducts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Package, Upload, Zap } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Package, Upload, Zap, LogOut } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface Product {
   id: string;
@@ -45,16 +50,25 @@ export interface UpdatedProduct {
 }
 
 const Index = () => {
-  const [products, setProducts] = useState<Product[]>([]);
+  const { session } = useSessionContext();
+  const { products, saveProducts, updateProduct, isSaving } = useProducts();
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [queueItems, setQueueItems] = useState<Array<{ productId: string; status: 'pending' | 'processing' | 'completed' | 'error'; error?: string }>>([]);
   const [storeUrl, setStoreUrl] = useState<string>('');
 
   const handleFileUpload = (uploadedProducts: Product[]) => {
-    setProducts(uploadedProducts);
+    saveProducts(uploadedProducts);
     setSelectedProducts(new Set());
     setQueueItems([]);
   };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+  };
+
+  if (!session) {
+    return <Auth />;
+  }
 
   const addToQueue = (productIds: string[]) => {
     const newItems = productIds.map(id => ({
@@ -74,20 +88,8 @@ const Index = () => {
     );
   };
 
-  const updateProduct = (productId: string, updatedData: UpdatedProduct) => {
-    setProducts(prev => 
-      prev.map(product => 
-        product.id === productId 
-          ? { 
-              ...product, 
-              title: updatedData.title,
-              type: updatedData.type,
-              bodyHtml: updatedData.description,
-              tags: updatedData.tags
-            } 
-          : product
-      )
-    );
+  const handleUpdateProduct = (productId: string, updatedData: UpdatedProduct) => {
+    updateProduct({ handle: productId, updatedData });
   };
 
   return (
@@ -95,11 +97,25 @@ const Index = () => {
       {/* Header */}
       <div className="border-b bg-gradient-primary">
         <div className="container mx-auto px-6 py-8">
-          <div className="flex items-center gap-3 text-primary-foreground">
-            <Package className="h-8 w-8" />
-            <div>
-              <h1 className="text-3xl font-bold">Shopify Product Manager</h1>
-              <p className="text-primary-foreground/80">AI-powered batch product optimization</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 text-primary-foreground">
+              <Package className="h-8 w-8" />
+              <div>
+                <h1 className="text-3xl font-bold">Shopify Product Manager</h1>
+                <p className="text-primary-foreground/80">AI-powered batch product optimization</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 text-primary-foreground">
+              <span className="text-sm opacity-80">{session.user?.email}</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSignOut}
+                className="text-primary-foreground border-primary-foreground/20 hover:bg-primary-foreground/10"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
+              </Button>
             </div>
           </div>
         </div>
@@ -186,7 +202,7 @@ const Index = () => {
                     queueItems={queueItems}
                     products={products}
                     onUpdateStatus={updateQueueItemStatus}
-                    onUpdateProduct={updateProduct}
+                    onUpdateProduct={handleUpdateProduct}
                   />
                 </CardContent>
               </Card>

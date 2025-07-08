@@ -14,7 +14,108 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      products: {
+        Row: {
+          body_html: string | null
+          created_at: string
+          google_shopping_age_group: string | null
+          google_shopping_condition: string | null
+          google_shopping_gender: string | null
+          handle: string
+          id: string
+          image_position: number | null
+          image_src: string | null
+          option1_name: string | null
+          option1_value: string | null
+          published: boolean | null
+          seo_description: string | null
+          seo_title: string | null
+          tags: string | null
+          title: string
+          type: string | null
+          updated_at: string
+          user_id: string
+          variant_barcode: string | null
+          variant_compare_at_price: number | null
+          variant_fulfillment_service: string | null
+          variant_grams: number | null
+          variant_inventory_policy: string | null
+          variant_inventory_qty: number | null
+          variant_inventory_tracker: string | null
+          variant_price: number | null
+          variant_requires_shipping: boolean | null
+          variant_sku: string | null
+          variant_taxable: boolean | null
+          vendor: string | null
+        }
+        Insert: {
+          body_html?: string | null
+          created_at?: string
+          google_shopping_age_group?: string | null
+          google_shopping_condition?: string | null
+          google_shopping_gender?: string | null
+          handle: string
+          id?: string
+          image_position?: number | null
+          image_src?: string | null
+          option1_name?: string | null
+          option1_value?: string | null
+          published?: boolean | null
+          seo_description?: string | null
+          seo_title?: string | null
+          tags?: string | null
+          title: string
+          type?: string | null
+          updated_at?: string
+          user_id: string
+          variant_barcode?: string | null
+          variant_compare_at_price?: number | null
+          variant_fulfillment_service?: string | null
+          variant_grams?: number | null
+          variant_inventory_policy?: string | null
+          variant_inventory_qty?: number | null
+          variant_inventory_tracker?: string | null
+          variant_price?: number | null
+          variant_requires_shipping?: boolean | null
+          variant_sku?: string | null
+          variant_taxable?: boolean | null
+          vendor?: string | null
+        }
+        Update: {
+          body_html?: string | null
+          created_at?: string
+          google_shopping_age_group?: string | null
+          google_shopping_condition?: string | null
+          google_shopping_gender?: string | null
+          handle?: string
+          id?: string
+          image_position?: number | null
+          image_src?: string | null
+          option1_name?: string | null
+          option1_value?: string | null
+          published?: boolean | null
+          seo_description?: string | null
+          seo_title?: string | null
+          tags?: string | null
+          title?: string
+          type?: string | null
+          updated_at?: string
+          user_id?: string
+          variant_barcode?: string | null
+          variant_compare_at_price?: number | null
+          variant_fulfillment_service?: string | null
+          variant_grams?: number | null
+          variant_inventory_policy?: string | null
+          variant_inventory_qty?: number | null
+          variant_inventory_tracker?: string | null
+          variant_price?: number | null
+          variant_requires_shipping?: boolean | null
+          variant_sku?: string | null
+          variant_taxable?: boolean | null
+          vendor?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
