@@ -47,6 +47,11 @@ export const QueueManager = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [chatGptUrl, setChatGptUrl] = useState('https://chatgpt.com/share/686d6a64-6330-8013-a445-b6b90fce4589');
   const [processingDelay, setProcessingDelay] = useState(3000);
+  const [currentProcessing, setCurrentProcessing] = useState<{
+    productId: string;
+    step: string;
+    progress: number;
+  } | null>(null);
   const { toast } = useToast();
 
   const completedCount = queueItems.filter(item => item.status === 'completed').length;
@@ -56,73 +61,139 @@ export const QueueManager = ({
   const startProcessing = async () => {
     setIsProcessing(true);
     
-    // Process items with delay to avoid rate limiting
-    for (const item of queueItems) {
-      if (item.status === 'pending') {
-        const product = products.find(p => p.id === item.productId);
-        if (!product) continue;
+    const pendingItems = queueItems.filter(item => item.status === 'pending');
+    
+    // Process items one by one sequentially
+    for (let i = 0; i < pendingItems.length; i++) {
+      const item = pendingItems[i];
+      const product = products.find(p => p.id === item.productId);
+      if (!product) continue;
 
+      try {
+        // Step 1: Mark as processing
+        setCurrentProcessing({
+          productId: item.productId,
+          step: `Processing ${i + 1}/${pendingItems.length}: Analyzing product...`,
+          progress: 20
+        });
         onUpdateStatus(item.productId, 'processing');
         
+        await new Promise(resolve => setTimeout(resolve, 500)); // Brief pause for UI update
+        // Step 2: AI Optimization
+        setCurrentProcessing({
+          productId: item.productId,
+          step: `Processing ${i + 1}/${pendingItems.length}: AI optimizing content...`,
+          progress: 40
+        });
+
+        const { data, error } = await supabase.functions.invoke('ai-optimize-product', {
+          body: {
+            productHandle: product.handle,
+            productData: {
+              title: product.title,
+              type: product.type,
+              description: product.bodyHtml,
+              tags: product.tags
+            }
+          }
+        });
+
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        // Step 3: Update local database
+        setCurrentProcessing({
+          productId: item.productId,
+          step: `Processing ${i + 1}/${pendingItems.length}: Updating database...`,
+          progress: 70
+        });
+
+        const updatedProduct: UpdatedProduct = {
+          title: data.optimizedData.title,
+          type: product.type,
+          description: data.optimizedData.description,
+          tags: data.optimizedData.tags
+        };
+
+        onUpdateProduct(item.productId, updatedProduct);
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for DB update
+
+        // Step 4: Export to Shopify (optional)
+        setCurrentProcessing({
+          productId: item.productId,
+          step: `Processing ${i + 1}/${pendingItems.length}: Exporting to Shopify...`,
+          progress: 90
+        });
+
         try {
-          // Call the AI optimization function
-          const { data, error } = await supabase.functions.invoke('ai-optimize-product', {
-            body: {
-              productHandle: product.handle,
-              productData: {
-                title: product.title,
+          const { data: exportData, error: exportError } = await supabase.functions.invoke('shopify-products', {
+            body: { 
+              action: 'update',
+              products: [{
+                handle: product.handle,
+                title: data.optimizedData.title,
+                description: data.optimizedData.description,
                 type: product.type,
-                description: product.bodyHtml,
-                tags: product.tags
-              }
+                tags: data.optimizedData.tags
+              }]
             }
           });
 
-          if (error) {
-            throw new Error(error.message);
+          if (exportError) {
+            console.warn('Shopify export warning:', exportError.message);
           }
-
-          if (data.error) {
-            throw new Error(data.error);
-          }
-
-          // Update the product with optimized data
-          const updatedProduct: UpdatedProduct = {
-            title: data.optimizedData.title,
-            type: product.type,
-            description: data.optimizedData.description,
-            tags: data.optimizedData.tags
-          };
-
-          onUpdateProduct(item.productId, updatedProduct);
-          onUpdateStatus(item.productId, 'completed');
-          
-          toast({
-            title: "Product Optimized",
-            description: `${product.title} has been successfully optimized with AI.`,
-          });
-          
-        } catch (error: any) {
-          console.error(`Error processing ${product.title}:`, error);
-          const errorMessage = error.message.includes('429') 
-            ? 'Rate limited - try again in a moment' 
-            : 'Failed to process product';
-          onUpdateStatus(item.productId, 'error', errorMessage);
-          toast({
-            title: "Processing Error",
-            description: `${product.title}: ${errorMessage}`,
-            variant: "destructive",
-          });
+        } catch (exportError) {
+          console.warn('Shopify export failed:', exportError);
+          // Don't fail the whole process if Shopify export fails
         }
+
+        // Step 5: Complete
+        setCurrentProcessing({
+          productId: item.productId,
+          step: `Processing ${i + 1}/${pendingItems.length}: Completed!`,
+          progress: 100
+        });
+
+        onUpdateStatus(item.productId, 'completed');
         
-        // Add delay between requests to prevent rate limiting
-        if (queueItems.indexOf(item) < queueItems.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
+        toast({
+          title: "Product Optimized",
+          description: `${product.title} has been successfully optimized and updated.`,
+        });
+
+        // Wait before processing next product
+        if (i < pendingItems.length - 1) {
+          setCurrentProcessing({
+            productId: item.productId,
+            step: `Waiting ${processingDelay/1000}s before next product...`,
+            progress: 100
+          });
+          await new Promise(resolve => setTimeout(resolve, processingDelay));
         }
+          
+      } catch (error: any) {
+        console.error(`Error processing ${product.title}:`, error);
+        const errorMessage = error.message.includes('429') 
+          ? 'Rate limited - try again in a moment' 
+          : `Failed: ${error.message}`;
+        
+        onUpdateStatus(item.productId, 'error', errorMessage);
+        
+        toast({
+          title: "Processing Error",
+          description: `${product.title}: ${errorMessage}`,
+          variant: "destructive",
+        });
       }
     }
     
     setIsProcessing(false);
+    setCurrentProcessing(null);
   };
 
   const pauseProcessing = () => {
@@ -215,6 +286,24 @@ export const QueueManager = ({
           </div>
         </div>
       </div>
+
+      {/* Detailed Progress */}
+      {isProcessing && currentProcessing && (
+        <div className="space-y-3 p-4 bg-secondary/20 rounded-lg border mx-6">
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-medium">
+              {products.find(p => p.id === currentProcessing.productId)?.title || 'Processing...'}
+            </span>
+            <span className="text-muted-foreground">
+              {currentProcessing.progress}%
+            </span>
+          </div>
+          <Progress value={currentProcessing.progress} className="h-3" />
+          <div className="text-xs text-muted-foreground">
+            {currentProcessing.step}
+          </div>
+        </div>
+      )}
 
       {/* Controls */}
       <div className="px-6 space-y-4">
