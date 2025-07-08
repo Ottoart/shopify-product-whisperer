@@ -147,29 +147,39 @@ Please provide optimized content in this exact JSON format:
     }
 
     console.log('Calling OpenAI API...');
+    console.log('OpenAI API Key exists:', !!openAIApiKey);
+    console.log('OpenAI API Key length:', openAIApiKey?.length || 0);
     
     // Call OpenAI API
     let aiResponse;
     try {
+      console.log('Making request to OpenAI...');
+      const requestBody = {
+        model: 'gpt-4o-mini',
+        messages: [
+          { 
+            role: 'system', 
+            content: 'You are a Shopify product optimization expert. Analyze products and return optimized content in valid JSON format only. Focus on converting features into benefits, SEO optimization, and compelling copy that drives sales.' 
+          },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 1000,
+      };
+      
+      console.log('Request body prepared, sending to OpenAI...');
+      
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${openAIApiKey}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [
-            { 
-              role: 'system', 
-              content: 'You are a Shopify product optimization expert. Analyze products and return optimized content in valid JSON format only. Focus on converting features into benefits, SEO optimization, and compelling copy that drives sales.' 
-            },
-            { role: 'user', content: prompt }
-          ],
-          temperature: 0.7,
-          max_tokens: 1000,
-        }),
+        body: JSON.stringify(requestBody),
       });
+
+      console.log('OpenAI response status:', response.status);
+      console.log('OpenAI response ok:', response.ok);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -182,10 +192,14 @@ Please provide optimized content in this exact JSON format:
 
       aiResponse = await response.json();
       console.log('OpenAI API call successful');
+      console.log('Response structure:', Object.keys(aiResponse));
     } catch (e) {
       console.error('OpenAI API call failed:', e);
+      console.error('Error type:', typeof e);
+      console.error('Error name:', e?.name);
+      console.error('Error message:', e?.message);
       return new Response(
-        JSON.stringify({ error: 'Failed to call OpenAI API' }),
+        JSON.stringify({ error: `Failed to call OpenAI API: ${e?.message || 'Unknown error'}` }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
