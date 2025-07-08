@@ -48,7 +48,7 @@ serve(async (req) => {
 
     console.log(`Product URL: ${productUrl}`);
 
-    // Simple prompt that mimics your custom GPT approach
+    // Simple prompt for optimization
     const prompt = `Product URL: ${productUrl}
 
 Please analyze this product and provide optimized e-commerce content in the following JSON format:
@@ -67,94 +67,56 @@ Focus on:
 
     console.log(`Sending request to OpenAI GPT...`);
 
-    const makeOpenAIRequest = async (retries = 4, baseDelay = 10000) => {
-      for (let attempt = 1; attempt <= retries; attempt++) {
-        try {
-          console.log(`OpenAI API attempt ${attempt}/${retries} - GPT is receiving request...`);
-          console.log(`Custom GPT processing - this can take 30-60 seconds...`);
-          
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 second timeout for custom GPT
-          
-          console.log(`Sending request to OpenAI API now...`);
-          
-          const response = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${openAIApiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              model: 'gpt-4o-mini',
-              messages: [
-                { role: 'system', content: 'You are an expert e-commerce copywriter specialized in product optimization. Analyze product URLs and provide optimized content in valid JSON format only.' },
-                { role: 'user', content: prompt }
-              ],
-              temperature: 0.7,
-              max_tokens: 1000,
-            }),
-            signal: controller.signal
-          });
+    const makeOpenAIRequest = async () => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 1 minute timeout
+      
+      try {
+        console.log(`Making request to OpenAI API...`);
+        
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openAIApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [
+              { role: 'system', content: 'You are an expert e-commerce copywriter specialized in product optimization. Analyze product URLs and provide optimized content in valid JSON format only.' },
+              { role: 'user', content: prompt }
+            ],
+            temperature: 0.7,
+            max_tokens: 1000,
+          }),
+          signal: controller.signal
+        });
 
-          console.log(`OpenAI API responded with status: ${response.status}`);
+        clearTimeout(timeoutId);
+        console.log(`OpenAI API responded with status: ${response.status}`);
 
-          clearTimeout(timeoutId);
-
-          if (response.ok) {
-            console.log(`OpenAI API success on attempt ${attempt} after potentially long wait`);
-            return response;
-          }
-
+        if (!response.ok) {
           const errorText = await response.text();
-          console.log(`OpenAI API error ${response.status} on attempt ${attempt}: ${errorText}`);
-
-          // Handle rate limiting (429) with much longer delays
-          if (response.status === 429) {
-            if (attempt < retries) {
-              const waitTime = baseDelay * Math.pow(2, attempt - 1); // Start with 10s, exponential backoff
-              console.log(`Rate limited - waiting ${waitTime}ms before retry (attempt ${attempt}/${retries})`);
-              await new Promise(resolve => setTimeout(resolve, waitTime));
-              continue;
-            }
-            throw new Error(`OpenAI rate limit exceeded after ${retries} attempts with extended delays`);
-          }
-
-          // For other 4xx errors, don't retry
-          if (response.status >= 400 && response.status < 500) {
-            throw new Error(`OpenAI API client error: ${response.status} - ${errorText}`);
-          }
-
-          // For 5xx errors, retry with longer delays
-          if (attempt < retries) {
-            const waitTime = 5000; // 5s delay for server errors
-            console.log(`Server error - retrying in ${waitTime}ms (attempt ${attempt}/${retries})`);
-            await new Promise(resolve => setTimeout(resolve, waitTime));
-            continue;
-          }
-
-          throw new Error(`OpenAI API server error: ${response.status} - ${errorText}`);
-        } catch (error) {
-          if (error.name === 'AbortError') {
-            console.log(`Request timed out after 90 seconds on attempt ${attempt}/${retries}`);
-            if (attempt < retries) {
-              console.log(`Retrying after timeout...`);
-              continue;
-            }
-            throw new Error('Request timed out after 90 seconds - custom GPT taking too long');
-          }
+          console.error(`OpenAI API error ${response.status}: ${errorText}`);
           
-          if (attempt === retries) {
-            console.error(`All ${retries} attempts failed:`, error);
-            throw error;
+          if (response.status === 429) {
+            throw new Error('OpenAI API rate limit exceeded. Please wait a few minutes and try again.');
+          } else if (response.status === 401) {
+            throw new Error('Invalid OpenAI API key. Please check your API key configuration.');
+          } else if (response.status === 403) {
+            throw new Error('OpenAI API access denied. Please check your account status and billing.');
+          } else {
+            throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
           }
-          console.log(`Network error on attempt ${attempt}/${retries}, retrying...`);
-          await new Promise(resolve => setTimeout(resolve, 2000));
         }
+
+        return response;
+      } finally {
+        clearTimeout(timeoutId);
       }
     };
 
     const response = await makeOpenAIRequest();
-
     const aiData = await response.json();
     const aiContent = aiData.choices[0].message.content;
     
@@ -167,6 +129,11 @@ Focus on:
     } catch (parseError) {
       console.error('Failed to parse AI response:', aiContent);
       throw new Error('Invalid AI response format');
+    }
+
+    // Validate required fields
+    if (!optimizedData.title || !optimizedData.description || !optimizedData.tags) {
+      throw new Error('AI response missing required fields');
     }
 
     // Update product in database
