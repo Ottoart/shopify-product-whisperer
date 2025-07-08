@@ -85,8 +85,16 @@ export const QueueManager = ({
         // Step 2: AI Optimization (Custom GPT can take 30-60 seconds)
         setCurrentProcessing({
           productId: item.productId,
-          step: `Processing ${i + 1}/${pendingItems.length}: AI optimizing (this may take 30-60s)...`,
-          progress: 40
+          step: `Processing ${i + 1}/${pendingItems.length}: Sending to GPT...`,
+          progress: 30
+        });
+
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        setCurrentProcessing({
+          productId: item.productId,
+          step: `Processing ${i + 1}/${pendingItems.length}: GPT is processing (30-60s)...`,
+          progress: 50
         });
 
         const { data, error } = await supabase.functions.invoke('ai-optimize-product', {
@@ -112,7 +120,7 @@ export const QueueManager = ({
         // Step 3: Update local database
         setCurrentProcessing({
           productId: item.productId,
-          step: `Processing ${i + 1}/${pendingItems.length}: Updating database...`,
+          step: `Processing ${i + 1}/${pendingItems.length}: GPT completed! Updating database...`,
           progress: 70
         });
 

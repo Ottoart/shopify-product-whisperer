@@ -40,11 +40,13 @@ serve(async (req) => {
       throw new Error('Invalid user token');
     }
 
-    console.log(`Optimizing product: ${productData.title}`);
+    console.log(`Starting optimization for product: ${productData.title}`);
 
     // Create the product URL if store URL is available
     const storeUrl = 'https://prohair.ca'; // You can make this dynamic later
     const productUrl = `${storeUrl}/products/${productHandle}`;
+
+    console.log(`Product URL: ${productUrl}`);
 
     // Simple prompt that mimics your custom GPT approach
     const prompt = `Product URL: ${productUrl}
@@ -63,13 +65,18 @@ Focus on:
 - Professional tone
 - Mobile-friendly formatting`;
 
+    console.log(`Sending request to OpenAI GPT...`);
+
     const makeOpenAIRequest = async (retries = 4, baseDelay = 10000) => {
       for (let attempt = 1; attempt <= retries; attempt++) {
         try {
-          console.log(`OpenAI API attempt ${attempt}/${retries} - Custom GPT can take 30-60 seconds...`);
+          console.log(`OpenAI API attempt ${attempt}/${retries} - GPT is receiving request...`);
+          console.log(`Custom GPT processing - this can take 30-60 seconds...`);
           
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 second timeout for custom GPT
+          
+          console.log(`Sending request to OpenAI API now...`);
           
           const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
@@ -78,7 +85,7 @@ Focus on:
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              model: 'gpt-4.1-2025-04-14',
+              model: 'gpt-4o-mini',
               messages: [
                 { role: 'system', content: 'You are an expert e-commerce copywriter specialized in product optimization. Analyze product URLs and provide optimized content in valid JSON format only.' },
                 { role: 'user', content: prompt }
@@ -88,6 +95,8 @@ Focus on:
             }),
             signal: controller.signal
           });
+
+          console.log(`OpenAI API responded with status: ${response.status}`);
 
           clearTimeout(timeoutId);
 
