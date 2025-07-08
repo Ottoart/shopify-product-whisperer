@@ -16,30 +16,59 @@ export const FileUpload = ({ onFileUpload }: FileUploadProps) => {
 
   const parseCSV = (text: string): Product[] => {
     const lines = text.trim().split('\n');
-    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
     
+    // Better CSV parsing to handle quoted values with commas
+    const parseCSVLine = (line: string): string[] => {
+      const result = [];
+      let current = '';
+      let inQuotes = false;
+      
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          result.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      result.push(current.trim());
+      return result;
+    };
+    
+    const headers = parseCSVLine(lines[0]).map(h => h.replace(/"/g, ''));
     console.log('CSV Headers found:', headers);
     
     // Create a map to group products by handle
     const productMap = new Map<string, Product>();
     
     lines.slice(1).forEach((line, index) => {
-      const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
+      if (!line.trim()) return; // Skip empty lines
+      
+      const values = parseCSVLine(line).map(v => v.replace(/"/g, ''));
       const rowData: any = {};
       
       headers.forEach((header, i) => {
         rowData[header] = values[i] || '';
       });
 
-      const handle = rowData.Handle || rowData.handle || `product-${index}`;
+      const handle = rowData.Handle || rowData.handle || '';
       const title = rowData.Title || rowData.title || rowData['Product Title'] || rowData['Product Name'] || '';
+      
+      // Skip rows without handle or title (likely variant/image rows without main product data)
+      if (!handle || !title) {
+        return;
+      }
       
       // Debug log for first few products
       if (index < 3) {
         console.log(`Row ${index}:`, {
           handle,
           title,
-          rawRowData: rowData
+          hasHandle: !!handle,
+          hasTitle: !!title
         });
       }
       
