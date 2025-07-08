@@ -18,45 +18,74 @@ export const FileUpload = ({ onFileUpload }: FileUploadProps) => {
     const lines = text.trim().split('\n');
     const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
     
-    return lines.slice(1).map((line, index) => {
+    // Create a map to group products by handle
+    const productMap = new Map<string, Product>();
+    
+    lines.slice(1).forEach((line, index) => {
       const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
-      const product: any = {};
+      const rowData: any = {};
       
       headers.forEach((header, i) => {
-        product[header] = values[i] || '';
+        rowData[header] = values[i] || '';
       });
 
-      return {
-        id: product.Handle || `product-${index}`,
-        title: product.Title || '',
-        handle: product.Handle || '',
-        vendor: product.Vendor || '',
-        type: product.Type || '',
-        tags: product.Tags || '',
-        published: product.Published === 'TRUE',
-        option1Name: product['Option1 Name'] || '',
-        option1Value: product['Option1 Value'] || '',
-        variantSku: product['Variant SKU'] || '',
-        variantGrams: parseFloat(product['Variant Grams']) || 0,
-        variantInventoryTracker: product['Variant Inventory Tracker'] || '',
-        variantInventoryQty: parseInt(product['Variant Inventory Qty']) || 0,
-        variantInventoryPolicy: product['Variant Inventory Policy'] || '',
-        variantFulfillmentService: product['Variant Fulfillment Service'] || '',
-        variantPrice: parseFloat(product['Variant Price']) || 0,
-        variantCompareAtPrice: parseFloat(product['Variant Compare At Price']) || 0,
-        variantRequiresShipping: product['Variant Requires Shipping'] === 'TRUE',
-        variantTaxable: product['Variant Taxable'] === 'TRUE',
-        variantBarcode: product['Variant Barcode'] || '',
-        imagePosition: parseInt(product['Image Position']) || 0,
-        imageSrc: product['Image Src'] || '',
-        bodyHtml: product['Body (HTML)'] || '',
-        seoTitle: product['SEO Title'] || '',
-        seoDescription: product['SEO Description'] || '',
-        googleShoppingCondition: product['Google Shopping / Condition'] || '',
-        googleShoppingGender: product['Google Shopping / Gender'] || '',
-        googleShoppingAgeGroup: product['Google Shopping / Age Group'] || '',
-      };
+      const handle = rowData.Handle || `product-${index}`;
+      
+      // If we haven't seen this handle before, create a new product
+      if (!productMap.has(handle)) {
+        const product: Product = {
+          id: handle,
+          title: rowData.Title || '',
+          handle: handle,
+          vendor: rowData.Vendor || '',
+          type: rowData.Type || '',
+          tags: rowData.Tags || '',
+          published: rowData.Published === 'TRUE',
+          option1Name: rowData['Option1 Name'] || '',
+          option1Value: rowData['Option1 Value'] || '',
+          variantSku: rowData['Variant SKU'] || '',
+          variantGrams: parseFloat(rowData['Variant Grams']) || 0,
+          variantInventoryTracker: rowData['Variant Inventory Tracker'] || '',
+          variantInventoryQty: parseInt(rowData['Variant Inventory Qty']) || 0,
+          variantInventoryPolicy: rowData['Variant Inventory Policy'] || '',
+          variantFulfillmentService: rowData['Variant Fulfillment Service'] || '',
+          variantPrice: parseFloat(rowData['Variant Price']) || 0,
+          variantCompareAtPrice: parseFloat(rowData['Variant Compare At Price']) || 0,
+          variantRequiresShipping: rowData['Variant Requires Shipping'] === 'TRUE',
+          variantTaxable: rowData['Variant Taxable'] === 'TRUE',
+          variantBarcode: rowData['Variant Barcode'] || '',
+          imagePosition: parseInt(rowData['Image Position']) || 0,
+          imageSrc: rowData['Image Src'] || '',
+          bodyHtml: rowData['Body (HTML)'] || '',
+          seoTitle: rowData['SEO Title'] || '',
+          seoDescription: rowData['SEO Description'] || '',
+          googleShoppingCondition: rowData['Google Shopping / Condition'] || '',
+          googleShoppingGender: rowData['Google Shopping / Gender'] || '',
+          googleShoppingAgeGroup: rowData['Google Shopping / Age Group'] || '',
+        };
+        
+        productMap.set(handle, product);
+      } else {
+        // Product already exists, we can update certain fields if needed
+        const existingProduct = productMap.get(handle)!;
+        
+        // If this row has an image and the existing product doesn't, use this image
+        if (rowData['Image Src'] && !existingProduct.imageSrc) {
+          existingProduct.imageSrc = rowData['Image Src'];
+          existingProduct.imagePosition = parseInt(rowData['Image Position']) || 0;
+        }
+        
+        // Merge tags if different
+        if (rowData.Tags && rowData.Tags !== existingProduct.tags) {
+          const existingTags = existingProduct.tags ? existingProduct.tags.split(',').map(t => t.trim()) : [];
+          const newTags = rowData.Tags.split(',').map(t => t.trim());
+          const allTags = [...new Set([...existingTags, ...newTags])];
+          existingProduct.tags = allTags.join(', ');
+        }
+      }
     });
+    
+    return Array.from(productMap.values());
   };
 
   const handleFile = async (file: File) => {
