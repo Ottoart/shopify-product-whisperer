@@ -140,12 +140,24 @@ serve(async (req) => {
     let prompt;
     if (useDirectAI && customPromptTemplate) {
       // Use custom template with placeholder replacement
-      prompt = customPromptTemplate
+      const customPrompt = customPromptTemplate
         .replace(/\{title\}/g, productData.title || 'No title')
         .replace(/\{type\}/g, productData.type || 'Not specified')
         .replace(/\{description\}/g, productData.description || 'No description')
         .replace(/\{tags\}/g, productData.tags || 'No tags');
-      console.log('Using custom prompt template');
+      
+      // Add JSON format requirement to custom prompt
+      prompt = `${customPrompt}
+
+IMPORTANT: After generating the optimized content according to the above instructions, you MUST return your response in this exact JSON format:
+{
+  "title": "your optimized title (max 70 characters)",
+  "description": "your optimized description with all sections included",
+  "tags": "comma-separated relevant tags following the guidelines above"
+}
+
+Only return the JSON object, no additional text before or after.`;
+      console.log('Using custom prompt template with JSON format requirement');
     } else {
       // Use default prompt
       prompt = `Optimize this Shopify product for better conversions and SEO:
