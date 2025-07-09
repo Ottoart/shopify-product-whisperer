@@ -41,8 +41,8 @@ ABSOLUTE REQUIREMENT - RESPOND WITH EXACTLY THIS JSON STRUCTURE:
 {
   "title": "Optimized product title (max 60 chars)",
   "description": "<p><strong>Start with compelling opening sentence about the product with product name and key benefits.</strong> Continue with detailed information about <strong>key ingredients</strong>, <strong>specific results</strong>, and <strong>benefits</strong>. Include important details about <strong>formulation</strong>, <strong>texture</strong>, and <strong>performance</strong> without weighing down the description.</p><p><strong>How to Use the Product?</strong></p><ol><li>Step 1 with clear instruction</li><li>Step 2 with application method</li><li>Step 3 with final step</li><li>Additional step if needed</li></ol><p><strong>Key Features of the Product:</strong></p><ul><li><strong>Primary benefit</strong> with specific details</li><li><strong>Key ingredients</strong> and their benefits</li><li>Texture and application benefits</li><li>Performance claims and results</li><li><strong>Vegan, cruelty-free</strong>, sulfate-free, etc.</li></ul><p><strong>Who Should Use This Product & Hair Concerns It Can Address?</strong></p><ul><li>Ideal for <strong>specific hair/skin type</strong> and <strong>concerns</strong></li><li>Suitable for <strong>hair types</strong>, especially <strong>specific conditions</strong></li><li>Helps resolve <strong>specific issues</strong> and <strong>concerns</strong></li></ul><p><strong>Why Should You Use This Product & Benefits?</strong><br>Product name is the <strong>ultimate solution</strong>—delivering <strong>key transformation</strong> while maintaining <strong>important qualities</strong>. It enhances <strong>specific benefits</strong> while protecting from <strong>environmental factors</strong>. A go-to solution for <strong>primary concerns</strong>, it transforms <strong>current state</strong> into <strong>desired results</strong>.</p>",
-  "tags": "tag1,tag2,tag3",
-  "type": "Product Category (e.g., Hair Care, Skincare, Tools)",
+  "tags": "Generate 15-20 comprehensive SEO tags following brand guidelines: Brand_[BrandName], Hair Type_[Types], Benefits_[Benefits], Ingredients_[Key Ingredients], Concern_[Hair Concerns], PRICE_[Price Range], [Product Category]",
+  "type": "REQUIRED: Specify product category (Hair Care, Skincare, Nail Care, Tools, etc.)",
   "seo_title": "SEO optimized title (max 60 chars)",
   "seo_description": "SEO meta description (max 160 chars)",
   "vendor": "Brand Name",
@@ -56,7 +56,11 @@ CRITICAL RULES:
 2. Description MUST use HTML tags: <p>, <strong>, <ol>, <li>, <ul>, <br>
 3. NO markdown formatting like **text** - use <strong>text</strong>
 4. Start with { and end with }
-5. Include ALL fields shown above`;
+5. Include ALL fields shown above
+6. NEVER use "Product Overview" or similar titles - start directly with compelling product benefits
+7. Generate 15-20 comprehensive tags including Brand_, Hair Type_, Benefits_, Ingredients_, Concern_, PRICE_ prefixes
+8. ALWAYS include a specific product type (Hair Care, Skincare, Nail Care, Tools, etc.)
+9. Make descriptions conversion-focused with specific benefits and results`;
   }
 }
 
