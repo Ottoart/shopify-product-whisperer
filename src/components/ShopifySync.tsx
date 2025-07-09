@@ -299,10 +299,10 @@ export const ShopifySync = ({ onProductsUpdated }: ShopifySyncProps) => {
 
         {/* Filter Type Tabs */}
         <Tabs value={activeFilterType} onValueChange={(value) => setActiveFilterType(value as any)} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="brands">Brands</TabsTrigger>
-            <TabsTrigger value="product_types">Product Types</TabsTrigger>
-            <TabsTrigger value="collections">Collections</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 bg-secondary border border-border">
+            <TabsTrigger value="brands" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Brands</TabsTrigger>
+            <TabsTrigger value="product_types" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Product Types</TabsTrigger>
+            <TabsTrigger value="collections" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Collections</TabsTrigger>
           </TabsList>
           
           <TabsContent value="brands" className="space-y-4">
