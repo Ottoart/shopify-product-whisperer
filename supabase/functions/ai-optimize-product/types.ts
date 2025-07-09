@@ -26,6 +26,7 @@ export interface OptimizedProductData {
   description: string;
   tags: string;
   type: string;
+  category: string;
   seo_title: string;
   seo_description: string;
   vendor?: string;
