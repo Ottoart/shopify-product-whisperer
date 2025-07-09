@@ -1,6 +1,10 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3';
+import { validateRequest, validateEnvironment } from './validation.ts';
+import { authenticateUser } from './auth.ts';
+import { callOpenAI } from './openai.ts';
+import { updateProduct } from './database.ts';
+import type { ApiResponse } from './types.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -28,274 +32,75 @@ serve(async (req) => {
     } catch (e) {
       console.error('Failed to parse request body:', e);
       return new Response(
-        JSON.stringify({ error: 'Invalid JSON in request body' }),
+        JSON.stringify({ error: 'Invalid JSON in request body' } as ApiResponse),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
     
-    const { productHandle, productData, useDirectAI, customPromptTemplate } = requestBody;
-    console.log('Product handle:', productHandle);
-    console.log('Product title:', productData?.title);
-    console.log('Use direct AI:', useDirectAI);
-    console.log('Has custom template:', !!customPromptTemplate);
-    
-    // Check required fields
-    if (!productHandle || !productData) {
+    // Validate request
+    const validatedRequest = validateRequest(requestBody);
+    if (!validatedRequest) {
       console.error('Missing required fields');
       return new Response(
-        JSON.stringify({ error: 'Missing productHandle or productData' }),
+        JSON.stringify({ error: 'Missing productHandle or productData' } as ApiResponse),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
     
-    // Check OpenAI API key
-    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-    console.log('OpenAI API key check:', openAIApiKey ? 'Found' : 'Not found');
-    console.log('OpenAI API key length:', openAIApiKey?.length || 0);
+    console.log('Product handle:', validatedRequest.productHandle);
+    console.log('Product title:', validatedRequest.productData?.title);
+    console.log('Use direct AI:', validatedRequest.useDirectAI);
+    console.log('Has custom template:', !!validatedRequest.customPromptTemplate);
     
-    if (!openAIApiKey) {
-      console.error('OpenAI API key not found in environment');
+    // Validate environment
+    const env = validateEnvironment();
+    if (!env) {
       return new Response(
         JSON.stringify({ 
-          error: 'OpenAI API key not configured in Supabase secrets',
-          details: 'Please add your OpenAI API key to the Supabase Edge Function secrets'
-        }),
+          error: 'Environment configuration error',
+          details: 'Please check your API keys and Supabase configuration'
+        } as ApiResponse),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
     
-    if (openAIApiKey.length < 20) {
-      console.error('OpenAI API key appears to be invalid (too short)');
-      return new Response(
-        JSON.stringify({ 
-          error: 'OpenAI API key appears to be invalid',
-          details: 'The API key seems too short. Please check your OpenAI API key in Supabase secrets'
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    console.log('Environment validation passed');
     
-    console.log('OpenAI API key validation passed');
-    
-    // Check Supabase credentials
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    
-    if (!supabaseUrl || !supabaseServiceKey) {
-      console.error('Missing Supabase credentials');
-      return new Response(
-        JSON.stringify({ error: 'Supabase credentials not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-    console.log('Supabase credentials found');
-    
-    // Initialize Supabase
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    
-    // Get user authentication
+    // Authenticate user
     const authHeader = req.headers.get('authorization');
-    if (!authHeader) {
-      console.error('Missing authorization header');
+    const user = await authenticateUser(authHeader, env.supabaseUrl, env.supabaseServiceKey);
+    if (!user) {
       return new Response(
-        JSON.stringify({ error: 'No authorization header provided' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-    console.log('Token length:', token.length);
-    
-    let user;
-    try {
-      const { data: { user: authUser }, error: userError } = await supabase.auth.getUser(token);
-      
-      if (userError) {
-        console.error('Auth error:', userError.message);
-        return new Response(
-          JSON.stringify({ error: `Authentication failed: ${userError.message}` }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      if (!authUser) {
-        console.error('No user found');
-        return new Response(
-          JSON.stringify({ error: 'User not found' }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      user = authUser;
-      console.log('User authenticated:', user.id);
-    } catch (e) {
-      console.error('Authentication error:', e);
-      return new Response(
-        JSON.stringify({ error: 'Authentication failed' }),
+        JSON.stringify({ error: 'Authentication failed' } as ApiResponse),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
     
-    // Create AI prompt
-    let prompt;
-    if (useDirectAI && customPromptTemplate) {
-      // Use custom template with placeholder replacement
-      const customPrompt = customPromptTemplate
-        .replace(/\{title\}/g, productData.title || 'No title')
-        .replace(/\{type\}/g, productData.type || 'Not specified')
-        .replace(/\{description\}/g, productData.description || 'No description')
-        .replace(/\{tags\}/g, productData.tags || 'No tags');
-      
-      // Add JSON format requirement to custom prompt
-      prompt = `${customPrompt}
-
-CRITICAL REQUIREMENT: You MUST respond with ONLY a valid JSON object. No explanations, no additional text, no formatting, no markdown - ONLY the JSON object below:
-
-{
-  "title": "your optimized title here",
-  "description": "your complete optimized description with all sections",
-  "tags": "comma-separated tags following the guidelines"
-}
-
-Start your response with { and end with }. Nothing else.`;
-      console.log('Using custom prompt template with JSON format requirement');
-    } else {
-      // Use default structured prompt
-      prompt = `Create a compelling, conversion-focused product description for this Shopify product:
-
-Product Title: ${productData.title}
-Product Type: ${productData.type || 'Not specified'}
-Current Description: ${productData.description || 'No description'}
-Current Tags: ${productData.tags || 'No tags'}
-
-CRITICAL HTML FORMATTING REQUIREMENT: You MUST respond with ONLY a valid JSON object containing HTML-formatted description. The description field must contain EXACT HTML structure with proper tags.
-
-MANDATORY JSON FORMAT:
-{
-  "title": "SEO-optimized title (max 70 characters)",
-  "description": "<p><strong>Opening compelling statement about the product and its main benefit.</strong> Detailed description with <strong>key ingredients/features highlighted in bold</strong> and specific benefits. Include <strong>measurable results</strong> where possible and mention it's suitable for <strong>target audience</strong>. <strong>Key ingredients</strong> like hyaluronic acid, squalane, etc. should be <strong>bolded</strong>.</p><p><strong>How to Use the Product?</strong></p><ol><li>First step instruction</li><li>Second step instruction</li><li>Third step instruction</li><li>Additional steps as needed</li></ol><p><strong>Key Features of the Product:</strong></p><ul><li>Feature 1 with <strong>highlighted benefits in bold</strong></li><li>Feature 2 with <strong>key ingredients bolded</strong></li><li>Feature 3 about formulation like <strong>vegan</strong>, <strong>cruelty-free</strong>, etc.</li><li>Additional relevant features</li></ul><p><strong>Who Should Use This Product & Hair/Skin Concerns It Can Address?</strong></p><ul><li>Target audience 1 with <strong>specific concerns bolded</strong></li><li>Target audience 2 with <strong>hair/skin types highlighted</strong></li><li>Problems it addresses like <strong>dryness</strong>, <strong>aging</strong>, <strong>frizz</strong>, etc.</li></ul><p><strong>Why Should You Use This Product & Benefits?</strong><br>Compelling closing statement about why this is the <strong>ultimate solution</strong> and the <strong>transformation</strong> customers can expect. Mention <strong>key benefits</strong> and <strong>results</strong> they'll achieve for <strong>final impact</strong>.</p>",
-  "tags": "comma-separated relevant tags for search and categorization"
-}
-
-CRITICAL: Your response must be ONLY valid JSON starting with { and ending with }. The description field must contain proper HTML tags (<p>, <ol>, <li>, <ul>, <strong>) exactly as shown above. No plain text formatting allowed.`;
-      console.log('Using default structured prompt template');
-    }
-
-    console.log('Calling OpenAI API...');
-    console.log('OpenAI API Key exists:', !!openAIApiKey);
-    console.log('OpenAI API Key length:', openAIApiKey?.length || 0);
-    
-    // Call OpenAI API
-    let aiResponse;
-    try {
-      console.log('Making request to OpenAI...');
-      const requestBody = {
-        model: 'gpt-4o-mini',
-        messages: [
-          { 
-            role: 'system', 
-            content: 'You are a Shopify product optimization expert. You MUST respond with ONLY valid JSON - no other text, no explanations, no markdown formatting. Your response must start with { and end with }. Focus on converting features into benefits, SEO optimization, and compelling copy that drives sales.' 
-          },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.7,
-        max_tokens: 1000,
-      };
-      
-      console.log('Request body prepared, sending to OpenAI...');
-      
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openAIApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      console.log('OpenAI response status:', response.status);
-      console.log('OpenAI response ok:', response.ok);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`OpenAI API error ${response.status}:`, errorText);
-        return new Response(
-          JSON.stringify({ error: `OpenAI API error: ${response.status} - ${errorText}` }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      aiResponse = await response.json();
-      console.log('OpenAI API call successful');
-      console.log('Response structure:', Object.keys(aiResponse));
-    } catch (e) {
-      console.error('OpenAI API call failed:', e);
-      console.error('Error type:', typeof e);
-      console.error('Error name:', e?.name);
-      console.error('Error message:', e?.message);
-      return new Response(
-        JSON.stringify({ error: `Failed to call OpenAI API: ${e?.message || 'Unknown error'}` }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-    
-    const aiContent = aiResponse.choices[0].message.content;
-    console.log('AI response received:', aiContent.substring(0, 100) + '...');
-    
-    // Parse AI response
+    // Call OpenAI
     let optimizedData;
     try {
-      // Try to extract JSON from the response
-      const jsonMatch = aiContent.match(/\{[\s\S]*\}/);
-      const jsonString = jsonMatch ? jsonMatch[0] : aiContent;
-      optimizedData = JSON.parse(jsonString);
-      console.log('AI response parsed successfully');
+      optimizedData = await callOpenAI(validatedRequest, env.openAIApiKey);
     } catch (e) {
-      console.error('Failed to parse AI response:', e);
-      console.error('AI response was:', aiContent);
+      console.error('OpenAI API call failed:', e);
       return new Response(
-        JSON.stringify({ error: 'Invalid AI response format' }),
+        JSON.stringify({ error: `Failed to call OpenAI API: ${e?.message || 'Unknown error'}` } as ApiResponse),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
     
-    // Validate required fields
-    if (!optimizedData.title || !optimizedData.description || !optimizedData.tags) {
-      console.error('AI response missing required fields:', optimizedData);
-      return new Response(
-        JSON.stringify({ error: 'AI response missing required fields (title, description, tags)' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-    
-    console.log('Updating database...');
-    
-    // Update product in database
+    // Update database
     try {
-      const { error: updateError } = await supabase
-        .from('products')
-        .update({
-          title: optimizedData.title,
-          body_html: optimizedData.description,
-          tags: optimizedData.tags,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('handle', productHandle)
-        .eq('user_id', user.id);
-
-      if (updateError) {
-        console.error('Database update error:', updateError);
-        return new Response(
-          JSON.stringify({ error: `Database update failed: ${updateError.message}` }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      console.log('Database updated successfully');
+      await updateProduct(
+        validatedRequest.productHandle,
+        user.id,
+        optimizedData,
+        env.supabaseUrl,
+        env.supabaseServiceKey
+      );
     } catch (e) {
       console.error('Database operation failed:', e);
       return new Response(
-        JSON.stringify({ error: 'Database operation failed' }),
+        JSON.stringify({ error: 'Database operation failed' } as ApiResponse),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -310,7 +115,7 @@ CRITICAL: Your response must be ONLY valid JSON starting with { and ending with 
           description: optimizedData.description,
           tags: optimizedData.tags,
         }
-      }),
+      } as ApiResponse),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
@@ -324,7 +129,7 @@ CRITICAL: Your response must be ONLY valid JSON starting with { and ending with 
       JSON.stringify({ 
         error: `Unexpected error: ${error.message}`,
         timestamp: new Date().toISOString()
-      }),
+      } as ApiResponse),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
