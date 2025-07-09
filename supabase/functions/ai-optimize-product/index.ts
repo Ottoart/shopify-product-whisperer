@@ -160,8 +160,8 @@ CRITICAL REQUIREMENT: You MUST respond with ONLY a valid JSON object. No explana
 Start your response with { and end with }. Nothing else.`;
       console.log('Using custom prompt template with JSON format requirement');
     } else {
-      // Use default prompt
-      prompt = `Optimize this Shopify product for better conversions and SEO:
+      // Use default structured prompt
+      prompt = `Create a compelling, conversion-focused product description for this Shopify product:
 
 Product Title: ${productData.title}
 Product Type: ${productData.type || 'Not specified'}
@@ -172,12 +172,12 @@ CRITICAL REQUIREMENT: Respond with ONLY a valid JSON object. No explanations, no
 
 {
   "title": "SEO-optimized title (max 70 characters)",
-  "description": "Compelling product description with benefits and features (100-300 words)", 
+  "description": "HTML-formatted product description following this EXACT structure: <p><strong>Opening statement about the product and its main benefit.</strong> Detailed description with <strong>key ingredients/features highlighted</strong> and specific benefits. Include <strong>measurable results</strong> where possible and mention it's suitable for <strong>target audience</strong>.</p><p><strong>How to Use the Product?</strong></p><ol><li>Step 1 instruction</li><li>Step 2 instruction</li><li>Step 3 instruction</li><li>Additional steps as needed</li></ol><p><strong>Key Features of the Product:</strong></p><ul><li>Feature 1 with <strong>highlighted benefits</strong></li><li>Feature 2 with <strong>key ingredients</strong></li><li>Feature 3 about formulation (vegan, cruelty-free, etc.)</li><li>Additional features as relevant</li></ul><p><strong>Who Should Use This Product & Hair/Skin Concerns It Can Address?</strong></p><ul><li>Target audience 1 with <strong>specific concerns</strong></li><li>Target audience 2 with <strong>hair/skin types</strong></li><li>Problems it addresses like <strong>dryness</strong>, <strong>aging</strong>, etc.</li></ul><p><strong>Why Should You Use This Product & Benefits?</strong><br>Compelling closing statement about why this is the <strong>ultimate solution</strong> and the <strong>transformation</strong> customers can expect. Mention <strong>key benefits</strong> and <strong>results</strong> they'll achieve.</p>", 
   "tags": "comma-separated relevant tags for search and categorization"
 }
 
 Start your response with { and end with }. Nothing else.`;
-      console.log('Using default prompt template');
+      console.log('Using default structured prompt template');
     }
 
     console.log('Calling OpenAI API...');

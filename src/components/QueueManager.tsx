@@ -25,6 +25,7 @@ import {
 import { Product, UpdatedProduct } from '@/pages/Index';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { ProductComparison } from '@/components/ProductComparison';
 
 interface QueueItem {
   productId: string;
@@ -110,7 +111,7 @@ Concern Tags
 For Hair:
 Concern_Dry Hair, Concern_Damaged Hair, Concern_Frizz, Concern_Dull Hair, Concern_Brittle Hair, Concern_Split Ends, Concern_Hair Loss, Concern_Sensitive Scalp, Concern_Scalp Buildup, Concern_Oily Scalp, Concern_Dry Scalp, Concern_Dandruff
 For Nails:
-Concern_Chipping, Concern_Brittle Nails, Concern_Weak Nails, Concern_Splitting Nails, Concern_Slow Nail Growth, Concern_Yellowing, Concern_Staining, Concern_Dullness, Concern_Nail Damage
+Concern_Chipping, Concern_Brittle Nails, Concern_Weak Nails, Concern_Splitting Nails, Concern_Slow Nail Growth, Concern_Yellowing, Concern_Staining, Concern_Dullness, Concern_Damage
 
 Finish Tags (for Nail Products)
 Finish_Crème, Finish_Shimmer, Finish_Metallic, Finish_Gel-Like, Finish_Matte, Finish_Glossy, Finish_Sheer, Finish_Opaque, Finish_Holographic, Finish_Chrome, Finish_Frosted, Finish_Iridescent, Finish_Glitter
@@ -125,6 +126,20 @@ Usage_Daily Use, Usage_Weekly Treatment, Usage_Professional, Usage_Salon Quality
     step: string;
     progress: number;
   } | null>(null);
+  const [comparisonData, setComparisonData] = useState<{
+    originalProduct: {
+      handle: string;
+      title: string;
+      body_html: string | null;
+      tags: string | null;
+    };
+    optimizedProduct: {
+      title: string;
+      description: string;
+      tags: string;
+    };
+  } | null>(null);
+  const [showComparison, setShowComparison] = useState(false);
   const { toast } = useToast();
 
   const completedCount = queueItems.filter(item => item.status === 'completed').length;
@@ -228,22 +243,47 @@ Usage_Daily Use, Usage_Weekly Treatment, Usage_Professional, Usage_Salon Quality
           throw new Error('Unexpected response from AI optimization service');
         }
 
-        // Step 3: Update local database
+        // Step 3: Show comparison and wait for user decision
+        setComparisonData({
+          originalProduct: {
+            handle: product.handle,
+            title: product.title,
+            body_html: product.bodyHtml,
+            tags: product.tags
+          },
+          optimizedProduct: {
+            title: data.optimizedData.title,
+            description: data.optimizedData.description,
+            tags: data.optimizedData.tags
+          }
+        });
+        setShowComparison(true);
+        
+        // Processing will pause here until user accepts/rejects changes
         setCurrentProcessing({
           productId: item.productId,
-          step: `Processing ${i + 1}/${pendingItems.length}: GPT completed! Updating database...`,
+          step: `Processing ${i + 1}/${pendingItems.length}: Review changes and approve...`,
           progress: 70
         });
+        
+        // Wait for user to close comparison modal (they will save/reject there)
+        await new Promise(resolve => {
+          const checkClosed = () => {
+            if (!showComparison) {
+              resolve(true);
+            } else {
+              setTimeout(checkClosed, 500);
+            }
+          };
+          checkClosed();
+        });
 
-        const updatedProduct: UpdatedProduct = {
-          title: data.optimizedData.title,
-          type: product.type,
-          description: data.optimizedData.description,
-          tags: data.optimizedData.tags
-        };
-
-        onUpdateProduct(item.productId, updatedProduct);
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for DB update
+        // Step 4: Update local database (already done in comparison component)
+        setCurrentProcessing({
+          productId: item.productId,
+          step: `Processing ${i + 1}/${pendingItems.length}: Database updated!`,
+          progress: 85
+        });
 
         // Step 4: Export to Shopify (optional)
         setCurrentProcessing({
@@ -625,6 +665,26 @@ Usage_Daily Use, Usage_Weekly Treatment, Usage_Professional, Usage_Salon Quality
           );
         })}
       </div>
+      
+      {/* Product Comparison Modal */}
+      {comparisonData && (
+        <ProductComparison
+          isOpen={showComparison}
+          onClose={() => setShowComparison(false)}
+          originalProduct={comparisonData.originalProduct}
+          optimizedProduct={comparisonData.optimizedProduct}
+          onSave={() => {
+            const updatedProduct: UpdatedProduct = {
+              title: comparisonData.optimizedProduct.title,
+              type: products.find(p => p.handle === comparisonData.originalProduct.handle)?.type || '',
+              description: comparisonData.optimizedProduct.description,
+              tags: comparisonData.optimizedProduct.tags
+            };
+            onUpdateProduct(comparisonData.originalProduct.handle, updatedProduct);
+            setComparisonData(null);
+          }}
+        />
+      )}
     </div>
   );
 };
