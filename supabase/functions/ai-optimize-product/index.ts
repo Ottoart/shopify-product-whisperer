@@ -50,14 +50,32 @@ serve(async (req) => {
     
     // Check OpenAI API key
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+    console.log('OpenAI API key check:', openAIApiKey ? 'Found' : 'Not found');
+    console.log('OpenAI API key length:', openAIApiKey?.length || 0);
+    
     if (!openAIApiKey) {
-      console.error('OpenAI API key not found');
+      console.error('OpenAI API key not found in environment');
       return new Response(
-        JSON.stringify({ error: 'OpenAI API key not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          error: 'OpenAI API key not configured in Supabase secrets',
+          details: 'Please add your OpenAI API key to the Supabase Edge Function secrets'
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-    console.log('OpenAI API key found');
+    
+    if (openAIApiKey.length < 20) {
+      console.error('OpenAI API key appears to be invalid (too short)');
+      return new Response(
+        JSON.stringify({ 
+          error: 'OpenAI API key appears to be invalid',
+          details: 'The API key seems too short. Please check your OpenAI API key in Supabase secrets'
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    console.log('OpenAI API key validation passed');
     
     // Check Supabase credentials
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
