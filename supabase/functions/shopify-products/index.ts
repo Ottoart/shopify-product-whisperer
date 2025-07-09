@@ -14,7 +14,8 @@ serve(async (req) => {
   }
 
   try {
-    const { action, products, brand } = await req.json();
+    const body = await req.json();
+    const { action, products, brand, filterType, filterValue } = body;
     
     const shopifyDomain = Deno.env.get('SHOPIFY_DOMAIN');
     const shopifyToken = Deno.env.get('SHOPIFY_ACCESS_TOKEN');
@@ -44,19 +45,126 @@ serve(async (req) => {
     }
 
     switch (action) {
-      case 'fetch-brands': {
-        console.log('Fetching available brands from Shopify...');
+      case 'fetch-filters': {
+        console.log(`Fetching available ${filterType} from Shopify...`);
         
-        // Fetch first few pages to get a comprehensive brand list
-        let allBrands = new Set<string>();
+        let fieldName = '';
+        let collectionsData = new Set<string>();
+        
+        switch (filterType) {
+          case 'brands':
+            fieldName = 'vendor';
+            break;
+          case 'product_types':
+            fieldName = 'product_type';
+            break;
+          case 'collections':
+            // For collections, we need a separate API call
+            let collectionPageInfo = null;
+            let collectionPageCount = 0;
+            const maxCollectionPages = 3;
+            
+            while (collectionPageCount < maxCollectionPages) {
+              collectionPageCount++;
+              let collectionUrl = `${shopifyUrl}custom_collections.json?limit=250&fields=title`;
+              if (collectionPageInfo) {
+                collectionUrl += `&page_info=${collectionPageInfo}`;
+              }
+              
+              const collectionResponse = await fetch(collectionUrl, {
+                headers: {
+                  'X-Shopify-Access-Token': shopifyToken,
+                  'Content-Type': 'application/json',
+                },
+              });
+
+              if (!collectionResponse.ok) {
+                throw new Error(`Shopify API error: ${collectionResponse.status}`);
+              }
+
+              const collectionDataResponse = await collectionResponse.json();
+              
+              collectionDataResponse.custom_collections?.forEach((collection: any) => {
+                if (collection.title && collection.title.trim()) {
+                  collectionsData.add(collection.title.trim());
+                }
+              });
+              
+              const linkHeader = collectionResponse.headers.get('Link');
+              if (linkHeader && linkHeader.includes('rel="next"')) {
+                const nextLink = linkHeader.split(',').find(link => link.includes('rel="next"'));
+                if (nextLink) {
+                  const pageInfoMatch = nextLink.match(/page_info=([^&>]+)/);
+                  collectionPageInfo = pageInfoMatch ? pageInfoMatch[1] : null;
+                }
+              } else {
+                break;
+              }
+            }
+            
+            // Also fetch smart collections
+            let smartCollectionPageInfo = null;
+            let smartCollectionPageCount = 0;
+            
+            while (smartCollectionPageCount < maxCollectionPages) {
+              smartCollectionPageCount++;
+              let smartCollectionUrl = `${shopifyUrl}smart_collections.json?limit=250&fields=title`;
+              if (smartCollectionPageInfo) {
+                smartCollectionUrl += `&page_info=${smartCollectionPageInfo}`;
+              }
+              
+              const smartCollectionResponse = await fetch(smartCollectionUrl, {
+                headers: {
+                  'X-Shopify-Access-Token': shopifyToken,
+                  'Content-Type': 'application/json',
+                },
+              });
+
+              if (!smartCollectionResponse.ok) {
+                throw new Error(`Shopify API error: ${smartCollectionResponse.status}`);
+              }
+
+              const smartCollectionDataResponse = await smartCollectionResponse.json();
+              
+              smartCollectionDataResponse.smart_collections?.forEach((collection: any) => {
+                if (collection.title && collection.title.trim()) {
+                  collectionsData.add(collection.title.trim());
+                }
+              });
+              
+              const linkHeader = smartCollectionResponse.headers.get('Link');
+              if (linkHeader && linkHeader.includes('rel="next"')) {
+                const nextLink = linkHeader.split(',').find(link => link.includes('rel="next"'));
+                if (nextLink) {
+                  const pageInfoMatch = nextLink.match(/page_info=([^&>]+)/);
+                  smartCollectionPageInfo = pageInfoMatch ? pageInfoMatch[1] : null;
+                }
+              } else {
+                break;
+              }
+            }
+            
+            const collections = Array.from(collectionsData).sort();
+            return new Response(
+              JSON.stringify({ 
+                success: true, 
+                items: collections,
+                message: `Found ${collections.length} collections`
+              }),
+              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+        }
+        
+        // For brands and product types, fetch from products
+        let allItems = new Set<string>();
         let hasNextPage = true;
         let pageInfo = null;
         let pageCount = 0;
-        const maxPages = 5; // Limit to prevent timeouts
+        const maxPages = 5;
         
         while (hasNextPage && pageCount < maxPages) {
           pageCount++;
-          let url = `${shopifyUrl}products.json?limit=250&fields=vendor`;
+          let url = `${shopifyUrl}products.json?limit=250&fields=${fieldName}`;
           if (pageInfo) {
             url += `&page_info=${pageInfo}`;
           }
@@ -74,14 +182,13 @@ serve(async (req) => {
 
           const shopifyData = await response.json();
           
-          // Collect unique brands
           shopifyData.products.forEach((product: any) => {
-            if (product.vendor && product.vendor.trim()) {
-              allBrands.add(product.vendor.trim());
+            const value = product[fieldName];
+            if (value && value.trim()) {
+              allItems.add(value.trim());
             }
           });
           
-          // Check for pagination
           const linkHeader = response.headers.get('Link');
           if (linkHeader && linkHeader.includes('rel="next"')) {
             const nextLink = linkHeader.split(',').find(link => link.includes('rel="next"'));
@@ -94,14 +201,14 @@ serve(async (req) => {
           }
         }
 
-        const brands = Array.from(allBrands).sort();
-        console.log(`Found ${brands.length} unique brands from ${pageCount} pages`);
+        const items = Array.from(allItems).sort();
+        console.log(`Found ${items.length} unique ${filterType} from ${pageCount} pages`);
 
         return new Response(
           JSON.stringify({ 
             success: true, 
-            brands,
-            message: `Found ${brands.length} brands`
+            items,
+            message: `Found ${items.length} ${filterType}`
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -115,21 +222,31 @@ serve(async (req) => {
         let pageInfo = null;
         let currentPage = 0;
         
-        // First, get a sample to identify brands if no brand specified
-        let brandsFilter = '';
+        // Build filter based on filter type and value
+        let filter = '';
         if (brand) {
-          brandsFilter = `&vendor=${encodeURIComponent(brand)}`;
+          filter = `&vendor=${encodeURIComponent(brand)}`;
+        } else if (filterType && filterValue) {
+          switch (filterType) {
+            case 'brands':
+              filter = `&vendor=${encodeURIComponent(filterValue)}`;
+              break;
+            case 'product_types':
+              filter = `&product_type=${encodeURIComponent(filterValue)}`;
+              break;
+            // Collections require different handling - we'd need to fetch products for specific collections
+          }
         }
         
         // Fetch all products with pagination
         while (hasNextPage) {
           currentPage++;
-          let url = `${shopifyUrl}products.json?limit=250${brandsFilter}`;
+          let url = `${shopifyUrl}products.json?limit=250${filter}`;
           if (pageInfo) {
             url += `&page_info=${pageInfo}`;
           }
           
-          console.log(`Fetching page ${currentPage} for ${brand || 'all brands'}...`);
+          console.log(`Fetching page ${currentPage} for ${brand || filterValue || 'all products'}...`);
           
           const response = await fetch(url, {
             headers: {
