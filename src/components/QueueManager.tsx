@@ -266,11 +266,30 @@ Usage_Daily Use, Usage_Weekly Treatment, Usage_Professional, Usage_Salon Quality
           progress: 70
         });
         
-        // Wait for user to close comparison modal (they will save/reject there)
-        await new Promise(resolve => {
+        // Wait for user decision via a promise that resolves with their choice
+        const userAccepted = await new Promise<boolean>(resolve => {
+          const originalOnSave = (window as any).tempOnSave;
+          const originalOnCancel = (window as any).tempOnCancel;
+          
+          (window as any).tempOnSave = () => {
+            resolve(true);
+            (window as any).tempOnSave = originalOnSave;
+            (window as any).tempOnCancel = originalOnCancel;
+          };
+          
+          (window as any).tempOnCancel = () => {
+            resolve(false);
+            (window as any).tempOnSave = originalOnSave;
+            (window as any).tempOnCancel = originalOnCancel;
+          };
+          
+          // Also check if modal closes (as backup)
           const checkClosed = () => {
             if (!showComparison) {
-              resolve(true);
+              // If modal closed without save/cancel callbacks, assume canceled
+              if ((window as any).tempOnSave === resolve || (window as any).tempOnCancel === resolve) {
+                resolve(false);
+              }
             } else {
               setTimeout(checkClosed, 500);
             }
@@ -278,14 +297,14 @@ Usage_Daily Use, Usage_Weekly Treatment, Usage_Professional, Usage_Salon Quality
           checkClosed();
         });
 
-        // Step 4: Update local database (already done in comparison component)
-        setCurrentProcessing({
-          productId: item.productId,
-          step: `Processing ${i + 1}/${pendingItems.length}: Database updated!`,
-          progress: 85
-        });
+        if (!userAccepted) {
+          // User canceled - mark as pending to allow retry
+          onUpdateStatus(item.productId, 'pending');
+          setCurrentProcessing(null);
+          continue; // Skip to next product
+        }
 
-        // Step 4: Export to Shopify (optional)
+        // Step 4: Export to Shopify (only if user accepted)
         setCurrentProcessing({
           productId: item.productId,
           step: `Processing ${i + 1}/${pendingItems.length}: Exporting to Shopify...`,
@@ -314,7 +333,7 @@ Usage_Daily Use, Usage_Weekly Treatment, Usage_Professional, Usage_Salon Quality
           // Don't fail the whole process if Shopify export fails
         }
 
-        // Step 5: Complete
+        // Step 5: Complete (only if user accepted changes)
         setCurrentProcessing({
           productId: item.productId,
           step: `Processing ${i + 1}/${pendingItems.length}: Completed!`,

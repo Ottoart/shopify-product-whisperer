@@ -60,6 +60,11 @@ export function ProductComparison({
         description: "Your changes have been saved.",
       });
       
+      // Notify QueueManager that user accepted changes
+      if ((window as any).tempOnSave) {
+        (window as any).tempOnSave();
+      }
+      
       onSave();
       onClose();
     } catch (error) {
@@ -72,6 +77,14 @@ export function ProductComparison({
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleCancel = () => {
+    // Notify QueueManager that user canceled changes
+    if ((window as any).tempOnCancel) {
+      (window as any).tempOnCancel();
+    }
+    onClose();
   };
 
   return (
@@ -143,7 +156,7 @@ export function ProductComparison({
             </div>
             
             <div className="flex justify-end space-x-2 pt-4">
-              <Button variant="outline" onClick={onClose}>
+              <Button variant="outline" onClick={handleCancel}>
                 Cancel
               </Button>
               <Button onClick={handleSave} disabled={isLoading}>
@@ -201,7 +214,7 @@ export function ProductComparison({
             </div>
             
             <div className="flex justify-end space-x-2 pt-4">
-              <Button variant="outline" onClick={onClose}>
+              <Button variant="outline" onClick={handleCancel}>
                 Cancel
               </Button>
               <Button onClick={handleSave} disabled={isLoading}>
