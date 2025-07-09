@@ -25,23 +25,38 @@ CRITICAL REQUIREMENT: You MUST respond with ONLY a valid JSON object. No explana
 Start your response with { and end with }. Nothing else.`;
   } else {
     // Use default structured prompt
-    return `Create a compelling, conversion-focused product description for this Shopify product:
+    return `You are optimizing a Shopify product. Create compelling, conversion-focused content.
 
-Product Title: ${productData.title}
-Product Type: ${productData.type || 'Not specified'}
-Current Description: ${productData.description || 'No description'}
-Current Tags: ${productData.tags || 'No tags'}
+PRODUCT INFORMATION:
+Title: ${productData.title}
+Type: ${productData.type || 'Not specified'}
+Description: ${productData.description || 'No description'}
+Tags: ${productData.tags || 'No tags'}
+Vendor: ${productData.vendor || 'Not specified'}
+Current SEO Title: ${productData.seo_title || 'None'}
+Current SEO Description: ${productData.seo_description || 'None'}
 
-CRITICAL HTML FORMATTING REQUIREMENT: You MUST respond with ONLY a valid JSON object containing HTML-formatted description. The description field must contain EXACT HTML structure with proper tags.
+ABSOLUTE REQUIREMENT - RESPOND WITH EXACTLY THIS JSON STRUCTURE:
 
-MANDATORY JSON FORMAT:
 {
-  "title": "SEO-optimized title (max 70 characters)",
-  "description": "<p><strong>Opening compelling statement about the product and its main benefit.</strong> Detailed description with <strong>key ingredients/features highlighted in bold</strong> and specific benefits. Include <strong>measurable results</strong> where possible and mention it's suitable for <strong>target audience</strong>. <strong>Key ingredients</strong> like hyaluronic acid, squalane, etc. should be <strong>bolded</strong>.</p><p><strong>How to Use the Product?</strong></p><ol><li>First step instruction</li><li>Second step instruction</li><li>Third step instruction</li><li>Additional steps as needed</li></ol><p><strong>Key Features of the Product:</strong></p><ul><li>Feature 1 with <strong>highlighted benefits in bold</strong></li><li>Feature 2 with <strong>key ingredients bolded</strong></li><li>Feature 3 about formulation like <strong>vegan</strong>, <strong>cruelty-free</strong>, etc.</li><li>Additional relevant features</li></ul><p><strong>Who Should Use This Product & Hair/Skin Concerns It Can Address?</strong></p><ul><li>Target audience 1 with <strong>specific concerns bolded</strong></li><li>Target audience 2 with <strong>hair/skin types highlighted</strong></li><li>Problems it addresses like <strong>dryness</strong>, <strong>aging</strong>, <strong>frizz</strong>, etc.</li></ul><p><strong>Why Should You Use This Product & Benefits?</strong><br>Compelling closing statement about why this is the <strong>ultimate solution</strong> and the <strong>transformation</strong> customers can expect. Mention <strong>key benefits</strong> and <strong>results</strong> they'll achieve for <strong>final impact</strong>.</p>",
-  "tags": "comma-separated relevant tags for search and categorization"
+  "title": "Optimized product title (max 60 chars)",
+  "description": "<p><strong>Compelling opening about product benefit.</strong> Detailed info with <strong>key features bolded</strong>. Include <strong>specific results</strong> and <strong>target audience</strong>.</p><p><strong>How to Use the Product?</strong></p><ol><li>Step 1</li><li>Step 2</li><li>Step 3</li></ol><p><strong>Key Features of the Product:</strong></p><ul><li><strong>Feature 1</strong> with benefits</li><li><strong>Feature 2</strong> with ingredients</li><li><strong>Vegan, cruelty-free</strong> etc</li></ul><p><strong>Who Should Use This Product & Hair/Skin Concerns It Can Address?</strong></p><ul><li><strong>Target 1</strong> with concerns</li><li><strong>Target 2</strong> with types</li></ul><p><strong>Why Should You Use This Product & Benefits?</strong><br>Ultimate solution for <strong>transformation</strong> and <strong>results</strong>.</p>",
+  "tags": "tag1,tag2,tag3",
+  "type": "Product Category (e.g., Hair Care, Skincare, Tools)",
+  "seo_title": "SEO optimized title (max 60 chars)",
+  "seo_description": "SEO meta description (max 160 chars)",
+  "vendor": "Brand Name",
+  "google_shopping_condition": "new",
+  "google_shopping_gender": "unisex",
+  "google_shopping_age_group": "adult"
 }
 
-CRITICAL: Your response must be ONLY valid JSON starting with { and ending with }. The description field must contain proper HTML tags (<p>, <ol>, <li>, <ul>, <strong>) exactly as shown above. No plain text formatting allowed.`;
+CRITICAL RULES:
+1. Response must be ONLY valid JSON - no other text
+2. Description MUST use HTML tags: <p>, <strong>, <ol>, <li>, <ul>, <br>
+3. NO markdown formatting like **text** - use <strong>text</strong>
+4. Start with { and end with }
+5. Include ALL fields shown above`;
   }
 }
 
@@ -57,7 +72,7 @@ export async function callOpenAI(request: OptimizeProductRequest, apiKey: string
     messages: [
       { 
         role: 'system', 
-        content: 'You are a Shopify product optimization expert. You MUST respond with ONLY valid JSON - no other text, no explanations, no markdown formatting. Your response must start with { and end with }. Focus on converting features into benefits, SEO optimization, and compelling copy that drives sales.' 
+        content: 'You are a Shopify product optimization expert. CRITICAL: You MUST respond with ONLY valid JSON. NO explanations, NO text outside JSON, NO markdown formatting. Use HTML tags (<p>, <strong>, <ol>, <li>, <ul>) NOT markdown (**). Your response must start with { and end with }. Focus on SEO optimization and compelling copy.' 
       },
       { role: 'user', content: prompt }
     ],
@@ -106,7 +121,24 @@ export async function callOpenAI(request: OptimizeProductRequest, apiKey: string
       throw new Error('AI response missing required fields (title, description, tags)');
     }
     
-    return optimizedData;
+    // Ensure all required fields have defaults
+    return {
+      title: optimizedData.title,
+      description: optimizedData.description,
+      tags: optimizedData.tags,
+      type: optimizedData.type || 'General',
+      seo_title: optimizedData.seo_title || optimizedData.title,
+      seo_description: optimizedData.seo_description || '',
+      vendor: optimizedData.vendor,
+      variant_price: optimizedData.variant_price,
+      variant_compare_at_price: optimizedData.variant_compare_at_price,
+      variant_sku: optimizedData.variant_sku,
+      variant_barcode: optimizedData.variant_barcode,
+      variant_grams: optimizedData.variant_grams,
+      google_shopping_condition: optimizedData.google_shopping_condition,
+      google_shopping_gender: optimizedData.google_shopping_gender,
+      google_shopping_age_group: optimizedData.google_shopping_age_group,
+    };
   } catch (e) {
     console.error('Failed to parse AI response:', e);
     console.error('AI response was:', aiContent);
