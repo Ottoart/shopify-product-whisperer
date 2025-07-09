@@ -57,10 +57,11 @@ CRITICAL RULES:
 3. NO markdown formatting like **text** - use <strong>text</strong>
 4. Start with { and end with }
 5. Include ALL fields shown above
-6. NEVER use "Product Overview" or similar titles - start directly with compelling product benefits
+6. NEVER add any titles like "Product Overview", "Description", or section headers - start directly with the first paragraph
 7. Generate up to 50 comprehensive tags including Brand_, Hair Type_, Benefits_, Ingredients_, Concern_, PRICE_, Finish_, Color_, Usage_, Desired Effect_ prefixes
 8. ALWAYS include a specific product type (Hair Care, Skincare, Nail Care, Tools, etc.)
-9. Make descriptions conversion-focused with specific benefits and results`;
+9. Make descriptions conversion-focused with specific benefits and results
+10. The description field must start exactly with "<p><strong>Revitalize" - NO additional titles or headers before this`;
   }
 }
 
