@@ -52,7 +52,7 @@ export const QueueManager = ({
 }: QueueManagerProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [chatGptUrl, setChatGptUrl] = useState('https://chatgpt.com/g/g-6837c28c521c81918f8f1d319eb87f9a-shopify');
-  const [processingDelay, setProcessingDelay] = useState(15000);
+  const [processingDelay, setProcessingDelay] = useState(30000);
   const [useDirectAI, setUseDirectAI] = useState(true);
   const [customPromptTemplate, setCustomPromptTemplate] = useState(`You are a product listing generator for Shopify, specializing in hair and nail care products. Your job is to create high-converting, SEO-optimized product descriptions that follow a strict structure. You must write all content in plain text — no HTML, emojis, or formatting tags. Just highlight important information and section titles in bold. Structure and clarity are essential.
 
