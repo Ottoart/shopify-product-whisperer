@@ -52,7 +52,7 @@ export const QueueManager = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [chatGptUrl, setChatGptUrl] = useState('https://chatgpt.com/g/g-6837c28c521c81918f8f1d319eb87f9a-shopify');
   const [processingDelay, setProcessingDelay] = useState(15000);
-  const [useDirectAI, setUseDirectAI] = useState(false);
+  const [useDirectAI, setUseDirectAI] = useState(true);
   const [customPromptTemplate, setCustomPromptTemplate] = useState(`Optimize this Shopify product for better conversions and SEO:
 
 Product Title: {title}
