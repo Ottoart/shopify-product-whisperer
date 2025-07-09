@@ -146,6 +146,30 @@ Usage_Daily Use, Usage_Weekly Treatment, Usage_Professional, Usage_Salon Quality
   const errorCount = queueItems.filter(item => item.status === 'error').length;
   const progress = queueItems.length > 0 ? (completedCount / queueItems.length) * 100 : 0;
 
+  // Handle page unload to reset processing items back to pending
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // Reset any processing items back to pending
+      queueItems.forEach(item => {
+        if (item.status === 'processing') {
+          onUpdateStatus(item.productId, 'pending');
+        }
+      });
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      // Also reset on component unmount
+      queueItems.forEach(item => {
+        if (item.status === 'processing') {
+          onUpdateStatus(item.productId, 'pending');
+        }
+      });
+    };
+  }, [queueItems, onUpdateStatus]);
+
   const startProcessing = async () => {
     setIsProcessing(true);
     
