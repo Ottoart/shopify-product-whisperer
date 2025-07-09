@@ -133,12 +133,14 @@ Usage_Daily Use, Usage_Weekly Treatment, Usage_Professional, Usage_Salon Quality
       body_html: string | null;
       tags: string | null;
       type: string | null;
+      category: string | null;
     };
     optimizedProduct: {
       title: string;
       description: string;
       tags: string;
       type: string;
+      category: string;
     };
   } | null>(null);
   const [showComparison, setShowComparison] = useState(false);
@@ -276,13 +278,15 @@ Usage_Daily Use, Usage_Weekly Treatment, Usage_Professional, Usage_Salon Quality
             title: product.title,
             body_html: product.bodyHtml,
             tags: product.tags,
-            type: product.type
+            type: product.type,
+            category: null // Since this will be a new field, existing products won't have it
           },
           optimizedProduct: {
             title: data.optimizedData.title,
             description: data.optimizedData.description,
             tags: data.optimizedData.tags,
-            type: data.optimizedData.type || product.type
+            type: data.optimizedData.type || product.type,
+            category: data.optimizedData.category || 'Health & Beauty > Personal Care'
           }
         });
         setShowComparison(true);
@@ -347,8 +351,9 @@ Usage_Daily Use, Usage_Weekly Treatment, Usage_Professional, Usage_Salon Quality
                 handle: product.handle,
                 title: data.optimizedData.title,
                 description: data.optimizedData.description,
-                type: product.type,
-                tags: data.optimizedData.tags
+                type: data.optimizedData.type || product.type,
+                tags: data.optimizedData.tags,
+                category: data.optimizedData.category
               }]
             }
           });
@@ -725,7 +730,8 @@ Usage_Daily Use, Usage_Weekly Treatment, Usage_Professional, Usage_Salon Quality
               title: comparisonData.optimizedProduct.title,
               type: comparisonData.optimizedProduct.type || products.find(p => p.handle === comparisonData.originalProduct.handle)?.type || '',
               description: comparisonData.optimizedProduct.description,
-              tags: comparisonData.optimizedProduct.tags
+              tags: comparisonData.optimizedProduct.tags,
+              category: comparisonData.optimizedProduct.category
             };
             onUpdateProduct(comparisonData.originalProduct.handle, updatedProduct);
             setComparisonData(null);

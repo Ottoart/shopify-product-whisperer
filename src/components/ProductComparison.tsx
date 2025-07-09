@@ -17,12 +17,14 @@ interface ProductComparisonProps {
     body_html: string | null;
     tags: string | null;
     type: string | null;
+    category: string | null;
   };
   optimizedProduct: {
     title: string;
     description: string;
     tags: string;
     type: string;
+    category: string;
   };
   onSave: () => void;
 }
@@ -38,6 +40,7 @@ export function ProductComparison({
   const [editedDescription, setEditedDescription] = useState(optimizedProduct.description);
   const [editedTags, setEditedTags] = useState(optimizedProduct.tags);
   const [editedType, setEditedType] = useState(optimizedProduct.type);
+  const [editedCategory, setEditedCategory] = useState(optimizedProduct.category);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -49,6 +52,7 @@ export function ProductComparison({
         .update({
           title: editedTitle,
           type: editedType,
+          category: editedCategory,
           body_html: editedDescription,
           tags: editedTags,
           updated_at: new Date().toISOString(),
@@ -132,6 +136,13 @@ export function ProductComparison({
                 </div>
                 
                 <div>
+                  <Label className="text-sm font-medium">Category:</Label>
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-md mt-1">
+                    <p className="text-sm">{originalProduct.category || 'No category'}</p>
+                  </div>
+                </div>
+                
+                <div>
                   <Label className="text-sm font-medium">Tags:</Label>
                   <div className="p-3 bg-red-50 border border-red-200 rounded-md mt-1">
                     <p className="text-sm">{originalProduct.tags || 'No tags'}</p>
@@ -161,6 +172,14 @@ export function ProductComparison({
                   <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1 max-h-60 overflow-y-auto">
                     <div className="text-sm prose prose-sm max-w-none" 
                          dangerouslySetInnerHTML={{ __html: optimizedProduct.description }} />
+                  </div>
+                </div>
+                
+                
+                <div>
+                  <Label className="text-sm font-medium">Category:</Label>
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
+                    <p className="text-sm">{optimizedProduct.category}</p>
                   </div>
                 </div>
                 
@@ -229,12 +248,26 @@ export function ProductComparison({
                 />
               </div>
               
+              <div>
+                <Label htmlFor="edit-category">Product Category</Label>
+                <Input
+                  id="edit-category"
+                  value={editedCategory}
+                  onChange={(e) => setEditedCategory(e.target.value)}
+                  className="mt-1"
+                  placeholder="e.g., Health & Beauty > Personal Care > Cosmetics > Hair Care"
+                />
+              </div>
+              
               <div className="space-y-2">
                 <Label>Preview</Label>
                 <div className="p-4 border rounded-md bg-gray-50">
                   <h4 className="font-semibold mb-2">{editedTitle}</h4>
                   <div className="text-sm text-gray-600 mb-2">
                     <strong>Type:</strong> {editedType}
+                  </div>
+                  <div className="text-sm text-gray-600 mb-2">
+                    <strong>Category:</strong> {editedCategory}
                   </div>
                   <div className="prose prose-sm max-w-none mb-2" 
                        dangerouslySetInnerHTML={{ __html: editedDescription }} />

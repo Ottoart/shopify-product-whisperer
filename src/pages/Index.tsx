@@ -18,6 +18,7 @@ export interface Product {
   vendor: string;
   type: string;
   tags: string;
+  category?: string;
   published: boolean;
   option1Name: string;
   option1Value: string;
@@ -47,6 +48,7 @@ export interface UpdatedProduct {
   type: string;
   description: string;
   tags: string;
+  category?: string;
 }
 
 const Index = () => {

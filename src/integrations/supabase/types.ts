@@ -17,6 +17,7 @@ export type Database = {
       products: {
         Row: {
           body_html: string | null
+          category: string | null
           created_at: string
           google_shopping_age_group: string | null
           google_shopping_condition: string | null
@@ -50,6 +51,7 @@ export type Database = {
         }
         Insert: {
           body_html?: string | null
+          category?: string | null
           created_at?: string
           google_shopping_age_group?: string | null
           google_shopping_condition?: string | null
@@ -83,6 +85,7 @@ export type Database = {
         }
         Update: {
           body_html?: string | null
+          category?: string | null
           created_at?: string
           google_shopping_age_group?: string | null
           google_shopping_condition?: string | null

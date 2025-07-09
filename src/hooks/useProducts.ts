@@ -30,6 +30,7 @@ export const useProducts = () => {
         vendor: item.vendor || '',
         type: item.type || '',
         tags: item.tags || '',
+        category: item.category || '',
         published: item.published || false,
         option1Name: item.option1_name || '',
         option1Value: item.option1_value || '',
@@ -68,6 +69,7 @@ export const useProducts = () => {
         vendor: product.vendor,
         type: product.type,
         tags: product.tags,
+        category: product.category,
         published: product.published,
         option1_name: product.option1Name,
         option1_value: product.option1Value,
@@ -126,6 +128,7 @@ export const useProducts = () => {
         .update({
           title: updatedData.title,
           type: updatedData.type,
+          category: updatedData.category,
           body_html: updatedData.description,
           tags: updatedData.tags,
         })
