@@ -25,9 +25,9 @@ CRITICAL REQUIREMENT: You MUST respond with ONLY a valid JSON object. No explana
 Start your response with { and end with }. Nothing else.`;
   } else {
     // Use default structured prompt
-    return `You are optimizing a Shopify product. Create compelling, conversion-focused content.
+    return `You are optimizing a Shopify product. Create compelling, conversion-focused content IN ENGLISH LANGUAGE ONLY.
 
-CRITICAL: You MUST generate COMPLETELY NEW content. DO NOT copy or keep any existing descriptions, tags, or content from the input data. Create fresh, optimized content from scratch.
+CRITICAL: You MUST generate COMPLETELY NEW content IN ENGLISH regardless of input language. DO NOT copy or keep any existing descriptions, tags, or content from the input data. Create fresh, optimized content from scratch.
 
 PRODUCT INFORMATION (for reference only - DO NOT copy this content):
 Title: ${productData.title}
@@ -81,7 +81,7 @@ export async function callOpenAI(request: OptimizeProductRequest, apiKey: string
     messages: [
       { 
         role: 'system', 
-        content: 'You are a Shopify product optimization expert. CRITICAL: You MUST respond with ONLY valid JSON. NO explanations, NO text outside JSON, NO markdown formatting. Use HTML tags (<p>, <strong>, <ol>, <li>, <ul>) NOT markdown (**). Your response must start with { and end with }. Focus on SEO optimization and compelling copy.' 
+        content: 'You are a Shopify product optimization expert. CRITICAL: You MUST respond with ONLY valid JSON in ENGLISH LANGUAGE ONLY. NO explanations, NO text outside JSON, NO markdown formatting. Use HTML tags (<p>, <strong>, <ol>, <li>, <ul>) NOT markdown (**). Your response must start with { and end with }. Focus on SEO optimization and compelling copy. ALL CONTENT MUST BE GENERATED IN ENGLISH regardless of input language.' 
       },
       { role: 'user', content: prompt }
     ],
