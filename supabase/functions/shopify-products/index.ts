@@ -139,7 +139,9 @@ serve(async (req) => {
           });
 
           if (!response.ok) {
-            throw new Error(`Shopify API error: ${response.status}`);
+            const errorText = await response.text();
+            console.error(`Shopify API error ${response.status}:`, errorText);
+            throw new Error(`Shopify API error: ${response.status} - ${errorText}`);
           }
 
           const shopifyData = await response.json();

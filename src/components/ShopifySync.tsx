@@ -90,6 +90,7 @@ export const ShopifySync = ({ onProductsUpdated }: ShopifySyncProps) => {
         }
 
         if (data.error) {
+          console.error('Shopify API error:', data.error);
           throw new Error(data.error);
         }
       }
