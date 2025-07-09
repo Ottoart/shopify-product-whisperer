@@ -132,11 +132,13 @@ Usage_Daily Use, Usage_Weekly Treatment, Usage_Professional, Usage_Salon Quality
       title: string;
       body_html: string | null;
       tags: string | null;
+      type: string | null;
     };
     optimizedProduct: {
       title: string;
       description: string;
       tags: string;
+      type: string;
     };
   } | null>(null);
   const [showComparison, setShowComparison] = useState(false);
@@ -273,12 +275,14 @@ Usage_Daily Use, Usage_Weekly Treatment, Usage_Professional, Usage_Salon Quality
             handle: product.handle,
             title: product.title,
             body_html: product.bodyHtml,
-            tags: product.tags
+            tags: product.tags,
+            type: product.type
           },
           optimizedProduct: {
             title: data.optimizedData.title,
             description: data.optimizedData.description,
-            tags: data.optimizedData.tags
+            tags: data.optimizedData.tags,
+            type: data.optimizedData.type || product.type
           }
         });
         setShowComparison(true);
@@ -719,7 +723,7 @@ Usage_Daily Use, Usage_Weekly Treatment, Usage_Professional, Usage_Salon Quality
           onSave={() => {
             const updatedProduct: UpdatedProduct = {
               title: comparisonData.optimizedProduct.title,
-              type: products.find(p => p.handle === comparisonData.originalProduct.handle)?.type || '',
+              type: comparisonData.optimizedProduct.type || products.find(p => p.handle === comparisonData.originalProduct.handle)?.type || '',
               description: comparisonData.optimizedProduct.description,
               tags: comparisonData.optimizedProduct.tags
             };

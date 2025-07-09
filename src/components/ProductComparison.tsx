@@ -16,11 +16,13 @@ interface ProductComparisonProps {
     title: string;
     body_html: string | null;
     tags: string | null;
+    type: string | null;
   };
   optimizedProduct: {
     title: string;
     description: string;
     tags: string;
+    type: string;
   };
   onSave: () => void;
 }
@@ -35,6 +37,7 @@ export function ProductComparison({
   const [editedTitle, setEditedTitle] = useState(optimizedProduct.title);
   const [editedDescription, setEditedDescription] = useState(optimizedProduct.description);
   const [editedTags, setEditedTags] = useState(optimizedProduct.tags);
+  const [editedType, setEditedType] = useState(optimizedProduct.type);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -45,6 +48,7 @@ export function ProductComparison({
         .from('products')
         .update({
           title: editedTitle,
+          type: editedType,
           body_html: editedDescription,
           tags: editedTags,
           updated_at: new Date().toISOString(),
@@ -113,6 +117,13 @@ export function ProductComparison({
                 </div>
                 
                 <div>
+                  <Label className="text-sm font-medium">Type:</Label>
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-md mt-1">
+                    <p className="text-sm">{originalProduct.type || 'No type'}</p>
+                  </div>
+                </div>
+                
+                <div>
                   <Label className="text-sm font-medium">Description:</Label>
                   <div className="p-3 bg-red-50 border border-red-200 rounded-md mt-1 max-h-60 overflow-y-auto">
                     <div className="text-sm prose prose-sm max-w-none" 
@@ -135,6 +146,13 @@ export function ProductComparison({
                   <Label className="text-sm font-medium">Title:</Label>
                   <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
                     <p className="text-sm">{optimizedProduct.title}</p>
+                  </div>
+                </div>
+                
+                <div>
+                  <Label className="text-sm font-medium">Type:</Label>
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
+                    <p className="text-sm">{optimizedProduct.type}</p>
                   </div>
                 </div>
                 
@@ -178,6 +196,17 @@ export function ProductComparison({
               </div>
               
               <div>
+                <Label htmlFor="edit-type">Product Type</Label>
+                <Input
+                  id="edit-type"
+                  value={editedType}
+                  onChange={(e) => setEditedType(e.target.value)}
+                  className="mt-1"
+                  placeholder="e.g., Shampoo, Conditioner, Hair Oil"
+                />
+              </div>
+              
+              <div>
                 <Label htmlFor="edit-description">Product Description (HTML)</Label>
                 <Textarea
                   id="edit-description"
@@ -204,6 +233,9 @@ export function ProductComparison({
                 <Label>Preview</Label>
                 <div className="p-4 border rounded-md bg-gray-50">
                   <h4 className="font-semibold mb-2">{editedTitle}</h4>
+                  <div className="text-sm text-gray-600 mb-2">
+                    <strong>Type:</strong> {editedType}
+                  </div>
                   <div className="prose prose-sm max-w-none mb-2" 
                        dangerouslySetInnerHTML={{ __html: editedDescription }} />
                   <div className="text-sm text-gray-600">
