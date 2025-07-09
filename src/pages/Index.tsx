@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSessionContext } from '@supabase/auth-helpers-react';
 import { Auth } from '@/components/Auth';
 import { ProductList } from '@/components/ProductList';
@@ -56,6 +56,19 @@ const Index = () => {
   const [queueItems, setQueueItems] = useState<Array<{ productId: string; status: 'pending' | 'processing' | 'completed' | 'error'; error?: string }>>([]);
   const [storeUrl, setStoreUrl] = useState<string>('');
   const [apiKey, setApiKey] = useState<string>('');
+
+  // Load stored credentials on mount
+  useEffect(() => {
+    const storedDomain = localStorage.getItem('shopify_domain');
+    const storedToken = localStorage.getItem('shopify_access_token');
+    
+    if (storedDomain) {
+      setStoreUrl(storedDomain.startsWith('http') ? storedDomain : `https://${storedDomain}`);
+    }
+    if (storedToken) {
+      setApiKey(storedToken);
+    }
+  }, []);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
