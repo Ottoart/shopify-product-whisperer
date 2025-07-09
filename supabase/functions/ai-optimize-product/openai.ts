@@ -27,42 +27,51 @@ Start your response with { and end with }. Nothing else.`;
     // Use default structured prompt
     return `You are a Shopify product optimization expert. Create compelling, conversion-focused content STRICTLY IN ENGLISH LANGUAGE ONLY.
 
-🚨 MANDATORY ENGLISH ONLY RULE: ALL generated content MUST be in English regardless of input language. If input is in French, Spanish, German, or any other language, you MUST translate concepts and create English content.
+🔥 CRITICAL FAILURE CONDITIONS - DO NOT DO THESE:
+❌ NEVER include "Product Description" or any title/header in the description field
+❌ NEVER use generic types like "Hair Care" or "Skincare" - be SPECIFIC
+❌ NEVER use generic categories - use EXACT subcategories
+❌ NEVER generate content in French or any language other than English
 
-PRODUCT INFORMATION (for reference only - DO NOT copy this content):
+PRODUCT INPUT (translate to English if needed):
 Title: ${productData.title}
 Type: ${productData.type || 'Not specified'}
 Description: ${productData.description || 'No description'}
 Tags: ${productData.tags || 'No tags'}
 Vendor: ${productData.vendor || 'Not specified'}
-Current SEO Title: ${productData.seo_title || 'None'}
-Current SEO Description: ${productData.seo_description || 'None'}
 
-ABSOLUTE REQUIREMENT - RESPOND WITH EXACTLY THIS JSON STRUCTURE:
+MANDATORY JSON OUTPUT - COPY THIS EXACT STRUCTURE:
 
 {
-  "title": "CREATE A COMPLETELY NEW ENGLISH PRODUCT TITLE (max 60 chars). Analyze the product and create an engaging, SEO-optimized title that clearly describes what the product is. NEVER copy the existing title.",
-  "description": "Generate a COMPLETE NEW product description in ENGLISH using HTML tags. DO NOT include any titles like 'Product Description' or headers. Start directly with content like: <p><strong>Transform your [product type] routine with this premium [product name].</strong></p> Then include: benefits, key features, how to use instructions in numbered list, target audience, and why customers should buy. Use <strong>bold</strong> text, <ol><li>numbered lists</li></ol> for instructions, and <ul><li>bullet points</li></ul> for features. Make it conversion-focused with specific benefits.",
-  "tags": "Generate 25-50 COMPREHENSIVE SEO tags in ENGLISH. MANDATORY format: Brand_[BrandName], Category_[ProductCategory], Type_[SpecificType], Benefits_[MainBenefit], Hair_Type_[if hair product], Skin_Type_[if skincare], Ingredients_[KeyIngredient], Usage_[Daily/Weekly], Target_[Men/Women/Unisex], Price_Range_[Under25/25to50/50to100/Over100], Finish_[if applicable], Size_[if relevant]. Create specific, searchable tags.",
-  "type": "Generate HIGHLY SPECIFIC product type in ENGLISH. Examples: 'Leave-In Hair Conditioner', 'Deep Conditioning Hair Mask', 'Anti-Aging Face Serum', 'Moisturizing Body Lotion', 'Vitamin C Facial Cleanser', 'Curl Defining Cream', 'Hair Growth Oil'. Be precise and descriptive - NEVER use generic terms like 'Hair Care' or 'Skincare'.",
-  "category": "Select the MOST SPECIFIC category path. For HAIR: 'Health & Beauty > Personal Care > Cosmetics > Hair Care > [Hair Shampoo & Conditioner OR Hair Styling Products OR Hair Treatments & Masks OR Hair Oils & Serums]'. For SKINCARE: 'Health & Beauty > Personal Care > Cosmetics > Skin Care > [Face Moisturizers OR Cleansers OR Serums OR Eye Care]'. For BODY: 'Health & Beauty > Personal Care > Cosmetics > Skin Care > Body Care'. Choose the EXACT subcategory that matches the product type.",
-  "seo_title": "Create NEW SEO-optimized title in ENGLISH (max 60 chars) - different from product title but equally compelling",
-  "seo_description": "Create NEW meta description in ENGLISH (max 160 chars) highlighting main benefits and call-to-action",
-  "vendor": "Use the brand name from the product information or create appropriate brand name if missing",
+  "title": "ENGLISH TITLE HERE - max 60 chars - DO NOT copy existing title",
+  "description": "<p><strong>Transform your routine with this premium [specific product type].</strong></p><p>This [specific product] delivers [specific benefits]. Perfect for [target audience] seeking [desired results].</p><ul><li>Key benefit 1</li><li>Key benefit 2</li><li>Key benefit 3</li></ul><p><strong>How to use:</strong></p><ol><li>Step 1 instruction</li><li>Step 2 instruction</li><li>Step 3 instruction</li></ol><p>Experience [specific results] with this premium [product type].</p>",
+  "tags": "Brand_[ActualBrandName], Type_[SpecificProductType], Benefits_[MainBenefit], Hair_Type_[if hair product], Skin_Type_[if skincare], Ingredients_[KeyIngredient], Usage_Daily, Target_Unisex, Price_Range_[Under25/25to50/50to100], Professional_Grade, Premium_Quality, Natural_Formula, [15+ more specific tags]",
+  "type": "EXAMPLE REQUIRED: Leave-In Hair Conditioner OR Deep Conditioning Hair Mask OR Anti-Aging Face Serum OR Moisturizing Body Lotion OR Vitamin C Facial Cleanser - BE THIS SPECIFIC",
+  "category": "Health & Beauty > Personal Care > Cosmetics > Hair Care > Hair Treatments & Masks OR Health & Beauty > Personal Care > Cosmetics > Skin Care > Face Moisturizers - CHOOSE EXACT MATCH",
+  "seo_title": "NEW SEO title in English (max 60 chars) different from main title",
+  "seo_description": "NEW meta description in English (max 160 chars) with benefits and CTA",
+  "vendor": "${productData.vendor || 'Premium Beauty'}",
   "google_shopping_condition": "new",
-  "google_shopping_gender": "unisex",
+  "google_shopping_gender": "unisex", 
   "google_shopping_age_group": "adult"
 }
 
-🚨 CRITICAL ENGLISH-ONLY RULES:
-1. ALL TEXT must be in English - titles, descriptions, tags, everything
-2. If input product is French (like 'Masque'), translate to English (like 'Mask')
-3. Description must start directly with content - NO titles like "Product Description"
-4. Generate SPECIFIC product type - not generic categories
-5. Create 25-50 tags with proper prefixes for better searchability
-6. Use only HTML tags: <p>, <strong>, <ol>, <li>, <ul>, <br> - NO markdown
-7. Response must be ONLY valid JSON starting with { and ending with }
-8. Every field is MANDATORY - provide specific, relevant content for each`;
+🚨 ULTRA-SPECIFIC REQUIREMENTS:
+
+FOR PRODUCT TYPE - Choose ONE of these EXACT formats:
+- Hair: "Leave-In Hair Conditioner", "Deep Conditioning Hair Mask", "Curl Defining Cream", "Hair Growth Serum", "Volumizing Hair Mousse"
+- Skincare: "Anti-Aging Face Serum", "Hydrating Face Moisturizer", "Vitamin C Facial Cleanser", "Exfoliating Face Scrub", "Eye Contour Cream"
+- Body: "Moisturizing Body Lotion", "Exfoliating Body Scrub", "Firming Body Oil", "Soothing Body Balm"
+
+FOR CATEGORY - Choose ONE of these EXACT paths:
+- Hair Conditioners/Treatments: "Health & Beauty > Personal Care > Cosmetics > Hair Care > Hair Treatments & Masks"
+- Hair Styling: "Health & Beauty > Personal Care > Cosmetics > Hair Care > Hair Styling Products"  
+- Face Skincare: "Health & Beauty > Personal Care > Cosmetics > Skin Care > Face Moisturizers"
+- Body Care: "Health & Beauty > Personal Care > Cosmetics > Skin Care > Body Care"
+
+FOR DESCRIPTION - MUST start with: "<p><strong>Transform" and NEVER include "Product Description" title
+
+FINAL CHECK: Your response MUST be ONLY the JSON object starting with { and ending with }`;
   }
 }
 
