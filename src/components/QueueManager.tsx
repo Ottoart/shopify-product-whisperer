@@ -113,6 +113,18 @@ Please provide optimized content in this exact JSON format:
           progress: 50
         });
 
+        console.log('Calling AI optimize with payload:', {
+          productHandle: product.handle,
+          productData: {
+            title: product.title,
+            type: product.type,
+            description: product.bodyHtml,
+            tags: product.tags
+          },
+          useDirectAI: useDirectAI,
+          customPromptTemplate: useDirectAI ? customPromptTemplate : undefined
+        });
+
         const { data, error } = await supabase.functions.invoke('ai-optimize-product', {
           body: {
             productHandle: product.handle,
@@ -128,10 +140,28 @@ Please provide optimized content in this exact JSON format:
         });
 
         console.log('Edge function response:', { data, error });
+        console.log('Full error object:', JSON.stringify(error, null, 2));
 
         if (error) {
-          console.error('Edge function error:', error);
-          throw new Error(`Edge function error: ${error.message}`);
+          console.error('Edge function error details:', {
+            name: error.name,
+            message: error.message,
+            context: error.context,
+            details: error.details,
+            hint: error.hint,
+            code: error.code
+          });
+          
+          // Extract more specific error information
+          let errorMessage = error.message || 'Unknown error';
+          if (error.context) {
+            errorMessage += ` (Context: ${JSON.stringify(error.context)})`;
+          }
+          if (error.details) {
+            errorMessage += ` (Details: ${error.details})`;
+          }
+          
+          throw new Error(`Edge function error: ${errorMessage}`);
         }
 
         if (data?.error) {
