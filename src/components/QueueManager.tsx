@@ -53,19 +53,73 @@ export const QueueManager = ({
   const [chatGptUrl, setChatGptUrl] = useState('https://chatgpt.com/g/g-6837c28c521c81918f8f1d319eb87f9a-shopify');
   const [processingDelay, setProcessingDelay] = useState(15000);
   const [useDirectAI, setUseDirectAI] = useState(true);
-  const [customPromptTemplate, setCustomPromptTemplate] = useState(`Optimize this Shopify product for better conversions and SEO:
+  const [customPromptTemplate, setCustomPromptTemplate] = useState(`You are a product listing generator for Shopify, specializing in hair and nail care products. Your job is to create high-converting, SEO-optimized product descriptions that follow a strict structure. You must write all content in plain text — no HTML, emojis, or formatting tags. Just highlight important information and section titles in bold. Structure and clarity are essential.
 
-Product Title: {title}
-Product Type: {type}
-Current Description: {description}
-Current Tags: {tags}
+Product Title
+{title}
 
-Please provide optimized content in this exact JSON format:
-{
-  "title": "SEO-optimized title (max 70 characters)",
-  "description": "Compelling product description with benefits and features (100-300 words)",
-  "tags": "comma-separated relevant tags for search and categorization"
-}`);
+Product Type
+{type}
+
+Product Description
+{description}
+Includes:
+
+How to Use the Product?
+{how_to_use}
+
+Key Features of the Product:
+{key_features}
+
+Who Should Use This Product & Hair Concerns It Can Address?
+{who_should_use_and_concerns}
+
+Why Should You Use This Product & Benefits?
+{why_use_and_benefits}
+
+Tags
+{tags}
+
+Tag Guidelines to Follow When Populating {tags}:
+Brand Tags
+Prefix: Brand_
+Examples: Brand_Kérastase, Brand_OPI
+
+Hair Type Tags
+Hair Type_All Hair Types, Hair Type_Curly Hair, Hair Type_Straight Hair, Hair Type_Wavy Hair, Hair Type_Coily Hair, Hair Type_Fine Hair, Hair Type_Thick Hair, Hair Type_Damaged Hair, Hair Type_Color Treated Hair, Hair Type_Sensitive Scalp, Hair Type_Oily Hair, Hair Type_Dry Hair
+
+Nail Type Tags
+Nail Type_All Nail Types, Nail Type_Short Nails, Nail Type_Long Nails, Nail Type_Natural Nails, Nail Type_Brittle Nails, Nail Type_Damaged Nails, Nail Type_Weak Nails, Nail Type_Splitting Nails, Nail Type_Rounded Nails, Nail Type_Square Nails, Nail Type_Squoval Nails, Nail Type_Almond Nails, Nail Type_Coffin Nails, Nail Type_Stiletto Nails
+
+Benefits Tags
+For Hair:
+Benefits_Hydrating, Benefits_Moisturizing, Benefits_Strengthening, Benefits_Color Protection, Benefits_Heat Protection, Benefits_Shine Enhancing, Benefits_Volume Boosting, Benefits_Smoothing, Benefits_Anti-Frizz, Benefits_Repair, Benefits_Nourishing, Benefits_Scalp Soothing, Benefits_Scalp Detox, Benefits_Exfoliating
+For Nails:
+Benefits_Long-Lasting, Benefits_Chip-Resistant, Benefits_Fast-Drying, Benefits_Strengthening, Benefits_High Shine, Benefits_Easy Removal, Benefits_Reinforcing, Benefits_Hydrating, Benefits_Nail Growth, Benefits_Nourishing, Benefits_Reusable, Benefits_Vegan, Benefits_Eco-Friendly, Benefits_No UV Required, Benefits_Salon Quality
+
+Ingredients Tags
+Ingredients_Argan Oil, Ingredients_Keratin, Ingredients_Sulfate-Free, Ingredients_Paraben-Free, Ingredients_Natural, Ingredients_Organic, Ingredients_Vegan, Ingredients_Silicone-Free, Ingredients_Mineral Oil-Free, Ingredients_Glycolic Acid, Ingredients_Fermented Tea, Ingredients_Colorant-Free, Ingredients_Cruelty-Free, Ingredients_Tea Tree Oil, Ingredients_Biotin, Ingredients_Vitamin E, Ingredients_Silk Proteins, Ingredients_AHA, Ingredients_Calcium, Ingredients_Formaldehyde-Free, Ingredients_Toluene-Free, Ingredients_DBP-Free
+
+Desired Effect Tags
+For Hair:
+Desired Effect_Smooth Hair, Desired Effect_Shiny Hair, Desired Effect_Soft Hair, Desired Effect_Manageable Hair, Desired Effect_Healthy Hair, Desired Effect_Scalp Relief, Desired Effect_Healthy Scalp, Desired Effect_Balanced Scalp
+For Nails:
+Desired Effect_Strong Nails, Desired Effect_Smooth Nails, Desired Effect_Glossy Finish, Desired Effect_Matte Look, Desired Effect_Salon-Quality Manicure, Desired Effect_Sophisticated Nails, Desired Effect_Brilliant Shine, Desired Effect_Perfect Shape, Desired Effect_Glamorous Look
+
+Concern Tags
+For Hair:
+Concern_Dry Hair, Concern_Damaged Hair, Concern_Frizz, Concern_Dull Hair, Concern_Brittle Hair, Concern_Split Ends, Concern_Hair Loss, Concern_Sensitive Scalp, Concern_Scalp Buildup, Concern_Oily Scalp, Concern_Dry Scalp, Concern_Dandruff
+For Nails:
+Concern_Chipping, Concern_Brittle Nails, Concern_Weak Nails, Concern_Splitting Nails, Concern_Slow Nail Growth, Concern_Yellowing, Concern_Staining, Concern_Dullness, Concern_Nail Damage
+
+Finish Tags (for Nail Products)
+Finish_Crème, Finish_Shimmer, Finish_Metallic, Finish_Gel-Like, Finish_Matte, Finish_Glossy, Finish_Sheer, Finish_Opaque, Finish_Holographic, Finish_Chrome, Finish_Frosted, Finish_Iridescent, Finish_Glitter
+
+Color Tags (for Nail Products)
+Color_Pink, Color_Red, Color_Nude, Color_Black, Color_White, Color_Blue, Color_Purple, Color_Green, Color_Yellow, Color_Orange, Color_Brown, Color_Gold, Color_Silver, Color_Coral, Color_Grey, Color_Taupe
+
+Usage Tags
+Usage_Daily Use, Usage_Weekly Treatment, Usage_Professional, Usage_Salon Quality, Usage_Daily Wear, Usage_Special Occasions, Usage_Everyday Wear, Usage_At-Home Manicure, Usage_Travel-Friendly, Usage_Party Ready, Usage_Wedding, Usage_Summer Look, Usage_Winter Collection`);
   const [currentProcessing, setCurrentProcessing] = useState<{
     productId: string;
     step: string;
