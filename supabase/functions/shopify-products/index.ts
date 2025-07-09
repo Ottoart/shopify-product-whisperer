@@ -241,9 +241,13 @@ serve(async (req) => {
         // Fetch all products with pagination
         while (hasNextPage) {
           currentPage++;
-          let url = `${shopifyUrl}products.json?limit=250${filter}`;
+          let url = `${shopifyUrl}products.json?limit=250`;
+          
+          // Add filters only if we don't have pageInfo (Shopify doesn't allow both)
           if (pageInfo) {
             url += `&page_info=${pageInfo}`;
+          } else if (filter) {
+            url += filter;
           }
           
           console.log(`Fetching page ${currentPage} for ${brand || filterValue || 'all products'}...`);
@@ -279,7 +283,15 @@ serve(async (req) => {
           }
         }
 
-        console.log(`Fetched ${allProducts.length} products from Shopify for ${brand || 'all brands'}`);
+        // If we're filtering by product type and used pagination, filter client-side
+        if (filterType === 'product_types' && filterValue && pageInfo) {
+          allProducts = allProducts.filter(product => 
+            product.product_type === filterValue
+          );
+          console.log(`Client-side filtered to ${allProducts.length} products with product_type: ${filterValue}`);
+        }
+
+        console.log(`Fetched ${allProducts.length} products from Shopify for ${brand || filterValue || 'all products'}`);
 
         // Get unique brands for the response
         const allBrands = [...new Set(allProducts.map((p: any) => p.vendor).filter(Boolean))].sort();
