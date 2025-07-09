@@ -149,14 +149,15 @@ serve(async (req) => {
       // Add JSON format requirement to custom prompt
       prompt = `${customPrompt}
 
-IMPORTANT: After generating the optimized content according to the above instructions, you MUST return your response in this exact JSON format:
+CRITICAL REQUIREMENT: You MUST respond with ONLY a valid JSON object. No explanations, no additional text, no formatting, no markdown - ONLY the JSON object below:
+
 {
-  "title": "your optimized title (max 70 characters)",
-  "description": "your optimized description with all sections included",
-  "tags": "comma-separated relevant tags following the guidelines above"
+  "title": "your optimized title here",
+  "description": "your complete optimized description with all sections",
+  "tags": "comma-separated tags following the guidelines"
 }
 
-Only return the JSON object, no additional text before or after.`;
+Start your response with { and end with }. Nothing else.`;
       console.log('Using custom prompt template with JSON format requirement');
     } else {
       // Use default prompt
@@ -167,12 +168,15 @@ Product Type: ${productData.type || 'Not specified'}
 Current Description: ${productData.description || 'No description'}
 Current Tags: ${productData.tags || 'No tags'}
 
-Please provide optimized content in this exact JSON format:
+CRITICAL REQUIREMENT: Respond with ONLY a valid JSON object. No explanations, no additional text, no formatting - ONLY this JSON structure:
+
 {
   "title": "SEO-optimized title (max 70 characters)",
-  "description": "Compelling product description with benefits and features (100-300 words)",
+  "description": "Compelling product description with benefits and features (100-300 words)", 
   "tags": "comma-separated relevant tags for search and categorization"
-}`;
+}
+
+Start your response with { and end with }. Nothing else.`;
       console.log('Using default prompt template');
     }
 
@@ -189,7 +193,7 @@ Please provide optimized content in this exact JSON format:
         messages: [
           { 
             role: 'system', 
-            content: 'You are a Shopify product optimization expert. Analyze products and return optimized content in valid JSON format only. Focus on converting features into benefits, SEO optimization, and compelling copy that drives sales.' 
+            content: 'You are a Shopify product optimization expert. You MUST respond with ONLY valid JSON - no other text, no explanations, no markdown formatting. Your response must start with { and end with }. Focus on converting features into benefits, SEO optimization, and compelling copy that drives sales.' 
           },
           { role: 'user', content: prompt }
         ],
