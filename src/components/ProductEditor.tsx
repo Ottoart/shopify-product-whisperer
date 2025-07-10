@@ -128,6 +128,50 @@ export const ProductEditor = ({ product, isOpen, onClose, onProductUpdated }: Pr
         description: "Your manual edits have been saved and will appear shortly.",
       });
 
+      // Auto-sync to Shopify after manual edit
+      try {
+        const { data: syncData, error: syncError } = await supabase.functions.invoke('shopify-products', {
+          body: { 
+            action: 'update',
+            products: [{
+              handle: product.handle,
+              title: editedProduct.title,
+              description: editedProduct.bodyHtml,
+              type: editedProduct.type,
+              tags: editedProduct.tags
+            }]
+          }
+        });
+
+        if (syncError) {
+          console.error('Shopify sync error:', syncError);
+          toast({
+            title: "Shopify Sync Failed",
+            description: "Product saved locally but failed to sync to Shopify. You can export manually later.",
+            variant: "destructive",
+          });
+        } else if (syncData?.error) {
+          console.error('Shopify API error:', syncData.error);
+          toast({
+            title: "Shopify Sync Failed", 
+            description: syncData.error,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Synced to Shopify",
+            description: "Product updated in both database and Shopify store.",
+          });
+        }
+      } catch (syncError: any) {
+        console.error('Shopify sync error:', syncError);
+        toast({
+          title: "Shopify Sync Failed",
+          description: "Product saved locally but failed to sync to Shopify.",
+          variant: "destructive",
+        });
+      }
+
       // Force refresh the products list
       setTimeout(() => {
         onProductUpdated();
