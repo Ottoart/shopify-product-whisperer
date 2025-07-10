@@ -48,12 +48,13 @@ export const ProductEditor = ({ product, isOpen, onClose, onProductUpdated }: Pr
       
       if (error) {
         console.error('Database error tracking edit:', error);
-        throw error;
+        // Don't throw - we don't want edit tracking to block product updates
+      } else {
+        console.log('Manual edit tracked successfully');
       }
-      console.log('Manual edit tracked successfully');
     } catch (error) {
       console.error('Error tracking manual edit:', error);
-      throw error;
+      // Don't throw - we don't want edit tracking to block product updates
     }
   };
 
@@ -62,17 +63,40 @@ export const ProductEditor = ({ product, isOpen, onClose, onProductUpdated }: Pr
 
     setIsSaving(true);
     try {
-      // Track all manual edits
-      await Promise.all([
+      console.log('Starting to save product edits...', { 
+        productHandle: product.handle,
+        changes: {
+          title: product.title !== editedProduct.title,
+          type: (product.type || '') !== editedProduct.type,
+          description: (product.bodyHtml || '') !== editedProduct.bodyHtml,
+          tags: (product.tags || '') !== editedProduct.tags,
+          category: (product.category || '') !== editedProduct.category,
+          vendor: (product.vendor || '') !== editedProduct.vendor
+        }
+      });
+
+      // Track all manual edits (non-blocking)
+      Promise.all([
         trackManualEdit('title', product.title, editedProduct.title),
         trackManualEdit('type', product.type || '', editedProduct.type),
         trackManualEdit('description', product.bodyHtml || '', editedProduct.bodyHtml),
         trackManualEdit('tags', product.tags || '', editedProduct.tags),
         trackManualEdit('category', product.category || '', editedProduct.category),
         trackManualEdit('vendor', product.vendor || '', editedProduct.vendor)
-      ]);
+      ]).catch(error => {
+        console.error('Edit tracking failed (non-blocking):', error);
+      });
 
       // Update the product in the database
+      console.log('Updating product in database...', {
+        title: editedProduct.title,
+        type: editedProduct.type,
+        body_html: editedProduct.bodyHtml,
+        tags: editedProduct.tags,
+        category: editedProduct.category,
+        vendor: editedProduct.vendor
+      });
+
       const { error } = await supabase
         .from('products')
         .update({
@@ -87,7 +111,12 @@ export const ProductEditor = ({ product, isOpen, onClose, onProductUpdated }: Pr
         .eq('handle', product.handle)
         .eq('user_id', session.user.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database update error:', error);
+        throw error;
+      }
+
+      console.log('Product updated successfully');
 
       toast({
         title: "Product Updated",
