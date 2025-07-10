@@ -4,9 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, Package, Activity, Zap, BarChart3, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useProducts } from '@/hooks/useProducts';
 
 const MainDashboard = () => {
   const { session } = useSessionContext();
+  const { products, isLoading } = useProducts();
 
   if (!session) {
     return <Auth />;
@@ -51,7 +53,9 @@ const MainDashboard = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">1,234</div>
+              <div className="text-2xl font-bold">
+                {isLoading ? "Loading..." : products.length.toLocaleString()}
+              </div>
               <p className="text-xs text-muted-foreground">Total products in store</p>
               <Link to="/">
                 <Button variant="outline" size="sm" className="mt-2">
