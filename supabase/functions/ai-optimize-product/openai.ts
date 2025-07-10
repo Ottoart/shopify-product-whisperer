@@ -33,15 +33,17 @@ IMPORTANT INSTRUCTIONS:
 }
 
 Start your response with { and end with }. Nothing else.`;
-  } else {
-    // Use default structured prompt
-    return `You are a Shopify product optimization expert. Create compelling, conversion-focused content STRICTLY IN ENGLISH LANGUAGE ONLY.
+  }
+
+  // Default structured prompt with ALL Shopify-compatible fields
+  return `You are a Shopify product optimization expert. Create compelling, conversion-focused content STRICTLY IN ENGLISH LANGUAGE ONLY.
 
 🔥 CRITICAL FAILURE CONDITIONS - DO NOT DO THESE:
 ❌ NEVER include "Product Description" or any title/header in the description field
 ❌ NEVER use generic types like "Hair Care" or "Skincare" - be SPECIFIC
 ❌ NEVER use generic categories - use EXACT subcategories
 ❌ NEVER generate content in French or any language other than English
+❌ NEVER include section headers like "Product Type:" or "Product Description:" in the description
 
 PRODUCT INPUT (translate to English if needed):
 Title: ${productData.title}
@@ -56,11 +58,16 @@ MANDATORY JSON OUTPUT - COPY THIS EXACT STRUCTURE:
   "title": "ENGLISH TITLE HERE - max 60 chars - DO NOT copy existing title",
   "description": "<p><strong>Transform your routine with this premium [specific product type].</strong></p><p>This [specific product] delivers [specific benefits]. Perfect for [target audience] seeking [desired results].</p><ul><li>Key benefit 1</li><li>Key benefit 2</li><li>Key benefit 3</li></ul><p><strong>How to use:</strong></p><ol><li>Step 1 instruction</li><li>Step 2 instruction</li><li>Step 3 instruction</li></ol><p>Experience [specific results] with this premium [product type].</p>",
   "tags": "Brand_[ActualBrandName], Type_[SpecificProductType], Benefits_[MainBenefit], Hair_Type_[if hair product], Skin_Type_[if skincare], Ingredients_[KeyIngredient], Usage_Daily, Target_Unisex, Price_Range_[Under25/25to50/50to100], Professional_Grade, Premium_Quality, Natural_Formula, [15+ more specific tags]",
-  "type": "EXAMPLE REQUIRED: Leave-In Hair Conditioner OR Deep Conditioning Hair Mask OR Anti-Aging Face Serum OR Moisturizing Body Lotion OR Vitamin C Facial Cleanser - BE THIS SPECIFIC",
-  "category": "Health & Beauty > Personal Care > Cosmetics > Hair Care > Hair Treatments & Masks OR Health & Beauty > Personal Care > Cosmetics > Skin Care > Face Moisturizers - CHOOSE EXACT MATCH",
+  "type": "EXAMPLE REQUIRED: Leave-In Hair Conditioner OR Deep Conditioning Hair Mask OR Anti-Aging Face Serum OR Moisturizing Body Lotion OR Vitamin C Facial Cleanser OR Disposable Nail Wipes - BE THIS SPECIFIC",
+  "category": "Health & Beauty > Personal Care > Cosmetics > Hair Care > Hair Treatments & Masks OR Health & Beauty > Personal Care > Cosmetics > Skin Care > Face Moisturizers OR Health & Beauty > Personal Care > Cosmetics > Nail Care > Nail Tools - CHOOSE EXACT MATCH",
   "seo_title": "NEW SEO title in English (max 60 chars) different from main title",
   "seo_description": "NEW meta description in English (max 160 chars) with benefits and CTA",
   "vendor": "${productData.vendor || 'Premium Beauty'}",
+  "variant_price": ${productData.variant_price || 'null'},
+  "variant_compare_at_price": ${productData.variant_compare_at_price || 'null'},
+  "variant_sku": "${productData.variant_sku || ''}",
+  "variant_barcode": "${productData.variant_barcode || ''}",
+  "variant_grams": ${productData.variant_grams || 'null'},
   "google_shopping_condition": "new",
   "google_shopping_gender": "unisex", 
   "google_shopping_age_group": "adult"
@@ -72,17 +79,18 @@ FOR PRODUCT TYPE - Choose ONE of these EXACT formats:
 - Hair: "Leave-In Hair Conditioner", "Deep Conditioning Hair Mask", "Curl Defining Cream", "Hair Growth Serum", "Volumizing Hair Mousse"
 - Skincare: "Anti-Aging Face Serum", "Hydrating Face Moisturizer", "Vitamin C Facial Cleanser", "Exfoliating Face Scrub", "Eye Contour Cream"
 - Body: "Moisturizing Body Lotion", "Exfoliating Body Scrub", "Firming Body Oil", "Soothing Body Balm"
+- Nail: "Disposable Nail Wipes", "Multi-Purpose Beauty Wipes", "Nail Cleaning Pads", "Professional Nail Tools"
 
 FOR CATEGORY - Choose ONE of these EXACT paths:
 - Hair Conditioners/Treatments: "Health & Beauty > Personal Care > Cosmetics > Hair Care > Hair Treatments & Masks"
 - Hair Styling: "Health & Beauty > Personal Care > Cosmetics > Hair Care > Hair Styling Products"  
 - Face Skincare: "Health & Beauty > Personal Care > Cosmetics > Skin Care > Face Moisturizers"
 - Body Care: "Health & Beauty > Personal Care > Cosmetics > Skin Care > Body Care"
+- Nail Care: "Health & Beauty > Personal Care > Cosmetics > Nail Care > Nail Tools"
 
 FOR DESCRIPTION - MUST start with: "<p><strong>Transform" and NEVER include "Product Description" title
 
-FINAL CHECK: Your response MUST be ONLY the JSON object starting with { and ending with }`;
-  }
+FINAL CHECK: Your response MUST be ONLY the JSON object starting with { and ending with }. NO explanations, NO text outside JSON, NO markdown formatting.`;
 }
 
 export async function callOpenAI(request: OptimizeProductRequest, apiKey: string): Promise<OptimizedProductData> {
