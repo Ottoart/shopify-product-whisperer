@@ -158,6 +158,30 @@ export type Database = {
         }
         Relationships: []
       }
+      shopify_analytics: {
+        Row: {
+          analytics_data: Json
+          created_at: string
+          id: string
+          last_updated: string
+          user_id: string
+        }
+        Insert: {
+          analytics_data: Json
+          created_at?: string
+          id?: string
+          last_updated?: string
+          user_id: string
+        }
+        Update: {
+          analytics_data?: Json
+          created_at?: string
+          id?: string
+          last_updated?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_edit_patterns: {
         Row: {
           confidence_score: number | null
