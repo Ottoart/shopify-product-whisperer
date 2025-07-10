@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { ProductEditor } from '@/components/ProductEditor';
-import { Search, Package, ExternalLink, Zap, CheckSquare, Square, Edit3 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Search, Package, ExternalLink, Zap, CheckSquare, Square, Edit3, Filter } from 'lucide-react';
 import { Product } from '@/pages/Index';
 
 interface ProductListProps {
@@ -28,13 +29,23 @@ export const ProductList = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const itemsPerPage = 10;
+  const [itemsPerPage, setItemsPerPage] = useState(50);
+  const [typeFilter, setTypeFilter] = useState('');
+  const [vendorFilter, setVendorFilter] = useState('');
+  const [tagFilter, setTagFilter] = useState('');
 
-  const filteredProducts = products.filter(product =>
-    product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.vendor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.type.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredProducts = products.filter(product => {
+    const matchesSearch = product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         product.vendor.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         product.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         product.tags.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesType = !typeFilter || product.type.toLowerCase().includes(typeFilter.toLowerCase());
+    const matchesVendor = !vendorFilter || product.vendor.toLowerCase().includes(vendorFilter.toLowerCase());
+    const matchesTag = !tagFilter || product.tags.toLowerCase().includes(tagFilter.toLowerCase());
+    
+    return matchesSearch && matchesType && matchesVendor && matchesTag;
+  });
 
   const paginatedProducts = filteredProducts.slice(
     (currentPage - 1) * itemsPerPage,
@@ -81,8 +92,9 @@ export const ProductList = ({
   return (
     <div className="space-y-4">
       {/* Search and Controls */}
-      <div className="p-6 border-b">
-        <div className="flex items-center gap-4 mb-4">
+      <div className="p-6 border-b space-y-4">
+        {/* Search and Bulk Actions */}
+        <div className="flex items-center gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
@@ -100,15 +112,76 @@ export const ProductList = ({
           )}
         </div>
 
-        {/* Select All */}
-        <div className="flex items-center gap-2">
-          <Checkbox
-            checked={selectedProducts.size === paginatedProducts.length && paginatedProducts.length > 0}
-            onCheckedChange={handleSelectAll}
+        {/* Filters Row */}
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium">Filters:</span>
+          </div>
+          
+          <Input
+            placeholder="Filter by type..."
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className="w-40"
           />
-          <span className="text-sm text-muted-foreground">
-            Select all ({selectedProducts.size} selected)
-          </span>
+          
+          <Input
+            placeholder="Filter by vendor..."
+            value={vendorFilter}
+            onChange={(e) => setVendorFilter(e.target.value)}
+            className="w-40"
+          />
+          
+          <Input
+            placeholder="Filter by tag..."
+            value={tagFilter}
+            onChange={(e) => setTagFilter(e.target.value)}
+            className="w-40"
+          />
+
+          <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(Number(value))}>
+            <SelectTrigger className="w-32">
+              <SelectValue placeholder="Per page" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="25">25 per page</SelectItem>
+              <SelectItem value="50">50 per page</SelectItem>
+              <SelectItem value="100">100 per page</SelectItem>
+              <SelectItem value="500">500 per page</SelectItem>
+              <SelectItem value={products.length.toString()}>Show all ({products.length})</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          {(typeFilter || vendorFilter || tagFilter) && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setTypeFilter('');
+                setVendorFilter('');
+                setTagFilter('');
+              }}
+            >
+              Clear Filters
+            </Button>
+          )}
+        </div>
+
+        {/* Results Summary and Select All */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Checkbox
+              checked={selectedProducts.size === paginatedProducts.length && paginatedProducts.length > 0}
+              onCheckedChange={handleSelectAll}
+            />
+            <span className="text-sm text-muted-foreground">
+              Select all on page ({selectedProducts.size} selected)
+            </span>
+          </div>
+          <div className="text-sm text-muted-foreground">
+            Showing {paginatedProducts.length} of {filteredProducts.length} products
+          </div>
         </div>
       </div>
 
