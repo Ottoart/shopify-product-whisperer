@@ -3,11 +3,7 @@ import { useSessionContext } from '@supabase/auth-helpers-react';
 import { Auth } from '@/components/Auth';
 import { ProductList } from '@/components/ProductList';
 import { QueueManager } from '@/components/QueueManager';
-import { StoreConfig } from '@/components/StoreConfig';
-import { ShopifySync } from '@/components/ShopifySync';
 import { ProductTypeGenerator } from '@/components/ProductTypeGenerator';
-import { LearningDashboard } from '@/components/LearningDashboard';
-import { ProductActivity } from '@/components/ProductActivity';
 import { useProducts } from '@/hooks/useProducts';
 import { useEditTracking } from '@/hooks/useEditTracking';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -64,8 +60,6 @@ const Index = () => {
   const { products, saveProducts, updateProduct, isSaving, isLoading } = useProducts();
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [queueItems, setQueueItems] = useState<Array<{ productId: string; status: 'pending' | 'processing' | 'completed' | 'error'; error?: string }>>([]);
-  const [storeUrl, setStoreUrl] = useState<string>('');
-  const [apiKey, setApiKey] = useState<string>('');
 
   const { trackProductUpdate } = useEditTracking({ 
     onProductUpdate: (productId: string, updatedData: UpdatedProduct) => {
@@ -73,18 +67,6 @@ const Index = () => {
     }
   });
 
-  // Load stored credentials on mount
-  useEffect(() => {
-    const storedDomain = localStorage.getItem('shopify_domain');
-    const storedToken = localStorage.getItem('shopify_access_token');
-    
-    if (storedDomain) {
-      setStoreUrl(storedDomain.startsWith('http') ? storedDomain : `https://${storedDomain}`);
-    }
-    if (storedToken) {
-      setApiKey(storedToken);
-    }
-  }, []);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -180,35 +162,20 @@ const Index = () => {
               <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-gradient-primary flex items-center justify-center">
                 <Store className="h-6 w-6 text-primary-foreground" />
               </div>
-              <CardTitle className="text-2xl">Connect Your Shopify Store</CardTitle>
+              <CardTitle className="text-2xl">Welcome to PrepFox</CardTitle>
               <CardDescription>
-                Import and optimize your products directly from Shopify with AI-powered enhancements
+                AI-powered product management for your Shopify store
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-center space-y-4">
                 <p className="text-muted-foreground">
-                  Configure your store settings below and start importing products from your Shopify store
+                  Use the sidebar to navigate to Shopify Integration and configure your store, then import products to get started.
                 </p>
               </div>
             </CardContent>
           </Card>
         )}
-
-        {/* Store Configuration - Show for everyone */}
-        <StoreConfig 
-          storeUrl={storeUrl} 
-          onStoreUrlChange={setStoreUrl}
-          apiKey={apiKey}
-          onApiKeyChange={setApiKey}
-        />
-
-        {/* Shopify Integration */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <ShopifySync onProductsUpdated={handleProductsUpdated} />
-          <ProductActivity onProductsUpdated={handleProductsUpdated} storeUrl={storeUrl} />
-          <LearningDashboard />
-        </div>
 
         {/* Main Content */}
         {products.length > 0 && (
@@ -238,7 +205,7 @@ const Index = () => {
                     onSelectionChange={setSelectedProducts}
                     onAddToQueue={addToQueue}
                     onProductsUpdated={handleProductsUpdated}
-                    storeUrl={storeUrl}
+                    storeUrl=""
                   />
                 </CardContent>
               </Card>
