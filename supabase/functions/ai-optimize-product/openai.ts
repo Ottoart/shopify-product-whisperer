@@ -20,13 +20,16 @@ IMPORTANT INSTRUCTIONS:
 - For "description": ONLY include the actual product description content, NOT section headers like "Product Description:" or "Product Type:"
 - For "type": Provide a SPECIFIC product type like "Disposable Nail Wipes" or "Multi-Purpose Beauty Wipes", NOT generic types like "nail_beauty"
 - For "category": Use the exact Google Shopping category path format
+- ALL fields are REQUIRED and MUST be included in your response
 
 {
   "title": "your optimized title in English",
   "description": "your complete optimized description content WITHOUT any section headers - just the actual description text with HTML formatting",
-  "tags": "comma-separated tags following the guidelines",
+  "tags": "comma-separated tags following the guidelines", 
   "type": "SPECIFIC product type like 'Disposable Nail Wipes' or 'Multi-Purpose Beauty Wipes'",
-  "category": "Health & Beauty > Personal Care > Cosmetics > [specific subcategory]"
+  "category": "Health & Beauty > Personal Care > Cosmetics > [specific subcategory]",
+  "seo_title": "SEO optimized title different from main title",
+  "seo_description": "SEO meta description with benefits and CTA"
 }
 
 Start your response with { and end with }. Nothing else.`;
