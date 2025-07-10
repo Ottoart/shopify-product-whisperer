@@ -56,27 +56,35 @@ export const LearningDashboard = () => {
   const analyzePatterns = async () => {
     setIsAnalyzing(true);
     try {
+      console.log('Calling analyze-edit-patterns function...');
       const { data, error } = await supabase.functions.invoke('analyze-edit-patterns');
 
-      if (error) throw error;
+      console.log('Function response:', { data, error });
 
-      if (data.patterns && data.patterns.length > 0) {
+      if (error) {
+        console.error('Function error:', error);
+        throw error;
+      }
+
+      if (data?.patterns && data.patterns.length > 0) {
+        console.log('Patterns found:', data.patterns);
         toast({
           title: "Patterns Analyzed",
           description: `Found ${data.patterns.length} editing patterns.`,
         });
         await loadPatterns();
       } else {
+        console.log('No patterns found, data:', data);
         toast({
           title: "No Patterns Found",
-          description: data.message || "Make more manual edits to build patterns.",
+          description: data?.message || "Make more manual edits to build patterns.",
         });
       }
     } catch (error) {
       console.error('Error analyzing patterns:', error);
       toast({
         title: "Analysis Failed",
-        description: "Failed to analyze editing patterns.",
+        description: `Failed to analyze editing patterns: ${error.message}`,
         variant: "destructive",
       });
     } finally {
@@ -165,7 +173,7 @@ export const LearningDashboard = () => {
       <CardContent className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
-            {patterns.length} patterns detected
+            {patterns.length} learning patterns available
           </div>
           <Button 
             onClick={analyzePatterns}
