@@ -25,15 +25,15 @@ export async function updateProduct(
     throw new Error(`Failed to fetch current product: ${fetchError.message}`);
   }
 
-  // Get recent manual edits (within last 10 minutes) to preserve them
-  const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+  // Get recent manual edits (within last 30 minutes) to preserve them
+  const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
   const { data: recentEdits, error: editsError } = await supabase
     .from('product_edit_history')
-    .select('field_name, after_value')
+    .select('field_name, after_value, created_at')
     .eq('product_handle', productHandle)
     .eq('user_id', userId)
     .eq('edit_type', 'manual')
-    .gte('created_at', tenMinutesAgo)
+    .gte('created_at', thirtyMinutesAgo)
     .order('created_at', { ascending: false });
 
   if (editsError) {
