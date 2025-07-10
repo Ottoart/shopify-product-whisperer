@@ -103,7 +103,7 @@ Respond with ONLY a JSON array of patterns:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4.1-mini-2025-04-14',
         messages: [{ role: 'user', content: analysisPrompt }],
         temperature: 0.3,
         max_tokens: 2000,
