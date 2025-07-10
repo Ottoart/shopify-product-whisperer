@@ -41,17 +41,43 @@ serve(async (req) => {
 
     console.log('Fetching comprehensive Shopify data for:', shopifyDomain);
 
-    // Fetch ALL products but with minimal data to determine capacity
-    console.log('Fetching ALL products with minimal essential data');
+    // Test basic API connection first with minimal request
+    console.log('Testing Shopify API connection');
     
+    const testUrl = `${baseUrl}/products.json?limit=50&fields=id,title,handle`;
+    console.log('Test URL:', testUrl);
+    
+    const testResponse = await fetch(testUrl, {
+      headers: {
+        'X-Shopify-Access-Token': accessToken,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!testResponse.ok) {
+      console.error('Test API call failed:', testResponse.status, testResponse.statusText);
+      const errorText = await testResponse.text();
+      console.error('Error details:', errorText);
+      throw new Error(`Shopify API test failed: ${testResponse.status} ${testResponse.statusText}`);
+    }
+
+    const testData = await testResponse.json();
+    console.log(`API test successful. Found ${testData.products?.length || 0} products in test`);
+
+    // Now fetch all products using proper cursor pagination
     let allProducts = [];
+    let pageInfo = null;
     let pageCount = 0;
     
-    for (let page = 1; page <= 50; page++) { // Max 50 pages = 12,500 products
-      console.log(`Fetching page ${page}`);
+    do {
+      pageCount++;
+      console.log(`Fetching page ${pageCount}`);
       
-      // Only essential fields to minimize data transfer
-      const url = `${baseUrl}/products.json?limit=250&page=${page}&fields=id,title,handle,product_type,vendor,published_at,status,variants`;
+      // Use proper Shopify cursor pagination
+      let url = `${baseUrl}/products.json?limit=250&fields=id,title,handle,product_type,vendor,published_at,status,variants`;
+      if (pageInfo) {
+        url += `&page_info=${pageInfo}`;
+      }
       
       const productsResponse = await fetch(url, {
         headers: {
@@ -61,12 +87,10 @@ serve(async (req) => {
       });
 
       if (!productsResponse.ok) {
-        console.error(`Failed to fetch products page ${page}: ${productsResponse.status}`);
-        if (productsResponse.status === 404) break; // No more pages
-        
+        console.error(`Failed to fetch products page ${pageCount}: ${productsResponse.status}`);
         // If we have some products already, continue with what we have
         if (allProducts.length > 0) {
-          console.log(`Got error on page ${page}, stopping with ${allProducts.length} products`);
+          console.log(`Got error on page ${pageCount}, stopping with ${allProducts.length} products`);
           break;
         }
         throw new Error(`Failed to fetch products: ${productsResponse.statusText}`);
@@ -81,15 +105,26 @@ serve(async (req) => {
       }
       
       allProducts = allProducts.concat(newProducts);
-      pageCount++;
-      console.log(`Page ${page}: got ${newProducts.length} products, total: ${allProducts.length}`);
+      console.log(`Page ${pageCount}: got ${newProducts.length} products, total: ${allProducts.length}`);
       
-      // If we got less than 250, this is the last page
-      if (newProducts.length < 250) {
-        console.log('Last page reached');
+      // Extract page_info from Link header for next page
+      const linkHeader = productsResponse.headers.get('Link');
+      pageInfo = null;
+      
+      if (linkHeader) {
+        const nextMatch = linkHeader.match(/<[^>]*[?&]page_info=([^&>]+)[^>]*>;\s*rel="next"/);
+        if (nextMatch) {
+          pageInfo = nextMatch[1];
+        }
+      }
+      
+      // Safety limits
+      if (pageCount >= 20 || allProducts.length >= 5000) {
+        console.log(`Reached limit: ${pageCount} pages or ${allProducts.length} products`);
         break;
       }
-    }
+      
+    } while (pageInfo);
 
     console.log(`Successfully fetched ${allProducts.length} total products across ${pageCount} pages`);
     const products = allProducts;
