@@ -212,10 +212,10 @@ const PrepFoxDashboard = () => {
             {isSyncing && (
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span>Syncing batch {syncProgress.current} of {syncProgress.total}</span>
-                  <span>{Math.round((syncProgress.current / syncProgress.total) * 100)}%</span>
+                  <span>Syncing products from Shopify...</span>
+                  <span>{syncProgress.current}%</span>
                 </div>
-                <Progress value={(syncProgress.current / syncProgress.total) * 100} />
+                <Progress value={syncProgress.current} />
               </div>
             )}
 

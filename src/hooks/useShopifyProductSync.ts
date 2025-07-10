@@ -87,7 +87,7 @@ export const useShopifyProductSync = () => {
 
   // Sync batch mutation
   const syncBatchMutation = useMutation({
-    mutationFn: async ({ batchSize = 250, startPage = 1 }: { batchSize?: number; startPage?: number }) => {
+    mutationFn: async ({ batchSize = 250, startPage = 1, silent = false }: { batchSize?: number; startPage?: number; silent?: boolean }) => {
       const { storeUrl, accessToken } = getShopifyCredentials();
       
       if (!storeUrl || !accessToken) {
@@ -103,50 +103,68 @@ export const useShopifyProductSync = () => {
 
       return data;
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['shopify-sync-status'] });
       queryClient.invalidateQueries({ queryKey: ['local-products-count'] });
       queryClient.invalidateQueries({ queryKey: ['local-products'] });
       
-      toast({
-        title: "Batch Synced",
-        description: data.message,
-      });
+      // Only show toast if not silent
+      if (!variables.silent) {
+        toast({
+          title: "Batch Synced",
+          description: data.message,
+        });
+      }
     },
-    onError: (error: any) => {
-      toast({
-        title: "Sync Failed",
-        description: error.message || "Failed to sync products batch.",
-        variant: "destructive",
-      });
+    onError: (error: any, variables) => {
+      // Only show error toast if not silent
+      if (!variables.silent) {
+        toast({
+          title: "Sync Failed",
+          description: error.message || "Failed to sync products batch.",
+          variant: "destructive",
+        });
+      }
     },
   });
 
   // Full sync function (multiple batches)
   const startFullSync = async () => {
     setIsSyncing(true);
-    setSyncProgress({ current: 0, total: 0 });
+    setSyncProgress({ current: 0, total: 100 });
     
     try {
+      // Get initial count from Shopify to estimate progress
+      const { storeUrl, accessToken } = getShopifyCredentials();
+      
       let page = 1;
       let hasMorePages = true;
       let totalSynced = 0;
+      let productsSyncedThisSession = 0;
 
       while (hasMorePages && page <= 20) { // Max 20 batches (5000 products)
-        setSyncProgress({ current: page, total: page + 1 });
-        
         const result = await syncBatchMutation.mutateAsync({ 
           batchSize: 250, 
-          startPage: page 
+          startPage: page,
+          silent: true // Run silently during full sync
         });
         
         totalSynced = result.totalSynced;
+        productsSyncedThisSession += result.productsSynced;
         hasMorePages = result.hasMorePages;
+        
+        // Update progress - show percentage based on batch progress
+        const progressPercent = hasMorePages ? (page / 20) * 90 : 100; // Reserve 10% for completion
+        setSyncProgress({ current: Math.round(progressPercent), total: 100 });
+        
         page++;
         
         // Small delay to avoid rate limiting
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
+
+      // Final progress update
+      setSyncProgress({ current: 100, total: 100 });
 
       toast({
         title: "Sync Completed",
