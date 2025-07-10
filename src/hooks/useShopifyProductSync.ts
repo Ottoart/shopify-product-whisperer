@@ -56,12 +56,19 @@ export const useShopifyProductSync = () => {
     queryFn: async () => {
       if (!session?.user?.id) return 0;
       
+      console.log('Sync hook fetching count for user:', session.user.id);
+      
       const { count, error } = await supabase
         .from('products')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', session.user.id);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Count query error:', error);
+        throw error;
+      }
+      
+      console.log('Sync hook count result:', count);
       return count || 0;
     },
     enabled: !!session?.user?.id,
