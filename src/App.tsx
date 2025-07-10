@@ -40,7 +40,8 @@ const App = () => (
                 <main className="flex-1 overflow-auto">
                   <Routes>
                     <Route path="/" element={<Index />} />
-                    <Route path="/dashboard" element={<PrepFoxDashboard />} />
+            <Route path="/dashboard" element={<PrepFoxDashboard />} />
+            <Route path="/ai-dashboard" element={<PrepFoxDashboard />} />
                     <Route path="/analytics" element={<Analytics />} />
                     <Route path="/activity" element={<Activity />} />
                     <Route path="/bulk-editor" element={<BulkEditor />} />
