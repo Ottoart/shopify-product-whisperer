@@ -221,6 +221,7 @@ const Index = () => {
                     selectedProducts={selectedProducts}
                     onSelectionChange={setSelectedProducts}
                     onAddToQueue={addToQueue}
+                    onProductsUpdated={handleProductsUpdated}
                     storeUrl={storeUrl}
                   />
                 </CardContent>

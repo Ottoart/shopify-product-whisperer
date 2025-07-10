@@ -4,7 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import { Search, Package, ExternalLink, Zap, CheckSquare, Square } from 'lucide-react';
+import { ProductEditor } from '@/components/ProductEditor';
+import { Search, Package, ExternalLink, Zap, CheckSquare, Square, Edit3 } from 'lucide-react';
 import { Product } from '@/pages/Index';
 
 interface ProductListProps {
@@ -12,6 +13,7 @@ interface ProductListProps {
   selectedProducts: Set<string>;
   onSelectionChange: (selection: Set<string>) => void;
   onAddToQueue: (productIds: string[]) => void;
+  onProductsUpdated: () => void;
   storeUrl?: string;
 }
 
@@ -20,10 +22,12 @@ export const ProductList = ({
   selectedProducts, 
   onSelectionChange, 
   onAddToQueue,
+  onProductsUpdated,
   storeUrl 
 }: ProductListProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const itemsPerPage = 10;
 
   const filteredProducts = products.filter(product =>
@@ -165,6 +169,14 @@ export const ProductList = ({
                   </div>
                   
                   <div className="flex items-center gap-2 flex-shrink-0">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditingProduct(product)}
+                      className="transition-all duration-300 hover:scale-105"
+                    >
+                      <Edit3 className="h-3 w-3" />
+                    </Button>
                     {getProductUrl(product.handle) && (
                       <Button
                         variant="outline"
@@ -214,6 +226,16 @@ export const ProductList = ({
             Next
           </Button>
         </div>
+      )}
+
+      {/* Product Editor Modal */}
+      {editingProduct && (
+        <ProductEditor
+          product={editingProduct}
+          isOpen={!!editingProduct}
+          onClose={() => setEditingProduct(null)}
+          onProductUpdated={onProductsUpdated}
+        />
       )}
     </div>
   );
