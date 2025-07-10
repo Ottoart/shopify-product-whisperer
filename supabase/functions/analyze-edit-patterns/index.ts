@@ -115,7 +115,12 @@ Respond with ONLY a JSON array of patterns:
     }
 
     const data = await response.json();
-    const patterns = JSON.parse(data.choices[0].message.content);
+    let responseContent = data.choices[0].message.content;
+    
+    // Remove markdown code block formatting if present
+    responseContent = responseContent.replace(/```json\s*/, '').replace(/\s*```$/, '');
+    
+    const patterns = JSON.parse(responseContent);
 
     // Save patterns to database
     for (const pattern of patterns) {
