@@ -7,6 +7,7 @@ import { StoreConfig } from '@/components/StoreConfig';
 import { ShopifySync } from '@/components/ShopifySync';
 import { ProductTypeGenerator } from '@/components/ProductTypeGenerator';
 import { LearningDashboard } from '@/components/LearningDashboard';
+import { ProductActivity } from '@/components/ProductActivity';
 import { useProducts } from '@/hooks/useProducts';
 import { useEditTracking } from '@/hooks/useEditTracking';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -44,6 +45,9 @@ export interface Product {
   googleShoppingCondition: string;
   googleShoppingGender: string;
   googleShoppingAgeGroup: string;
+  updatedAt: string;
+  shopifySyncStatus?: string;
+  shopifySyncedAt?: string;
 }
 
 export interface UpdatedProduct {
@@ -189,8 +193,9 @@ const Index = () => {
         />
 
         {/* Shopify Integration */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <ShopifySync onProductsUpdated={handleProductsUpdated} />
+          <ProductActivity onProductsUpdated={handleProductsUpdated} storeUrl={storeUrl} />
           <LearningDashboard />
         </div>
 

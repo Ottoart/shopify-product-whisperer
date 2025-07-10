@@ -145,6 +145,16 @@ export const ProductEditor = ({ product, isOpen, onClose, onProductUpdated }: Pr
 
         if (syncError) {
           console.error('Shopify sync error:', syncError);
+          // Update sync status to failed
+          await supabase
+            .from('products')
+            .update({ 
+              shopify_sync_status: 'failed',
+              shopify_synced_at: new Date().toISOString()
+            })
+            .eq('handle', product.handle)
+            .eq('user_id', session.user.id);
+
           toast({
             title: "Shopify Sync Failed",
             description: "Product saved locally but failed to sync to Shopify. You can export manually later.",
@@ -152,12 +162,32 @@ export const ProductEditor = ({ product, isOpen, onClose, onProductUpdated }: Pr
           });
         } else if (syncData?.error) {
           console.error('Shopify API error:', syncData.error);
+          // Update sync status to failed
+          await supabase
+            .from('products')
+            .update({ 
+              shopify_sync_status: 'failed',
+              shopify_synced_at: new Date().toISOString()
+            })
+            .eq('handle', product.handle)
+            .eq('user_id', session.user.id);
+
           toast({
             title: "Shopify Sync Failed", 
             description: syncData.error,
             variant: "destructive",
           });
         } else {
+          // Update sync status to success
+          await supabase
+            .from('products')
+            .update({ 
+              shopify_sync_status: 'success',
+              shopify_synced_at: new Date().toISOString()
+            })
+            .eq('handle', product.handle)
+            .eq('user_id', session.user.id);
+
           toast({
             title: "Synced to Shopify",
             description: "Product updated in both database and Shopify store.",
@@ -165,6 +195,16 @@ export const ProductEditor = ({ product, isOpen, onClose, onProductUpdated }: Pr
         }
       } catch (syncError: any) {
         console.error('Shopify sync error:', syncError);
+        // Update sync status to failed
+        await supabase
+          .from('products')
+          .update({ 
+            shopify_sync_status: 'failed',
+            shopify_synced_at: new Date().toISOString()
+          })
+          .eq('handle', product.handle)
+          .eq('user_id', session.user.id);
+
         toast({
           title: "Shopify Sync Failed",
           description: "Product saved locally but failed to sync to Shopify.",

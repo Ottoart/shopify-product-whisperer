@@ -354,6 +354,16 @@ serve(async (req) => {
           throw new Error(`Database error: ${insertError.message}`);
         }
 
+        // Mark products as imported/synced from Shopify
+        await supabase
+          .from('products')
+          .update({ 
+            shopify_sync_status: 'imported',
+            shopify_synced_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id)
+          .in('handle', transformedProducts.map(p => p.handle));
+
         const message = brand 
           ? `Successfully imported ${transformedProducts.length} products for ${brand} brand`
           : `Successfully imported ${transformedProducts.length} products from ${allBrands.length} brands`;

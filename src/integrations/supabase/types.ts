@@ -64,6 +64,8 @@ export type Database = {
           published: boolean | null
           seo_description: string | null
           seo_title: string | null
+          shopify_sync_status: string | null
+          shopify_synced_at: string | null
           tags: string | null
           title: string
           type: string | null
@@ -98,6 +100,8 @@ export type Database = {
           published?: boolean | null
           seo_description?: string | null
           seo_title?: string | null
+          shopify_sync_status?: string | null
+          shopify_synced_at?: string | null
           tags?: string | null
           title: string
           type?: string | null
@@ -132,6 +136,8 @@ export type Database = {
           published?: boolean | null
           seo_description?: string | null
           seo_title?: string | null
+          shopify_sync_status?: string | null
+          shopify_synced_at?: string | null
           tags?: string | null
           title?: string
           type?: string | null

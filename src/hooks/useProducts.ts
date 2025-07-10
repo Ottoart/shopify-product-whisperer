@@ -53,6 +53,9 @@ export const useProducts = () => {
         googleShoppingCondition: item.google_shopping_condition || '',
         googleShoppingGender: item.google_shopping_gender || '',
         googleShoppingAgeGroup: item.google_shopping_age_group || '',
+        updatedAt: item.updated_at,
+        shopifySyncStatus: item.shopify_sync_status,
+        shopifySyncedAt: item.shopify_synced_at
       }));
     },
     enabled: !!session?.user?.id,
