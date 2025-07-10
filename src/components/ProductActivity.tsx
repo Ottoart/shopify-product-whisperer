@@ -2,10 +2,13 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Clock, CheckCircle, ExternalLink, RefreshCw, Package } from 'lucide-react';
+import { ProductEditor } from '@/components/ProductEditor';
+import { Clock, CheckCircle, ExternalLink, RefreshCw, Package, Edit3, Upload, Zap } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSessionContext } from '@supabase/auth-helpers-react';
+import { useToast } from '@/hooks/use-toast';
 import { Product } from '@/pages/Index';
 
 interface ProductActivityProps {
@@ -16,8 +19,12 @@ interface ProductActivityProps {
 export const ProductActivity = ({ onProductsUpdated, storeUrl }: ProductActivityProps) => {
   const [recentlyModified, setRecentlyModified] = useState<Product[]>([]);
   const [successfullyUploaded, setSuccessfullyUploaded] = useState<Product[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
   const { session } = useSessionContext();
+  const { toast } = useToast();
 
   const fetchActivityData = async () => {
     if (!session?.user?.id) return;
@@ -116,6 +123,114 @@ export const ProductActivity = ({ onProductsUpdated, storeUrl }: ProductActivity
     }
   };
 
+  const handleSelectProduct = (productId: string) => {
+    const newSelection = new Set(selectedProducts);
+    if (newSelection.has(productId)) {
+      newSelection.delete(productId);
+    } else {
+      newSelection.add(productId);
+    }
+    setSelectedProducts(newSelection);
+  };
+
+  const handleSelectAll = (products: Product[]) => {
+    const productIds = products.map(p => p.id);
+    if (productIds.every(id => selectedProducts.has(id))) {
+      // Deselect all
+      const newSelection = new Set(selectedProducts);
+      productIds.forEach(id => newSelection.delete(id));
+      setSelectedProducts(newSelection);
+    } else {
+      // Select all
+      const newSelection = new Set(selectedProducts);
+      productIds.forEach(id => newSelection.add(id));
+      setSelectedProducts(newSelection);
+    }
+  };
+
+  const handleEditSelected = () => {
+    const selectedProductIds = Array.from(selectedProducts);
+    if (selectedProductIds.length === 1) {
+      const product = [...recentlyModified, ...successfullyUploaded].find(p => p.id === selectedProductIds[0]);
+      if (product) {
+        setEditingProduct(product);
+      }
+    } else {
+      toast({
+        title: "Select One Product",
+        description: "Please select exactly one product to edit.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleReuploadSelected = async () => {
+    const selectedProductIds = Array.from(selectedProducts);
+    if (selectedProductIds.length === 0) {
+      toast({
+        title: "No Products Selected",
+        description: "Please select products to re-upload.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const productsToUpload = [...recentlyModified, ...successfullyUploaded]
+        .filter(p => selectedProductIds.includes(p.id));
+
+      const { data, error } = await supabase.functions.invoke('shopify-products', {
+        body: { 
+          action: 'update',
+          products: productsToUpload.map(p => ({
+            handle: p.handle,
+            title: p.title,
+            description: p.bodyHtml,
+            type: p.type,
+            tags: p.tags
+          }))
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      // Update sync status
+      await supabase
+        .from('products')
+        .update({ 
+          shopify_sync_status: 'success',
+          shopify_synced_at: new Date().toISOString()
+        })
+        .in('handle', productsToUpload.map(p => p.handle))
+        .eq('user_id', session.user.id);
+
+      toast({
+        title: "Upload Successful",
+        description: `Successfully re-uploaded ${selectedProductIds.length} products to Shopify.`,
+      });
+
+      setSelectedProducts(new Set());
+      onProductsUpdated();
+      fetchActivityData();
+    } catch (error: any) {
+      console.error('Re-upload error:', error);
+      toast({
+        title: "Upload Failed",
+        description: error.message || "Failed to re-upload products to Shopify.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   useEffect(() => {
     fetchActivityData();
   }, [session?.user?.id]);
@@ -162,6 +277,46 @@ export const ProductActivity = ({ onProductsUpdated, storeUrl }: ProductActivity
           </TabsList>
 
           <TabsContent value="recent" className="space-y-3 mt-4">
+            {recentlyModified.length > 0 && (
+              <div className="flex items-center justify-between p-3 bg-secondary/10 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={recentlyModified.length > 0 && recentlyModified.every(p => selectedProducts.has(p.id))}
+                    onCheckedChange={() => handleSelectAll(recentlyModified)}
+                  />
+                  <span className="text-sm font-medium">
+                    Select All ({selectedProducts.size} selected)
+                  </span>
+                </div>
+                {selectedProducts.size > 0 && (
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleEditSelected}
+                      disabled={selectedProducts.size !== 1}
+                    >
+                      <Edit3 className="h-3 w-3 mr-1" />
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleReuploadSelected}
+                      disabled={isUploading}
+                      className="bg-gradient-primary"
+                    >
+                      {isUploading ? (
+                        <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                      ) : (
+                        <Upload className="h-3 w-3 mr-1" />
+                      )}
+                      Re-upload
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+            
             {recentlyModified.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
                 No recent modifications in the last 24 hours
@@ -169,6 +324,10 @@ export const ProductActivity = ({ onProductsUpdated, storeUrl }: ProductActivity
             ) : (
               recentlyModified.map((product) => (
                 <div key={product.id} className="flex items-center gap-3 p-3 bg-secondary/20 rounded-lg">
+                  <Checkbox
+                    checked={selectedProducts.has(product.id)}
+                    onCheckedChange={() => handleSelectProduct(product.id)}
+                  />
                   {product.imageSrc && (
                     <div className="w-10 h-10 rounded overflow-hidden bg-secondary flex-shrink-0">
                       <img 
@@ -206,6 +365,46 @@ export const ProductActivity = ({ onProductsUpdated, storeUrl }: ProductActivity
           </TabsContent>
 
           <TabsContent value="uploaded" className="space-y-3 mt-4">
+            {successfullyUploaded.length > 0 && (
+              <div className="flex items-center justify-between p-3 bg-secondary/10 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={successfullyUploaded.length > 0 && successfullyUploaded.every(p => selectedProducts.has(p.id))}
+                    onCheckedChange={() => handleSelectAll(successfullyUploaded)}
+                  />
+                  <span className="text-sm font-medium">
+                    Select All ({selectedProducts.size} selected)
+                  </span>
+                </div>
+                {selectedProducts.size > 0 && (
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleEditSelected}
+                      disabled={selectedProducts.size !== 1}
+                    >
+                      <Edit3 className="h-3 w-3 mr-1" />
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleReuploadSelected}
+                      disabled={isUploading}
+                      className="bg-gradient-primary"
+                    >
+                      {isUploading ? (
+                        <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                      ) : (
+                        <Upload className="h-3 w-3 mr-1" />
+                      )}
+                      Re-upload
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+            
             {successfullyUploaded.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
                 No products uploaded to Shopify yet
@@ -213,6 +412,10 @@ export const ProductActivity = ({ onProductsUpdated, storeUrl }: ProductActivity
             ) : (
               successfullyUploaded.map((product) => (
                 <div key={product.id} className="flex items-center gap-3 p-3 bg-secondary/20 rounded-lg">
+                  <Checkbox
+                    checked={selectedProducts.has(product.id)}
+                    onCheckedChange={() => handleSelectProduct(product.id)}
+                  />
                   {product.imageSrc && (
                     <div className="w-10 h-10 rounded overflow-hidden bg-secondary flex-shrink-0">
                       <img 
@@ -253,6 +456,22 @@ export const ProductActivity = ({ onProductsUpdated, storeUrl }: ProductActivity
           </TabsContent>
         </Tabs>
       </CardContent>
+
+      {/* Product Editor Modal */}
+      {editingProduct && (
+        <ProductEditor
+          product={editingProduct}
+          isOpen={!!editingProduct}
+          onClose={() => {
+            setEditingProduct(null);
+            setSelectedProducts(new Set());
+          }}
+          onProductUpdated={() => {
+            onProductsUpdated();
+            fetchActivityData();
+          }}
+        />
+      )}
     </Card>
   );
 };
