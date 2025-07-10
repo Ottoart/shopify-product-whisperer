@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useSessionContext } from '@supabase/auth-helpers-react';
 import { Auth } from '@/components/Auth';
 import { useShopifyAnalytics } from '@/hooks/useShopifyAnalytics';
+import { StoreConfig } from '@/components/StoreConfig';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -36,6 +37,8 @@ const PrepFoxDashboard = () => {
   const { session } = useSessionContext();
   const { analytics, isLoading, refreshNow, isRefreshing, hasCredentials, lastUpdated } = useShopifyAnalytics();
   const [activeTab, setActiveTab] = useState('cleanup');
+  const [storeUrl, setStoreUrl] = useState(() => localStorage.getItem('shopify_domain') || '');
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('shopify_access_token') || '');
 
   if (!session) {
     return <Auth />;
@@ -77,13 +80,13 @@ const PrepFoxDashboard = () => {
           </div>
         </div>
         
-        <div className="container mx-auto px-6 py-8">
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Please configure your Shopify store settings first by going back to the main page and setting up your store URL and access token.
-            </AlertDescription>
-          </Alert>
+        <div className="container mx-auto px-6 py-8 max-w-2xl">
+          <StoreConfig
+            storeUrl={storeUrl}
+            onStoreUrlChange={setStoreUrl}
+            apiKey={apiKey}
+            onApiKeyChange={setApiKey}
+          />
         </div>
       </div>
     );
