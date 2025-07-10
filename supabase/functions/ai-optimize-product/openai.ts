@@ -9,9 +9,10 @@ function createPrompt(request: OptimizeProductRequest): string {
       .replace(/\{title\}/g, productData.title || 'No title')
       .replace(/\{type\}/g, productData.type || 'Not specified')
       .replace(/\{description\}/g, productData.description || 'No description')
-      .replace(/\{tags\}/g, productData.tags || 'No tags');
+      .replace(/\{tags\}/g, productData.tags || 'No tags')
+      .replace(/\{vendor\}/g, productData.vendor || 'Not specified');
     
-    // Add JSON format requirement to custom prompt
+    // Add JSON format requirement to custom prompt with ALL required fields
     return `${customPrompt}
 
 CRITICAL REQUIREMENT: You MUST respond with ONLY a valid JSON object. No explanations, no additional text, no formatting, no markdown - ONLY the JSON object below:
@@ -21,15 +22,25 @@ IMPORTANT INSTRUCTIONS:
 - For "type": Provide a SPECIFIC product type like "Disposable Nail Wipes" or "Multi-Purpose Beauty Wipes", NOT generic types like "nail_beauty"
 - For "category": Use the exact Google Shopping category path format
 - ALL fields are REQUIRED and MUST be included in your response
+- Generate content in ENGLISH ONLY
 
 {
-  "title": "your optimized title in English",
-  "description": "your complete optimized description content WITHOUT any section headers - just the actual description text with HTML formatting",
-  "tags": "comma-separated tags following the guidelines", 
-  "type": "SPECIFIC product type like 'Disposable Nail Wipes' or 'Multi-Purpose Beauty Wipes'",
-  "category": "Health & Beauty > Personal Care > Cosmetics > [specific subcategory]",
-  "seo_title": "SEO optimized title different from main title",
-  "seo_description": "SEO meta description with benefits and CTA"
+  "title": "your optimized title in English (max 60 chars)",
+  "description": "your complete optimized description content WITHOUT any section headers - just the actual description text with HTML formatting like <p>, <strong>, <ul>, <li>",
+  "tags": "comma-separated tags following the provided guidelines", 
+  "type": "SPECIFIC product type like 'Disposable Nail Wipes' or 'Multi-Purpose Beauty Wipes' or 'Leave-In Hair Conditioner'",
+  "category": "Health & Beauty > Personal Care > Cosmetics > [specific subcategory like 'Nail Care > Nail Tools' or 'Hair Care > Hair Treatments']",
+  "seo_title": "SEO optimized title different from main title (max 60 chars)",
+  "seo_description": "SEO meta description with benefits and CTA (max 160 chars)",
+  "vendor": "${productData.vendor || 'Premium Beauty'}",
+  "variant_price": ${productData.variant_price || 'null'},
+  "variant_compare_at_price": ${productData.variant_compare_at_price || 'null'},
+  "variant_sku": "${productData.variant_sku || ''}",
+  "variant_barcode": "${productData.variant_barcode || ''}",
+  "variant_grams": ${productData.variant_grams || 'null'},
+  "google_shopping_condition": "new",
+  "google_shopping_gender": "unisex",
+  "google_shopping_age_group": "adult"
 }
 
 Start your response with { and end with }. Nothing else.`;
