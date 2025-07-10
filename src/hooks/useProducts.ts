@@ -21,7 +21,8 @@ export const useProducts = () => {
         .from('products')
         .select('*')
         .eq('user_id', session.user.id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(10000); // Get up to 10k products
       
       if (error) {
         console.error('Error fetching products:', error);

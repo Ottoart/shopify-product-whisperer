@@ -84,7 +84,8 @@ export const useShopifyProductSync = () => {
         .from('products')
         .select('*')
         .eq('user_id', session.user.id)
-        .order('updated_at', { ascending: false });
+        .order('updated_at', { ascending: false })
+        .limit(10000); // Get up to 10k products
       
       if (error) throw error;
       return data || [];
