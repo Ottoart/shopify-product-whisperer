@@ -12,8 +12,9 @@ import { useProducts } from '@/hooks/useProducts';
 import { useEditTracking } from '@/hooks/useEditTracking';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Package, LogOut, Store, Zap } from 'lucide-react';
+import { Package, LogOut, Store, Zap, BarChart3 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { Link } from 'react-router-dom';
 
 export interface Product {
   id: string;
@@ -147,6 +148,16 @@ const Index = () => {
             </div>
             <div className="flex items-center gap-4 text-primary-foreground">
               <span className="text-sm opacity-80">{session.user?.email}</span>
+              <Link to="/dashboard">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-primary-foreground border-primary-foreground/20 hover:bg-primary-foreground/10"
+                >
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  PrepFox Dashboard
+                </Button>
+              </Link>
               <Button
                 variant="outline"
                 size="sm"
