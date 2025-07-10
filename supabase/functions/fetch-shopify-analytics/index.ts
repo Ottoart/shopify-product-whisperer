@@ -41,26 +41,58 @@ serve(async (req) => {
 
     console.log('Fetching comprehensive Shopify data for:', shopifyDomain);
 
-    // Minimal product fetch to avoid timeout
-    console.log('Fetching products with minimal data');
+    // Fetch ALL products but with minimal data to determine capacity
+    console.log('Fetching ALL products with minimal essential data');
     
-    const url = `${baseUrl}/products.json?limit=250&fields=id,title,handle,vendor,product_type,published_at,created_at,updated_at,status,variants`;
+    let allProducts = [];
+    let pageCount = 0;
     
-    const productsResponse = await fetch(url, {
-      headers: {
-        'X-Shopify-Access-Token': accessToken,
-        'Content-Type': 'application/json',
-      },
-    });
+    for (let page = 1; page <= 50; page++) { // Max 50 pages = 12,500 products
+      console.log(`Fetching page ${page}`);
+      
+      // Only essential fields to minimize data transfer
+      const url = `${baseUrl}/products.json?limit=250&page=${page}&fields=id,title,handle,product_type,vendor,published_at,status,variants`;
+      
+      const productsResponse = await fetch(url, {
+        headers: {
+          'X-Shopify-Access-Token': accessToken,
+          'Content-Type': 'application/json',
+        },
+      });
 
-    if (!productsResponse.ok) {
-      throw new Error(`Failed to fetch products: ${productsResponse.statusText}`);
+      if (!productsResponse.ok) {
+        console.error(`Failed to fetch products page ${page}: ${productsResponse.status}`);
+        if (productsResponse.status === 404) break; // No more pages
+        
+        // If we have some products already, continue with what we have
+        if (allProducts.length > 0) {
+          console.log(`Got error on page ${page}, stopping with ${allProducts.length} products`);
+          break;
+        }
+        throw new Error(`Failed to fetch products: ${productsResponse.statusText}`);
+      }
+
+      const productsData = await productsResponse.json();
+      const newProducts = productsData.products || [];
+      
+      if (newProducts.length === 0) {
+        console.log('No more products found, ending pagination');
+        break;
+      }
+      
+      allProducts = allProducts.concat(newProducts);
+      pageCount++;
+      console.log(`Page ${page}: got ${newProducts.length} products, total: ${allProducts.length}`);
+      
+      // If we got less than 250, this is the last page
+      if (newProducts.length < 250) {
+        console.log('Last page reached');
+        break;
+      }
     }
 
-    const productsData = await productsResponse.json();
-    const products = productsData.products || [];
-    
-    console.log(`Fetched ${products.length} products`);
+    console.log(`Successfully fetched ${allProducts.length} total products across ${pageCount} pages`);
+    const products = allProducts;
 
     // Ultra-minimal analytics
     const analytics = {
