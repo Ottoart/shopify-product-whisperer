@@ -16,10 +16,17 @@ function createPrompt(request: OptimizeProductRequest): string {
 
 CRITICAL REQUIREMENT: You MUST respond with ONLY a valid JSON object. No explanations, no additional text, no formatting, no markdown - ONLY the JSON object below:
 
+IMPORTANT INSTRUCTIONS:
+- For "description": ONLY include the actual product description content, NOT section headers like "Product Description:" or "Product Type:"
+- For "type": Provide a SPECIFIC product type like "Disposable Nail Wipes" or "Multi-Purpose Beauty Wipes", NOT generic types like "nail_beauty"
+- For "category": Use the exact Google Shopping category path format
+
 {
-  "title": "your optimized title here",
-  "description": "your complete optimized description with all sections",
-  "tags": "comma-separated tags following the guidelines"
+  "title": "your optimized title in English",
+  "description": "your complete optimized description content WITHOUT any section headers - just the actual description text with HTML formatting",
+  "tags": "comma-separated tags following the guidelines",
+  "type": "SPECIFIC product type like 'Disposable Nail Wipes' or 'Multi-Purpose Beauty Wipes'",
+  "category": "Health & Beauty > Personal Care > Cosmetics > [specific subcategory]"
 }
 
 Start your response with { and end with }. Nothing else.`;
