@@ -5,6 +5,7 @@ import { ProductList } from '@/components/ProductList';
 import { QueueManager } from '@/components/QueueManager';
 import { StoreConfig } from '@/components/StoreConfig';
 import { ShopifySync } from '@/components/ShopifySync';
+import { ProductTypeGenerator } from '@/components/ProductTypeGenerator';
 import { useProducts } from '@/hooks/useProducts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -183,7 +184,7 @@ const Index = () => {
         {products.length > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Products List */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2 space-y-6">
               <Card className="shadow-card border-0">
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -210,6 +211,13 @@ const Index = () => {
                   />
                 </CardContent>
               </Card>
+
+              {/* Product Type Generator */}
+              <ProductTypeGenerator
+                products={products}
+                selectedProducts={selectedProducts}
+                onProductsUpdated={handleProductsUpdated}
+              />
             </div>
 
             {/* Queue Manager */}
