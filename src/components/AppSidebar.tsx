@@ -28,18 +28,22 @@ import {
 
 const mainItems = [
   { title: "Products", url: "/", icon: Package, description: "Manage your product catalog" },
-  { title: "Dashboard", url: "/dashboard", icon: BarChart3, description: "Sync and monitor products" },
+  { title: "AI Learning Dashboard", url: "/dashboard", icon: BarChart3, description: "AI insights and learning" },
+];
+
+const shopifyItems = [
+  { title: "Shopify Integration", url: "/shopify-integration", icon: Zap, description: "Connect and manage Shopify" },
+  { title: "Sync Status", url: "/sync-status", icon: Database, description: "Monitor sync operations" },
 ];
 
 const toolItems = [
   { title: "Analytics", url: "/analytics", icon: TrendingUp, description: "View performance metrics" },
-  { title: "Activity", url: "/activity", icon: Activity, description: "Track product changes" },
+  { title: "Product Activity", url: "/activity", icon: Activity, description: "Track product changes" },
   { title: "Bulk Editor", url: "/bulk-editor", icon: FileText, description: "Edit multiple products" },
 ];
 
 const settingsItems = [
-  { title: "Store Config", url: "/settings", icon: Settings, description: "Configure Shopify connection" },
-  { title: "Sync Status", url: "/sync-status", icon: Database, description: "Monitor sync operations" },
+  { title: "Store Config", url: "/settings", icon: Settings, description: "Configure store settings" },
 ];
 
 export function AppSidebar() {
@@ -99,6 +103,37 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {toolItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink 
+                      to={item.url} 
+                      className={getNavCls}
+                      title={collapsed ? item.description : undefined}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {!collapsed && (
+                        <div className="flex flex-col">
+                          <span>{item.title}</span>
+                          <span className="text-xs text-muted-foreground">{item.description}</span>
+                        </div>
+                      )}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Shopify */}
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-primary">
+            <Database className="h-4 w-4 mr-2" />
+            {!collapsed && "Shopify"}
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {shopifyItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink 
