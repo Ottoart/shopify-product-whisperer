@@ -142,7 +142,7 @@ export const useShopifyProductSync = () => {
       let totalSynced = 0;
       let productsSyncedThisSession = 0;
 
-      while (hasMorePages && page <= 20) { // Max 20 batches (5000 products)
+      while (hasMorePages && page <= 50) { // Increased to 50 batches (12,500 products)
         const result = await syncBatchMutation.mutateAsync({ 
           batchSize: 250, 
           startPage: page,
@@ -154,7 +154,7 @@ export const useShopifyProductSync = () => {
         hasMorePages = result.hasMorePages;
         
         // Update progress - show percentage based on batch progress
-        const progressPercent = hasMorePages ? (page / 20) * 90 : 100; // Reserve 10% for completion
+        const progressPercent = hasMorePages ? (page / 50) * 90 : 100; // Reserve 10% for completion
         setSyncProgress({ current: Math.round(progressPercent), total: 100 });
         
         page++;

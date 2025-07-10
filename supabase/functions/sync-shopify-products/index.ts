@@ -145,6 +145,12 @@ serve(async (req) => {
       }
     }
 
+    // Get total products synced so far
+    const { count: totalSynced } = await supabase
+      .from('products')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id);
+
     // Update sync status
     await supabase
       .from('shopify_sync_status')
@@ -152,17 +158,11 @@ serve(async (req) => {
         user_id: user.id,
         last_sync_at: new Date().toISOString(),
         last_page_info: nextPageInfo,
-        total_synced: startPage * batchSize, // Approximate
+        total_synced: totalSynced || 0, // Use actual count
         sync_status: nextPageInfo ? 'in_progress' : 'completed'
       }, {
         onConflict: 'user_id'
       });
-
-    // Get total products synced so far
-    const { count: totalSynced } = await supabase
-      .from('products')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id);
 
     console.log(`Batch ${startPage} completed. Total synced: ${totalSynced}`);
 
