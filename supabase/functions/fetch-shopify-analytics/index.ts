@@ -41,15 +41,17 @@ serve(async (req) => {
 
     console.log('Fetching comprehensive Shopify data for:', shopifyDomain);
 
-    // Fetch all products with pagination
+    // Fetch all products with pagination - using cursor-based pagination
     let allProducts = [];
-    let nextPageInfo = null;
+    let pageInfo = '';
     let pageCount = 0;
     
     do {
-      const url = nextPageInfo 
-        ? `${baseUrl}/products.json?limit=250&page_info=${nextPageInfo}&fields=id,title,handle,vendor,product_type,tags,published_at,created_at,updated_at,status,variants,images,options,body_html,seo_title,seo_description`
+      const url = pageInfo 
+        ? `${baseUrl}/products.json?limit=250&since_id=${pageInfo}&fields=id,title,handle,vendor,product_type,tags,published_at,created_at,updated_at,status,variants,images,options,body_html,seo_title,seo_description`
         : `${baseUrl}/products.json?limit=250&fields=id,title,handle,vendor,product_type,tags,published_at,created_at,updated_at,status,variants,images,options,body_html,seo_title,seo_description`;
+      
+      console.log(`Fetching page ${pageCount + 1} with URL: ${url.substring(0, 100)}...`);
       
       const productsResponse = await fetch(url, {
         headers: {
@@ -59,35 +61,44 @@ serve(async (req) => {
       });
 
       if (!productsResponse.ok) {
+        console.error(`Failed to fetch products page ${pageCount + 1}: ${productsResponse.status} ${productsResponse.statusText}`);
         throw new Error(`Failed to fetch products: ${productsResponse.statusText}`);
       }
 
       const productsData = await productsResponse.json();
-      allProducts = allProducts.concat(productsData.products || []);
+      const newProducts = productsData.products || [];
       
-      // Extract next page info from Link header
-      const linkHeader = productsResponse.headers.get('Link');
-      nextPageInfo = null;
-      
-      if (linkHeader) {
-        const nextMatch = linkHeader.match(/<[^>]*[?&]page_info=([^&>]+)[^>]*>;\s*rel="next"/);
-        if (nextMatch) {
-          nextPageInfo = nextMatch[1];
-        }
-      }
-      
-      pageCount++;
-      console.log(`Fetched page ${pageCount}, got ${productsData.products?.length || 0} products, total: ${allProducts.length}`);
-      
-      // Safety check to prevent infinite loops
-      if (pageCount > 50) {
-        console.log('Reached maximum page limit (50), stopping pagination');
+      if (newProducts.length === 0) {
+        console.log('No more products found, ending pagination');
         break;
       }
       
-    } while (nextPageInfo);
+      allProducts = allProducts.concat(newProducts);
+      
+      // Use the last product's ID for the next page
+      if (newProducts.length === 250) {
+        pageInfo = newProducts[newProducts.length - 1].id;
+      } else {
+        pageInfo = null; // Last page
+      }
+      
+      pageCount++;
+      console.log(`Fetched page ${pageCount}, got ${newProducts.length} products, total: ${allProducts.length}`);
+      
+      // Safety checks
+      if (pageCount >= 20) {
+        console.log('Reached maximum page limit (20), stopping pagination');
+        break;
+      }
+      
+      if (allProducts.length >= 5000) {
+        console.log('Reached maximum product limit (5000), stopping pagination');
+        break;
+      }
+      
+    } while (pageInfo && pageCount < 20);
 
-    console.log(`Fetched ${allProducts.length} total products across ${pageCount} pages`);
+    console.log(`Successfully fetched ${allProducts.length} total products across ${pageCount} pages`);
 
     // Fetch inventory levels
     const inventoryResponse = await fetch(`${baseUrl}/inventory_levels.json?limit=250`, {
