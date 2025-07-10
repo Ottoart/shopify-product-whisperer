@@ -299,10 +299,10 @@ export const ShopifySync = ({ onProductsUpdated }: ShopifySyncProps) => {
 
         {/* Filter Type Tabs */}
         <Tabs value={activeFilterType} onValueChange={(value) => setActiveFilterType(value as any)} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-background border border-border shadow-sm">
-            <TabsTrigger value="brands" className="text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-medium">Brands</TabsTrigger>
-            <TabsTrigger value="product_types" className="text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-medium">Product Types</TabsTrigger>
-            <TabsTrigger value="collections" className="text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-medium">Collections</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 bg-muted border border-border shadow-sm">
+            <TabsTrigger value="brands" className="bg-background text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-medium border-r border-border">Brands</TabsTrigger>
+            <TabsTrigger value="product_types" className="bg-background text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-medium border-r border-border">Product Types</TabsTrigger>
+            <TabsTrigger value="collections" className="bg-background text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-medium">Collections</TabsTrigger>
           </TabsList>
           
           <TabsContent value="brands" className="space-y-4">
