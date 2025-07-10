@@ -41,20 +41,53 @@ serve(async (req) => {
 
     console.log('Fetching comprehensive Shopify data for:', shopifyDomain);
 
-    // Fetch all products with detailed information
-    const productsResponse = await fetch(`${baseUrl}/products.json?limit=250&fields=id,title,handle,vendor,product_type,tags,published_at,created_at,updated_at,status,variants,images,options,body_html,seo_title,seo_description`, {
-      headers: {
-        'X-Shopify-Access-Token': accessToken,
-        'Content-Type': 'application/json',
-      },
-    });
+    // Fetch all products with pagination
+    let allProducts = [];
+    let nextPageInfo = null;
+    let pageCount = 0;
+    
+    do {
+      const url = nextPageInfo 
+        ? `${baseUrl}/products.json?limit=250&page_info=${nextPageInfo}&fields=id,title,handle,vendor,product_type,tags,published_at,created_at,updated_at,status,variants,images,options,body_html,seo_title,seo_description`
+        : `${baseUrl}/products.json?limit=250&fields=id,title,handle,vendor,product_type,tags,published_at,created_at,updated_at,status,variants,images,options,body_html,seo_title,seo_description`;
+      
+      const productsResponse = await fetch(url, {
+        headers: {
+          'X-Shopify-Access-Token': accessToken,
+          'Content-Type': 'application/json',
+        },
+      });
 
-    if (!productsResponse.ok) {
-      throw new Error(`Failed to fetch products: ${productsResponse.statusText}`);
-    }
+      if (!productsResponse.ok) {
+        throw new Error(`Failed to fetch products: ${productsResponse.statusText}`);
+      }
 
-    const productsData = await productsResponse.json();
-    console.log(`Fetched ${productsData.products?.length || 0} products`);
+      const productsData = await productsResponse.json();
+      allProducts = allProducts.concat(productsData.products || []);
+      
+      // Extract next page info from Link header
+      const linkHeader = productsResponse.headers.get('Link');
+      nextPageInfo = null;
+      
+      if (linkHeader) {
+        const nextMatch = linkHeader.match(/<[^>]*[?&]page_info=([^&>]+)[^>]*>;\s*rel="next"/);
+        if (nextMatch) {
+          nextPageInfo = nextMatch[1];
+        }
+      }
+      
+      pageCount++;
+      console.log(`Fetched page ${pageCount}, got ${productsData.products?.length || 0} products, total: ${allProducts.length}`);
+      
+      // Safety check to prevent infinite loops
+      if (pageCount > 50) {
+        console.log('Reached maximum page limit (50), stopping pagination');
+        break;
+      }
+      
+    } while (nextPageInfo);
+
+    console.log(`Fetched ${allProducts.length} total products across ${pageCount} pages`);
 
     // Fetch inventory levels
     const inventoryResponse = await fetch(`${baseUrl}/inventory_levels.json?limit=250`, {
@@ -107,7 +140,7 @@ serve(async (req) => {
     }
 
     // Process and analyze the data
-    const products = productsData.products || [];
+    const products = allProducts || [];
     const orders = ordersData.orders || [];
     const inventoryLevels = inventoryData.inventory_levels || [];
 
