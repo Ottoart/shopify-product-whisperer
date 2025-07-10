@@ -6,7 +6,9 @@ import { QueueManager } from '@/components/QueueManager';
 import { StoreConfig } from '@/components/StoreConfig';
 import { ShopifySync } from '@/components/ShopifySync';
 import { ProductTypeGenerator } from '@/components/ProductTypeGenerator';
+import { LearningDashboard } from '@/components/LearningDashboard';
 import { useProducts } from '@/hooks/useProducts';
+import { useEditTracking } from '@/hooks/useEditTracking';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Package, LogOut, Store, Zap } from 'lucide-react';
@@ -60,6 +62,12 @@ const Index = () => {
   const [storeUrl, setStoreUrl] = useState<string>('');
   const [apiKey, setApiKey] = useState<string>('');
 
+  const { trackProductUpdate } = useEditTracking({ 
+    onProductUpdate: (productId: string, updatedData: UpdatedProduct) => {
+      updateProduct({ handle: productId, updatedData });
+    }
+  });
+
   // Load stored credentials on mount
   useEffect(() => {
     const storedDomain = localStorage.getItem('shopify_domain');
@@ -105,7 +113,10 @@ const Index = () => {
   };
 
   const handleUpdateProduct = (productId: string, updatedData: UpdatedProduct) => {
-    updateProduct({ handle: productId, updatedData });
+    const originalProduct = products.find(p => p.id === productId);
+    if (originalProduct) {
+      trackProductUpdate(productId, originalProduct, updatedData, 'ai_suggestion');
+    }
   };
 
   const removeFromQueue = (productId: string) => {
@@ -178,7 +189,10 @@ const Index = () => {
         />
 
         {/* Shopify Integration */}
-        <ShopifySync onProductsUpdated={handleProductsUpdated} />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <ShopifySync onProductsUpdated={handleProductsUpdated} />
+          <LearningDashboard />
+        </div>
 
         {/* Main Content */}
         {products.length > 0 && (

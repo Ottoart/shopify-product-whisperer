@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      product_edit_history: {
+        Row: {
+          after_value: string | null
+          before_value: string | null
+          created_at: string
+          edit_type: string
+          field_name: string
+          id: string
+          product_handle: string
+          user_id: string
+        }
+        Insert: {
+          after_value?: string | null
+          before_value?: string | null
+          created_at?: string
+          edit_type: string
+          field_name: string
+          id?: string
+          product_handle: string
+          user_id: string
+        }
+        Update: {
+          after_value?: string | null
+          before_value?: string | null
+          created_at?: string
+          edit_type?: string
+          field_name?: string
+          id?: string
+          product_handle?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           body_html: string | null
@@ -116,6 +149,42 @@ export type Database = {
           variant_sku?: string | null
           variant_taxable?: boolean | null
           vendor?: string | null
+        }
+        Relationships: []
+      }
+      user_edit_patterns: {
+        Row: {
+          confidence_score: number | null
+          created_at: string
+          id: string
+          is_approved: boolean | null
+          pattern_data: Json
+          pattern_type: string
+          updated_at: string
+          usage_count: number | null
+          user_id: string
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          is_approved?: boolean | null
+          pattern_data: Json
+          pattern_type: string
+          updated_at?: string
+          usage_count?: number | null
+          user_id: string
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          is_approved?: boolean | null
+          pattern_data?: Json
+          pattern_type?: string
+          updated_at?: string
+          usage_count?: number | null
+          user_id?: string
         }
         Relationships: []
       }
