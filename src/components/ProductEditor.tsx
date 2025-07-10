@@ -30,6 +30,11 @@ export const ProductEditor = ({ product, isOpen, onClose, onProductUpdated }: Pr
   const { session } = useSessionContext();
   const { toast } = useToast();
 
+  // Debug authentication
+  console.log('ProductEditor - Session:', session?.user?.id ? 'authenticated' : 'not authenticated');
+  console.log('ProductEditor - Product handle:', product.handle);
+  console.log('ProductEditor - Modal open:', isOpen);
+
   const trackManualEdit = async (fieldName: string, beforeValue: string, afterValue: string) => {
     if (beforeValue === afterValue || !session?.user?.id) return;
 
