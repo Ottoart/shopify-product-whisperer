@@ -8,6 +8,7 @@ import { SessionContextProvider } from "@supabase/auth-helpers-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppSidebar } from "@/components/AppSidebar";
 import Index from "./pages/Index";
+import MainDashboard from "./pages/MainDashboard";
 import PrepFoxDashboard from "./pages/PrepFoxDashboard";
 import Analytics from "./pages/Analytics";
 import Activity from "./pages/Activity";
@@ -40,7 +41,7 @@ const App = () => (
                 <main className="flex-1 overflow-auto">
                   <Routes>
                     <Route path="/" element={<Index />} />
-            <Route path="/dashboard" element={<PrepFoxDashboard />} />
+            <Route path="/dashboard" element={<MainDashboard />} />
             <Route path="/ai-dashboard" element={<PrepFoxDashboard />} />
                     <Route path="/analytics" element={<Analytics />} />
                     <Route path="/activity" element={<Activity />} />
