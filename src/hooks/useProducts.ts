@@ -15,15 +15,22 @@ export const useProducts = () => {
     queryFn: async () => {
       if (!session?.user?.id) return [];
       
+      console.log('Fetching products for user:', session.user.id);
+      
       const { data, error } = await supabase
         .from('products')
         .select('*')
         .eq('user_id', session.user.id)
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching products:', error);
+        throw error;
+      }
       
-      return data.map(item => ({
+      console.log('Raw products fetched:', data?.length || 0);
+      
+      const mappedProducts = data.map(item => ({
         id: item.handle,
         title: item.title,
         handle: item.handle,
@@ -57,6 +64,10 @@ export const useProducts = () => {
         shopifySyncStatus: item.shopify_sync_status,
         shopifySyncedAt: item.shopify_synced_at
       }));
+      
+      console.log('Mapped products:', mappedProducts.length);
+      
+      return mappedProducts;
     },
     enabled: !!session?.user?.id,
   });
