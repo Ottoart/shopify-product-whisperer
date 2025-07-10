@@ -40,6 +40,36 @@ const PrepFoxDashboard = () => {
   const [storeUrl, setStoreUrl] = useState(() => localStorage.getItem('shopify_domain') || '');
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('shopify_access_token') || '');
 
+  // Chart data for visualizations - moved before early returns to avoid hook order issues
+  const chartData = useMemo(() => {
+    if (!analytics) return null;
+    
+    return {
+      salesByCategory: analytics.categoryAnalysis.productTypes.slice(0, 8).map(item => ({
+        name: item.type || 'Uncategorized',
+        sales: analytics.topSellers.filter(seller => 
+          seller.product?.product_type?.toLowerCase() === item.type
+        ).reduce((sum, seller) => sum + seller.revenue, 0),
+        products: item.count,
+      })),
+      inventoryDistribution: [
+        { name: 'Well Stocked', value: analytics.wellStocked.length, color: 'hsl(var(--success))' },
+        { name: 'Low Stock', value: analytics.lowStock.length, color: 'hsl(var(--warning))' },
+        { name: 'Out of Stock', value: analytics.outOfStock.length, color: 'hsl(var(--destructive))' },
+      ],
+      duplicateHeatmap: [
+        { type: 'Same Title', count: analytics.duplicates.filter(d => d.type === 'Same Title').length },
+        { type: 'Same Image', count: analytics.duplicates.filter(d => d.type === 'Same Image').length },
+        { type: 'Same SKU', count: analytics.duplicates.filter(d => d.type === 'Same SKU').length },
+      ],
+      salesTrend: analytics.topSellers.slice(0, 10).map((seller, index) => ({
+        name: seller.product?.title?.substring(0, 20) + '...' || `Product ${index + 1}`,
+        sales: seller.sales,
+        revenue: seller.revenue,
+      })),
+    };
+  }, [analytics]);
+
   if (!session) {
     return <Auth />;
   }
@@ -140,34 +170,6 @@ const PrepFoxDashboard = () => {
 
   const products = analytics.products || [];
   const totalProducts = products.length;
-
-  // Chart data for visualizations
-  const chartData = useMemo(() => {
-    return {
-      salesByCategory: analytics.categoryAnalysis.productTypes.slice(0, 8).map(item => ({
-        name: item.type || 'Uncategorized',
-        sales: analytics.topSellers.filter(seller => 
-          seller.product?.product_type?.toLowerCase() === item.type
-        ).reduce((sum, seller) => sum + seller.revenue, 0),
-        products: item.count,
-      })),
-      inventoryDistribution: [
-        { name: 'Well Stocked', value: analytics.wellStocked.length, color: 'hsl(var(--success))' },
-        { name: 'Low Stock', value: analytics.lowStock.length, color: 'hsl(var(--warning))' },
-        { name: 'Out of Stock', value: analytics.outOfStock.length, color: 'hsl(var(--destructive))' },
-      ],
-      duplicateHeatmap: [
-        { type: 'Same Title', count: analytics.duplicates.filter(d => d.type === 'Same Title').length },
-        { type: 'Same Image', count: analytics.duplicates.filter(d => d.type === 'Same Image').length },
-        { type: 'Same SKU', count: analytics.duplicates.filter(d => d.type === 'Same SKU').length },
-      ],
-      salesTrend: analytics.topSellers.slice(0, 10).map((seller, index) => ({
-        name: seller.product?.title?.substring(0, 20) + '...' || `Product ${index + 1}`,
-        sales: seller.sales,
-        revenue: seller.revenue,
-      })),
-    };
-  }, [analytics]);
 
   return (
     <div className="min-h-screen bg-background">
