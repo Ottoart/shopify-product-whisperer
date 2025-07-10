@@ -3,7 +3,11 @@ import { useSessionContext } from '@supabase/auth-helpers-react';
 import { Auth } from '@/components/Auth';
 import { useShopifyAnalytics } from '@/hooks/useShopifyAnalytics';
 import { StoreConfig } from '@/components/StoreConfig';
+import { ProductListItem } from '@/components/ProductListItem';
+import { ProductEditDialog } from '@/components/ProductEditDialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -39,6 +43,9 @@ const PrepFoxDashboard = () => {
   const [activeTab, setActiveTab] = useState('cleanup');
   const [storeUrl, setStoreUrl] = useState(() => localStorage.getItem('shopify_domain') || '');
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('shopify_access_token') || '');
+  const [editingProduct, setEditingProduct] = useState<any>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const { toast } = useToast();
 
   // Chart data for visualizations - moved before early returns to avoid hook order issues
   const chartData = useMemo(() => {
@@ -69,6 +76,45 @@ const PrepFoxDashboard = () => {
       })),
     };
   }, [analytics]);
+
+  const handleEditProduct = (product: any) => {
+    setEditingProduct(product);
+    setEditDialogOpen(true);
+  };
+
+  const handleDeleteProduct = async (productId: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-products', {
+        body: {
+          action: 'delete',
+          productId,
+        },
+      });
+
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error || 'Delete failed');
+
+      toast({
+        title: "Product Deleted",
+        description: "Product has been successfully deleted.",
+      });
+
+      // Refresh analytics to update the UI
+      refreshNow();
+    } catch (error: any) {
+      console.error('Error deleting product:', error);
+      toast({
+        title: "Delete Failed",
+        description: error.message || "Failed to delete product.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleProductUpdated = () => {
+    // Refresh analytics to update the UI
+    refreshNow();
+  };
 
   if (!session) {
     return <Auth />;
@@ -301,11 +347,16 @@ const PrepFoxDashboard = () => {
                           {duplicate.products.length} products
                         </span>
                       </div>
-                      <div className="space-y-1">
+                      <div className="space-y-2">
                         {duplicate.products.map(product => (
-                          <p key={product.id} className="text-sm truncate">
-                            {product.title}
-                          </p>
+                          <ProductListItem
+                            key={product.id}
+                            product={product}
+                            storeUrl={storeUrl}
+                            onEdit={handleEditProduct}
+                            onDelete={handleDeleteProduct}
+                            showActions={true}
+                          />
                         ))}
                       </div>
                     </div>
@@ -425,18 +476,20 @@ const PrepFoxDashboard = () => {
                   <CardDescription>Top 10 bestsellers by revenue (90 days)</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {analytics.topSellers.slice(0, 10).map((seller, index) => (
-                      <div key={seller.productId} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline">{index + 1}</Badge>
-                          <span className="text-sm truncate max-w-[200px]">{seller.product?.title || 'Unknown Product'}</span>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-medium">${seller.revenue.toFixed(2)}</p>
-                          <p className="text-xs text-muted-foreground">{seller.sales} units</p>
-                        </div>
-                      </div>
+                      <ProductListItem
+                        key={seller.productId}
+                        product={{
+                          id: seller.productId?.toString() || `seller-${index}`,
+                          title: seller.product?.title || 'Unknown Product',
+                          variant_price: seller.revenue / (seller.sales || 1),
+                          handle: seller.product?.handle,
+                        }}
+                        storeUrl={storeUrl}
+                        onEdit={handleEditProduct}
+                        onDelete={handleDeleteProduct}
+                      />
                     ))}
                   </div>
                 </CardContent>
@@ -485,10 +538,18 @@ const PrepFoxDashboard = () => {
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {analytics.lowStock.slice(0, 5).map((product, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <span className="text-sm truncate max-w-[150px]">{product.title}</span>
-                      <Badge variant="secondary">{product.inventoryQuantity} left</Badge>
-                    </div>
+                    <ProductListItem
+                      key={product.id || index}
+                      product={{
+                        id: product.id || `low-stock-${index}`,
+                        title: product.title,
+                        variant_inventory_qty: product.inventoryQuantity,
+                        handle: product.handle,
+                      }}
+                      storeUrl={storeUrl}
+                      onEdit={handleEditProduct}
+                      onDelete={handleDeleteProduct}
+                    />
                   ))}
                 </CardContent>
               </Card>
@@ -503,10 +564,18 @@ const PrepFoxDashboard = () => {
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {analytics.outOfStock.slice(0, 5).map((product, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <span className="text-sm truncate max-w-[150px]">{product.title}</span>
-                      <Badge variant="destructive">0 stock</Badge>
-                    </div>
+                    <ProductListItem
+                      key={product.id || index}
+                      product={{
+                        id: product.id || `out-stock-${index}`,
+                        title: product.title,
+                        variant_inventory_qty: 0,
+                        handle: product.handle,
+                      }}
+                      storeUrl={storeUrl}
+                      onEdit={handleEditProduct}
+                      onDelete={handleDeleteProduct}
+                    />
                   ))}
                 </CardContent>
               </Card>
@@ -694,6 +763,14 @@ const PrepFoxDashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Product Edit Dialog */}
+      <ProductEditDialog
+        product={editingProduct}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onProductUpdated={handleProductUpdated}
+      />
     </div>
   );
 };
