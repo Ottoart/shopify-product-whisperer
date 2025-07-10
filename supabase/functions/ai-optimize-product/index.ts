@@ -110,11 +110,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true,
-        optimizedData: {
-          title: optimizedData.title,
-          description: optimizedData.description,
-          tags: optimizedData.tags,
-        }
+        optimizedData: optimizedData
       } as ApiResponse),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

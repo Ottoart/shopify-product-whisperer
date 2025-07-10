@@ -34,7 +34,8 @@ export const ProductEditor = ({ product, isOpen, onClose, onProductUpdated }: Pr
     if (beforeValue === afterValue || !session?.user?.id) return;
 
     try {
-      await supabase
+      console.log('Tracking manual edit:', { fieldName, beforeValue, afterValue });
+      const { error } = await supabase
         .from('product_edit_history')
         .insert({
           user_id: session.user.id,
@@ -44,8 +45,15 @@ export const ProductEditor = ({ product, isOpen, onClose, onProductUpdated }: Pr
           after_value: afterValue,
           edit_type: 'manual'
         });
+      
+      if (error) {
+        console.error('Database error tracking edit:', error);
+        throw error;
+      }
+      console.log('Manual edit tracked successfully');
     } catch (error) {
       console.error('Error tracking manual edit:', error);
+      throw error;
     }
   };
 
