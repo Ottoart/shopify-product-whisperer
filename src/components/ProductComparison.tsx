@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -43,6 +43,15 @@ export function ProductComparison({
   const [editedCategory, setEditedCategory] = useState(optimizedProduct.category);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+
+  // Reset edited values when optimizedProduct changes
+  useEffect(() => {
+    setEditedTitle(optimizedProduct.title);
+    setEditedDescription(optimizedProduct.description);
+    setEditedTags(optimizedProduct.tags);
+    setEditedType(optimizedProduct.type);
+    setEditedCategory(optimizedProduct.category);
+  }, [optimizedProduct]);
 
   const handleSave = async () => {
     setIsLoading(true);
