@@ -125,11 +125,14 @@ export const ProductEditor = ({ product, isOpen, onClose, onProductUpdated }: Pr
 
       toast({
         title: "Product Updated",
-        description: "Your manual edits have been saved.",
+        description: "Your manual edits have been saved and will appear shortly.",
       });
 
-      onProductUpdated();
-      onClose();
+      // Force refresh the products list
+      setTimeout(() => {
+        onProductUpdated();
+        onClose();
+      }, 500);
     } catch (error) {
       console.error('Error saving product:', error);
       toast({
