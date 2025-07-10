@@ -80,15 +80,31 @@ export const useShopifyProductSync = () => {
     queryFn: async () => {
       if (!session?.user?.id) return [];
       
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .order('updated_at', { ascending: false })
-        .limit(10000); // Get up to 10k products
+      let allProducts: any[] = [];
+      let hasMore = true;
+      let page = 0;
+      const pageSize = 1000;
       
-      if (error) throw error;
-      return data || [];
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .order('updated_at', { ascending: false })
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+        
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          allProducts = [...allProducts, ...data];
+          hasMore = data.length === pageSize;
+          page++;
+        } else {
+          hasMore = false;
+        }
+      }
+      
+      return allProducts;
     },
     enabled: !!session?.user?.id,
   });

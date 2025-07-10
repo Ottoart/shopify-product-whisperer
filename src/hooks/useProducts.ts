@@ -15,23 +15,41 @@ export const useProducts = () => {
     queryFn: async () => {
       if (!session?.user?.id) return [];
       
-      console.log('Fetching products for user:', session.user.id);
+      console.log('Fetching ALL products for user:', session.user.id);
       
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .order('created_at', { ascending: false })
-        .limit(10000); // Get up to 10k products
+      let allProducts: any[] = [];
+      let hasMore = true;
+      let page = 0;
+      const pageSize = 1000;
       
-      if (error) {
-        console.error('Error fetching products:', error);
-        throw error;
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .order('created_at', { ascending: false })
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+        
+        if (error) {
+          console.error('Error fetching products:', error);
+          throw error;
+        }
+        
+        if (data && data.length > 0) {
+          allProducts = [...allProducts, ...data];
+          console.log(`Fetched page ${page + 1}: ${data.length} products. Total so far: ${allProducts.length}`);
+          
+          // If we got less than pageSize, we've reached the end
+          hasMore = data.length === pageSize;
+          page++;
+        } else {
+          hasMore = false;
+        }
       }
       
-      console.log('Raw products fetched:', data?.length || 0);
+      console.log('Total products fetched:', allProducts.length);
       
-      const mappedProducts = data.map(item => ({
+      const mappedProducts = allProducts.map(item => ({
         id: item.handle,
         title: item.title,
         handle: item.handle,
