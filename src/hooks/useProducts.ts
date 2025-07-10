@@ -152,12 +152,42 @@ export const useProducts = () => {
     },
   });
 
+  const deleteProductsMutation = useMutation({
+    mutationFn: async (productHandles: string[]) => {
+      if (!session?.user?.id) throw new Error('Not authenticated');
+
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .in('handle', productHandles)
+        .eq('user_id', session.user.id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      toast({
+        title: "Products Deleted",
+        description: "Selected products have been removed.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Delete Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   return {
     products,
     isLoading,
     saveProducts: saveProductsMutation.mutate,
     updateProduct: updateProductMutation.mutate,
+    deleteProducts: deleteProductsMutation.mutate,
     isSaving: saveProductsMutation.isPending,
     isUpdating: updateProductMutation.isPending,
+    isDeleting: deleteProductsMutation.isPending,
   };
 };

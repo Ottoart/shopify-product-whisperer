@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProductEditor } from '@/components/ProductEditor';
-import { Clock, CheckCircle, ExternalLink, RefreshCw, Package, Edit3, Upload, Zap } from 'lucide-react';
+import { Clock, CheckCircle, ExternalLink, RefreshCw, Package, Edit3, Upload, Zap, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSessionContext } from '@supabase/auth-helpers-react';
 import { useToast } from '@/hooks/use-toast';
@@ -23,6 +23,7 @@ export const ProductActivity = ({ onProductsUpdated, storeUrl }: ProductActivity
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { session } = useSessionContext();
   const { toast } = useToast();
 
@@ -231,6 +232,71 @@ export const ProductActivity = ({ onProductsUpdated, storeUrl }: ProductActivity
     }
   };
 
+  const handleDeleteSelected = async () => {
+    const selectedProductIds = Array.from(selectedProducts);
+    if (selectedProductIds.length === 0) {
+      toast({
+        title: "No Products Selected",
+        description: "Please select products to delete.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if any selected products are not pending
+    const selectedPendingProducts = recentlyModified.filter(p => 
+      selectedProductIds.includes(p.id) && 
+      (!p.shopifySyncStatus || p.shopifySyncStatus === 'pending')
+    );
+
+    if (selectedPendingProducts.length === 0) {
+      toast({
+        title: "No Pending Products Selected",
+        description: "Only pending products can be deleted.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (selectedPendingProducts.length !== selectedProductIds.length) {
+      toast({
+        title: "Mixed Selection",
+        description: "Some selected products cannot be deleted. Only pending products will be removed.",
+      });
+    }
+
+    setIsDeleting(true);
+    try {
+      const productHandles = selectedPendingProducts.map(p => p.handle);
+      
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .in('handle', productHandles)
+        .eq('user_id', session.user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Products Deleted",
+        description: `Successfully deleted ${selectedPendingProducts.length} pending products.`,
+      });
+
+      setSelectedProducts(new Set());
+      onProductsUpdated();
+      fetchActivityData();
+    } catch (error: any) {
+      console.error('Delete error:', error);
+      toast({
+        title: "Delete Failed",
+        description: error.message || "Failed to delete products.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   useEffect(() => {
     fetchActivityData();
   }, [session?.user?.id]);
@@ -311,6 +377,19 @@ export const ProductActivity = ({ onProductsUpdated, storeUrl }: ProductActivity
                         <Upload className="h-3 w-3 mr-1" />
                       )}
                       Re-upload
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={handleDeleteSelected}
+                      disabled={isDeleting}
+                    >
+                      {isDeleting ? (
+                        <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-3 w-3 mr-1" />
+                      )}
+                      Delete Pending
                     </Button>
                   </div>
                 )}
