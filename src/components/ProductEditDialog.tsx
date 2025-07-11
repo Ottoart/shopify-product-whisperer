@@ -122,14 +122,14 @@ export const ProductEditDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Optimize Product</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader className="border-b pb-4 flex-shrink-0">
+          <DialogTitle className="text-lg font-semibold">Optimize Product</DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground">
             AI-powered product optimization and sync to Shopify.
           </DialogDescription>
           {(product.updated_at || product.shopify_synced_at) && (
-            <div className="text-xs text-muted-foreground space-y-1 mt-2">
+            <div className="text-xs text-muted-foreground space-y-1 mt-3 p-2 bg-muted/30 rounded">
               {product.updated_at && (
                 <div>Last edited: {new Date(product.updated_at).toLocaleString()}</div>
               )}
@@ -140,7 +140,7 @@ export const ProductEditDialog = ({
           )}
         </DialogHeader>
         
-        <div className="space-y-4 py-4">
+        <div className="flex-1 overflow-y-auto space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="title">Product Title</Label>
             <Input
@@ -250,7 +250,7 @@ export const ProductEditDialog = ({
           </div>
         </div>
 
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end gap-2 pt-4 border-t flex-shrink-0">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
