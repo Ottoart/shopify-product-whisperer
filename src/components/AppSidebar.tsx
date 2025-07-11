@@ -9,7 +9,8 @@ import {
   FileText,
   Zap,
   Users,
-  TrendingUp
+  TrendingUp,
+  Globe
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 
@@ -27,6 +28,7 @@ import {
 } from "@/components/ui/sidebar";
 
 const mainItems = [
+  { title: "Marketplace Gateway", url: "/marketplace-gateway", icon: Globe, description: "Central connection hub" },
   { title: "Products", url: "/", icon: Package, description: "Manage your product catalog" },
   { title: "PrepFox Dashboard", url: "/dashboard", icon: TrendingUp, description: "Main analytics dashboard" },
   { title: "AI Learning Dashboard", url: "/ai-dashboard", icon: BarChart3, description: "AI insights and learning" },

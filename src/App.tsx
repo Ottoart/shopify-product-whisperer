@@ -10,6 +10,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import Index from "./pages/Index";
 import MainDashboard from "./pages/MainDashboard";
 import PrepFoxDashboard from "./pages/PrepFoxDashboard";
+import MarketplaceGateway from "./pages/MarketplaceGateway";
 import Analytics from "./pages/Analytics";
 import Activity from "./pages/Activity";
 import BulkEditor from "./pages/BulkEditor";
@@ -43,6 +44,7 @@ const App = () => (
                     <Route path="/" element={<Index />} />
             <Route path="/dashboard" element={<MainDashboard />} />
             <Route path="/ai-dashboard" element={<PrepFoxDashboard />} />
+                    <Route path="/marketplace-gateway" element={<MarketplaceGateway />} />
                     <Route path="/analytics" element={<Analytics />} />
                     <Route path="/activity" element={<Activity />} />
                     <Route path="/bulk-editor" element={<BulkEditor />} />
