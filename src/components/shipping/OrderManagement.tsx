@@ -20,7 +20,8 @@ import {
   XCircle,
   Edit2,
   Printer,
-  Download
+  Download,
+  Store
 } from "lucide-react";
 
 interface Order {
@@ -310,6 +311,10 @@ export function OrderManagement() {
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
                     <div className="flex items-center gap-3">
                       <h3 className="font-semibold text-lg">{order.orderNumber}</h3>
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                        <Store className="h-3 w-3 mr-1" />
+                        {order.store}
+                      </Badge>
                       {getStatusBadge(order.status)}
                       <div className="flex gap-1">
                         {getWarningIcons(order)}
