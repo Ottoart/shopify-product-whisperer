@@ -13,6 +13,7 @@ import { useAIOptimizationWithLearning } from "@/hooks/useAIOptimizationWithLear
 import { useProductDrafts } from "@/hooks/useProductDrafts";
 import { RefreshCw, Save, FolderOpen, Search, ExternalLink } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { useSessionContext } from '@supabase/auth-helpers-react';
 
 interface ProductComparisonProps {
   isOpen: boolean;
@@ -115,6 +116,7 @@ export function ProductComparison({
   const [draftName, setDraftName] = useState('');
   const [selectedDraftId, setSelectedDraftId] = useState<string>('');
   const { toast } = useToast();
+  const { session } = useSessionContext();
   
   // Initialize hooks for AI reprocessing and draft management
   const { optimizeWithLearning, isOptimizing } = useAIOptimizationWithLearning();
@@ -146,8 +148,23 @@ export function ProductComparison({
   }, [optimizedProduct]);
 
   const handleSave = async () => {
+    if (!session?.user?.id) {
+      toast({
+        title: "Authentication Error",
+        description: "You must be logged in to save changes.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
+      console.log('Saving product changes...', {
+        handle: originalProduct.handle,
+        userId: session.user.id,
+        title: editedTitle
+      });
+
       const { error } = await supabase
         .from('products')
         .update({
@@ -174,11 +191,15 @@ export function ProductComparison({
           google_shopping_age_group: editedGoogleShoppingAgeGroup,
           updated_at: new Date().toISOString(),
         })
-        .eq('handle', originalProduct.handle);
+        .eq('handle', originalProduct.handle)
+        .eq('user_id', session.user.id);
 
       if (error) {
+        console.error('Database update error:', error);
         throw error;
       }
+
+      console.log('Product updated successfully');
 
       toast({
         title: "Product updated successfully",
