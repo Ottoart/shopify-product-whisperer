@@ -24,7 +24,11 @@ export const ProductEditor = ({ product, isOpen, onClose, onProductUpdated }: Pr
     bodyHtml: product.bodyHtml || '',
     tags: product.tags || '',
     category: product.category || '',
-    vendor: product.vendor || ''
+    vendor: product.vendor || '',
+    variantPrice: product.variantPrice || 0,
+    variantCompareAtPrice: product.variantCompareAtPrice || 0,
+    variantSku: product.variantSku || '',
+    variantInventoryQty: product.variantInventoryQty || 0
   });
   const [isSaving, setIsSaving] = useState(false);
   const { session } = useSessionContext();
@@ -76,7 +80,11 @@ export const ProductEditor = ({ product, isOpen, onClose, onProductUpdated }: Pr
           description: (product.bodyHtml || '') !== editedProduct.bodyHtml,
           tags: (product.tags || '') !== editedProduct.tags,
           category: (product.category || '') !== editedProduct.category,
-          vendor: (product.vendor || '') !== editedProduct.vendor
+          vendor: (product.vendor || '') !== editedProduct.vendor,
+          price: (product.variantPrice || 0) !== editedProduct.variantPrice,
+          compareAtPrice: (product.variantCompareAtPrice || 0) !== editedProduct.variantCompareAtPrice,
+          sku: (product.variantSku || '') !== editedProduct.variantSku,
+          inventory: (product.variantInventoryQty || 0) !== editedProduct.variantInventoryQty
         }
       });
 
@@ -87,7 +95,11 @@ export const ProductEditor = ({ product, isOpen, onClose, onProductUpdated }: Pr
         trackManualEdit('description', product.bodyHtml || '', editedProduct.bodyHtml),
         trackManualEdit('tags', product.tags || '', editedProduct.tags),
         trackManualEdit('category', product.category || '', editedProduct.category),
-        trackManualEdit('vendor', product.vendor || '', editedProduct.vendor)
+        trackManualEdit('vendor', product.vendor || '', editedProduct.vendor),
+        trackManualEdit('variant_price', String(product.variantPrice || 0), String(editedProduct.variantPrice)),
+        trackManualEdit('variant_compare_at_price', String(product.variantCompareAtPrice || 0), String(editedProduct.variantCompareAtPrice)),
+        trackManualEdit('variant_sku', product.variantSku || '', editedProduct.variantSku),
+        trackManualEdit('variant_inventory_qty', String(product.variantInventoryQty || 0), String(editedProduct.variantInventoryQty))
       ]).catch(error => {
         console.error('Edit tracking failed (non-blocking):', error);
       });
@@ -99,7 +111,11 @@ export const ProductEditor = ({ product, isOpen, onClose, onProductUpdated }: Pr
         body_html: editedProduct.bodyHtml,
         tags: editedProduct.tags,
         category: editedProduct.category,
-        vendor: editedProduct.vendor
+        vendor: editedProduct.vendor,
+        variant_price: editedProduct.variantPrice,
+        variant_compare_at_price: editedProduct.variantCompareAtPrice,
+        variant_sku: editedProduct.variantSku,
+        variant_inventory_qty: editedProduct.variantInventoryQty
       });
 
       const { error } = await supabase
@@ -111,6 +127,10 @@ export const ProductEditor = ({ product, isOpen, onClose, onProductUpdated }: Pr
           tags: editedProduct.tags,
           category: editedProduct.category,
           vendor: editedProduct.vendor,
+          variant_price: editedProduct.variantPrice,
+          variant_compare_at_price: editedProduct.variantCompareAtPrice,
+          variant_sku: editedProduct.variantSku,
+          variant_inventory_qty: editedProduct.variantInventoryQty,
           updated_at: new Date().toISOString()
         })
         .eq('handle', product.handle)
@@ -291,6 +311,56 @@ export const ProductEditor = ({ product, isOpen, onClose, onProductUpdated }: Pr
               onChange={(e) => setEditedProduct({ ...editedProduct, tags: e.target.value })}
               placeholder="Comma-separated tags"
             />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="price">Price ($)</Label>
+              <Input
+                id="price"
+                type="number"
+                step="0.01"
+                min="0"
+                value={editedProduct.variantPrice}
+                onChange={(e) => setEditedProduct({ ...editedProduct, variantPrice: parseFloat(e.target.value) || 0 })}
+                placeholder="0.00"
+              />
+            </div>
+            <div>
+              <Label htmlFor="comparePrice">Compare at Price ($)</Label>
+              <Input
+                id="comparePrice"
+                type="number"
+                step="0.01"
+                min="0"
+                value={editedProduct.variantCompareAtPrice}
+                onChange={(e) => setEditedProduct({ ...editedProduct, variantCompareAtPrice: parseFloat(e.target.value) || 0 })}
+                placeholder="0.00"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="sku">SKU</Label>
+              <Input
+                id="sku"
+                value={editedProduct.variantSku}
+                onChange={(e) => setEditedProduct({ ...editedProduct, variantSku: e.target.value })}
+                placeholder="Enter SKU"
+              />
+            </div>
+            <div>
+              <Label htmlFor="inventory">Inventory Quantity</Label>
+              <Input
+                id="inventory"
+                type="number"
+                min="0"
+                value={editedProduct.variantInventoryQty}
+                onChange={(e) => setEditedProduct({ ...editedProduct, variantInventoryQty: parseInt(e.target.value) || 0 })}
+                placeholder="0"
+              />
+            </div>
           </div>
 
           <div>
