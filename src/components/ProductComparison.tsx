@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTabPersistence } from "@/hooks/useTabPersistence";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -236,7 +236,7 @@ export function ProductComparison({
               tags: editedTags,
               published: editedPublished,
             },
-            productId: originalProduct.id,
+            productHandle: originalProduct.handle, // Use handle instead of id
           }
         });
 
@@ -430,6 +430,9 @@ export function ProductComparison({
       <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Product Optimization Comparison</DialogTitle>
+          <DialogDescription>
+            Review and modify the AI-optimized product details before saving.
+          </DialogDescription>
         </DialogHeader>
         
         <Tabs value={mainTab} onValueChange={setMainTab} className="w-full">
