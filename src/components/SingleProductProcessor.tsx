@@ -296,6 +296,7 @@ export function SingleProductProcessor({
           isOpen={showComparison}
           onClose={() => setShowComparison(false)}
           originalProduct={{
+            id: product.id,
             handle: product.handle,
             title: product.title,
             body_html: product.bodyHtml,

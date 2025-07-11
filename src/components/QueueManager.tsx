@@ -99,6 +99,7 @@ REQUIREMENTS:
   } | null>(null);
   const [comparisonData, setComparisonData] = useState<{
     originalProduct: {
+      id: string;
       handle: string;
       title: string;
       body_html: string | null;
@@ -258,6 +259,7 @@ REQUIREMENTS:
         // Step 3: Show comparison and wait for user decision
         setComparisonData({
           originalProduct: {
+            id: product.id,
             handle: product.handle,
             title: product.title,
             body_html: product.bodyHtml,

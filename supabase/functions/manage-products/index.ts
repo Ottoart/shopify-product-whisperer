@@ -19,7 +19,7 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { action, productData, productId, storeUrl, accessToken } = await req.json();
+    const { action, productData, productId } = await req.json();
     
     // Get user from authorization header
     const authHeader = req.headers.get('Authorization');
@@ -76,7 +76,10 @@ serve(async (req) => {
           throw updateError;
         }
 
-        // Also sync to Shopify if credentials provided
+        // Also sync to Shopify if credentials are available
+        const storeUrl = Deno.env.get('SHOPIFY_DOMAIN');
+        const accessToken = Deno.env.get('SHOPIFY_ACCESS_TOKEN');
+        
         if (storeUrl && accessToken && productData.handle) {
           try {
             const shopifyUrl = `https://${storeUrl}/admin/api/2023-10/products.json?handle=${productData.handle}`;

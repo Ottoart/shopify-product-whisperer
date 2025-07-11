@@ -19,6 +19,7 @@ interface ProductComparisonProps {
   isOpen: boolean;
   onClose: () => void;
   originalProduct: {
+    id: string;
     handle: string;
     title: string;
     body_html: string | null;
@@ -216,51 +217,34 @@ export function ProductComparison({
 
       // Also sync to Shopify
       try {
-        const { storeUrl, accessToken } = getShopifyCredentials();
-        if (storeUrl && accessToken) {
-          console.log('Syncing to Shopify...');
-          const { data: syncData, error: syncError } = await supabase.functions.invoke('manage-products', {
-            body: {
-              action: 'update',
-              storeUrl,
-              accessToken,
-              productData: {
-                handle: originalProduct.handle,
-                title: editedTitle,
-                body_html: editedDescription,
-                vendor: editedVendor,
-                product_type: editedType,
-                tags: editedTags,
-                published: editedPublished,
-                seo_title: editedSeoTitle,
-                seo_description: editedSeoDescription,
-                variants: [{
-                  price: editedVariantPrice,
-                  compare_at_price: editedVariantCompareAtPrice,
-                  sku: editedVariantSku,
-                  barcode: editedVariantBarcode,
-                  grams: editedVariantGrams,
-                  inventory_quantity: editedVariantInventoryQty,
-                  inventory_policy: editedVariantInventoryPolicy,
-                  requires_shipping: editedVariantRequiresShipping,
-                  taxable: editedVariantTaxable,
-                }]
-              }
-            }
-          });
-
-          if (syncError) {
-            console.error('Shopify sync error:', syncError);
-            toast({
-              title: "Saved locally but Shopify sync failed",
-              description: "Changes saved to database but couldn't sync to Shopify.",
-              variant: "destructive",
-            });
-            return;
+        console.log('Syncing to Shopify...');
+        const { data: syncData, error: syncError } = await supabase.functions.invoke('manage-products', {
+          body: {
+            action: 'update',
+            productData: {
+              handle: originalProduct.handle,
+              title: editedTitle,
+              body_html: editedDescription,
+              vendor: editedVendor,
+              type: editedType,
+              tags: editedTags,
+              published: editedPublished,
+            },
+            productId: originalProduct.id,
           }
+        });
 
-          console.log('Shopify sync successful:', syncData);
+        if (syncError) {
+          console.error('Shopify sync error:', syncError);
+          toast({
+            title: "Saved locally but Shopify sync failed",
+            description: "Changes saved to database but couldn't sync to Shopify.",
+            variant: "destructive",
+          });
+          return;
         }
+
+        console.log('Shopify sync successful:', syncData);
       } catch (syncError) {
         console.error('Shopify sync failed:', syncError);
         toast({
