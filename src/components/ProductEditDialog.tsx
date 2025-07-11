@@ -56,6 +56,25 @@ export const ProductEditDialog = ({
     }
   }, [product]);
 
+  // Prevent form reset when dialog closes and reopens
+  useEffect(() => {
+    if (!open && product) {
+      // Reset form when dialog is closed to prevent stale data
+      setFormData({
+        title: product.title || '',
+        body_html: product.body_html || '',
+        vendor: product.vendor || '',
+        type: product.type || '',
+        tags: product.tags || '',
+        published: product.published || false,
+        variant_price: product.variant_price || 0,
+        variant_inventory_qty: product.variant_inventory_qty || 0,
+        seo_title: product.seo_title || '',
+        seo_description: product.seo_description || '',
+      });
+    }
+  }, [open, product]);
+
   const handleSave = async () => {
     if (!product) return;
 
