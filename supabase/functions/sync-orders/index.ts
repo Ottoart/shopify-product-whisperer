@@ -97,8 +97,10 @@ serve(async (req) => {
 
       try {
         // Fetch orders from Shopify
+        // Extract shop name from domain (remove .myshopify.com if present)
+        const shopName = storeConfig.domain.replace('.myshopify.com', '').replace('.myshopifystore.com', '');
         const shopifyResponse = await fetch(
-          `https://${storeConfig.domain}/admin/api/2023-10/orders.json?status=any&limit=250`,
+          `https://${shopName}.myshopify.com/admin/api/2023-10/orders.json?status=any&limit=250`,
           {
             headers: {
               'X-Shopify-Access-Token': storeConfig.access_token,
