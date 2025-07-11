@@ -179,72 +179,68 @@ const Index = () => {
 
         {/* Main Content */}
         {products.length > 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="space-y-6">
             {/* Products List */}
-            <div className="lg:col-span-2 space-y-6">
-              <Card className="shadow-card border-0">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-gradient-primary flex items-center justify-center">
-                        <Package className="h-5 w-5 text-primary-foreground" />
-                      </div>
-                      <div>
-                        <CardTitle>Products ({products.length})</CardTitle>
-                        <CardDescription>
-                          Select products to optimize with AI
-                        </CardDescription>
-                      </div>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <ProductList
-                    products={products}
-                    selectedProducts={selectedProducts}
-                    onSelectionChange={setSelectedProducts}
-                    onAddToQueue={addToQueue}
-                    onProductsUpdated={handleProductsUpdated}
-                    storeUrl=""
-                  />
-                </CardContent>
-              </Card>
-
-              {/* Product Type Generator */}
-              <ProductTypeGenerator
-                products={products}
-                selectedProducts={selectedProducts}
-                onProductsUpdated={handleProductsUpdated}
-              />
-            </div>
-
-            {/* Queue Manager */}
-            <div>
-              <Card className="shadow-card border-0">
-                <CardHeader>
+            <Card className="shadow-card border-0">
+              <CardHeader>
+                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-gradient-success flex items-center justify-center">
-                      <Zap className="h-5 w-5 text-accent-foreground" />
+                    <div className="h-10 w-10 rounded-lg bg-gradient-primary flex items-center justify-center">
+                      <Package className="h-5 w-5 text-primary-foreground" />
                     </div>
                     <div>
-                      <CardTitle>Processing Queue</CardTitle>
+                      <CardTitle>Products ({products.length})</CardTitle>
                       <CardDescription>
-                        Track AI optimization progress
+                        Select products to optimize with AI
                       </CardDescription>
                     </div>
                   </div>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <QueueManager
-                    queueItems={queueItems}
-                    products={products}
-                    onUpdateStatus={updateQueueItemStatus}
-                    onUpdateProduct={handleUpdateProduct}
-                    onRemoveFromQueue={removeFromQueue}
-                  />
-                </CardContent>
-              </Card>
-            </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <ProductList
+                  products={products}
+                  selectedProducts={selectedProducts}
+                  onSelectionChange={setSelectedProducts}
+                  onAddToQueue={addToQueue}
+                  onProductsUpdated={handleProductsUpdated}
+                  storeUrl=""
+                />
+              </CardContent>
+            </Card>
+
+            {/* Product Type Generator */}
+            <ProductTypeGenerator
+              products={products}
+              selectedProducts={selectedProducts}
+              onProductsUpdated={handleProductsUpdated}
+            />
+
+            {/* Processing Queue */}
+            <Card className="shadow-card border-0">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-lg bg-gradient-success flex items-center justify-center">
+                    <Zap className="h-5 w-5 text-accent-foreground" />
+                  </div>
+                  <div>
+                    <CardTitle>Processing Queue</CardTitle>
+                    <CardDescription>
+                      Track AI optimization progress
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <QueueManager
+                  queueItems={queueItems}
+                  products={products}
+                  onUpdateStatus={updateQueueItemStatus}
+                  onUpdateProduct={handleUpdateProduct}
+                  onRemoveFromQueue={removeFromQueue}
+                />
+              </CardContent>
+            </Card>
           </div>
         )}
       </div>
