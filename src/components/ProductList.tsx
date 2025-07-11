@@ -35,9 +35,24 @@ export const ProductList = ({
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [processingProduct, setProcessingProduct] = useState<Product | null>(null);
   const [itemsPerPage, setItemsPerPage] = useState(50);
-  const [typeFilter, setTypeFilter] = useState('');
-  const [vendorFilter, setVendorFilter] = useState('');
-  const [tagFilter, setTagFilter] = useState('');
+  const [selectedTypes, setSelectedTypes] = useState<Set<string>>(new Set());
+  const [selectedVendors, setSelectedVendors] = useState<Set<string>>(new Set());
+  const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
+
+  // Extract unique values for filters
+  const uniqueTypes = [...new Set(products.map(p => p.type).filter(Boolean))];
+  const uniqueVendors = [...new Set(products.map(p => p.vendor).filter(Boolean))];
+  const uniqueTags = [...new Set(products.flatMap(p => p.tags?.split(',').map(tag => tag.trim())).filter(Boolean))];
+
+  const toggleFilter = (selectedSet: Set<string>, setter: (set: Set<string>) => void, value: string) => {
+    const newSet = new Set(selectedSet);
+    if (newSet.has(value)) {
+      newSet.delete(value);
+    } else {
+      newSet.add(value);
+    }
+    setter(newSet);
+  };
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -45,9 +60,9 @@ export const ProductList = ({
                          product.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.tags.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesType = !typeFilter || product.type.toLowerCase().includes(typeFilter.toLowerCase());
-    const matchesVendor = !vendorFilter || product.vendor.toLowerCase().includes(vendorFilter.toLowerCase());
-    const matchesTag = !tagFilter || product.tags.toLowerCase().includes(tagFilter.toLowerCase());
+    const matchesType = selectedTypes.size === 0 || selectedTypes.has(product.type);
+    const matchesVendor = selectedVendors.size === 0 || selectedVendors.has(product.vendor);
+    const matchesTag = selectedTags.size === 0 || product.tags?.split(',').some(tag => selectedTags.has(tag.trim()));
     
     return matchesSearch && matchesType && matchesVendor && matchesTag;
   });
@@ -118,59 +133,87 @@ export const ProductList = ({
         </div>
 
         {/* Filters Row */}
-        <div className="flex items-center gap-4 flex-wrap">
+        <div className="space-y-4">
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm font-medium">Filters:</span>
+            <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(Number(value))}>
+              <SelectTrigger className="w-32">
+                <SelectValue placeholder="Per page" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="25">25 per page</SelectItem>
+                <SelectItem value="50">50 per page</SelectItem>
+                <SelectItem value="100">100 per page</SelectItem>
+                <SelectItem value="500">500 per page</SelectItem>
+                <SelectItem value={products.length.toString()}>Show all ({products.length})</SelectItem>
+              </SelectContent>
+            </Select>
+            {(selectedTypes.size > 0 || selectedVendors.size > 0 || selectedTags.size > 0) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSelectedTypes(new Set());
+                  setSelectedVendors(new Set());
+                  setSelectedTags(new Set());
+                }}
+              >
+                Clear All Filters
+              </Button>
+            )}
           </div>
           
-          <Input
-            placeholder="Filter by type..."
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="w-40"
-          />
-          
-          <Input
-            placeholder="Filter by vendor..."
-            value={vendorFilter}
-            onChange={(e) => setVendorFilter(e.target.value)}
-            className="w-40"
-          />
-          
-          <Input
-            placeholder="Filter by tag..."
-            value={tagFilter}
-            onChange={(e) => setTagFilter(e.target.value)}
-            className="w-40"
-          />
+          {/* Types Filter */}
+          <div className="space-y-2">
+            <span className="text-xs font-medium text-muted-foreground">Product Types:</span>
+            <div className="flex flex-wrap gap-1">
+              {uniqueTypes.map((type) => (
+                <Badge
+                  key={type}
+                  variant={selectedTypes.has(type) ? "default" : "outline"}
+                  className="cursor-pointer hover:bg-primary/80 text-xs"
+                  onClick={() => toggleFilter(selectedTypes, setSelectedTypes, type)}
+                >
+                  {type}
+                </Badge>
+              ))}
+            </div>
+          </div>
 
-          <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(Number(value))}>
-            <SelectTrigger className="w-32">
-              <SelectValue placeholder="Per page" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="25">25 per page</SelectItem>
-              <SelectItem value="50">50 per page</SelectItem>
-              <SelectItem value="100">100 per page</SelectItem>
-              <SelectItem value="500">500 per page</SelectItem>
-              <SelectItem value={products.length.toString()}>Show all ({products.length})</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          {(typeFilter || vendorFilter || tagFilter) && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setTypeFilter('');
-                setVendorFilter('');
-                setTagFilter('');
-              }}
-            >
-              Clear Filters
-            </Button>
-          )}
+          {/* Vendors Filter */}
+          <div className="space-y-2">
+            <span className="text-xs font-medium text-muted-foreground">Vendors:</span>
+            <div className="flex flex-wrap gap-1">
+              {uniqueVendors.map((vendor) => (
+                <Badge
+                  key={vendor}
+                  variant={selectedVendors.has(vendor) ? "default" : "outline"}
+                  className="cursor-pointer hover:bg-primary/80 text-xs"
+                  onClick={() => toggleFilter(selectedVendors, setSelectedVendors, vendor)}
+                >
+                  {vendor}
+                </Badge>
+              ))}
+            </div>
+          </div>
+
+          {/* Tags Filter */}
+          <div className="space-y-2">
+            <span className="text-xs font-medium text-muted-foreground">Tags:</span>
+            <div className="flex flex-wrap gap-1">
+              {uniqueTags.map((tag) => (
+                <Badge
+                  key={tag}
+                  variant={selectedTags.has(tag) ? "default" : "outline"}
+                  className="cursor-pointer hover:bg-primary/80 text-xs"
+                  onClick={() => toggleFilter(selectedTags, setSelectedTags, tag)}
+                >
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Results Summary and Select All */}
