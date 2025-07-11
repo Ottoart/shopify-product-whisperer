@@ -19,7 +19,7 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { action, productData, productId } = await req.json();
+    const { action, productData, productId, productHandle } = await req.json();
     
     // Get user from authorization header
     const authHeader = req.headers.get('Authorization');
@@ -51,8 +51,8 @@ serve(async (req) => {
 
     switch (action) {
       case 'update':
-        // Update product in our database
-        const { data: updateData, error: updateError } = await supabase
+        // Update product in our database - use handle if provided, otherwise use id
+        const updateQuery = supabase
           .from('products')
           .update({
             title: productData.title,
@@ -66,8 +66,15 @@ serve(async (req) => {
             seo_title: productData.seo_title,
             seo_description: productData.seo_description,
             updated_at: new Date().toISOString(),
-          })
-          .eq('id', productId)
+          });
+
+        if (productHandle) {
+          updateQuery.eq('handle', productHandle);
+        } else {
+          updateQuery.eq('id', productId);
+        }
+        
+        const { data: updateData, error: updateError } = await updateQuery
           .eq('user_id', user.id)
           .select()
           .single();
@@ -127,14 +134,20 @@ serve(async (req) => {
                   console.log('Product successfully synced to Shopify');
                   
                   // Update sync status in database
-                  await supabase
+                  const syncUpdateQuery = supabase
                     .from('products')
                     .update({
                       shopify_sync_status: 'synced',
                       shopify_synced_at: new Date().toISOString(),
-                    })
-                    .eq('id', productId)
-                    .eq('user_id', user.id);
+                    });
+                  
+                  if (productHandle) {
+                    syncUpdateQuery.eq('handle', productHandle);
+                  } else {
+                    syncUpdateQuery.eq('id', productId);
+                  }
+                  
+                  await syncUpdateQuery.eq('user_id', user.id);
                 }
               }
             }

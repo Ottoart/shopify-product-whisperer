@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface Product {
   id: string;
+  handle?: string;
   title: string;
   body_html?: string;
   vendor?: string;
@@ -84,6 +85,7 @@ export const ProductEditDialog = ({
         body: {
           action: 'update',
           productId: product.id,
+          productHandle: product.handle,
           productData: formData,
         },
       });
