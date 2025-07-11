@@ -200,10 +200,10 @@ export function SingleProductProcessor({
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-gradient-primary flex items-center justify-center">
+              <div className="h-10 w-10 rounded-lg bg-gradient-primary flex items-center justify-center flex-shrink-0">
                 <Package className="h-5 w-5 text-primary-foreground" />
               </div>
-              <div>
+              <div className="min-w-0 flex-1">
                 <div>Processing Product</div>
                 <div className="text-sm font-normal text-muted-foreground">
                   AI optimization in progress
