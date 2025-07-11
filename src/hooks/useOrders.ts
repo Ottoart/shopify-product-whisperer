@@ -201,9 +201,14 @@ export const useOrders = () => {
 
   const createOrder = async (orderData: Omit<Order, 'id'>) => {
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
+          user_id: user.id,
           order_number: orderData.orderNumber,
           customer_name: orderData.customerName,
           customer_email: orderData.customerEmail,
