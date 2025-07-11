@@ -26,6 +26,41 @@ interface Carrier {
 export function CarrierManagement() {
   const { toast } = useToast();
   const [carriers, setCarriers] = useState<Carrier[]>([
+    // Internal carriers - no login required
+    {
+      id: "canada-post",
+      name: "Canada Post",
+      logo: "🇨🇦",
+      connected: true,
+      services: ["Regular Parcel", "Expedited Parcel", "Xpresspost", "Priority"],
+      active: true,
+      ratesEnabled: true,
+      labelsEnabled: true,
+      trackingEnabled: true
+    },
+    {
+      id: "ups-internal",
+      name: "UPS (Internal)",
+      logo: "📦",
+      connected: true,
+      services: ["UPS Ground", "UPS 2nd Day Air", "UPS Next Day Air", "UPS Worldwide Express"],
+      active: true,
+      ratesEnabled: true,
+      labelsEnabled: true,
+      trackingEnabled: true
+    },
+    {
+      id: "sendle",
+      name: "Sendle",
+      logo: "📮",
+      connected: true,
+      services: ["Sendle Standard", "Sendle Express", "Sendle Pro"],
+      active: true,
+      ratesEnabled: true,
+      labelsEnabled: true,
+      trackingEnabled: true
+    },
+    // External carriers - require API credentials
     {
       id: "ups",
       name: "UPS",
@@ -269,21 +304,32 @@ export function CarrierManagement() {
                       >
                         🧪 Test
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                      >
-                        <Settings className="h-3 w-3 mr-1" />
-                        Configure
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleDisconnectCarrier(carrier.id)}
-                      >
-                        <XCircle className="h-3 w-3 mr-1" />
-                        Disconnect
-                      </Button>
+                      {/* Only show Configure and Disconnect for external carriers */}
+                      {!['canada-post', 'ups-internal', 'sendle'].includes(carrier.id) && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                          >
+                            <Settings className="h-3 w-3 mr-1" />
+                            Configure
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDisconnectCarrier(carrier.id)}
+                          >
+                            <XCircle className="h-3 w-3 mr-1" />
+                            Disconnect
+                          </Button>
+                        </>
+                      )}
+                      {/* Show internal badge for internal carriers */}
+                      {['canada-post', 'ups-internal', 'sendle'].includes(carrier.id) && (
+                        <Badge variant="outline" className="text-xs">
+                          Internal
+                        </Badge>
+                      )}
                     </>
                   ) : (
                     <Button
