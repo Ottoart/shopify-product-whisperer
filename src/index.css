@@ -17,44 +17,44 @@
     --popover: 0 0% 100%;
     --popover-foreground: 215 35% 15%;
 
-    /* PrepFox Navy - Main brand color */
-    --primary: 210 45% 25%;
+    /* PrepFox Orange - Primary/Dominant brand color */
+    --primary: 20 85% 55%;
     --primary-foreground: 0 0% 98%;
-    --primary-glow: 210 45% 35%;
+    --primary-glow: 20 85% 65%;
 
-    /* Secondary colors based on navy theme */
-    --secondary: 210 25% 95%;
-    --secondary-foreground: 215 30% 25%;
+    /* Secondary colors with lighter orange tones */
+    --secondary: 25 75% 95%;
+    --secondary-foreground: 15 60% 25%;
 
-    /* Muted colors for subtle elements */
-    --muted: 210 20% 96%;
-    --muted-foreground: 215 20% 45%;
+    /* Muted colors with warm orange undertones */
+    --muted: 25 40% 96%;
+    --muted-foreground: 20 30% 45%;
 
-    /* PrepFox Orange - Accent color */
-    --accent: 20 85% 55%;
+    /* PrepFox Navy - Now accent/supporting color */
+    --accent: 210 45% 25%;
     --accent-foreground: 0 0% 98%;
-    --accent-glow: 20 85% 65%;
+    --accent-glow: 210 45% 35%;
 
     /* Status colors */
     --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 98%;
 
-    /* Border and input colors */
-    --border: 210 20% 90%;
-    --input: 210 20% 90%;
-    --ring: 210 45% 25%;
+    /* Border and input colors with orange undertones */
+    --border: 25 30% 90%;
+    --input: 25 30% 90%;
+    --ring: 20 85% 55%;
 
-    /* PrepFox Brand Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(210 45% 25%), hsl(210 45% 35%));
-    --gradient-secondary: linear-gradient(135deg, hsl(210 25% 95%), hsl(210 20% 90%));
-    --gradient-accent: linear-gradient(135deg, hsl(20 85% 55%), hsl(20 85% 65%));
-    --gradient-success: linear-gradient(135deg, hsl(210 45% 25%), hsl(20 85% 55%));
+    /* PrepFox Orange-Dominant Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(20 85% 55%), hsl(20 85% 65%));
+    --gradient-secondary: linear-gradient(135deg, hsl(25 75% 95%), hsl(25 40% 90%));
+    --gradient-accent: linear-gradient(135deg, hsl(210 45% 25%), hsl(210 45% 35%));
+    --gradient-success: linear-gradient(135deg, hsl(20 85% 55%), hsl(210 45% 25%));
     
-    /* Elegant shadows with brand colors */
-    --shadow-elegant: 0 10px 30px -10px hsl(210 45% 25% / 0.3);
-    --shadow-card: 0 4px 20px -2px hsl(210 45% 25% / 0.1);
-    --shadow-glow: 0 0 40px hsl(20 85% 55% / 0.4);
-    --shadow-progress: 0 0 20px hsl(210 45% 25% / 0.3);
+    /* Elegant shadows with dominant orange */
+    --shadow-elegant: 0 10px 30px -10px hsl(20 85% 55% / 0.3);
+    --shadow-card: 0 4px 20px -2px hsl(20 85% 55% / 0.1);
+    --shadow-glow: 0 0 40px hsl(20 85% 55% / 0.5);
+    --shadow-progress: 0 0 20px hsl(20 85% 55% / 0.4);
     
     /* Smooth transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -62,15 +62,15 @@
 
     --radius: 0.5rem;
 
-    /* Sidebar with PrepFox theme */
-    --sidebar-background: 210 30% 98%;
-    --sidebar-foreground: 215 35% 25%;
-    --sidebar-primary: 210 45% 25%;
+    /* Sidebar with Orange-dominant theme */
+    --sidebar-background: 25 50% 98%;
+    --sidebar-foreground: 15 50% 25%;
+    --sidebar-primary: 20 85% 55%;
     --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 210 25% 95%;
-    --sidebar-accent-foreground: 215 30% 25%;
-    --sidebar-border: 210 20% 90%;
-    --sidebar-ring: 210 45% 25%;
+    --sidebar-accent: 25 60% 95%;
+    --sidebar-accent-foreground: 15 50% 25%;
+    --sidebar-border: 25 40% 90%;
+    --sidebar-ring: 20 85% 55%;
   }
 
   .dark {
@@ -84,46 +84,46 @@
     --popover: 215 40% 10%;
     --popover-foreground: 210 20% 95%;
 
-    --primary: 210 45% 35%;
+    --primary: 20 85% 60%;
     --primary-foreground: 0 0% 98%;
-    --primary-glow: 210 45% 45%;
+    --primary-glow: 20 85% 70%;
 
-    --secondary: 215 35% 12%;
-    --secondary-foreground: 210 20% 85%;
+    --secondary: 25 40% 12%;
+    --secondary-foreground: 20 50% 85%;
 
-    --muted: 215 35% 15%;
-    --muted-foreground: 210 20% 65%;
+    --muted: 25 30% 15%;
+    --muted-foreground: 20 40% 65%;
 
-    --accent: 20 85% 60%;
+    --accent: 210 45% 35%;
     --accent-foreground: 0 0% 98%;
-    --accent-glow: 20 85% 70%;
+    --accent-glow: 210 45% 45%;
 
     --destructive: 0 70% 60%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 215 35% 20%;
-    --input: 215 35% 20%;
-    --ring: 210 45% 35%;
+    --border: 25 25% 20%;
+    --input: 25 25% 20%;
+    --ring: 20 85% 60%;
 
-    /* Dark mode gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(210 45% 35%), hsl(210 45% 45%));
-    --gradient-secondary: linear-gradient(135deg, hsl(215 35% 12%), hsl(215 35% 18%));
-    --gradient-accent: linear-gradient(135deg, hsl(20 85% 60%), hsl(20 85% 70%));
-    --gradient-success: linear-gradient(135deg, hsl(210 45% 35%), hsl(20 85% 60%));
+    /* Dark mode gradients - orange dominant */
+    --gradient-primary: linear-gradient(135deg, hsl(20 85% 60%), hsl(20 85% 70%));
+    --gradient-secondary: linear-gradient(135deg, hsl(25 40% 12%), hsl(25 30% 18%));
+    --gradient-accent: linear-gradient(135deg, hsl(210 45% 35%), hsl(210 45% 45%));
+    --gradient-success: linear-gradient(135deg, hsl(20 85% 60%), hsl(210 45% 35%));
 
-    --shadow-elegant: 0 10px 30px -10px hsl(210 45% 25% / 0.5);
-    --shadow-card: 0 4px 20px -2px hsl(215 45% 8% / 0.8);
-    --shadow-glow: 0 0 40px hsl(20 85% 55% / 0.6);
-    --shadow-progress: 0 0 20px hsl(210 45% 35% / 0.5);
+    --shadow-elegant: 0 10px 30px -10px hsl(20 85% 55% / 0.5);
+    --shadow-card: 0 4px 20px -2px hsl(25 45% 8% / 0.8);
+    --shadow-glow: 0 0 40px hsl(20 85% 60% / 0.6);
+    --shadow-progress: 0 0 20px hsl(20 85% 60% / 0.5);
 
-    --sidebar-background: 215 45% 8%;
-    --sidebar-foreground: 210 20% 85%;
-    --sidebar-primary: 210 45% 35%;
+    --sidebar-background: 25 45% 8%;
+    --sidebar-foreground: 20 40% 85%;
+    --sidebar-primary: 20 85% 60%;
     --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 215 35% 15%;
-    --sidebar-accent-foreground: 210 20% 85%;
-    --sidebar-border: 215 35% 20%;
-    --sidebar-ring: 210 45% 35%;
+    --sidebar-accent: 25 30% 15%;
+    --sidebar-accent-foreground: 20 40% 85%;
+    --sidebar-border: 25 25% 20%;
+    --sidebar-ring: 20 85% 60%;
   }
 }
 
@@ -172,9 +172,9 @@
     transition: var(--transition-smooth);
   }
 
-  /* PrepFox interactive elements */
+  /* PrepFox Orange-dominant interactive elements */
   .prep-fox-button {
-    @apply bg-gradient-accent text-accent-foreground hover:shadow-glow transition-smooth;
+    @apply bg-gradient-primary text-primary-foreground hover:shadow-glow transition-smooth;
   }
   
   .prep-fox-card {
