@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Truck, Package, BarChart3, RotateCcw, Settings, Zap } from "lucide-react";
+import { Truck, Package, BarChart3, RotateCcw, Settings, Zap, Building2 } from "lucide-react";
 import { OrderManagement } from "@/components/shipping/OrderManagement";
 import { CarrierRateComparison } from "@/components/shipping/CarrierRateComparison";
 import { ShippingRules } from "@/components/shipping/ShippingRules";
@@ -9,6 +9,7 @@ import { TrackingPage } from "@/components/shipping/TrackingPage";
 import { ShippingAnalytics } from "@/components/shipping/ShippingAnalytics";
 import { ReturnsManagement } from "@/components/shipping/ReturnsManagement";
 import { BatchActionQueue } from "@/components/shipping/BatchActionQueue";
+import { CarrierManagement } from "@/components/shipping/CarrierManagement";
 
 export default function Shipping() {
   const [activeTab, setActiveTab] = useState("orders");
@@ -26,7 +27,7 @@ export default function Shipping() {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="orders" className="flex items-center gap-2">
             <Package className="h-4 w-4" />
             Orders
@@ -54,6 +55,10 @@ export default function Shipping() {
           <TabsTrigger value="batch" className="flex items-center gap-2">
             <Package className="h-4 w-4" />
             Batch
+          </TabsTrigger>
+          <TabsTrigger value="carriers" className="flex items-center gap-2">
+            <Building2 className="h-4 w-4" />
+            Carriers
           </TabsTrigger>
         </TabsList>
 
@@ -83,6 +88,10 @@ export default function Shipping() {
 
         <TabsContent value="batch">
           <BatchActionQueue />
+        </TabsContent>
+
+        <TabsContent value="carriers">
+          <CarrierManagement />
         </TabsContent>
       </Tabs>
     </div>
