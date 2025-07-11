@@ -5,9 +5,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { ProductEditor } from '@/components/ProductEditor';
+import { SingleProductProcessor } from '@/components/SingleProductProcessor';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, Package, ExternalLink, Zap, CheckSquare, Square, Edit3, Filter } from 'lucide-react';
-import { Product } from '@/pages/Index';
+import { Product, UpdatedProduct } from '@/pages/Index';
 
 interface ProductListProps {
   products: Product[];
@@ -15,6 +16,7 @@ interface ProductListProps {
   onSelectionChange: (selection: Set<string>) => void;
   onAddToQueue: (productIds: string[]) => void;
   onProductsUpdated: () => void;
+  onProductUpdated: (productId: string, updatedData: UpdatedProduct) => void;
   storeUrl?: string;
 }
 
@@ -24,11 +26,13 @@ export const ProductList = ({
   onSelectionChange, 
   onAddToQueue,
   onProductsUpdated,
+  onProductUpdated,
   storeUrl 
 }: ProductListProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [processingProduct, setProcessingProduct] = useState<Product | null>(null);
   const [itemsPerPage, setItemsPerPage] = useState(50);
   const [typeFilter, setTypeFilter] = useState('');
   const [vendorFilter, setVendorFilter] = useState('');
@@ -262,7 +266,7 @@ export const ProductList = ({
                     )}
                     <Button
                       size="sm"
-                      onClick={() => onAddToQueue([product.id])}
+                      onClick={() => setProcessingProduct(product)}
                       className="bg-gradient-primary transition-all duration-300 hover:scale-105"
                     >
                       <Zap className="h-3 w-3 mr-1" />
@@ -308,6 +312,16 @@ export const ProductList = ({
           isOpen={!!editingProduct}
           onClose={() => setEditingProduct(null)}
           onProductUpdated={onProductsUpdated}
+        />
+      )}
+
+      {/* Single Product Processor Modal */}
+      {processingProduct && (
+        <SingleProductProcessor
+          product={processingProduct}
+          isOpen={!!processingProduct}
+          onClose={() => setProcessingProduct(null)}
+          onProductUpdated={onProductUpdated}
         />
       )}
     </div>

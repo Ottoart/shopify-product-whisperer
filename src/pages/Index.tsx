@@ -197,16 +197,17 @@ const Index = () => {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="p-0">
-                <ProductList
-                  products={products}
-                  selectedProducts={selectedProducts}
-                  onSelectionChange={setSelectedProducts}
-                  onAddToQueue={addToQueue}
-                  onProductsUpdated={handleProductsUpdated}
-                  storeUrl=""
-                />
-              </CardContent>
+                <CardContent className="p-0">
+                  <ProductList
+                    products={products}
+                    selectedProducts={selectedProducts}
+                    onSelectionChange={setSelectedProducts}
+                    onAddToQueue={addToQueue}
+                    onProductsUpdated={handleProductsUpdated}
+                    onProductUpdated={handleUpdateProduct}
+                    storeUrl=""
+                  />
+                </CardContent>
             </Card>
 
             {/* Product Type Generator */}
