@@ -18,7 +18,7 @@ serve(async (req) => {
   }
 
   try {
-    const { vendorName, userId } = await req.json();
+    const { vendorName, userId, websiteContent } = await req.json();
 
     if (!vendorName || !userId) {
       return new Response(
@@ -49,39 +49,13 @@ serve(async (req) => {
       );
     }
 
-    console.log('Researching brand tone for vendor:', vendorName);
+    console.log('Analyzing brand tone for vendor using OpenAI:', vendorName);
 
-    // Search for the vendor's website
-    const searchQuery = `${vendorName} official website brand about us`;
-    const searchResponse = await fetch(`https://api.perplexity.ai/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${Deno.env.get('PERPLEXITY_API_KEY')}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'llama-3.1-sonar-small-128k-online',
-        messages: [
-          {
-            role: 'system',
-            content: `You are a brand researcher. Find the official website for "${vendorName}" and extract key information about their brand voice, tone, and messaging style. Look for their About Us page, product descriptions, and brand messaging.`
-          },
-          {
-            role: 'user',
-            content: `Research the brand "${vendorName}" and provide their official website URL, key brand messaging, tone of voice, and style characteristics. Focus on how they describe their products and communicate with customers.`
-          }
-        ],
-        temperature: 0.2,
-        max_tokens: 2000,
-      }),
-    });
+    // Use OpenAI to analyze brand tone based on brand knowledge or provided content
+    const analysisPrompt = websiteContent 
+      ? `Analyze this brand content for "${vendorName}" and extract their brand tone characteristics: ${websiteContent}`
+      : `Based on your knowledge of the brand "${vendorName}", analyze their brand voice, tone, and communication style. If you're not familiar with this specific brand, provide a professional tone analysis suitable for their industry sector.`;
 
-    const searchData = await searchResponse.json();
-    const researchContent = searchData.choices?.[0]?.message?.content || '';
-
-    console.log('Research completed, analyzing brand tone...');
-
-    // Analyze the brand tone using OpenAI
     const analysisResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -93,7 +67,7 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are a brand tone analyst. Analyze the provided brand research and extract specific tone characteristics that can be used to write product descriptions. Focus on:
+            content: `You are a brand tone analyst. Analyze the brand "${vendorName}" and extract specific tone characteristics that can be used to write product descriptions. Focus on:
             
             1. Voice characteristics (formal/casual, friendly/professional, technical/accessible)
             2. Key messaging themes and values
@@ -101,22 +75,22 @@ serve(async (req) => {
             4. Customer communication style
             5. Brand personality traits
             
+            If you don't have specific knowledge about this brand, create a professional analysis based on typical industry standards for their sector.
+            
             Return a JSON object with the analysis.`
           },
           {
             role: 'user',
-            content: `Analyze this brand research for ${vendorName} and extract their brand tone characteristics:
-
-${researchContent}
+            content: `${analysisPrompt}
 
 Return a JSON object with these fields:
-- website_url: The official website URL if found
-- voice_characteristics: Array of voice traits (e.g., "professional", "friendly", "technical")
-- messaging_themes: Array of key brand themes and values
-- language_patterns: Description of vocabulary and language style
-- customer_approach: How they communicate with customers
-- personality_traits: Array of brand personality characteristics
-- tone_summary: A concise summary for use in product descriptions (max 200 words)`
+- website_url: The official website URL if known (or null if unknown)
+- voice_characteristics: Array of voice traits (e.g., "professional", "friendly", "technical", "approachable", "premium")
+- messaging_themes: Array of key brand themes and values (e.g., "quality", "innovation", "sustainability", "luxury")
+- language_patterns: Description of vocabulary and language style (e.g., "Uses premium beauty terminology", "Simple, accessible language", "Technical precision")
+- customer_approach: How they communicate with customers (e.g., "Educational and helpful", "Luxurious and aspirational", "Direct and practical")
+- personality_traits: Array of brand personality characteristics (e.g., "sophisticated", "trustworthy", "innovative", "caring")
+- tone_summary: A concise summary for use in product descriptions (max 200 words) that captures the brand's voice and style`
           }
         ],
         temperature: 0.3,
@@ -129,15 +103,26 @@ Return a JSON object with these fields:
 
     console.log('Brand tone analysis completed:', brandAnalysis);
 
+    // Ensure we have default values if OpenAI doesn't provide complete data
+    const completeBrandAnalysis = {
+      website_url: brandAnalysis.website_url || null,
+      voice_characteristics: brandAnalysis.voice_characteristics || ["professional", "trustworthy"],
+      messaging_themes: brandAnalysis.messaging_themes || ["quality", "reliability"],
+      language_patterns: brandAnalysis.language_patterns || "Clear, professional communication focused on product benefits",
+      customer_approach: brandAnalysis.customer_approach || "Helpful and informative with focus on customer needs",
+      personality_traits: brandAnalysis.personality_traits || ["reliable", "professional"],
+      tone_summary: brandAnalysis.tone_summary || `${vendorName} maintains a professional, trustworthy tone focused on quality and customer satisfaction. Their communication style emphasizes product benefits and reliability.`
+    };
+
     // Save the brand tone analysis to database
     const { data: savedTone, error: saveError } = await supabase
       .from('vendor_brand_tones')
       .insert({
         user_id: userId,
         vendor_name: vendorName,
-        website_url: brandAnalysis.website_url || null,
-        brand_tone_analysis: brandAnalysis,
-        tone_summary: brandAnalysis.tone_summary || ''
+        website_url: completeBrandAnalysis.website_url,
+        brand_tone_analysis: completeBrandAnalysis,
+        tone_summary: completeBrandAnalysis.tone_summary
       })
       .select()
       .single();
