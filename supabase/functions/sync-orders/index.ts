@@ -61,15 +61,23 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    // Get Shopify credentials
-    const shopifyDomain = Deno.env.get('SHOPIFY_DOMAIN');
-    const shopifyAccessToken = Deno.env.get('SHOPIFY_ACCESS_TOKEN');
+    // Get active store configurations for the user
+    const { data: storeConfigs, error: configError } = await supabase
+      .from('store_configurations')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .eq('platform', 'shopify');
 
-    if (!shopifyDomain || !shopifyAccessToken) {
+    if (configError) {
+      throw new Error(`Failed to fetch store configurations: ${configError.message}`);
+    }
+
+    if (!storeConfigs || storeConfigs.length === 0) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'Shopify credentials not configured. Please set SHOPIFY_DOMAIN and SHOPIFY_ACCESS_TOKEN in your project secrets.' 
+          error: 'No active Shopify stores configured. Please add your store configuration first.' 
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -78,154 +86,171 @@ serve(async (req) => {
       );
     }
 
-    console.log('Fetching orders from Shopify...');
+    console.log(`Found ${storeConfigs.length} active Shopify store(s) to sync`);
 
-    // Fetch orders from Shopify
-    const shopifyResponse = await fetch(
-      `https://${shopifyDomain}/admin/api/2023-10/orders.json?status=any&limit=250`,
-      {
-        headers: {
-          'X-Shopify-Access-Token': shopifyAccessToken,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+    let totalSynced = 0;
+    const syncResults = [];
 
-    if (!shopifyResponse.ok) {
-      throw new Error(`Shopify API error: ${shopifyResponse.statusText}`);
-    }
+    // Process each store configuration
+    for (const storeConfig of storeConfigs) {
+      console.log(`Fetching orders from ${storeConfig.store_name}...`);
 
-    const shopifyData = await shopifyResponse.json();
-    const shopifyOrders = shopifyData.orders || [];
+      try {
+        // Fetch orders from Shopify
+        const shopifyResponse = await fetch(
+          `https://${storeConfig.domain}/admin/api/2023-10/orders.json?status=any&limit=250`,
+          {
+            headers: {
+              'X-Shopify-Access-Token': storeConfig.access_token,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
 
-    console.log(`Found ${shopifyOrders.length} orders from Shopify`);
-
-    // Transform and insert orders
-    const ordersToInsert = [];
-    const itemsToInsert = [];
-
-    for (const shopifyOrder of shopifyOrders) {
-      // Check if order already exists
-      const { data: existingOrder } = await supabase
-        .from('orders')
-        .select('id')
-        .eq('order_number', shopifyOrder.name)
-        .eq('user_id', user.id)
-        .single();
-
-      if (existingOrder) {
-        console.log(`Order ${shopifyOrder.name} already exists, skipping...`);
-        continue;
-      }
-
-      // Map Shopify status to our status
-      const getOrderStatus = (financial: string, fulfillment: string | null) => {
-        if (fulfillment === 'fulfilled') return 'delivered';
-        if (fulfillment === 'partial') return 'shipped';
-        if (fulfillment === null && financial === 'paid') return 'awaiting';
-        if (financial === 'pending') return 'processing';
-        return 'awaiting';
-      };
-
-      const orderData = {
-        user_id: user.id,
-        order_number: shopifyOrder.name,
-        customer_name: shopifyOrder.shipping_address 
-          ? `${shopifyOrder.shipping_address.first_name} ${shopifyOrder.shipping_address.last_name}`
-          : shopifyOrder.email,
-        customer_email: shopifyOrder.email,
-        store_name: shopifyDomain.split('.')[0],
-        store_platform: 'shopify',
-        status: getOrderStatus(shopifyOrder.financial_status, shopifyOrder.fulfillment_status),
-        total_amount: parseFloat(shopifyOrder.total_price),
-        currency: shopifyOrder.currency,
-        shipping_address_line1: shopifyOrder.shipping_address?.address1 || '',
-        shipping_address_line2: shopifyOrder.shipping_address?.address2,
-        shipping_city: shopifyOrder.shipping_address?.city || '',
-        shipping_state: shopifyOrder.shipping_address?.province || '',
-        shipping_zip: shopifyOrder.shipping_address?.zip || '',
-        shipping_country: shopifyOrder.shipping_address?.country || 'US',
-        address_validated: true, // Shopify addresses are generally validated
-        weight_lbs: shopifyOrder.line_items.reduce((total, item) => total + (item.grams * item.quantity / 453.592), 0), // Convert grams to lbs
-        tags: shopifyOrder.tags ? shopifyOrder.tags.split(', ') : [],
-        notes: shopifyOrder.note,
-        priority_level: 1,
-        order_date: shopifyOrder.created_at,
-        updated_at: shopifyOrder.updated_at
-      };
-
-      ordersToInsert.push(orderData);
-
-      // Prepare order items
-      shopifyOrder.line_items.forEach((item: any) => {
-        itemsToInsert.push({
-          order_number: shopifyOrder.name, // We'll need to map this to order_id after insert
-          product_title: item.title,
-          variant_title: item.variant_title,
-          sku: item.sku,
-          quantity: item.quantity,
-          price: parseFloat(item.price),
-          weight_lbs: item.grams / 453.592 // Convert grams to lbs
-        });
-      });
-    }
-
-    if (ordersToInsert.length === 0) {
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: 'No new orders to sync',
-          synced: 0 
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200 
+        if (!shopifyResponse.ok) {
+          throw new Error(`Shopify API error for ${storeConfig.store_name}: ${shopifyResponse.statusText}`);
         }
-      );
-    }
 
-    console.log(`Inserting ${ordersToInsert.length} new orders...`);
+        const shopifyData = await shopifyResponse.json();
+        const shopifyOrders = shopifyData.orders || [];
 
-    // Insert orders
-    const { data: insertedOrders, error: ordersError } = await supabase
-      .from('orders')
-      .insert(ordersToInsert)
-      .select('id, order_number');
+        console.log(`Found ${shopifyOrders.length} orders from ${storeConfig.store_name}`);
 
-    if (ordersError) {
-      throw new Error(`Failed to insert orders: ${ordersError.message}`);
-    }
+        // Transform and insert orders
+        const ordersToInsert = [];
+        const itemsToInsert = [];
 
-    // Create order_id mapping for items
-    const orderMapping = new Map();
-    insertedOrders.forEach(order => {
-      orderMapping.set(order.order_number, order.id);
-    });
+        for (const shopifyOrder of shopifyOrders) {
+          // Check if order already exists
+          const { data: existingOrder } = await supabase
+            .from('orders')
+            .select('id')
+            .eq('order_number', shopifyOrder.name)
+            .eq('user_id', user.id)
+            .single();
 
-    // Map items to order IDs and insert
-    const mappedItems = itemsToInsert.map(item => ({
-      ...item,
-      order_id: orderMapping.get(item.order_number),
-      order_number: undefined // Remove this field
-    })).filter(item => item.order_id); // Only include items with valid order_id
+          if (existingOrder) {
+            console.log(`Order ${shopifyOrder.name} already exists, skipping...`);
+            continue;
+          }
 
-    if (mappedItems.length > 0) {
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(mappedItems);
+          // Map Shopify status to our status
+          const getOrderStatus = (financial: string, fulfillment: string | null) => {
+            if (fulfillment === 'fulfilled') return 'delivered';
+            if (fulfillment === 'partial') return 'shipped';
+            if (fulfillment === null && financial === 'paid') return 'awaiting';
+            if (financial === 'pending') return 'processing';
+            return 'awaiting';
+          };
 
-      if (itemsError) {
-        console.error('Failed to insert order items:', itemsError.message);
+          const orderData = {
+            user_id: user.id,
+            order_number: shopifyOrder.name,
+            customer_name: shopifyOrder.shipping_address 
+              ? `${shopifyOrder.shipping_address.first_name} ${shopifyOrder.shipping_address.last_name}`
+              : shopifyOrder.email,
+            customer_email: shopifyOrder.email,
+            store_name: storeConfig.store_name,
+            store_platform: 'shopify',
+            status: getOrderStatus(shopifyOrder.financial_status, shopifyOrder.fulfillment_status),
+            total_amount: parseFloat(shopifyOrder.total_price),
+            currency: shopifyOrder.currency,
+            shipping_address_line1: shopifyOrder.shipping_address?.address1 || '',
+            shipping_address_line2: shopifyOrder.shipping_address?.address2,
+            shipping_city: shopifyOrder.shipping_address?.city || '',
+            shipping_state: shopifyOrder.shipping_address?.province || '',
+            shipping_zip: shopifyOrder.shipping_address?.zip || '',
+            shipping_country: shopifyOrder.shipping_address?.country || 'US',
+            address_validated: true, // Shopify addresses are generally validated
+            weight_lbs: shopifyOrder.line_items.reduce((total, item) => total + (item.grams * item.quantity / 453.592), 0), // Convert grams to lbs
+            tags: shopifyOrder.tags ? shopifyOrder.tags.split(', ') : [],
+            notes: shopifyOrder.note,
+            priority_level: 1,
+            order_date: shopifyOrder.created_at,
+            updated_at: shopifyOrder.updated_at
+          };
+
+          ordersToInsert.push(orderData);
+
+          // Prepare order items
+          shopifyOrder.line_items.forEach((item: any) => {
+            itemsToInsert.push({
+              order_number: shopifyOrder.name, // We'll need to map this to order_id after insert
+              product_title: item.title,
+              variant_title: item.variant_title,
+              sku: item.sku,
+              quantity: item.quantity,
+              price: parseFloat(item.price),
+              weight_lbs: item.grams / 453.592 // Convert grams to lbs
+            });
+          });
+        }
+
+        if (ordersToInsert.length > 0) {
+          console.log(`Inserting ${ordersToInsert.length} new orders from ${storeConfig.store_name}...`);
+
+          // Insert orders
+          const { data: insertedOrders, error: ordersError } = await supabase
+            .from('orders')
+            .insert(ordersToInsert)
+            .select('id, order_number');
+
+          if (ordersError) {
+            throw new Error(`Failed to insert orders from ${storeConfig.store_name}: ${ordersError.message}`);
+          }
+
+          // Create order_id mapping for items
+          const orderMapping = new Map();
+          insertedOrders.forEach(order => {
+            orderMapping.set(order.order_number, order.id);
+          });
+
+          // Map items to order IDs and insert
+          const mappedItems = itemsToInsert.map(item => ({
+            ...item,
+            order_id: orderMapping.get(item.order_number),
+            order_number: undefined // Remove this field
+          })).filter(item => item.order_id); // Only include items with valid order_id
+
+          if (mappedItems.length > 0) {
+            const { error: itemsError } = await supabase
+              .from('order_items')
+              .insert(mappedItems);
+
+            if (itemsError) {
+              console.error(`Failed to insert order items from ${storeConfig.store_name}:`, itemsError.message);
+            }
+          }
+
+          totalSynced += ordersToInsert.length;
+          syncResults.push({
+            store: storeConfig.store_name,
+            synced: ordersToInsert.length
+          });
+
+          console.log(`Successfully synced ${ordersToInsert.length} orders from ${storeConfig.store_name}`);
+        } else {
+          console.log(`No new orders to sync from ${storeConfig.store_name}`);
+          syncResults.push({
+            store: storeConfig.store_name,
+            synced: 0
+          });
+        }
+      } catch (storeError: any) {
+        console.error(`Error syncing orders from ${storeConfig.store_name}:`, storeError);
+        syncResults.push({
+          store: storeConfig.store_name,
+          error: storeError.message
+        });
       }
     }
-
-    console.log(`Successfully synced ${ordersToInsert.length} orders with ${mappedItems.length} items`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Successfully synced ${ordersToInsert.length} orders from Shopify`,
-        synced: ordersToInsert.length 
+        message: `Sync completed. Total orders synced: ${totalSynced}`,
+        synced: totalSynced,
+        results: syncResults
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

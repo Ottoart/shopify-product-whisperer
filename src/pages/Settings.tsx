@@ -36,12 +36,7 @@ const Settings = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <StoreConfig
-                  storeUrl={storeUrl}
-                  onStoreUrlChange={setStoreUrl}
-                  apiKey={apiKey}
-                  onApiKeyChange={setApiKey}
-                />
+                <StoreConfig />
               </CardContent>
             </Card>
           </TabsContent>

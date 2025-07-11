@@ -552,6 +552,42 @@ export type Database = {
         }
         Relationships: []
       }
+      store_configurations: {
+        Row: {
+          access_token: string
+          created_at: string
+          domain: string
+          id: string
+          is_active: boolean
+          platform: string
+          store_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          created_at?: string
+          domain: string
+          id?: string
+          is_active?: boolean
+          platform?: string
+          store_name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          domain?: string
+          id?: string
+          is_active?: boolean
+          platform?: string
+          store_name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       tracking_events: {
         Row: {
           carrier: string
