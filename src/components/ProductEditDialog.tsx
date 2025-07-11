@@ -21,6 +21,8 @@ interface Product {
   variant_inventory_qty?: number;
   seo_title?: string;
   seo_description?: string;
+  updated_at?: string;
+  shopify_synced_at?: string;
 }
 
 interface ProductEditDialogProps {
@@ -121,11 +123,27 @@ export const ProductEditDialog = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Edit Product</DialogTitle>
-          <DialogDescription>
-            Update product information and settings.
+        <DialogHeader className="border-b pb-4">
+          <DialogTitle className="text-xl font-semibold">Optimize Product</DialogTitle>
+          <DialogDescription className="text-muted-foreground">
+            AI-powered product optimization and sync to Shopify.
           </DialogDescription>
+          {(product.updated_at || product.shopify_synced_at) && (
+            <div className="flex flex-col gap-1 text-xs text-muted-foreground bg-muted/30 rounded-md p-3 mt-2">
+              {product.updated_at && (
+                <div className="flex justify-between">
+                  <span>Last edited:</span>
+                  <span className="font-mono">{new Date(product.updated_at).toLocaleString()}</span>
+                </div>
+              )}
+              {product.shopify_synced_at && (
+                <div className="flex justify-between">
+                  <span>Last synced:</span>
+                  <span className="font-mono text-success">{new Date(product.shopify_synced_at).toLocaleString()}</span>
+                </div>
+              )}
+            </div>
+          )}
         </DialogHeader>
         
         <div className="space-y-4 py-4">
@@ -249,8 +267,9 @@ export const ProductEditDialog = ({
           <Button
             onClick={handleSave}
             disabled={isSaving}
+            className="bg-gradient-primary text-primary-foreground hover:bg-gradient-primary/90"
           >
-            {isSaving ? 'Saving...' : 'Save Changes'}
+            {isSaving ? 'Optimizing...' : 'Optimize'}
           </Button>
         </div>
       </DialogContent>
