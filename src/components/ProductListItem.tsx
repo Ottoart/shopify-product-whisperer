@@ -1,176 +1,423 @@
 import { useState } from 'react';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { ExternalLink, Edit3, Trash2 } from 'lucide-react';
-
-interface Product {
-  id: string;
-  title: string;
-  handle?: string;
-  variant_price?: number;
-  variant_inventory_qty?: number;
-  published?: boolean;
-  vendor?: string;
-  type?: string;
-  image_src?: string;
-}
+import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
+import { ExternalLink, Zap, Edit3, Save, X, RefreshCw, Check } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useSessionContext } from '@supabase/auth-helpers-react';
+import { Product } from '@/pages/Index';
 
 interface ProductListItemProps {
   product: Product;
+  isSelected: boolean;
+  onSelectionChange: (productId: string) => void;
+  onOptimize: (product: Product) => void;
   storeUrl?: string;
-  onEdit?: (product: Product) => void;
-  onDelete?: (productId: string) => void;
-  showActions?: boolean;
+  onProductUpdated: () => void;
 }
 
 export const ProductListItem = ({ 
   product, 
-  storeUrl, 
-  onEdit, 
-  onDelete, 
-  showActions = true 
+  isSelected, 
+  onSelectionChange, 
+  onOptimize,
+  storeUrl,
+  onProductUpdated
 }: ProductListItemProps) => {
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [editedProduct, setEditedProduct] = useState({
+    title: product.title,
+    vendor: product.vendor,
+    type: product.type,
+    tags: product.tags,
+    variantPrice: product.variantPrice || 0,
+    variantCompareAtPrice: product.variantCompareAtPrice || 0,
+    variantSku: product.variantSku || '',
+    variantInventoryQty: product.variantInventoryQty || 0
+  });
+  
+  const { session } = useSessionContext();
+  const { toast } = useToast();
 
-  const handleDelete = async () => {
-    if (!onDelete) return;
-    
-    setIsDeleting(true);
+  const getProductUrl = (handle: string) => {
+    if (storeUrl && storeUrl.trim()) {
+      const cleanUrl = storeUrl.replace(/\/+$/, '');
+      return `${cleanUrl}/products/${handle}`;
+    }
+    return null;
+  };
+
+  const handleSave = async () => {
+    if (!session?.user?.id) return;
+
+    setIsSaving(true);
     try {
-      await onDelete(product.id);
+      const { error } = await supabase
+        .from('products')
+        .update({
+          title: editedProduct.title,
+          vendor: editedProduct.vendor,
+          type: editedProduct.type,
+          tags: editedProduct.tags,
+          variant_price: editedProduct.variantPrice,
+          variant_compare_at_price: editedProduct.variantCompareAtPrice,
+          variant_sku: editedProduct.variantSku,
+          variant_inventory_qty: editedProduct.variantInventoryQty,
+          updated_at: new Date().toISOString()
+        })
+        .eq('handle', product.handle)
+        .eq('user_id', session.user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Product Updated",
+        description: "Changes saved successfully",
+      });
+
+      setIsEditing(false);
+      onProductUpdated();
+    } catch (error) {
+      console.error('Error saving product:', error);
+      toast({
+        title: "Save Failed",
+        description: "Failed to save changes. Please try again.",
+        variant: "destructive",
+      });
     } finally {
-      setIsDeleting(false);
+      setIsSaving(false);
     }
   };
 
-  const getProductUrl = () => {
-    if (!storeUrl || !product.handle) return null;
-    const cleanUrl = storeUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
-    return `https://${cleanUrl}/products/${product.handle}`;
+  const handleSyncToShopify = async () => {
+    if (!session?.user?.id) return;
+
+    setIsSyncing(true);
+    try {
+      const { data: syncData, error: syncError } = await supabase.functions.invoke('shopify-products', {
+        body: { 
+          action: 'update',
+          products: [{
+            handle: product.handle,
+            title: editedProduct.title,
+            vendor: editedProduct.vendor,
+            type: editedProduct.type,
+            tags: editedProduct.tags,
+            price: editedProduct.variantPrice,
+            compare_at_price: editedProduct.variantCompareAtPrice,
+            sku: editedProduct.variantSku,
+            inventory_quantity: editedProduct.variantInventoryQty
+          }]
+        }
+      });
+
+      if (syncError) throw syncError;
+
+      if (syncData?.error) {
+        throw new Error(syncData.error);
+      }
+
+      // Update sync status
+      await supabase
+        .from('products')
+        .update({ 
+          shopify_sync_status: 'synced',
+          shopify_synced_at: new Date().toISOString()
+        })
+        .eq('handle', product.handle)
+        .eq('user_id', session.user.id);
+
+      toast({
+        title: "Synced to Shopify",
+        description: "Product successfully updated in your Shopify store",
+      });
+
+      onProductUpdated();
+    } catch (error: any) {
+      console.error('Shopify sync error:', error);
+      
+      // Update sync status to failed
+      await supabase
+        .from('products')
+        .update({ 
+          shopify_sync_status: 'failed',
+          shopify_synced_at: new Date().toISOString()
+        })
+        .eq('handle', product.handle)
+        .eq('user_id', session.user.id);
+
+      toast({
+        title: "Sync Failed",
+        description: error.message || "Failed to sync to Shopify",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
-  const getShopifyAdminUrl = () => {
-    if (!storeUrl || !product.handle) return null;
-    const cleanUrl = storeUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
-    return `https://${cleanUrl}/admin/products?query=handle:${product.handle}`;
+  const handleCancel = () => {
+    setEditedProduct({
+      title: product.title,
+      vendor: product.vendor,
+      type: product.type,
+      tags: product.tags,
+      variantPrice: product.variantPrice || 0,
+      variantCompareAtPrice: product.variantCompareAtPrice || 0,
+      variantSku: product.variantSku || '',
+      variantInventoryQty: product.variantInventoryQty || 0
+    });
+    setIsEditing(false);
   };
 
-  const productUrl = getProductUrl();
-  const adminUrl = getShopifyAdminUrl();
+  const hasChanges = () => {
+    return (
+      editedProduct.title !== product.title ||
+      editedProduct.vendor !== product.vendor ||
+      editedProduct.type !== product.type ||
+      editedProduct.tags !== product.tags ||
+      editedProduct.variantPrice !== (product.variantPrice || 0) ||
+      editedProduct.variantCompareAtPrice !== (product.variantCompareAtPrice || 0) ||
+      editedProduct.variantSku !== (product.variantSku || '') ||
+      editedProduct.variantInventoryQty !== (product.variantInventoryQty || 0)
+    );
+  };
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-2">
-              <h3 
-                className={`font-medium text-sm truncate ${productUrl ? 'text-primary hover:underline cursor-pointer' : ''}`}
-                onClick={() => productUrl && window.open(productUrl, '_blank')}
-              >
-                {product.title}
-              </h3>
-              {productUrl && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 w-6 p-0"
-                  onClick={() => window.open(productUrl, '_blank')}
-                  title="View in store"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                </Button>
-              )}
-              {adminUrl && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 w-6 p-0"
-                  onClick={() => window.open(adminUrl, '_blank')}
-                  title="Edit in Shopify Admin"
-                >
-                  <Edit3 className="h-3 w-3" />
-                </Button>
+    <Card className="p-4 hover:shadow-card transition-all duration-300">
+      <div className="flex items-start gap-4">
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={() => onSelectionChange(product.id)}
+          className="mt-1"
+        />
+        
+        {product.imageSrc && (
+          <div className="w-16 h-16 rounded-lg overflow-hidden bg-secondary flex-shrink-0">
+            <img 
+              src={product.imageSrc} 
+              alt={product.title}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        )}
+        
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 space-y-2">
+              {isEditing ? (
+                <>
+                  {/* Editable Title */}
+                  <Input
+                    value={editedProduct.title}
+                    onChange={(e) => setEditedProduct({ ...editedProduct, title: e.target.value })}
+                    className="font-semibold"
+                    placeholder="Product title"
+                  />
+                  
+                  {/* Editable Info Row */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      value={editedProduct.vendor}
+                      onChange={(e) => setEditedProduct({ ...editedProduct, vendor: e.target.value })}
+                      placeholder="Vendor"
+                      className="text-xs"
+                    />
+                    <Input
+                      value={editedProduct.type}
+                      onChange={(e) => setEditedProduct({ ...editedProduct, type: e.target.value })}
+                      placeholder="Product type"
+                      className="text-xs"
+                    />
+                  </div>
+                  
+                  {/* Pricing */}
+                  <div className="grid grid-cols-4 gap-2">
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={editedProduct.variantPrice}
+                      onChange={(e) => setEditedProduct({ ...editedProduct, variantPrice: parseFloat(e.target.value) || 0 })}
+                      placeholder="Price"
+                      className="text-xs"
+                    />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={editedProduct.variantCompareAtPrice}
+                      onChange={(e) => setEditedProduct({ ...editedProduct, variantCompareAtPrice: parseFloat(e.target.value) || 0 })}
+                      placeholder="Compare price"
+                      className="text-xs"
+                    />
+                    <Input
+                      value={editedProduct.variantSku}
+                      onChange={(e) => setEditedProduct({ ...editedProduct, variantSku: e.target.value })}
+                      placeholder="SKU"
+                      className="text-xs"
+                    />
+                    <Input
+                      type="number"
+                      value={editedProduct.variantInventoryQty}
+                      onChange={(e) => setEditedProduct({ ...editedProduct, variantInventoryQty: parseInt(e.target.value) || 0 })}
+                      placeholder="Inventory"
+                      className="text-xs"
+                    />
+                  </div>
+                  
+                  {/* Editable Tags */}
+                  <Textarea
+                    value={editedProduct.tags}
+                    onChange={(e) => setEditedProduct({ ...editedProduct, tags: e.target.value })}
+                    placeholder="Tags (comma-separated)"
+                    className="text-xs"
+                    rows={2}
+                  />
+                </>
+              ) : (
+                <>
+                  {/* Display Mode */}
+                  <h3 className="font-semibold text-sm leading-tight mb-1 truncate">
+                    {product.title}
+                  </h3>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                    <span>{product.vendor}</span>
+                    <span>•</span>
+                    <span>${product.variantPrice}</span>
+                    {product.variantCompareAtPrice && product.variantCompareAtPrice > 0 && (
+                      <>
+                        <span>•</span>
+                        <span className="line-through">${product.variantCompareAtPrice}</span>
+                      </>
+                    )}
+                    {product.variantSku && (
+                      <>
+                        <span>•</span>
+                        <span>SKU: {product.variantSku}</span>
+                      </>
+                    )}
+                    <span>•</span>
+                    <span>Stock: {product.variantInventoryQty || 0}</span>
+                    {product.type && (
+                      <>
+                        <span>•</span>
+                        <Badge variant="secondary" className="text-xs py-0 px-1">
+                          {product.type}
+                        </Badge>
+                      </>
+                    )}
+                  </div>
+                  {product.tags && (
+                    <div className="flex flex-wrap gap-1">
+                      {product.tags.split(',').slice(0, 3).map((tag, index) => (
+                        <Badge key={index} variant="outline" className="text-xs py-0 px-1">
+                          {tag.trim()}
+                        </Badge>
+                      ))}
+                      {product.tags.split(',').length > 3 && (
+                        <Badge variant="outline" className="text-xs py-0 px-1">
+                          +{product.tags.split(',').length - 3} more
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
             </div>
             
-            <div className="flex flex-wrap gap-1 mb-2">
-              {product.variant_price !== undefined && (
-                <Badge variant="outline" className="text-xs">
-                  ${product.variant_price}
-                </Badge>
-              )}
-              {product.variant_inventory_qty !== undefined && (
-                <Badge variant={product.variant_inventory_qty > 10 ? 'secondary' : 'destructive'} className="text-xs">
-                  Stock: {product.variant_inventory_qty}
-                </Badge>
-              )}
-              {product.published !== undefined && (
-                <Badge variant={product.published ? 'default' : 'secondary'} className="text-xs">
-                  {product.published ? 'Published' : 'Draft'}
-                </Badge>
-              )}
-            </div>
-
-            {(product.vendor || product.type) && (
-              <div className="text-xs text-muted-foreground">
-                {product.vendor && <span>Vendor: {product.vendor}</span>}
-                {product.vendor && product.type && <span> • </span>}
-                {product.type && <span>Type: {product.type}</span>}
-              </div>
-            )}
-          </div>
-
-          {showActions && (
-            <div className="flex items-center gap-1 ml-2">
-              {onEdit && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  onClick={() => onEdit(product)}
-                >
-                  <Edit3 className="h-3 w-3" />
-                </Button>
-              )}
-              
-              {onDelete && (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {isEditing ? (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCancel}
+                    disabled={isSaving}
+                    className="transition-all duration-300 hover:scale-105"
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleSave}
+                    disabled={isSaving || !hasChanges()}
+                    className="bg-gradient-primary transition-all duration-300 hover:scale-105"
+                  >
+                    {isSaving ? (
+                      <Save className="h-3 w-3 animate-pulse" />
+                    ) : (
+                      <Save className="h-3 w-3" />
+                    )}
+                  </Button>
+                  {hasChanges() && (
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
-                      className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
+                      onClick={handleSyncToShopify}
+                      disabled={isSyncing}
+                      className="transition-all duration-300 hover:scale-105"
                     >
-                      <Trash2 className="h-3 w-3" />
+                      {isSyncing ? (
+                        <RefreshCw className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-3 w-3" />
+                      )}
                     </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Product</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to delete "{product.title}"? This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={handleDelete}
-                        disabled={isDeleting}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      >
-                        {isDeleting ? 'Deleting...' : 'Delete'}
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                  )}
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsEditing(true)}
+                    className="transition-all duration-300 hover:scale-105"
+                  >
+                    <Edit3 className="h-3 w-3" />
+                  </Button>
+                  {getProductUrl(product.handle) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open(getProductUrl(product.handle)!, '_blank')}
+                      className="transition-all duration-300 hover:scale-105"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSyncToShopify}
+                    disabled={isSyncing}
+                    className="transition-all duration-300 hover:scale-105"
+                    title="Sync to Shopify"
+                  >
+                    {isSyncing ? (
+                      <RefreshCw className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-3 w-3" />
+                    )}
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => onOptimize(product)}
+                    className="bg-gradient-primary transition-all duration-300 hover:scale-105"
+                  >
+                    <Zap className="h-3 w-3 mr-1" />
+                    Optimize
+                  </Button>
+                </>
               )}
             </div>
-          )}
+          </div>
         </div>
-      </CardContent>
+      </div>
     </Card>
   );
 };
