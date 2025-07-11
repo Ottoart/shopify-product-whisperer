@@ -38,6 +38,15 @@ interface EditPattern {
   created_at: string;
 }
 
+interface EditExample {
+  id: string;
+  product_handle: string;
+  field_name: string;
+  before_value: string;
+  after_value: string;
+  created_at: string;
+}
+
 interface PatternStats {
   totalPatterns: number;
   approvedPatterns: number;
@@ -48,6 +57,7 @@ interface PatternStats {
 
 export const LearningDashboard = () => {
   const [patterns, setPatterns] = useState<EditPattern[]>([]);
+  const [editExamples, setEditExamples] = useState<Record<string, EditExample[]>>({});
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState<PatternStats | null>(null);
@@ -73,6 +83,9 @@ export const LearningDashboard = () => {
       
       const patternsData = data || [];
       setPatterns(patternsData);
+      
+      // Load edit examples for each pattern type
+      await loadEditExamples(patternsData);
       
       // Calculate stats
       if (patternsData.length > 0) {
@@ -110,6 +123,52 @@ export const LearningDashboard = () => {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadEditExamples = async (patternsData: EditPattern[]) => {
+    try {
+      const examples: Record<string, EditExample[]> = {};
+      
+      // Get unique pattern types
+      const patternTypes = [...new Set(patternsData.map(p => p.pattern_type))];
+      
+      for (const patternType of patternTypes) {
+        // Map pattern type to field names
+        const fieldName = getFieldNameForPatternType(patternType);
+        
+        const { data, error } = await supabase
+          .from('product_edit_history')
+          .select('*')
+          .eq('user_id', session?.user?.id)
+          .eq('field_name', fieldName)
+          .eq('edit_type', 'manual')
+          .order('created_at', { ascending: false })
+          .limit(3); // Get up to 3 examples per pattern type
+
+        if (error) {
+          console.error('Error loading edit examples:', error);
+          continue;
+        }
+
+        if (data) {
+          examples[patternType] = data;
+        }
+      }
+      
+      setEditExamples(examples);
+    } catch (error) {
+      console.error('Error loading edit examples:', error);
+    }
+  };
+
+  const getFieldNameForPatternType = (patternType: string): string => {
+    switch (patternType) {
+      case 'title_style': return 'title';
+      case 'description_formatting': return 'description';
+      case 'tag_preferences': return 'tags';
+      case 'type_categorization': return 'type';
+      default: return 'title';
     }
   };
 
@@ -515,14 +574,43 @@ export const LearningDashboard = () => {
 
                           <div className="space-y-3">
                             <h5 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
-                              Examples of Your Style:
+                              Examples of Your Changes:
                             </h5>
-                            <div className="space-y-2">
-                              {examples.map((example, idx) => (
-                                <div key={idx} className="text-sm p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
-                                  <code className="text-green-800 dark:text-green-200">{example}</code>
+                            <div className="space-y-3">
+                              {editExamples[pattern.pattern_type]?.length > 0 ? (
+                                editExamples[pattern.pattern_type].map((example, idx) => (
+                                  <div key={idx} className="space-y-2 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                        Product: {example.product_handle}
+                                      </span>
+                                      <span className="text-xs text-muted-foreground">
+                                        {new Date(example.created_at).toLocaleDateString()}
+                                      </span>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <div className="p-2 bg-red-50 dark:bg-red-950 rounded border border-red-200 dark:border-red-800">
+                                        <div className="text-xs font-medium text-red-600 dark:text-red-400 mb-1">Before:</div>
+                                        <div className="text-sm text-red-800 dark:text-red-200 font-mono">
+                                          {example.before_value || 'Empty'}
+                                        </div>
+                                      </div>
+                                      <div className="p-2 bg-green-50 dark:bg-green-950 rounded border border-green-200 dark:border-green-800">
+                                        <div className="text-xs font-medium text-green-600 dark:text-green-400 mb-1">After:</div>
+                                        <div className="text-sm text-green-800 dark:text-green-200 font-mono">
+                                          {example.after_value || 'Empty'}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="text-sm p-3 bg-yellow-50 dark:bg-yellow-950 rounded-lg border border-yellow-200 dark:border-yellow-800 text-center">
+                                  <p className="text-yellow-800 dark:text-yellow-200">
+                                    No specific examples found. AI learned this pattern from your general editing behavior.
+                                  </p>
                                 </div>
-                              ))}
+                              )}
                             </div>
                           </div>
 
