@@ -5,8 +5,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAIOptimizationWithLearning } from "@/hooks/useAIOptimizationWithLearning";
+import { useProductDrafts } from "@/hooks/useProductDrafts";
+import { RefreshCw, Save, FolderOpen } from "lucide-react";
 
 interface ProductComparisonProps {
   isOpen: boolean;
@@ -27,6 +31,7 @@ interface ProductComparisonProps {
     category: string;
   };
   onSave: () => void;
+  onReprocess?: (productData: any) => void;
 }
 
 export function ProductComparison({ 
@@ -34,7 +39,8 @@ export function ProductComparison({
   onClose, 
   originalProduct, 
   optimizedProduct, 
-  onSave 
+  onSave,
+  onReprocess
 }: ProductComparisonProps) {
   const [editedTitle, setEditedTitle] = useState(optimizedProduct.title);
   const [editedDescription, setEditedDescription] = useState(optimizedProduct.description);
@@ -42,7 +48,13 @@ export function ProductComparison({
   const [editedType, setEditedType] = useState(optimizedProduct.type);
   const [editedCategory, setEditedCategory] = useState(optimizedProduct.category);
   const [isLoading, setIsLoading] = useState(false);
+  const [draftName, setDraftName] = useState('');
+  const [selectedDraftId, setSelectedDraftId] = useState<string>('');
   const { toast } = useToast();
+  
+  // Initialize hooks for AI reprocessing and draft management
+  const { optimizeWithLearning, isOptimizing } = useAIOptimizationWithLearning();
+  const { drafts, saveDraft, deleteDraft, isSaving } = useProductDrafts(originalProduct.handle);
 
   // Reset edited values when optimizedProduct changes
   useEffect(() => {
@@ -102,6 +114,78 @@ export function ProductComparison({
       (window as any).tempOnCancel();
     }
     onClose();
+  };
+
+  const handleReprocess = async () => {
+    if (!onReprocess) return;
+    
+    try {
+      const productData = {
+        title: originalProduct.title,
+        type: originalProduct.type,
+        description: originalProduct.body_html,
+        tags: originalProduct.tags,
+        vendor: 'Premium Beauty' // Default vendor
+      };
+      
+      onReprocess(productData);
+      toast({
+        title: "Reprocessing Product",
+        description: "AI is generating a new optimized version...",
+      });
+    } catch (error) {
+      toast({
+        title: "Reprocess Failed",
+        description: "Failed to reprocess product. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSaveAsDraft = async () => {
+    if (!draftName.trim()) {
+      toast({
+        title: "Draft Name Required",
+        description: "Please enter a name for your draft.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const optimizedData = {
+      title: editedTitle,
+      description: editedDescription,
+      tags: editedTags,
+      type: editedType,
+      category: editedCategory,
+    };
+
+    saveDraft(draftName, optimizedData);
+    setDraftName(''); // Clear draft name after saving
+  };
+
+  const handleLoadDraft = (draftId: string) => {
+    const draft = drafts?.find(d => d.id === draftId);
+    if (draft && draft.optimized_data && typeof draft.optimized_data === 'object') {
+      const data = draft.optimized_data as {
+        title: string;
+        description: string;
+        tags: string;
+        type: string;
+        category: string;
+      };
+      
+      setEditedTitle(data.title);
+      setEditedDescription(data.description);
+      setEditedTags(data.tags);
+      setEditedType(data.type);
+      setEditedCategory(data.category);
+      
+      toast({
+        title: "Draft Loaded",
+        description: `Loaded draft: ${draft.draft_name}`,
+      });
+    }
   };
 
   return (
@@ -201,17 +285,99 @@ export function ProductComparison({
               </div>
             </div>
             
-            <div className="flex justify-end space-x-2 pt-4">
-              <Button variant="outline" onClick={handleCancel}>
-                Cancel
-              </Button>
-              <Button onClick={handleSave} disabled={isLoading}>
-                {isLoading ? 'Saving...' : 'Accept Changes'}
-              </Button>
+            <div className="flex flex-wrap justify-between items-center gap-2 pt-4">
+              <div className="flex space-x-2">
+                {onReprocess && (
+                  <Button 
+                    variant="outline" 
+                    onClick={handleReprocess} 
+                    disabled={isOptimizing}
+                    className="flex items-center gap-2"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${isOptimizing ? 'animate-spin' : ''}`} />
+                    {isOptimizing ? 'Reprocessing...' : 'Reprocess'}
+                  </Button>
+                )}
+              </div>
+              <div className="flex space-x-2">
+                <Button variant="outline" onClick={handleCancel}>
+                  Cancel
+                </Button>
+                <Button onClick={handleSave} disabled={isLoading}>
+                  {isLoading ? 'Saving...' : 'Accept Changes'}
+                </Button>
+              </div>
             </div>
           </TabsContent>
           
           <TabsContent value="edit" className="space-y-4">
+            {/* Draft Management Section */}
+            <div className="p-4 border rounded-lg bg-gray-50 space-y-4">
+              <h4 className="font-semibold text-lg flex items-center gap-2">
+                <FolderOpen className="h-5 w-5" />
+                Draft Management
+              </h4>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="draft-name">Save Current as Draft</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="draft-name"
+                      value={draftName}
+                      onChange={(e) => setDraftName(e.target.value)}
+                      placeholder="Enter draft name..."
+                      className="flex-1"
+                    />
+                    <Button 
+                      onClick={handleSaveAsDraft} 
+                      disabled={isSaving || !draftName.trim()}
+                      className="flex items-center gap-2"
+                    >
+                      <Save className="h-4 w-4" />
+                      {isSaving ? 'Saving...' : 'Save'}
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="load-draft">Load Existing Draft</Label>
+                  <div className="flex gap-2">
+                    <Select value={selectedDraftId} onValueChange={setSelectedDraftId}>
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Select a draft..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {drafts?.map((draft) => (
+                          <SelectItem key={draft.id} value={draft.id}>
+                            {draft.draft_name} ({new Date(draft.created_at).toLocaleDateString()})
+                          </SelectItem>
+                        ))}
+                        {!drafts?.length && (
+                          <SelectItem value="none" disabled>No drafts available</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <Button 
+                      onClick={() => handleLoadDraft(selectedDraftId)} 
+                      disabled={!selectedDraftId}
+                      variant="outline"
+                    >
+                      Load
+                    </Button>
+                    <Button 
+                      onClick={() => deleteDraft(selectedDraftId)} 
+                      disabled={!selectedDraftId}
+                      variant="destructive"
+                      size="sm"
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
             <div className="space-y-4">
               <div>
                 <Label htmlFor="edit-title">Product Title</Label>

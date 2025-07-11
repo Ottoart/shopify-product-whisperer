@@ -707,6 +707,60 @@ REQUIREMENTS:
             onUpdateProduct(comparisonData.originalProduct.handle, updatedProduct);
             setComparisonData(null);
           }}
+          onReprocess={async (productData) => {
+            try {
+              setCurrentProcessing({
+                productId: comparisonData.originalProduct.handle,
+                step: 'Reprocessing with AI...',
+                progress: 50
+              });
+
+              const { data, error } = await supabase.functions.invoke('ai-optimize-product', {
+                body: {
+                  productHandle: comparisonData.originalProduct.handle,
+                  productData: {
+                    title: productData.title,
+                    type: productData.type,
+                    description: productData.description,
+                    tags: productData.tags,
+                    vendor: productData.vendor
+                  },
+                  useDirectAI: useDirectAI,
+                  customPromptTemplate: useDirectAI ? customPromptTemplate : undefined
+                }
+              });
+
+              if (error || !data?.success) {
+                throw new Error(data?.error || error?.message || 'Reprocessing failed');
+              }
+
+              // Update the comparison data with new results
+              setComparisonData({
+                originalProduct: comparisonData.originalProduct,
+                optimizedProduct: {
+                  title: data.optimizedData.title,
+                  description: data.optimizedData.description,
+                  tags: data.optimizedData.tags,
+                  type: data.optimizedData.type || comparisonData.originalProduct.type || '',
+                  category: data.optimizedData.category || 'Health & Beauty > Personal Care'
+                }
+              });
+
+              setCurrentProcessing(null);
+              
+              toast({
+                title: "Reprocessing Complete",
+                description: "Product has been reprocessed with new AI optimization.",
+              });
+            } catch (error: any) {
+              setCurrentProcessing(null);
+              toast({
+                title: "Reprocessing Failed",
+                description: error.message || "Failed to reprocess product.",
+                variant: "destructive",
+              });
+            }
+          }}
         />
       )}
     </div>

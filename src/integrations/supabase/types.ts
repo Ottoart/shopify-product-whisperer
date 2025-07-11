@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      product_drafts: {
+        Row: {
+          created_at: string
+          draft_name: string
+          id: string
+          optimized_data: Json
+          product_handle: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          draft_name: string
+          id?: string
+          optimized_data: Json
+          product_handle: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          draft_name?: string
+          id?: string
+          optimized_data?: Json
+          product_handle?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       product_edit_history: {
         Row: {
           after_value: string | null
