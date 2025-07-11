@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import MainDashboard from "./pages/MainDashboard";
 import PrepFoxDashboard from "./pages/PrepFoxDashboard";
 import MarketplaceGateway from "./pages/MarketplaceGateway";
+import Shipping from "./pages/Shipping";
 import Analytics from "./pages/Analytics";
 import Activity from "./pages/Activity";
 import BulkEditor from "./pages/BulkEditor";
