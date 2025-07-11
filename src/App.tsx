@@ -45,6 +45,7 @@ const App = () => (
             <Route path="/dashboard" element={<MainDashboard />} />
             <Route path="/ai-dashboard" element={<PrepFoxDashboard />} />
                     <Route path="/marketplace-gateway" element={<MarketplaceGateway />} />
+                    <Route path="/shipping" element={<Shipping />} />
                     <Route path="/analytics" element={<Analytics />} />
                     <Route path="/activity" element={<Activity />} />
                     <Route path="/bulk-editor" element={<BulkEditor />} />
