@@ -158,15 +158,18 @@ CRITICAL: Your response MUST be ONLY the JSON object. No explanations, no additi
 }
 
 export async function callOpenAI(request: OptimizeProductRequest, apiKey: string, userId?: string): Promise<OptimizedProductData> {
-  // Fetch user's learned patterns if available
+  // Fetch user's learned patterns and brand tone if available
   let userPatterns = '';
-  if (userId) {
+  let brandTone = '';
+  
+  if (userId && request.productData.vendor) {
     try {
       const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.50.3');
       const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
       const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
       const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+      // Fetch user patterns
       const { data: patterns } = await supabase
         .from('user_edit_patterns')
         .select('*')
@@ -179,12 +182,66 @@ export async function callOpenAI(request: OptimizeProductRequest, apiKey: string
 ${patterns.map(p => `- ${p.pattern_type}: ${JSON.stringify(p.pattern_data)}`).join('\n')}`;
         console.log('Using learned patterns:', patterns.length, 'patterns found');
       }
+
+      // Check for existing brand tone analysis
+      const { data: existingBrandTone } = await supabase
+        .from('vendor_brand_tones')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('vendor_name', request.productData.vendor)
+        .maybeSingle();
+
+      if (existingBrandTone) {
+        console.log('Found existing brand tone for vendor:', request.productData.vendor);
+        brandTone = `\n\nBRAND TONE ANALYSIS FOR ${request.productData.vendor}:
+Brand Tone Summary: ${existingBrandTone.tone_summary}
+Voice Characteristics: ${existingBrandTone.brand_tone_analysis.voice_characteristics?.join(', ') || 'N/A'}
+Messaging Themes: ${existingBrandTone.brand_tone_analysis.messaging_themes?.join(', ') || 'N/A'}
+Language Patterns: ${existingBrandTone.brand_tone_analysis.language_patterns || 'N/A'}
+Customer Approach: ${existingBrandTone.brand_tone_analysis.customer_approach || 'N/A'}
+
+CRITICAL: Use this brand tone and style when creating product descriptions. Match the voice, vocabulary, and communication style of ${request.productData.vendor}.`;
+      } else {
+        // Analyze brand tone for new vendor
+        console.log('Analyzing brand tone for new vendor:', request.productData.vendor);
+        try {
+          const brandAnalysisResponse = await fetch(`${supabaseUrl}/functions/v1/analyze-brand-tone`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${supabaseServiceKey}`,
+            },
+            body: JSON.stringify({
+              vendorName: request.productData.vendor,
+              userId: userId
+            })
+          });
+
+          if (brandAnalysisResponse.ok) {
+            const brandData = await brandAnalysisResponse.json();
+            if (brandData.success && brandData.brandTone) {
+              brandTone = `\n\nBRAND TONE ANALYSIS FOR ${request.productData.vendor}:
+Brand Tone Summary: ${brandData.brandTone.tone_summary}
+Voice Characteristics: ${brandData.brandTone.brand_tone_analysis.voice_characteristics?.join(', ') || 'N/A'}
+Messaging Themes: ${brandData.brandTone.brand_tone_analysis.messaging_themes?.join(', ') || 'N/A'}
+Language Patterns: ${brandData.brandTone.brand_tone_analysis.language_patterns || 'N/A'}
+Customer Approach: ${brandData.brandTone.brand_tone_analysis.customer_approach || 'N/A'}
+
+CRITICAL: Use this brand tone and style when creating product descriptions. Match the voice, vocabulary, and communication style of ${request.productData.vendor}.`;
+              console.log('Brand tone analysis completed and cached');
+            }
+          }
+        } catch (error) {
+          console.log('Brand tone analysis failed, continuing without it:', error.message);
+        }
+      }
+
     } catch (error) {
-      console.log('Could not fetch user patterns:', error.message);
+      console.log('Could not fetch user patterns or brand tone:', error.message);
     }
   }
 
-  const prompt = createPrompt(request) + userPatterns;
+  const prompt = createPrompt(request) + userPatterns + brandTone;
   
   console.log('Calling OpenAI API...');
   console.log('OpenAI API Key exists:', !!apiKey);

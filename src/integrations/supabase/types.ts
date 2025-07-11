@@ -281,6 +281,39 @@ export type Database = {
         }
         Relationships: []
       }
+      vendor_brand_tones: {
+        Row: {
+          brand_tone_analysis: Json
+          created_at: string
+          id: string
+          tone_summary: string | null
+          updated_at: string
+          user_id: string
+          vendor_name: string
+          website_url: string | null
+        }
+        Insert: {
+          brand_tone_analysis: Json
+          created_at?: string
+          id?: string
+          tone_summary?: string | null
+          updated_at?: string
+          user_id: string
+          vendor_name: string
+          website_url?: string | null
+        }
+        Update: {
+          brand_tone_analysis?: Json
+          created_at?: string
+          id?: string
+          tone_summary?: string | null
+          updated_at?: string
+          user_id?: string
+          vendor_name?: string
+          website_url?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
