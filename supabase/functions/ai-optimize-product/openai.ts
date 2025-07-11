@@ -200,7 +200,7 @@ ${patterns.map(p => `- ${p.pattern_type}: ${JSON.stringify(p.pattern_data)}`).jo
       { role: 'user', content: prompt }
     ],
     temperature: 0.7,
-    max_tokens: 1000,
+    max_tokens: 2000, // Increased to allow for comprehensive content
   };
   
   console.log('Request body prepared, sending to OpenAI...');
@@ -248,16 +248,16 @@ ${patterns.map(p => `- ${p.pattern_type}: ${JSON.stringify(p.pattern_data)}`).jo
       throw new Error('AI response missing required fields (title, description, tags)');
     }
     
-    // Ensure all required fields have defaults
-    return {
+    // Ensure all required fields have defaults and generate missing SEO fields
+    const result = {
       title: optimizedData.title,
       description: optimizedData.description,
       tags: optimizedData.tags,
       type: optimizedData.type || 'General',
       category: optimizedData.category || 'Health & Beauty > Personal Care',
-      seo_title: optimizedData.seo_title || optimizedData.title,
-      seo_description: optimizedData.seo_description || '',
-      vendor: optimizedData.vendor,
+      seo_title: optimizedData.seo_title || `${optimizedData.title} - Buy Online`,
+      seo_description: optimizedData.seo_description || `Shop ${optimizedData.title}. Premium quality, fast delivery. Order now for best results!`,
+      vendor: optimizedData.vendor || request.productData.vendor || 'Premium Beauty',
       published: optimizedData.published !== undefined ? optimizedData.published : true,
       variant_price: optimizedData.variant_price,
       variant_compare_at_price: optimizedData.variant_compare_at_price,
@@ -272,6 +272,14 @@ ${patterns.map(p => `- ${p.pattern_type}: ${JSON.stringify(p.pattern_data)}`).jo
       google_shopping_gender: optimizedData.google_shopping_gender,
       google_shopping_age_group: optimizedData.google_shopping_age_group,
     };
+    
+    console.log('Final result with fallbacks:', {
+      seo_title: result.seo_title,
+      seo_description: result.seo_description,
+      vendor: result.vendor
+    });
+    
+    return result;
   } catch (e) {
     console.error('Failed to parse AI response:', e);
     console.error('AI response was:', aiContent);
