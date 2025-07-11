@@ -53,6 +53,7 @@ export interface UpdatedProduct {
   description: string;
   tags: string;
   category?: string;
+  vendor?: string;
 }
 
 const Index = () => {

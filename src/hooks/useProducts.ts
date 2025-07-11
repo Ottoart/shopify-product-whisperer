@@ -164,6 +164,7 @@ export const useProducts = () => {
           category: updatedData.category,
           body_html: updatedData.description,
           tags: updatedData.tags,
+          vendor: updatedData.vendor,
         })
         .eq('handle', handle)
         .eq('user_id', session.user.id);

@@ -77,7 +77,7 @@ export function SingleProductProcessor({
             type: product.type,
             description: product.bodyHtml,
             tags: product.tags,
-            vendor: product.vendor || 'Premium Beauty',
+            vendor: product.vendor,
             variant_price: product.variantPrice,
             variant_compare_at_price: product.variantCompareAtPrice,
             variant_sku: product.variantSku,
@@ -143,7 +143,8 @@ export function SingleProductProcessor({
       type: optimizedData.type || product.type,
       description: optimizedData.description,
       tags: optimizedData.tags,
-      category: optimizedData.category || 'Health & Beauty > Personal Care'
+      category: optimizedData.category || 'Health & Beauty > Personal Care',
+      vendor: optimizedData.vendor || product.vendor
     };
 
     onProductUpdated(product.handle, updatedData);
