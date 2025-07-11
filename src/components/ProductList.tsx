@@ -8,7 +8,8 @@ import { ProductEditor } from '@/components/ProductEditor';
 import { ProductListItem } from '@/components/ProductListItem';
 import { SingleProductProcessor } from '@/components/SingleProductProcessor';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Package, ExternalLink, Zap, CheckSquare, Square, Edit3, Filter } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Search, Package, ExternalLink, Zap, CheckSquare, Square, Edit3, Filter, ChevronDown, ChevronRight } from 'lucide-react';
 import { Product, UpdatedProduct } from '@/pages/Index';
 
 interface ProductListProps {
@@ -37,11 +38,19 @@ export const ProductList = ({
   const [itemsPerPage, setItemsPerPage] = useState(50);
   const [selectedTypes, setSelectedTypes] = useState<Set<string>>(new Set());
   const [selectedVendors, setSelectedVendors] = useState<Set<string>>(new Set());
+  const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
+  
+  // Collapsible states
+  const [typesOpen, setTypesOpen] = useState(false);
+  const [vendorsOpen, setVendorsOpen] = useState(false);
+  const [categoriesOpen, setCategoriesOpen] = useState(false);
+  const [tagsOpen, setTagsOpen] = useState(false);
 
   // Extract unique values for filters
   const uniqueTypes = [...new Set(products.map(p => p.type).filter(Boolean))];
   const uniqueVendors = [...new Set(products.map(p => p.vendor).filter(Boolean))];
+  const uniqueCategories = [...new Set(products.map(p => p.category).filter(Boolean))];
   const uniqueTags = [...new Set(products.flatMap(p => p.tags?.split(',').map(tag => tag.trim())).filter(Boolean))];
 
   const toggleFilter = (selectedSet: Set<string>, setter: (set: Set<string>) => void, value: string) => {
@@ -59,13 +68,15 @@ export const ProductList = ({
     const matchesSearch = product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.vendor.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         product.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.tags.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesType = selectedTypes.size === 0 || selectedTypes.has(product.type);
     const matchesVendor = selectedVendors.size === 0 || selectedVendors.has(product.vendor);
+    const matchesCategory = selectedCategories.size === 0 || selectedCategories.has(product.category || '');
     const matchesTag = selectedTags.size === 0 || product.tags?.split(',').some(tag => selectedTags.has(tag.trim()));
     
-    return matchesSearch && matchesType && matchesVendor && matchesTag;
+    return matchesSearch && matchesType && matchesVendor && matchesCategory && matchesTag;
   });
 
   const paginatedProducts = filteredProducts.slice(
@@ -150,13 +161,14 @@ export const ProductList = ({
                 <SelectItem value={products.length.toString()}>Show all ({products.length})</SelectItem>
               </SelectContent>
             </Select>
-            {(selectedTypes.size > 0 || selectedVendors.size > 0 || selectedTags.size > 0) && (
+            {(selectedTypes.size > 0 || selectedVendors.size > 0 || selectedCategories.size > 0 || selectedTags.size > 0) && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => {
                   setSelectedTypes(new Set());
                   setSelectedVendors(new Set());
+                  setSelectedCategories(new Set());
                   setSelectedTags(new Set());
                 }}
               >
@@ -166,55 +178,92 @@ export const ProductList = ({
           </div>
           
           {/* Types Filter */}
-          <div className="space-y-2">
-            <span className="text-xs font-medium text-muted-foreground">Product Types:</span>
-            <div className="flex flex-wrap gap-1">
-              {uniqueTypes.map((type) => (
-                <Badge
-                  key={type}
-                  variant={selectedTypes.has(type) ? "default" : "outline"}
-                  className="cursor-pointer hover:bg-primary/80 text-xs"
-                  onClick={() => toggleFilter(selectedTypes, setSelectedTypes, type)}
-                >
-                  {type}
-                </Badge>
-              ))}
-            </div>
-          </div>
+          <Collapsible open={typesOpen} onOpenChange={setTypesOpen}>
+            <CollapsibleTrigger className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground">
+              {typesOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+              Product Types ({uniqueTypes.length}) {selectedTypes.size > 0 && `- ${selectedTypes.size} selected`}
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pt-2">
+              <div className="flex flex-wrap gap-1">
+                {uniqueTypes.map((type) => (
+                  <Badge
+                    key={type}
+                    variant={selectedTypes.has(type) ? "default" : "outline"}
+                    className="cursor-pointer hover:bg-primary/80 text-xs"
+                    onClick={() => toggleFilter(selectedTypes, setSelectedTypes, type)}
+                  >
+                    {type}
+                  </Badge>
+                ))}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
 
           {/* Vendors Filter */}
-          <div className="space-y-2">
-            <span className="text-xs font-medium text-muted-foreground">Vendors:</span>
-            <div className="flex flex-wrap gap-1">
-              {uniqueVendors.map((vendor) => (
-                <Badge
-                  key={vendor}
-                  variant={selectedVendors.has(vendor) ? "default" : "outline"}
-                  className="cursor-pointer hover:bg-primary/80 text-xs"
-                  onClick={() => toggleFilter(selectedVendors, setSelectedVendors, vendor)}
-                >
-                  {vendor}
-                </Badge>
-              ))}
-            </div>
-          </div>
+          <Collapsible open={vendorsOpen} onOpenChange={setVendorsOpen}>
+            <CollapsibleTrigger className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground">
+              {vendorsOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+              Vendors ({uniqueVendors.length}) {selectedVendors.size > 0 && `- ${selectedVendors.size} selected`}
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pt-2">
+              <div className="flex flex-wrap gap-1">
+                {uniqueVendors.map((vendor) => (
+                  <Badge
+                    key={vendor}
+                    variant={selectedVendors.has(vendor) ? "default" : "outline"}
+                    className="cursor-pointer hover:bg-primary/80 text-xs"
+                    onClick={() => toggleFilter(selectedVendors, setSelectedVendors, vendor)}
+                  >
+                    {vendor}
+                  </Badge>
+                ))}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+
+          {/* Categories Filter */}
+          <Collapsible open={categoriesOpen} onOpenChange={setCategoriesOpen}>
+            <CollapsibleTrigger className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground">
+              {categoriesOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+              Categories ({uniqueCategories.length}) {selectedCategories.size > 0 && `- ${selectedCategories.size} selected`}
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pt-2">
+              <div className="flex flex-wrap gap-1">
+                {uniqueCategories.map((category) => (
+                  <Badge
+                    key={category}
+                    variant={selectedCategories.has(category) ? "default" : "outline"}
+                    className="cursor-pointer hover:bg-primary/80 text-xs"
+                    onClick={() => toggleFilter(selectedCategories, setSelectedCategories, category)}
+                  >
+                    {category}
+                  </Badge>
+                ))}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
 
           {/* Tags Filter */}
-          <div className="space-y-2">
-            <span className="text-xs font-medium text-muted-foreground">Tags:</span>
-            <div className="flex flex-wrap gap-1">
-              {uniqueTags.map((tag) => (
-                <Badge
-                  key={tag}
-                  variant={selectedTags.has(tag) ? "default" : "outline"}
-                  className="cursor-pointer hover:bg-primary/80 text-xs"
-                  onClick={() => toggleFilter(selectedTags, setSelectedTags, tag)}
-                >
-                  {tag}
-                </Badge>
-              ))}
-            </div>
-          </div>
+          <Collapsible open={tagsOpen} onOpenChange={setTagsOpen}>
+            <CollapsibleTrigger className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground">
+              {tagsOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+              Tags ({uniqueTags.length}) {selectedTags.size > 0 && `- ${selectedTags.size} selected`}
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pt-2">
+              <div className="flex flex-wrap gap-1">
+                {uniqueTags.map((tag) => (
+                  <Badge
+                    key={tag}
+                    variant={selectedTags.has(tag) ? "default" : "outline"}
+                    className="cursor-pointer hover:bg-primary/80 text-xs"
+                    onClick={() => toggleFilter(selectedTags, setSelectedTags, tag)}
+                  >
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
         </div>
 
         {/* Results Summary and Select All */}
