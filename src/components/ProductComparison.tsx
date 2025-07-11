@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAIOptimizationWithLearning } from "@/hooks/useAIOptimizationWithLearning";
 import { useProductDrafts } from "@/hooks/useProductDrafts";
-import { RefreshCw, Save, FolderOpen, Search, ExternalLink } from "lucide-react";
+import { RefreshCw, Save, FolderOpen, Search, ExternalLink, Edit3, Check } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useSessionContext } from '@supabase/auth-helpers-react';
 
@@ -146,6 +146,12 @@ export function ProductComparison({
     setEditedGoogleShoppingGender(optimizedProduct.google_shopping_gender || 'unisex');
     setEditedGoogleShoppingAgeGroup(optimizedProduct.google_shopping_age_group || 'adult');
   }, [optimizedProduct]);
+
+  // Helper functions to check if fields have been modified
+  const isFieldModified = (field: keyof typeof optimizedProduct, currentValue: any) => {
+    const originalValue = optimizedProduct[field];
+    return originalValue !== currentValue;
+  };
 
   const handleSave = async () => {
     if (!session?.user?.id) {
@@ -431,40 +437,94 @@ export function ProductComparison({
                     <div className="space-y-4">
                       <h3 className="text-lg font-semibold text-green-600">AI Optimized Version</h3>
                       
-                      <div>
-                        <Label className="text-sm font-medium">Title:</Label>
-                        <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
-                          <p className="text-sm">{optimizedProduct.title}</p>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <Label className="text-sm font-medium">Vendor:</Label>
-                        <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
-                          <p className="text-sm">{optimizedProduct.vendor || 'No vendor'}</p>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <Label className="text-sm font-medium">Type:</Label>
-                        <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
-                          <p className="text-sm">{optimizedProduct.type}</p>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <Label className="text-sm font-medium">Category:</Label>
-                        <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
-                          <p className="text-sm">{optimizedProduct.category}</p>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <Label className="text-sm font-medium">Tags:</Label>
-                        <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
-                          <p className="text-sm">{optimizedProduct.tags}</p>
-                        </div>
-                      </div>
+                       <div>
+                         <Label className="text-sm font-medium flex items-center gap-2">
+                           Title:
+                           {isFieldModified('title', editedTitle) && (
+                             <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                               <Edit3 className="h-3 w-3" />
+                               Modified
+                             </span>
+                           )}
+                         </Label>
+                         <Input
+                           value={editedTitle}
+                           onChange={(e) => setEditedTitle(e.target.value)}
+                           className={`mt-1 ${isFieldModified('title', editedTitle) ? 'border-blue-300 bg-blue-50' : 'bg-green-50 border-green-200'}`}
+                         />
+                       </div>
+                       
+                       <div>
+                         <Label className="text-sm font-medium flex items-center gap-2">
+                           Vendor:
+                           {isFieldModified('vendor', editedVendor) && (
+                             <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                               <Edit3 className="h-3 w-3" />
+                               Modified
+                             </span>
+                           )}
+                         </Label>
+                         <Input
+                           value={editedVendor}
+                           onChange={(e) => setEditedVendor(e.target.value)}
+                           className={`mt-1 ${isFieldModified('vendor', editedVendor) ? 'border-blue-300 bg-blue-50' : 'bg-green-50 border-green-200'}`}
+                           placeholder="Enter vendor or brand name"
+                         />
+                       </div>
+                       
+                       <div>
+                         <Label className="text-sm font-medium flex items-center gap-2">
+                           Type:
+                           {isFieldModified('type', editedType) && (
+                             <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                               <Edit3 className="h-3 w-3" />
+                               Modified
+                             </span>
+                           )}
+                         </Label>
+                         <Input
+                           value={editedType}
+                           onChange={(e) => setEditedType(e.target.value)}
+                           className={`mt-1 ${isFieldModified('type', editedType) ? 'border-blue-300 bg-blue-50' : 'bg-green-50 border-green-200'}`}
+                           placeholder="e.g., Leave-In Hair Conditioner"
+                         />
+                       </div>
+                       
+                       <div>
+                         <Label className="text-sm font-medium flex items-center gap-2">
+                           Category:
+                           {isFieldModified('category', editedCategory) && (
+                             <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                               <Edit3 className="h-3 w-3" />
+                               Modified
+                             </span>
+                           )}
+                         </Label>
+                         <Input
+                           value={editedCategory}
+                           onChange={(e) => setEditedCategory(e.target.value)}
+                           className={`mt-1 ${isFieldModified('category', editedCategory) ? 'border-blue-300 bg-blue-50' : 'bg-green-50 border-green-200'}`}
+                           placeholder="e.g., Health & Beauty > Hair Care"
+                         />
+                       </div>
+                       
+                       <div>
+                         <Label className="text-sm font-medium flex items-center gap-2">
+                           Tags:
+                           {isFieldModified('tags', editedTags) && (
+                             <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                               <Edit3 className="h-3 w-3" />
+                               Modified
+                             </span>
+                           )}
+                         </Label>
+                         <Input
+                           value={editedTags}
+                           onChange={(e) => setEditedTags(e.target.value)}
+                           className={`mt-1 ${isFieldModified('tags', editedTags) ? 'border-blue-300 bg-blue-50' : 'bg-green-50 border-green-200'}`}
+                           placeholder="Comma-separated tags"
+                         />
+                       </div>
                     </div>
                   </div>
                   
@@ -477,13 +537,24 @@ export function ProductComparison({
                       </div>
                     </div>
                     
-                    <div>
-                      <h4 className="text-md font-medium text-green-600 mb-2">Optimized Description:</h4>
-                      <div className="p-3 bg-green-50 border border-green-200 rounded-md max-h-60 overflow-y-auto">
-                        <div className="text-sm prose prose-sm max-w-none" 
-                             dangerouslySetInnerHTML={{ __html: optimizedProduct.description }} />
-                      </div>
-                    </div>
+                     <div>
+                       <h4 className="text-md font-medium text-green-600 mb-2 flex items-center gap-2">
+                         Optimized Description:
+                         {isFieldModified('description', editedDescription) && (
+                           <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                             <Edit3 className="h-3 w-3" />
+                             Modified
+                           </span>
+                         )}
+                       </h4>
+                       <Textarea
+                         value={editedDescription}
+                         onChange={(e) => setEditedDescription(e.target.value)}
+                         className={`max-h-60 resize-none ${isFieldModified('description', editedDescription) ? 'border-blue-300 bg-blue-50' : 'bg-green-50 border-green-200'}`}
+                         placeholder="Enter product description (HTML supported)"
+                         rows={8}
+                       />
+                     </div>
                   </div>
                 </TabsContent>
                 
@@ -517,26 +588,66 @@ export function ProductComparison({
                     <div className="space-y-4">
                       <h3 className="text-lg font-semibold text-green-600">AI Optimized Version</h3>
                       
-                      <div>
-                        <Label className="text-sm font-medium">SEO Title:</Label>
-                        <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
-                          <p className="text-sm">{optimizedProduct.seo_title || 'No SEO title generated'}</p>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <Label className="text-sm font-medium">SEO Description:</Label>
-                        <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
-                          <p className="text-sm">{optimizedProduct.seo_description || 'No SEO description generated'}</p>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <Label className="text-sm font-medium">Published:</Label>
-                        <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
-                          <p className="text-sm">{optimizedProduct.published ? 'Yes' : 'No'}</p>
-                        </div>
-                      </div>
+                       <div>
+                         <Label className="text-sm font-medium flex items-center gap-2">
+                           SEO Title:
+                           {isFieldModified('seo_title', editedSeoTitle) && (
+                             <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                               <Edit3 className="h-3 w-3" />
+                               Modified
+                             </span>
+                           )}
+                         </Label>
+                         <Input
+                           value={editedSeoTitle}
+                           onChange={(e) => setEditedSeoTitle(e.target.value)}
+                           className={`mt-1 ${isFieldModified('seo_title', editedSeoTitle) ? 'border-blue-300 bg-blue-50' : 'bg-green-50 border-green-200'}`}
+                           placeholder="SEO optimized title (max 60 chars)"
+                           maxLength={60}
+                         />
+                         <p className="text-xs text-gray-500 mt-1">{editedSeoTitle.length}/60 characters</p>
+                       </div>
+                       
+                       <div>
+                         <Label className="text-sm font-medium flex items-center gap-2">
+                           SEO Description:
+                           {isFieldModified('seo_description', editedSeoDescription) && (
+                             <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                               <Edit3 className="h-3 w-3" />
+                               Modified
+                             </span>
+                           )}
+                         </Label>
+                         <Textarea
+                           value={editedSeoDescription}
+                           onChange={(e) => setEditedSeoDescription(e.target.value)}
+                           className={`mt-1 resize-none ${isFieldModified('seo_description', editedSeoDescription) ? 'border-blue-300 bg-blue-50' : 'bg-green-50 border-green-200'}`}
+                           placeholder="SEO meta description (max 160 chars)"
+                           maxLength={160}
+                           rows={3}
+                         />
+                         <p className="text-xs text-gray-500 mt-1">{editedSeoDescription.length}/160 characters</p>
+                       </div>
+                       
+                       <div>
+                         <Label className="text-sm font-medium flex items-center gap-2">
+                           Published:
+                           {isFieldModified('published', editedPublished) && (
+                             <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                               <Edit3 className="h-3 w-3" />
+                               Modified
+                             </span>
+                           )}
+                         </Label>
+                         <div className="mt-1">
+                           <Switch
+                             checked={editedPublished}
+                             onCheckedChange={setEditedPublished}
+                             className={isFieldModified('published', editedPublished) ? 'data-[state=checked]:bg-blue-500' : ''}
+                           />
+                           <span className="ml-2 text-sm">{editedPublished ? 'Published' : 'Draft'}</span>
+                         </div>
+                       </div>
                     </div>
                   </div>
                 </TabsContent>
