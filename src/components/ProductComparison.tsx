@@ -11,7 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAIOptimizationWithLearning } from "@/hooks/useAIOptimizationWithLearning";
 import { useProductDrafts } from "@/hooks/useProductDrafts";
-import { RefreshCw, Save, FolderOpen } from "lucide-react";
+import { RefreshCw, Save, FolderOpen, Search, ExternalLink } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface ProductComparisonProps {
   isOpen: boolean;
@@ -105,6 +106,10 @@ export function ProductComparison({
   const [editedGoogleShoppingCondition, setEditedGoogleShoppingCondition] = useState(optimizedProduct.google_shopping_condition || 'new');
   const [editedGoogleShoppingGender, setEditedGoogleShoppingGender] = useState(optimizedProduct.google_shopping_gender || 'unisex');
   const [editedGoogleShoppingAgeGroup, setEditedGoogleShoppingAgeGroup] = useState(optimizedProduct.google_shopping_age_group || 'adult');
+  
+  // Price search state
+  const [isSearchingPrices, setIsSearchingPrices] = useState(false);
+  const [priceResults, setPriceResults] = useState<any>(null);
   
   const [isLoading, setIsLoading] = useState(false);
   const [draftName, setDraftName] = useState('');
@@ -305,6 +310,40 @@ export function ProductComparison({
     }
   };
 
+  const handleFindBestPrice = async () => {
+    setIsSearchingPrices(true);
+    setPriceResults(null);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('find-best-price', {
+        body: {
+          productTitle: originalProduct.title,
+          currentPrice: originalProduct.variant_price,
+          vendor: originalProduct.vendor
+        }
+      });
+
+      if (error || !data?.success) {
+        throw new Error(data?.error || error?.message || 'Price search failed');
+      }
+
+      setPriceResults(data.results);
+      toast({
+        title: "Price Search Complete",
+        description: `Found pricing data from ${data.results?.length || 0} sources`,
+      });
+
+    } catch (error: any) {
+      toast({
+        title: "Price Search Failed",
+        description: error.message || "Failed to search for prices. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSearchingPrices(false);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
@@ -482,6 +521,86 @@ export function ProductComparison({
                 </TabsContent>
                 
                 <TabsContent value="pricing" className="space-y-4">
+                  {/* Price Search Button */}
+                  <div className="flex justify-center">
+                    <Button 
+                      onClick={handleFindBestPrice} 
+                      disabled={isSearchingPrices}
+                      className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white flex items-center gap-2"
+                    >
+                      {isSearchingPrices ? (
+                        <>
+                          <div className="fox-digging-animation">
+                            🦊
+                          </div>
+                          Digging for best prices...
+                        </>
+                      ) : (
+                        <>
+                          <Search className="h-4 w-4" />
+                          Find Best Price
+                        </>
+                      )}
+                    </Button>
+                  </div>
+
+                  {/* Price Results */}
+                  {priceResults && (
+                    <Card className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+                      <CardContent className="p-0">
+                        <h4 className="text-lg font-semibold text-blue-800 mb-3 flex items-center gap-2">
+                          🏆 Best Price Results
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {priceResults.lowest && (
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <h5 className="font-semibold text-green-800">💰 Lowest Price</h5>
+                                <span className="text-2xl font-bold text-green-700">${priceResults.lowest.price}</span>
+                              </div>
+                              <p className="text-sm text-green-600 mb-2">{priceResults.lowest.store}</p>
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="border-green-300 text-green-700 hover:bg-green-100"
+                                onClick={() => window.open(priceResults.lowest.url, '_blank')}
+                              >
+                                <ExternalLink className="h-3 w-3 mr-1" />
+                                View Deal
+                              </Button>
+                            </div>
+                          )}
+                          
+                          {priceResults.highest && (
+                            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <h5 className="font-semibold text-red-800">💎 Highest Price</h5>
+                                <span className="text-2xl font-bold text-red-700">${priceResults.highest.price}</span>
+                              </div>
+                              <p className="text-sm text-red-600 mb-2">{priceResults.highest.store}</p>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                className="border-red-300 text-red-700 hover:bg-red-100" 
+                                onClick={() => window.open(priceResults.highest.url, '_blank')}
+                              >
+                                <ExternalLink className="h-3 w-3 mr-1" />
+                                View Deal
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                        {priceResults.savings && (
+                          <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <p className="text-yellow-800 font-medium text-center">
+                              💡 You could save up to <span className="font-bold">${priceResults.savings}</span> by choosing the lowest price!
+                            </p>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div className="space-y-4">
                       <h3 className="text-lg font-semibold text-red-600">Original Version</h3>
