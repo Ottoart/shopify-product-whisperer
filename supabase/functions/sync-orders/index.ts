@@ -66,7 +66,16 @@ serve(async (req) => {
     const shopifyAccessToken = Deno.env.get('SHOPIFY_ACCESS_TOKEN');
 
     if (!shopifyDomain || !shopifyAccessToken) {
-      throw new Error('Shopify credentials not configured');
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Shopify credentials not configured. Please set SHOPIFY_DOMAIN and SHOPIFY_ACCESS_TOKEN in your project secrets.' 
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400 
+        }
+      );
     }
 
     console.log('Fetching orders from Shopify...');
