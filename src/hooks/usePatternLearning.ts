@@ -104,6 +104,56 @@ export const usePatternLearning = () => {
     updatePatternMutation.mutate({ patternId, isApproved: false });
   };
 
+  // Fetch edit history for review
+  const { data: editHistory } = useQuery({
+    queryKey: ['edit-history'],
+    queryFn: async () => {
+      if (!session?.user?.id) return [];
+      
+      const { data, error } = await supabase
+        .from('product_edit_history')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .eq('edit_type', 'manual')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!session?.user?.id,
+  });
+
+  // Delete edit history entry
+  const deleteEditMutation = useMutation({
+    mutationFn: async (editId: string) => {
+      const { error } = await supabase
+        .from('product_edit_history')
+        .delete()
+        .eq('id', editId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['edit-history'] });
+      toast({
+        title: "Edit Removed",
+        description: "The erroneous edit has been removed. Re-analyze patterns to update your learning.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Delete Failed",
+        description: error.message || "Failed to remove edit.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteEdit = (editId: string) => {
+    deleteEditMutation.mutate(editId);
+  };
+
   const pendingPatterns = patterns?.filter(p => p.is_approved === null) || [];
   const approvedPatterns = patterns?.filter(p => p.is_approved === true) || [];
 
@@ -111,10 +161,13 @@ export const usePatternLearning = () => {
     patterns,
     pendingPatterns,
     approvedPatterns,
+    editHistory: editHistory || [],
     isLoading,
     isAnalyzing: isAnalyzing || analyzePatternsMutation.isPending,
     analyzePatterns,
     approvePattern,
     rejectPattern,
+    deleteEdit,
+    isDeletingEdit: deleteEditMutation.isPending,
   };
 };

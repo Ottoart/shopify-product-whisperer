@@ -21,7 +21,8 @@ import {
   Sparkles,
   Award,
   Timer,
-  Hash
+  Hash,
+  Trash2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -61,6 +62,7 @@ export const LearningDashboard = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState<PatternStats | null>(null);
+  const [isDeletingEdit, setIsDeletingEdit] = useState<string | null>(null);
   const { session } = useSessionContext();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useTabPersistence('learning-dashboard', 'overview');
@@ -208,6 +210,35 @@ export const LearningDashboard = () => {
       });
     } finally {
       setIsAnalyzing(false);
+    }
+  };
+
+  const deleteEditExample = async (editId: string) => {
+    setIsDeletingEdit(editId);
+    try {
+      const { error } = await supabase
+        .from('product_edit_history')
+        .delete()
+        .eq('id', editId);
+
+      if (error) throw error;
+
+      // Reload examples after deletion
+      await loadEditExamples(patterns);
+      
+      toast({
+        title: "Edit Removed",
+        description: "The erroneous edit has been removed. Re-analyze patterns to update learning.",
+      });
+    } catch (error) {
+      console.error('Error deleting edit:', error);
+      toast({
+        title: "Delete Failed",
+        description: "Failed to remove edit example.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeletingEdit(null);
     }
   };
 
@@ -579,15 +610,31 @@ export const LearningDashboard = () => {
                             <div className="space-y-3">
                               {editExamples[pattern.pattern_type]?.length > 0 ? (
                                 editExamples[pattern.pattern_type].map((example, idx) => (
-                                  <div key={idx} className="space-y-2 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border">
-                                    <div className="flex items-center justify-between">
-                                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                                        Product: {example.product_handle}
-                                      </span>
-                                      <span className="text-xs text-muted-foreground">
-                                        {new Date(example.created_at).toLocaleDateString()}
-                                      </span>
-                                    </div>
+                                   <div key={idx} className="space-y-2 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border">
+                                     <div className="flex items-center justify-between">
+                                       <div className="flex items-center gap-2">
+                                         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                           Product: {example.product_handle}
+                                         </span>
+                                         <span className="text-xs text-muted-foreground">
+                                           {new Date(example.created_at).toLocaleDateString()}
+                                         </span>
+                                       </div>
+                                       <Button
+                                         size="sm"
+                                         variant="outline"
+                                         onClick={() => deleteEditExample(example.id)}
+                                         disabled={isDeletingEdit === example.id}
+                                         className="text-red-600 border-red-200 hover:bg-red-50 h-6 w-6 p-0"
+                                         title="Remove this erroneous example"
+                                       >
+                                         {isDeletingEdit === example.id ? (
+                                           <Loader2 className="h-3 w-3 animate-spin" />
+                                         ) : (
+                                           <Trash2 className="h-3 w-3" />
+                                         )}
+                                       </Button>
+                                     </div>
                                     <div className="space-y-2">
                                       <div className="p-2 bg-red-50 dark:bg-red-950 rounded border border-red-200 dark:border-red-800">
                                         <div className="text-xs font-medium text-red-600 dark:text-red-400 mb-1">Before:</div>
