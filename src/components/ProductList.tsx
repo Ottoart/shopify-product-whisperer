@@ -270,7 +270,7 @@ export const ProductList = ({
                       className="bg-gradient-primary transition-all duration-300 hover:scale-105"
                     >
                       <Zap className="h-3 w-3 mr-1" />
-                      Update
+                    Optimize
                     </Button>
                   </div>
                 </div>
