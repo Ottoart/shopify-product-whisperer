@@ -3,7 +3,25 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Brain, Check, X, Loader2, TrendingUp } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  Brain, 
+  Check, 
+  X, 
+  Loader2, 
+  TrendingUp, 
+  Target,
+  Zap,
+  BarChart3,
+  PieChart,
+  Eye,
+  Lightbulb,
+  Sparkles,
+  Award,
+  Timer,
+  Hash
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useSessionContext } from '@supabase/auth-helpers-react';
@@ -16,12 +34,22 @@ interface EditPattern {
   usage_count: number;
   is_approved: boolean | null;
   description?: string;
+  created_at: string;
+}
+
+interface PatternStats {
+  totalPatterns: number;
+  approvedPatterns: number;
+  avgConfidence: number;
+  mostFrequentType: string;
+  recentActivity: number;
 }
 
 export const LearningDashboard = () => {
   const [patterns, setPatterns] = useState<EditPattern[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState<PatternStats | null>(null);
   const { session } = useSessionContext();
   const { toast } = useToast();
 
@@ -40,7 +68,37 @@ export const LearningDashboard = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setPatterns(data || []);
+      
+      const patternsData = data || [];
+      setPatterns(patternsData);
+      
+      // Calculate stats
+      if (patternsData.length > 0) {
+        const approved = patternsData.filter(p => p.is_approved === true).length;
+        const avgConf = patternsData.reduce((sum, p) => sum + p.confidence_score, 0) / patternsData.length;
+        
+        const typeCount: Record<string, number> = {};
+        patternsData.forEach(p => {
+          typeCount[p.pattern_type] = (typeCount[p.pattern_type] || 0) + 1;
+        });
+        
+        const mostFrequent = Object.entries(typeCount).sort(([,a], [,b]) => b - a)[0]?.[0] || '';
+        
+        const recentCount = patternsData.filter(p => {
+          const created = new Date(p.created_at);
+          const weekAgo = new Date();
+          weekAgo.setDate(weekAgo.getDate() - 7);
+          return created > weekAgo;
+        }).length;
+
+        setStats({
+          totalPatterns: patternsData.length,
+          approvedPatterns: approved,
+          avgConfidence: avgConf,
+          mostFrequentType: mostFrequent,
+          recentActivity: recentCount
+        });
+      }
     } catch (error) {
       console.error('Error loading patterns:', error);
       toast({
@@ -69,14 +127,14 @@ export const LearningDashboard = () => {
       if (data?.patterns && data.patterns.length > 0) {
         console.log('Patterns found:', data.patterns);
         toast({
-          title: "Patterns Analyzed",
-          description: `Found ${data.patterns.length} editing patterns.`,
+          title: "🧠 AI Analysis Complete!",
+          description: `Discovered ${data.patterns.length} new learning patterns from your edits.`,
         });
         await loadPatterns();
       } else {
         console.log('No patterns found, data:', data);
         toast({
-          title: "No Patterns Found",
+          title: "No New Patterns",
           description: data?.message || "Make more manual edits to build patterns.",
         });
       }
@@ -108,9 +166,12 @@ export const LearningDashboard = () => {
       );
 
       toast({
-        title: isApproved ? "Pattern Approved" : "Pattern Rejected",
-        description: "Your preferences have been updated.",
+        title: isApproved ? "✅ Pattern Approved" : "❌ Pattern Rejected",
+        description: isApproved ? "AI will apply this style to future optimizations" : "AI will avoid this pattern",
       });
+      
+      // Reload to update stats
+      loadPatterns();
     } catch (error) {
       console.error('Error updating pattern:', error);
       toast({
@@ -123,146 +184,438 @@ export const LearningDashboard = () => {
 
   const getPatternIcon = (type: string) => {
     switch (type) {
-      case 'title_style': return '📝';
-      case 'description_format': return '📄';
-      case 'tag_preference': return '🏷️';
-      case 'type_categorization': return '📂';
-      default: return '⚙️';
+      case 'title_style': return { icon: Hash, color: 'text-blue-500' };
+      case 'description_formatting': return { icon: BarChart3, color: 'text-green-500' };
+      case 'tag_preferences': return { icon: Target, color: 'text-purple-500' };
+      case 'type_categorization': return { icon: PieChart, color: 'text-orange-500' };
+      default: return { icon: Sparkles, color: 'text-gray-500' };
     }
   };
 
-  const getPatternDescription = (pattern: EditPattern) => {
+  const getPatternMetrics = (pattern: EditPattern) => {
+    const data = pattern.pattern_data;
+    const metrics: Array<{ label: string; value: string; icon: any }> = [];
+
+    switch (pattern.pattern_type) {
+      case 'title_style':
+        metrics.push(
+          { label: 'Max Length', value: `${data?.max_length || 60} chars`, icon: Hash },
+          { label: 'Style', value: data?.style || 'Custom', icon: Sparkles },
+          { label: 'Separators', value: data?.separators?.join(', ') || 'Various', icon: Target }
+        );
+        break;
+      case 'description_formatting':
+        metrics.push(
+          { label: 'Tone', value: data?.tone || 'Professional', icon: Award },
+          { label: 'Length', value: data?.length || 'Medium', icon: BarChart3 },
+          { label: 'Format', value: data?.format || 'HTML', icon: Eye }
+        );
+        break;
+      case 'tag_preferences':
+        metrics.push(
+          { label: 'Categories', value: `${data?.categories?.length || 0} types`, icon: Hash },
+          { label: 'Naming', value: data?.naming_convention || 'Custom', icon: Target },
+          { label: 'Density', value: data?.tag_density || 'High', icon: TrendingUp }
+        );
+        break;
+      case 'type_categorization':
+        metrics.push(
+          { label: 'Style', value: data?.style || 'Descriptive', icon: Award },
+          { label: 'Length', value: data?.length || 'Medium', icon: BarChart3 },
+          { label: 'Focus', value: data?.focus?.join(', ') || 'Quality', icon: Target }
+        );
+        break;
+    }
+
+    return metrics;
+  };
+
+  const getDetailedDescription = (pattern: EditPattern) => {
     if (pattern.description) return pattern.description;
+    
+    const baseDesc = getPatternMetrics(pattern);
+    return `AI learned this pattern from your editing behavior with ${Math.round(pattern.confidence_score * 100)}% confidence`;
+  };
+
+  const getExampleChanges = (pattern: EditPattern) => {
+    const data = pattern.pattern_data;
     
     switch (pattern.pattern_type) {
       case 'title_style':
-        return `Title style preferences (avg length: ${pattern.pattern_data?.avg_length || 'unknown'})`;
-      case 'description_format':
-        return `Description formatting patterns (tone: ${pattern.pattern_data?.tone || 'unknown'})`;
-      case 'tag_preference':
-        return `Tag categorization preferences (${pattern.pattern_data?.categories?.length || 0} categories)`;
+        return data?.examples || ['Example titles with your preferred format'];
+      case 'description_formatting':
+        return data?.structure || ['Structured descriptions with your preferred sections'];
+      case 'tag_preferences':
+        return data?.examples || ['Brand_Name, Type_Category, Benefits_Feature'];
       case 'type_categorization':
-        return `Product type categorization patterns`;
+        return data?.examples || ['Descriptive product types with key attributes'];
       default:
-        return `${pattern.pattern_type} preferences`;
+        return ['AI will apply learned preferences to future optimizations'];
     }
   };
 
   if (isLoading) {
     return (
-      <Card className="border-0 shadow-card">
-        <CardContent className="flex items-center justify-center p-8">
-          <Loader2 className="h-6 w-6 animate-spin mr-2" />
-          Loading patterns...
-        </CardContent>
-      </Card>
+      <div className="space-y-6">
+        <Card className="border-0 shadow-card">
+          <CardContent className="flex items-center justify-center p-12">
+            <Loader2 className="h-8 w-8 animate-spin mr-3 text-primary" />
+            <span className="text-lg">Analyzing AI learning patterns...</span>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
-    <Card className="border-0 shadow-card">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Brain className="h-5 w-5" />
-          AI Learning Dashboard
-        </CardTitle>
-        <CardDescription>
-          Track and manage AI learning from your manual product edits
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
-            {patterns.length} learning patterns available
-          </div>
-          <Button 
-            onClick={analyzePatterns}
-            disabled={isAnalyzing}
-            className="bg-gradient-primary"
-          >
-            {isAnalyzing ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <TrendingUp className="h-4 w-4 mr-2" />
-            )}
-            Analyze Patterns
-          </Button>
-        </div>
+    <div className="space-y-6">
+      {/* Stats Overview */}
+      {stats && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="border-0 shadow-card bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Total Patterns</p>
+                  <p className="text-3xl font-bold text-blue-900 dark:text-blue-100">{stats.totalPatterns}</p>
+                </div>
+                <Brain className="h-8 w-8 text-blue-500" />
+              </div>
+            </CardContent>
+          </Card>
 
-        {patterns.length === 0 ? (
-          <div className="text-center p-8 text-muted-foreground">
-            <Brain className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <h3 className="font-medium mb-2">No Learning Patterns Yet</h3>
-            <p className="text-sm">
-              Start making manual edits to products and the AI will learn your preferences.
-            </p>
+          <Card className="border-0 shadow-card bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-green-600 dark:text-green-400">Approved</p>
+                  <p className="text-3xl font-bold text-green-900 dark:text-green-100">{stats.approvedPatterns}</p>
+                </div>
+                <Check className="h-8 w-8 text-green-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-card bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-purple-600 dark:text-purple-400">Avg Confidence</p>
+                  <p className="text-3xl font-bold text-purple-900 dark:text-purple-100">{Math.round(stats.avgConfidence * 100)}%</p>
+                </div>
+                <Target className="h-8 w-8 text-purple-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-card bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-orange-600 dark:text-orange-400">Recent Activity</p>
+                  <p className="text-3xl font-bold text-orange-900 dark:text-orange-100">{stats.recentActivity}</p>
+                </div>
+                <Timer className="h-8 w-8 text-orange-500" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Main Dashboard */}
+      <Card className="border-0 shadow-card">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-3 text-2xl">
+                <div className="p-2 rounded-lg bg-gradient-primary">
+                  <Brain className="h-6 w-6 text-primary-foreground" />
+                </div>
+                AI Learning Intelligence
+              </CardTitle>
+              <CardDescription className="text-base mt-2">
+                Advanced pattern recognition from your product editing behavior
+              </CardDescription>
+            </div>
+            <Button 
+              onClick={analyzePatterns}
+              disabled={isAnalyzing}
+              size="lg"
+              className="bg-gradient-primary hover:shadow-lg transition-all duration-200"
+            >
+              {isAnalyzing ? (
+                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+              ) : (
+                <Lightbulb className="h-5 w-5 mr-2" />
+              )}
+              {isAnalyzing ? 'Analyzing...' : 'Discover New Patterns'}
+            </Button>
           </div>
-        ) : (
-          <div className="space-y-4">
-            {patterns.map((pattern) => (
-              <div key={pattern.id} className="p-4 border rounded-lg space-y-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-3">
-                    <span className="text-lg">{getPatternIcon(pattern.pattern_type)}</span>
-                    <div>
-                      <h4 className="font-medium capitalize">
-                        {pattern.pattern_type.replace('_', ' ')}
-                      </h4>
-                      <p className="text-sm text-muted-foreground">
-                        {getPatternDescription(pattern)}
+        </CardHeader>
+
+        <CardContent>
+          {patterns.length === 0 ? (
+            <div className="text-center p-12 space-y-4">
+              <div className="mx-auto w-24 h-24 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900 dark:to-purple-900 flex items-center justify-center">
+                <Brain className="h-12 w-12 text-blue-500" />
+              </div>
+              <h3 className="text-xl font-semibold">Ready to Learn From You!</h3>
+              <p className="text-muted-foreground max-w-md mx-auto">
+                Start editing products manually and our AI will learn your unique style preferences. 
+                The more you edit, the smarter the AI becomes at matching your brand voice.
+              </p>
+              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mt-4">
+                <Zap className="h-4 w-4" />
+                <span>AI learns from every edit you make</span>
+              </div>
+            </div>
+          ) : (
+            <Tabs defaultValue="overview" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-3 max-w-md mx-auto">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="patterns">Patterns</TabsTrigger>
+                <TabsTrigger value="insights">Insights</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="overview" className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {patterns.map((pattern) => {
+                    const { icon: Icon, color } = getPatternIcon(pattern.pattern_type);
+                    const metrics = getPatternMetrics(pattern);
+                    
+                    return (
+                      <Card key={pattern.id} className="border-0 shadow-card hover:shadow-lg transition-all duration-200">
+                        <CardHeader className="pb-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-start gap-3">
+                              <div className={`p-2 rounded-lg bg-gray-100 dark:bg-gray-800`}>
+                                <Icon className={`h-5 w-5 ${color}`} />
+                              </div>
+                              <div>
+                                <h4 className="font-semibold text-lg capitalize">
+                                  {pattern.pattern_type.replace(/_/g, ' ')}
+                                </h4>
+                                <p className="text-muted-foreground text-sm">
+                                  {getDetailedDescription(pattern)}
+                                </p>
+                              </div>
+                            </div>
+                            <Badge 
+                              variant="outline" 
+                              className={`
+                                ${pattern.confidence_score >= 0.8 ? 'border-green-500 text-green-700 bg-green-50' : 
+                                  pattern.confidence_score >= 0.6 ? 'border-yellow-500 text-yellow-700 bg-yellow-50' : 
+                                  'border-red-500 text-red-700 bg-red-50'}
+                              `}
+                            >
+                              {Math.round(pattern.confidence_score * 100)}% confident
+                            </Badge>
+                          </div>
+                        </CardHeader>
+
+                        <CardContent className="space-y-4">
+                          {/* Confidence Bar */}
+                          <div className="space-y-2">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Confidence Level</span>
+                              <span className="font-medium">{Math.round(pattern.confidence_score * 100)}%</span>
+                            </div>
+                            <Progress 
+                              value={pattern.confidence_score * 100} 
+                              className="h-2"
+                            />
+                          </div>
+
+                          {/* Metrics Grid */}
+                          <div className="grid grid-cols-3 gap-3">
+                            {metrics.map((metric, idx) => (
+                              <div key={idx} className="text-center p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                                <metric.icon className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
+                                <p className="text-xs text-muted-foreground">{metric.label}</p>
+                                <p className="text-sm font-medium">{metric.value}</p>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Approval Controls */}
+                          {pattern.is_approved === null ? (
+                            <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                              <div className="flex items-center gap-2">
+                                <Lightbulb className="h-4 w-4 text-blue-500" />
+                                <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                                  Apply this pattern to future AI suggestions?
+                                </span>
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => updatePatternApproval(pattern.id, false)}
+                                  className="text-red-600 border-red-200 hover:bg-red-50"
+                                >
+                                  <X className="h-3 w-3 mr-1" />
+                                  Reject
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => updatePatternApproval(pattern.id, true)}
+                                  className="bg-green-600 hover:bg-green-700 text-white"
+                                >
+                                  <Check className="h-3 w-3 mr-1" />
+                                  Approve
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                              <div className="flex items-center gap-2">
+                                <Badge variant={pattern.is_approved ? "default" : "destructive"}>
+                                  {pattern.is_approved ? "✅ Active" : "❌ Disabled"}
+                                </Badge>
+                                <span className="text-sm text-muted-foreground">
+                                  {pattern.is_approved ? "AI will apply this pattern" : "AI will avoid this pattern"}
+                                </span>
+                              </div>
+                              <Switch
+                                checked={pattern.is_approved}
+                                onCheckedChange={(checked) => updatePatternApproval(pattern.id, checked)}
+                              />
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="patterns" className="space-y-4">
+                <div className="space-y-6">
+                  {patterns.map((pattern) => {
+                    const examples = getExampleChanges(pattern);
+                    
+                    return (
+                      <Card key={pattern.id} className="border-0 shadow-card">
+                        <CardHeader>
+                          <CardTitle className="capitalize text-lg">
+                            {pattern.pattern_type.replace(/_/g, ' ')} Pattern Details
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="space-y-3">
+                            <h5 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+                              What AI Learned:
+                            </h5>
+                            <p className="text-sm leading-relaxed p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                              {pattern.description || getDetailedDescription(pattern)}
+                            </p>
+                          </div>
+
+                          <div className="space-y-3">
+                            <h5 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+                              Examples of Your Style:
+                            </h5>
+                            <div className="space-y-2">
+                              {examples.map((example, idx) => (
+                                <div key={idx} className="text-sm p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
+                                  <code className="text-green-800 dark:text-green-200">{example}</code>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {pattern.pattern_data && (
+                            <div className="space-y-3">
+                              <h5 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+                                Pattern Data:
+                              </h5>
+                              <pre className="text-xs p-3 bg-gray-50 dark:bg-gray-900 rounded-lg overflow-auto border">
+                                {JSON.stringify(pattern.pattern_data, null, 2)}
+                              </pre>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="insights" className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <Card className="border-0 shadow-card">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <TrendingUp className="h-5 w-5" />
+                        Learning Progress
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="text-center">
+                        <div className="text-3xl font-bold text-primary">{patterns.length}</div>
+                        <p className="text-muted-foreground">Patterns Discovered</p>
+                      </div>
+                      <Progress value={(stats?.approvedPatterns || 0) / patterns.length * 100} className="h-3" />
+                      <p className="text-sm text-center text-muted-foreground">
+                        {stats?.approvedPatterns || 0} of {patterns.length} patterns approved
                       </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">
-                      {Math.round(pattern.confidence_score * 100)}% confidence
-                    </Badge>
-                  </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-0 shadow-card">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Award className="h-5 w-5" />
+                        AI Intelligence Level
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="text-center">
+                        <div className="text-3xl font-bold text-primary">
+                          {stats?.avgConfidence ? Math.round(stats.avgConfidence * 100) : 0}%
+                        </div>
+                        <p className="text-muted-foreground">Average Confidence</p>
+                      </div>
+                      <div className="text-center">
+                        <Badge variant="outline" className="text-sm">
+                          {stats?.avgConfidence && stats.avgConfidence > 0.8 ? '🔥 Expert Level' :
+                           stats?.avgConfidence && stats.avgConfidence > 0.6 ? '⚡ Learning Fast' :
+                           '🌱 Getting Started'}
+                        </Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
 
-                {pattern.is_approved === null && (
-                  <div className="flex items-center gap-2 pt-2 border-t">
-                    <span className="text-sm text-muted-foreground">
-                      Use this pattern for future AI suggestions?
-                    </span>
-                    <div className="flex gap-2 ml-auto">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => updatePatternApproval(pattern.id, false)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <X className="h-3 w-3 mr-1" />
-                        Reject
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => updatePatternApproval(pattern.id, true)}
-                        className="bg-gradient-primary"
-                      >
-                        <Check className="h-3 w-3 mr-1" />
-                        Approve
-                      </Button>
+                <Card className="border-0 shadow-card">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Eye className="h-5 w-5" />
+                      Quick Insights
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
+                        <h5 className="font-medium mb-2">Most Learned Pattern</h5>
+                        <p className="text-sm text-muted-foreground capitalize">
+                          {stats?.mostFrequentType.replace(/_/g, ' ') || 'None yet'}
+                        </p>
+                      </div>
+                      <div className="p-4 bg-green-50 dark:bg-green-950 rounded-lg">
+                        <h5 className="font-medium mb-2">Recent Activity</h5>
+                        <p className="text-sm text-muted-foreground">
+                          {stats?.recentActivity || 0} patterns learned this week
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                )}
-
-                {pattern.is_approved !== null && (
-                  <div className="flex items-center justify-between pt-2 border-t">
-                    <Badge variant={pattern.is_approved ? "default" : "destructive"}>
-                      {pattern.is_approved ? "Approved" : "Rejected"}
-                    </Badge>
-                    <Switch
-                      checked={pattern.is_approved}
-                      onCheckedChange={(checked) => updatePatternApproval(pattern.id, checked)}
-                    />
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 };
