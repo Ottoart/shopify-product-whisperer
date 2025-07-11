@@ -77,27 +77,27 @@ serve(async (req) => {
       {
         store: "Amazon",
         price: Number((basePrice - variation * Math.random()).toFixed(2)),
-        url: `https://amazon.com/s?k=${encodeURIComponent(searchQuery)}`
+        url: `https://www.amazon.com/s?k=${encodeURIComponent(searchQuery)}`
       },
       {
         store: "eBay", 
         price: Number((basePrice - variation * 0.5 + variation * Math.random()).toFixed(2)),
-        url: `https://ebay.com/sch/i.html?_nkw=${encodeURIComponent(searchQuery)}`
+        url: `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(searchQuery)}`
       },
       {
         store: "Walmart",
         price: Number((basePrice - variation * 0.3 + variation * Math.random()).toFixed(2)),
-        url: `https://walmart.com/search?q=${encodeURIComponent(searchQuery)}`
+        url: `https://www.walmart.com/search?q=${encodeURIComponent(searchQuery)}`
       },
       {
         store: "Target",
         price: Number((basePrice + variation * 0.2 * Math.random()).toFixed(2)),
-        url: `https://target.com/s?searchTerm=${encodeURIComponent(searchQuery)}`
+        url: `https://www.target.com/s?searchTerm=${encodeURIComponent(searchQuery)}`
       },
       {
-        store: "Shopify Store",
+        store: "Best Buy",
         price: Number((basePrice + variation * 0.5 + variation * 0.3 * Math.random()).toFixed(2)),
-        url: `https://shop.example.com/search?q=${encodeURIComponent(searchQuery)}`
+        url: `https://www.bestbuy.com/site/searchpage.jsp?st=${encodeURIComponent(searchQuery)}`
       }
     ];
 

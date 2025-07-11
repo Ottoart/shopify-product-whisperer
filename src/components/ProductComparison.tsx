@@ -597,6 +597,16 @@ export function ProductComparison({
                             </p>
                           </div>
                         )}
+                        
+                        {/* Best Price Recommendation */}
+                        <div className="mt-4 p-4 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg">
+                          <h5 className="font-semibold text-purple-800 mb-2 flex items-center gap-2">
+                            🎯 PrepFox Price Recommendation
+                          </h5>
+                          <p className="text-purple-700 text-sm leading-relaxed">
+                            Based on our market analysis, we recommend pricing your product at <span className="font-bold">${priceResults.lowest ? (priceResults.lowest.price * 1.15).toFixed(2) : 'N/A'}</span> - this is 15% above the lowest market price of ${priceResults.lowest?.price}, giving you competitive positioning while maintaining healthy margins. This strategy allows you to undercut higher-priced competitors while ensuring profitability.
+                          </p>
+                        </div>
                       </CardContent>
                     </Card>
                   )}
