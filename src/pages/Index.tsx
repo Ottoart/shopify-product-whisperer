@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSessionContext } from '@supabase/auth-helpers-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Auth } from '@/components/Auth';
 import { ProductList } from '@/components/ProductList';
 import { QueueManager } from '@/components/QueueManager';
@@ -74,6 +75,7 @@ export interface UpdatedProduct {
 const Index = () => {
   const { session } = useSessionContext();
   const { products, saveProducts, updateProduct, isSaving, isLoading } = useProducts();
+  const queryClient = useQueryClient();
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [queueItems, setQueueItems] = useState<Array<{ productId: string; status: 'pending' | 'processing' | 'completed' | 'error'; error?: string }>>([]);
 
@@ -127,8 +129,8 @@ const Index = () => {
   };
 
   const handleProductsUpdated = () => {
-    // This will trigger a refetch of products
-    window.location.reload();
+    // Invalidate and refetch products data without page reload
+    queryClient.invalidateQueries({ queryKey: ['products'] });
   };
 
   return (
