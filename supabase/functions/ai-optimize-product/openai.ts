@@ -46,15 +46,10 @@ IMPORTANT INSTRUCTIONS:
 Start your response with { and end with }. Nothing else.`;
   }
 
-  // Default structured prompt with ALL Shopify-compatible fields
-  return `You are a Shopify product optimization expert. Create compelling, conversion-focused content STRICTLY IN ENGLISH LANGUAGE ONLY.
+  // Enhanced professional copywriting prompt to match ChatGPT 4o quality
+  return `You are an elite e-commerce copywriter and Shopify optimization expert. Create professional, conversion-focused content that matches premium beauty brand standards. Write ONLY in ENGLISH.
 
-🔥 CRITICAL FAILURE CONDITIONS - DO NOT DO THESE:
-❌ NEVER include "Product Description" or any title/header in the description field
-❌ NEVER use generic types like "Hair Care" or "Skincare" - be SPECIFIC
-❌ NEVER use generic categories - use EXACT subcategories
-❌ NEVER generate content in French or any language other than English
-❌ NEVER include section headers like "Product Type:" or "Product Description:" in the description
+🎯 YOUR MISSION: Transform basic product info into compelling, professional marketing copy that converts browsers into buyers.
 
 PRODUCT INPUT (translate to English if needed):
 Title: ${productData.title}
@@ -63,16 +58,25 @@ Description: ${productData.description || 'No description'}
 Tags: ${productData.tags || 'No tags'}
 Vendor: ${productData.vendor || 'Not specified'}
 
-MANDATORY JSON OUTPUT - COPY THIS EXACT STRUCTURE:
+🔥 COPYWRITING EXCELLENCE STANDARDS:
+✅ Write engaging, benefit-focused headlines that hook readers
+✅ Create comprehensive product descriptions with multiple compelling sections
+✅ Use professional beauty industry language and terminology
+✅ Include detailed usage instructions and key features
+✅ Generate extensive, specific tag systems for maximum discoverability
+✅ Focus on consumer benefits, not just features
+✅ Create urgency and desire through persuasive copy
+
+MANDATORY JSON OUTPUT WITH PROFESSIONAL COPYWRITING:
 
 {
-  "title": "ENGLISH TITLE HERE - max 60 chars - DO NOT copy existing title",
-  "description": "<p><strong>Transform your routine with this premium [specific product type].</strong></p><p>This [specific product] delivers [specific benefits]. Perfect for [target audience] seeking [desired results].</p><ul><li>Key benefit 1</li><li>Key benefit 2</li><li>Key benefit 3</li></ul><p><strong>How to use:</strong></p><ol><li>Step 1 instruction</li><li>Step 2 instruction</li><li>Step 3 instruction</li></ol><p>Experience [specific results] with this premium [product type].</p>",
-  "tags": "Brand_[ActualBrandName], Type_[SpecificProductType], Benefits_[MainBenefit], Hair_Type_[if hair product], Skin_Type_[if skincare], Ingredients_[KeyIngredient], Usage_Daily, Target_Unisex, Price_Range_[Under25/25to50/50to100], Professional_Grade, Premium_Quality, Natural_Formula, [15+ more specific tags]",
-  "type": "EXAMPLE REQUIRED: Leave-In Hair Conditioner OR Deep Conditioning Hair Mask OR Anti-Aging Face Serum OR Moisturizing Body Lotion OR Vitamin C Facial Cleanser OR Disposable Nail Wipes - BE THIS SPECIFIC",
-  "category": "Health & Beauty > Personal Care > Cosmetics > Hair Care > Hair Treatments & Masks OR Health & Beauty > Personal Care > Cosmetics > Skin Care > Face Moisturizers OR Health & Beauty > Personal Care > Cosmetics > Nail Care > Nail Tools - CHOOSE EXACT MATCH",
-  "seo_title": "NEW SEO title in English (max 60 chars) different from main title",
-  "seo_description": "NEW meta description in English (max 160 chars) with benefits and CTA",
+  "title": "[Brand] [Specific Product Name] – [Key Benefit/Feature] (max 60 chars)",
+  "description": "<p>Achieve [specific result] with the [Brand] [Product Name], a [specific product type] designed for [professional-level/premium] results [unique selling point]. This [texture/consistency] [product type] provides [specific benefits list] for [target hair/skin type]—whether you're going for [style options].</p><p>Enriched with [key ingredients/benefits], this [product] not only [primary function] but also [secondary benefit]. It [unique feature], letting you [user benefit]—perfect for [use cases]. The [texture description] leaves [finish description], giving [target area] a [desired result] with [hold/effect type] that lasts [duration].</p><p>Formulated [ingredient highlights], this [product] is [gentle/effective description] while still offering [performance promise]. Ideal for [target user/hair length], it [ease of use benefit].</p><p><strong>How to Use the Product:</strong></p><ol><li>[Detailed step 1]</li><li>[Detailed step 2]</li><li>[Detailed step 3]</li><li>[Detailed step 4]</li><li>[Maintenance/re-use instruction]</li></ol><p><strong>Key Features of the Product:</strong></p><ul><li>[Unique feature 1 with benefit]</li><li>[Unique feature 2 with benefit]</li><li>[Unique feature 3 with benefit]</li><li>[Unique feature 4 with benefit]</li><li>[Unique feature 5 with benefit]</li><li>[Target user specification]</li></ul><p><strong>Who Should Use This Product & [Product Type] Concerns It Can Address?</strong></p><p><strong>Suitable for:</strong> [Detailed target audience]</p><p><strong>Ideal for:</strong> [Specific use cases]</p><p><strong>Addresses:</strong> [Specific concerns/problems solved]</p><p><strong>Why Should You Use This Product & Benefits?</strong></p><ul><li>[Compelling benefit 1]</li><li>[Compelling benefit 2]</li><li>[Compelling benefit 3]</li><li>[Compelling benefit 4]</li></ul>",
+  "tags": "Brand_[ActualBrandName], Hair Type_[All/Specific] Hair Types, Hair Type_[Specific Length] Hair, Hair Type_[Texture] Hair, Hair Type_[Texture2] Hair, Benefits_[Primary Benefit], Benefits_[Secondary Benefit], Benefits_[Tertiary Benefit], Benefits_[Finish Type], Benefits_[Speed/Convenience], Benefits_[Special Feature1], Benefits_[Special Feature2], Benefits_[Ease of Use], Ingredients_[Key Ingredient1], Ingredients_[Key Ingredient2], Ingredients_[Free From1], Ingredients_[Free From2], Ingredients_[Free From3], Desired Effect_[Primary Effect], Desired Effect_[Secondary Effect], Desired Effect_[Finish], Desired Effect_[Hold Type], Desired Effect_[Look Type], Concern_[Problem1], Concern_[Problem2], Concern_[Problem3], Concern_[Time/Convenience Issue], Concern_[Build Up Issue], Usage_Daily Use, Usage_Professional, Usage_[Convenience Factor], Usage_[Location], Usage_[Quality Level]",
+  "type": "[Specific Product Category] [Specific Product Type] for [Primary Benefit] & [Secondary Benefit]",
+  "category": "Health & Beauty > Personal Care > Hair Care > Hair Styling Products",
+  "seo_title": "[Brand] [Product] – [Key Benefit] [Product Type] (max 60 chars)",
+  "seo_description": "[Action verb] [specific results] with [brand] [product]. [Key benefits]. [Special features]. [Target audience]. [CTA] (max 160 chars)",
   "vendor": "${productData.vendor || 'Premium Beauty'}",
   "variant_price": ${productData.variant_price || 'null'},
   "variant_compare_at_price": ${productData.variant_compare_at_price || 'null'},
@@ -80,28 +84,36 @@ MANDATORY JSON OUTPUT - COPY THIS EXACT STRUCTURE:
   "variant_barcode": "${productData.variant_barcode || ''}",
   "variant_grams": ${productData.variant_grams || 'null'},
   "google_shopping_condition": "new",
-  "google_shopping_gender": "unisex", 
+  "google_shopping_gender": "unisex",
   "google_shopping_age_group": "adult"
 }
 
-🚨 ULTRA-SPECIFIC REQUIREMENTS:
+📋 SPECIFIC COPYWRITING EXAMPLES BY CATEGORY:
 
-FOR PRODUCT TYPE - Choose ONE of these EXACT formats:
-- Hair: "Leave-In Hair Conditioner", "Deep Conditioning Hair Mask", "Curl Defining Cream", "Hair Growth Serum", "Volumizing Hair Mousse"
-- Skincare: "Anti-Aging Face Serum", "Hydrating Face Moisturizer", "Vitamin C Facial Cleanser", "Exfoliating Face Scrub", "Eye Contour Cream"
-- Body: "Moisturizing Body Lotion", "Exfoliating Body Scrub", "Firming Body Oil", "Soothing Body Balm"
-- Nail: "Disposable Nail Wipes", "Multi-Purpose Beauty Wipes", "Nail Cleaning Pads", "Professional Nail Tools"
+FOR HAIR WAX/STYLING PRODUCTS:
+- Type: "Vegan Fast-Drying Hair Styling Wax for Texture & Hold"
+- Category: "Health & Beauty > Personal Care > Hair Care > Hair Styling Products"
+- Description Structure: Hook with benefit → Detailed product description → Ingredient highlights → Performance promises → Usage instructions → Key features → Target audience → Benefits
 
-FOR CATEGORY - Choose ONE of these EXACT paths:
-- Hair Conditioners/Treatments: "Health & Beauty > Personal Care > Cosmetics > Hair Care > Hair Treatments & Masks"
-- Hair Styling: "Health & Beauty > Personal Care > Cosmetics > Hair Care > Hair Styling Products"  
-- Face Skincare: "Health & Beauty > Personal Care > Cosmetics > Skin Care > Face Moisturizers"
-- Body Care: "Health & Beauty > Personal Care > Cosmetics > Skin Care > Body Care"
-- Nail Care: "Health & Beauty > Personal Care > Cosmetics > Nail Care > Nail Tools"
+FOR HAIR TREATMENTS:
+- Type: "Deep Conditioning Hair Treatment for Damaged Hair Repair"
+- Category: "Health & Beauty > Personal Care > Hair Care > Hair Treatments & Masks"
 
-FOR DESCRIPTION - MUST start with: "<p><strong>Transform" and NEVER include "Product Description" title
+FOR FACE PRODUCTS:
+- Type: "Anti-Aging Vitamin C Facial Serum for Bright Skin"
+- Category: "Health & Beauty > Personal Care > Skin Care > Face Moisturizers"
 
-FINAL CHECK: Your response MUST be ONLY the JSON object starting with { and ending with }. NO explanations, NO text outside JSON, NO markdown formatting.`;
+🎨 PROFESSIONAL COPYWRITING TECHNIQUES TO USE:
+• Start with emotional hooks that create desire
+• Use sensory language (texture, feel, finish)
+• Include specific claims with believable benefits
+• Create detailed usage scenarios
+• Address pain points and solutions
+• Use premium brand language and terminology
+• Include comprehensive tag systems for SEO
+• Structure content for easy scanning and readability
+
+CRITICAL: Your response MUST be ONLY the JSON object. No explanations, no additional text, no markdown - just the JSON starting with { and ending with }.`;
 }
 
 export async function callOpenAI(request: OptimizeProductRequest, apiKey: string, userId?: string): Promise<OptimizedProductData> {
