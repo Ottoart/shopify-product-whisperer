@@ -26,6 +26,7 @@ import { Product, UpdatedProduct } from '@/pages/Index';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ProductComparison } from '@/components/ProductComparison';
+import { BulkWarningDialog } from '@/components/BulkWarningDialog';
 
 interface QueueItem {
   productId: string;
@@ -40,6 +41,7 @@ interface QueueManagerProps {
   onUpdateProduct: (productId: string, updatedData: UpdatedProduct) => void;
   onRemoveFromQueue: (productId: string) => void;
   onRetryProduct?: (productId: string) => void;
+  bulkMode?: boolean;
 }
 
 export const QueueManager = ({ 
@@ -48,7 +50,8 @@ export const QueueManager = ({
   onUpdateStatus, 
   onUpdateProduct,
   onRemoveFromQueue,
-  onRetryProduct
+  onRetryProduct,
+  bulkMode = false
 }: QueueManagerProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [chatGptUrl, setChatGptUrl] = useState('https://chatgpt.com/g/g-6837c28c521c81918f8f1d319eb87f9a-shopify');
@@ -117,6 +120,7 @@ REQUIREMENTS:
     };
   } | null>(null);
   const [showComparison, setShowComparison] = useState(false);
+  const [showBulkWarning, setShowBulkWarning] = useState(false);
   const { toast } = useToast();
 
   const completedCount = queueItems.filter(item => item.status === 'completed').length;
@@ -148,6 +152,18 @@ REQUIREMENTS:
   }, [queueItems, onUpdateStatus]);
 
   const startProcessing = async () => {
+    if (bulkMode) {
+      setShowBulkWarning(true);
+      return;
+    }
+    await processProducts(false);
+  };
+
+  const startBulkProcessing = async () => {
+    await processProducts(true);
+  };
+
+  const processProducts = async (isBulkMode: boolean) => {
     setIsProcessing(true);
     
     const pendingItems = queueItems.filter(item => item.status === 'pending');
@@ -256,74 +272,111 @@ REQUIREMENTS:
           throw new Error('Unexpected response from AI optimization service');
         }
 
-        // Step 3: Show comparison and wait for user decision
-        setComparisonData({
-          originalProduct: {
-            id: product.id,
-            handle: product.handle,
-            title: product.title,
-            body_html: product.bodyHtml,
-            tags: product.tags,
-            type: product.type,
-            category: null, // Since this will be a new field, existing products won't have it
-            vendor: product.vendor
-          },
-          optimizedProduct: {
+        // Step 3: Handle comparison or skip for bulk mode
+        if (isBulkMode) {
+          // In bulk mode, skip comparison and go straight to Shopify upload
+          setCurrentProcessing({
+            productId: item.productId,
+            step: `Processing ${i + 1}/${pendingItems.length}: Auto-applying changes...`,
+            progress: 70
+          });
+
+          // Apply changes automatically
+          const updatedProduct: UpdatedProduct = {
             title: data.optimizedData.title,
+            type: data.optimizedData.type || product.type,
             description: data.optimizedData.description,
             tags: data.optimizedData.tags,
-            type: data.optimizedData.type || product.type,
-            category: data.optimizedData.category || 'Health & Beauty > Personal Care'
-          }
-        });
-        setShowComparison(true);
-        
-        // Processing will pause here until user accepts/rejects changes
-        setCurrentProcessing({
-          productId: item.productId,
-          step: `Processing ${i + 1}/${pendingItems.length}: Review changes and approve...`,
-          progress: 70
-        });
-        
-        // Wait for user decision via a promise that resolves with their choice
-        const userAccepted = await new Promise<boolean>(resolve => {
-          const originalOnSave = (window as any).tempOnSave;
-          const originalOnCancel = (window as any).tempOnCancel;
-          
-          (window as any).tempOnSave = () => {
-            resolve(true);
-            (window as any).tempOnSave = originalOnSave;
-            (window as any).tempOnCancel = originalOnCancel;
+            category: data.optimizedData.category || 'Health & Beauty > Personal Care',
+            vendor: data.optimizedData.vendor || product.vendor,
+            seoTitle: data.optimizedData.seo_title || product.seoTitle,
+            seoDescription: data.optimizedData.seo_description || product.seoDescription,
+            published: data.optimizedData.published !== undefined ? data.optimizedData.published : product.published,
+            variantPrice: data.optimizedData.variant_price || product.variantPrice,
+            variantCompareAtPrice: data.optimizedData.variant_compare_at_price || product.variantCompareAtPrice,
+            variantSku: data.optimizedData.variant_sku || product.variantSku,
+            variantBarcode: data.optimizedData.variant_barcode || product.variantBarcode,
+            variantGrams: data.optimizedData.variant_grams || product.variantGrams,
+            variantInventoryQty: data.optimizedData.variant_inventory_qty || product.variantInventoryQty,
+            variantInventoryPolicy: data.optimizedData.variant_inventory_policy || product.variantInventoryPolicy,
+            variantRequiresShipping: data.optimizedData.variant_requires_shipping !== undefined ? data.optimizedData.variant_requires_shipping : product.variantRequiresShipping,
+            variantTaxable: data.optimizedData.variant_taxable !== undefined ? data.optimizedData.variant_taxable : product.variantTaxable,
+            googleShoppingCondition: data.optimizedData.google_shopping_condition || product.googleShoppingCondition,
+            googleShoppingGender: data.optimizedData.google_shopping_gender || product.googleShoppingGender,
+            googleShoppingAgeGroup: data.optimizedData.google_shopping_age_group || product.googleShoppingAgeGroup
           };
-          
-          (window as any).tempOnCancel = () => {
-            resolve(false);
-            (window as any).tempOnSave = originalOnSave;
-            (window as any).tempOnCancel = originalOnCancel;
-          };
-          
-          // Also check if modal closes (as backup)
-          const checkClosed = () => {
-            if (!showComparison) {
-              // If modal closed without save/cancel callbacks, assume canceled
-              if ((window as any).tempOnSave === resolve || (window as any).tempOnCancel === resolve) {
-                resolve(false);
-              }
-            } else {
-              setTimeout(checkClosed, 500);
-            }
-          };
-          checkClosed();
-        });
 
-        if (!userAccepted) {
-          // User canceled - mark as pending to allow retry
-          onUpdateStatus(item.productId, 'pending');
-          setCurrentProcessing(null);
-          continue; // Skip to next product
+          onUpdateProduct(product.handle, updatedProduct);
+        } else {
+          // Normal mode - show comparison and wait for user decision
+          setComparisonData({
+            originalProduct: {
+              id: product.id,
+              handle: product.handle,
+              title: product.title,
+              body_html: product.bodyHtml,
+              tags: product.tags,
+              type: product.type,
+              category: null, // Since this will be a new field, existing products won't have it
+              vendor: product.vendor
+            },
+            optimizedProduct: {
+              title: data.optimizedData.title,
+              description: data.optimizedData.description,
+              tags: data.optimizedData.tags,
+              type: data.optimizedData.type || product.type,
+              category: data.optimizedData.category || 'Health & Beauty > Personal Care'
+            }
+          });
+          setShowComparison(true);
+          
+          // Processing will pause here until user accepts/rejects changes
+          setCurrentProcessing({
+            productId: item.productId,
+            step: `Processing ${i + 1}/${pendingItems.length}: Review changes and approve...`,
+            progress: 70
+          });
+          
+          // Wait for user decision via a promise that resolves with their choice
+          const userAccepted = await new Promise<boolean>(resolve => {
+            const originalOnSave = (window as any).tempOnSave;
+            const originalOnCancel = (window as any).tempOnCancel;
+            
+            (window as any).tempOnSave = () => {
+              resolve(true);
+              (window as any).tempOnSave = originalOnSave;
+              (window as any).tempOnCancel = originalOnCancel;
+            };
+            
+            (window as any).tempOnCancel = () => {
+              resolve(false);
+              (window as any).tempOnSave = originalOnSave;
+              (window as any).tempOnCancel = originalOnCancel;
+            };
+            
+            // Also check if modal closes (as backup)
+            const checkClosed = () => {
+              if (!showComparison) {
+                // If modal closed without save/cancel callbacks, assume canceled
+                if ((window as any).tempOnSave === resolve || (window as any).tempOnCancel === resolve) {
+                  resolve(false);
+                }
+              } else {
+                setTimeout(checkClosed, 500);
+              }
+            };
+            checkClosed();
+          });
+
+          if (!userAccepted) {
+            // User canceled - mark as pending to allow retry
+            onUpdateStatus(item.productId, 'pending');
+            setCurrentProcessing(null);
+            continue; // Skip to next product
+          }
         }
 
-        // Step 4: Export to Shopify (only if user accepted)
+        // Step 4: Export to Shopify
         setCurrentProcessing({
           productId: item.productId,
           step: `Processing ${i + 1}/${pendingItems.length}: Exporting to Shopify...`,
@@ -353,7 +406,7 @@ REQUIREMENTS:
           // Don't fail the whole process if Shopify export fails
         }
 
-        // Step 5: Complete (only if user accepted changes)
+        // Step 5: Complete
         setCurrentProcessing({
           productId: item.productId,
           step: `Processing ${i + 1}/${pendingItems.length}: Completed!`,
@@ -530,16 +583,16 @@ REQUIREMENTS:
       {/* Controls */}
       <div className="px-6 space-y-4">
         <div className="flex items-center gap-2">
-          {!isProcessing ? (
-            <Button 
-              onClick={startProcessing} 
-              className="bg-gradient-primary flex-1"
-              disabled={queueItems.every(item => item.status === 'completed')}
-            >
-              <Play className="h-4 w-4 mr-2" />
-              Start Processing
-            </Button>
-          ) : (
+           {!isProcessing ? (
+             <Button 
+               onClick={startProcessing} 
+               className="bg-gradient-primary flex-1"
+               disabled={queueItems.every(item => item.status === 'completed')}
+             >
+               <Play className="h-4 w-4 mr-2" />
+               {bulkMode ? 'Start Bulk Processing' : 'Start Processing'}
+             </Button>
+           ) : (
             <Button 
               onClick={pauseProcessing} 
               variant="outline" 
@@ -644,11 +697,22 @@ REQUIREMENTS:
             </div>
         </Card>
 
+        {/* Bulk Warning Dialog */}
+        <BulkWarningDialog
+          isOpen={showBulkWarning}
+          onClose={() => setShowBulkWarning(false)}
+          onConfirm={startBulkProcessing}
+          productCount={queueItems.filter(item => item.status === 'pending').length}
+        />
+
         {/* AI Notice */}
         <Alert>
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription className="text-xs">
-            Products will be optimized using AI to improve titles, descriptions, and tags for better conversion rates.
+            {bulkMode 
+              ? 'Products will be automatically processed and uploaded to Shopify without manual review. This action cannot be undone.'
+              : 'Products will be optimized using AI to improve titles, descriptions, and tags for better conversion rates.'
+            }
           </AlertDescription>
         </Alert>
       </div>
@@ -705,8 +769,8 @@ REQUIREMENTS:
         })}
       </div>
       
-      {/* Product Comparison Modal */}
-      {comparisonData && (
+      {/* Product Comparison Modal - only show in normal mode */}
+      {comparisonData && !bulkMode && (
         <ProductComparison
           isOpen={showComparison}
           onClose={() => setShowComparison(false)}

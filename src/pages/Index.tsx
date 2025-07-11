@@ -9,7 +9,9 @@ import { useProducts } from '@/hooks/useProducts';
 import { useEditTracking } from '@/hooks/useEditTracking';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Package, LogOut, Store, Zap, BarChart3 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Package, LogOut, Store, Zap, BarChart3, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
 
@@ -78,6 +80,7 @@ const Index = () => {
   const queryClient = useQueryClient();
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [queueItems, setQueueItems] = useState<Array<{ productId: string; status: 'pending' | 'processing' | 'completed' | 'error'; error?: string }>>([]);
+  const [bulkMode, setBulkMode] = useState(false);
 
   const { trackProductUpdate } = useEditTracking({ 
     onProductUpdate: (productId: string, updatedData: UpdatedProduct) => {
@@ -238,15 +241,33 @@ const Index = () => {
             {/* Processing Queue */}
             <Card className="shadow-card border-0">
               <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-lg bg-gradient-success flex items-center justify-center">
-                    <Zap className="h-5 w-5 text-accent-foreground" />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-gradient-success flex items-center justify-center">
+                      <Zap className="h-5 w-5 text-accent-foreground" />
+                    </div>
+                    <div>
+                      <CardTitle>Processing Queue</CardTitle>
+                      <CardDescription>
+                        Track AI optimization progress
+                      </CardDescription>
+                    </div>
                   </div>
-                  <div>
-                    <CardTitle>Processing Queue</CardTitle>
-                    <CardDescription>
-                      Track AI optimization progress
-                    </CardDescription>
+                  
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="bulk-mode" className="text-sm font-medium">
+                        Bulk Mode
+                      </Label>
+                      <Switch
+                        id="bulk-mode"
+                        checked={bulkMode}
+                        onCheckedChange={setBulkMode}
+                      />
+                      {bulkMode && (
+                        <AlertTriangle className="h-4 w-4 text-destructive" />
+                      )}
+                    </div>
                   </div>
                 </div>
               </CardHeader>
@@ -257,6 +278,7 @@ const Index = () => {
                   onUpdateStatus={updateQueueItemStatus}
                   onUpdateProduct={handleUpdateProduct}
                   onRemoveFromQueue={removeFromQueue}
+                  bulkMode={bulkMode}
                 />
               </CardContent>
             </Card>
