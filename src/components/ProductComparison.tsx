@@ -303,102 +303,350 @@ export function ProductComparison({
             <TabsTrigger value="edit">Edit Optimized Version</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="comparison" className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-red-600">Original Version</h3>
+            <TabsContent value="comparison" className="space-y-4">
+              <Tabs defaultValue="basic" className="w-full">
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="basic">Basic Info</TabsTrigger>
+                  <TabsTrigger value="seo">SEO & Publishing</TabsTrigger>
+                  <TabsTrigger value="pricing">Pricing & Inventory</TabsTrigger>
+                  <TabsTrigger value="shopping">Google Shopping</TabsTrigger>
+                </TabsList>
                 
-                <div>
-                  <Label className="text-sm font-medium">Title:</Label>
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-md mt-1">
-                    <p className="text-sm">{originalProduct.title}</p>
+                <TabsContent value="basic" className="space-y-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-red-600">Original Version</h3>
+                      
+                      <div>
+                        <Label className="text-sm font-medium">Title:</Label>
+                        <div className="p-3 bg-red-50 border border-red-200 rounded-md mt-1">
+                          <p className="text-sm">{originalProduct.title}</p>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label className="text-sm font-medium">Vendor:</Label>
+                        <div className="p-3 bg-red-50 border border-red-200 rounded-md mt-1">
+                          <p className="text-sm">{originalProduct.vendor || 'No vendor'}</p>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label className="text-sm font-medium">Type:</Label>
+                        <div className="p-3 bg-red-50 border border-red-200 rounded-md mt-1">
+                          <p className="text-sm">{originalProduct.type || 'No type'}</p>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label className="text-sm font-medium">Category:</Label>
+                        <div className="p-3 bg-red-50 border border-red-200 rounded-md mt-1">
+                          <p className="text-sm">{originalProduct.category || 'No category'}</p>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label className="text-sm font-medium">Tags:</Label>
+                        <div className="p-3 bg-red-50 border border-red-200 rounded-md mt-1">
+                          <p className="text-sm">{originalProduct.tags || 'No tags'}</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-green-600">AI Optimized Version</h3>
+                      
+                      <div>
+                        <Label className="text-sm font-medium">Title:</Label>
+                        <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
+                          <p className="text-sm">{optimizedProduct.title}</p>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label className="text-sm font-medium">Vendor:</Label>
+                        <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
+                          <p className="text-sm">{optimizedProduct.vendor || 'No vendor'}</p>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label className="text-sm font-medium">Type:</Label>
+                        <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
+                          <p className="text-sm">{optimizedProduct.type}</p>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label className="text-sm font-medium">Category:</Label>
+                        <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
+                          <p className="text-sm">{optimizedProduct.category}</p>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label className="text-sm font-medium">Tags:</Label>
+                        <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
+                          <p className="text-sm">{optimizedProduct.tags}</p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                  
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div>
+                      <h4 className="text-md font-medium text-red-600 mb-2">Original Description:</h4>
+                      <div className="p-3 bg-red-50 border border-red-200 rounded-md max-h-60 overflow-y-auto">
+                        <div className="text-sm prose prose-sm max-w-none" 
+                             dangerouslySetInnerHTML={{ __html: originalProduct.body_html || 'No description' }} />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h4 className="text-md font-medium text-green-600 mb-2">Optimized Description:</h4>
+                      <div className="p-3 bg-green-50 border border-green-200 rounded-md max-h-60 overflow-y-auto">
+                        <div className="text-sm prose prose-sm max-w-none" 
+                             dangerouslySetInnerHTML={{ __html: optimizedProduct.description }} />
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
                 
-                <div>
-                  <Label className="text-sm font-medium">Vendor:</Label>
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-md mt-1">
-                    <p className="text-sm">{originalProduct.vendor || 'No vendor'}</p>
+                <TabsContent value="seo" className="space-y-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-red-600">Original Version</h3>
+                      
+                      <div>
+                        <Label className="text-sm font-medium">SEO Title:</Label>
+                        <div className="p-3 bg-red-50 border border-red-200 rounded-md mt-1">
+                          <p className="text-sm">Not available in original</p>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label className="text-sm font-medium">SEO Description:</Label>
+                        <div className="p-3 bg-red-50 border border-red-200 rounded-md mt-1">
+                          <p className="text-sm">Not available in original</p>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label className="text-sm font-medium">Published:</Label>
+                        <div className="p-3 bg-red-50 border border-red-200 rounded-md mt-1">
+                          <p className="text-sm">Not available in original</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-green-600">AI Optimized Version</h3>
+                      
+                      <div>
+                        <Label className="text-sm font-medium">SEO Title:</Label>
+                        <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
+                          <p className="text-sm">{optimizedProduct.seo_title || 'No SEO title generated'}</p>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label className="text-sm font-medium">SEO Description:</Label>
+                        <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
+                          <p className="text-sm">{optimizedProduct.seo_description || 'No SEO description generated'}</p>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label className="text-sm font-medium">Published:</Label>
+                        <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
+                          <p className="text-sm">{optimizedProduct.published ? 'Yes' : 'No'}</p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                </TabsContent>
                 
-                <div>
-                  <Label className="text-sm font-medium">Type:</Label>
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-md mt-1">
-                    <p className="text-sm">{originalProduct.type || 'No type'}</p>
+                <TabsContent value="pricing" className="space-y-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-red-600">Original Version</h3>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-sm font-medium">Price:</Label>
+                          <div className="p-3 bg-red-50 border border-red-200 rounded-md mt-1">
+                            <p className="text-sm">Not available</p>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <Label className="text-sm font-medium">Compare At Price:</Label>
+                          <div className="p-3 bg-red-50 border border-red-200 rounded-md mt-1">
+                            <p className="text-sm">Not available</p>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <Label className="text-sm font-medium">SKU:</Label>
+                          <div className="p-3 bg-red-50 border border-red-200 rounded-md mt-1">
+                            <p className="text-sm">Not available</p>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <Label className="text-sm font-medium">Barcode:</Label>
+                          <div className="p-3 bg-red-50 border border-red-200 rounded-md mt-1">
+                            <p className="text-sm">Not available</p>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <Label className="text-sm font-medium">Weight (g):</Label>
+                          <div className="p-3 bg-red-50 border border-red-200 rounded-md mt-1">
+                            <p className="text-sm">Not available</p>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <Label className="text-sm font-medium">Inventory:</Label>
+                          <div className="p-3 bg-red-50 border border-red-200 rounded-md mt-1">
+                            <p className="text-sm">Not available</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-green-600">AI Optimized Version</h3>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-sm font-medium">Price:</Label>
+                          <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
+                            <p className="text-sm">${optimizedProduct.variant_price || 0}</p>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <Label className="text-sm font-medium">Compare At Price:</Label>
+                          <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
+                            <p className="text-sm">${optimizedProduct.variant_compare_at_price || 0}</p>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <Label className="text-sm font-medium">SKU:</Label>
+                          <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
+                            <p className="text-sm">{optimizedProduct.variant_sku || 'Not set'}</p>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <Label className="text-sm font-medium">Barcode:</Label>
+                          <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
+                            <p className="text-sm">{optimizedProduct.variant_barcode || 'Not set'}</p>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <Label className="text-sm font-medium">Weight (g):</Label>
+                          <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
+                            <p className="text-sm">{optimizedProduct.variant_grams || 0}g</p>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <Label className="text-sm font-medium">Inventory:</Label>
+                          <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
+                            <p className="text-sm">{optimizedProduct.variant_inventory_qty || 0} units</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <Label className="text-sm font-medium">Inventory Policy:</Label>
+                          <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
+                            <p className="text-sm">{optimizedProduct.variant_inventory_policy || 'deny'}</p>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <Label className="text-sm font-medium">Requires Shipping:</Label>
+                          <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
+                            <p className="text-sm">{optimizedProduct.variant_requires_shipping !== false ? 'Yes' : 'No'}</p>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <Label className="text-sm font-medium">Taxable:</Label>
+                          <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
+                            <p className="text-sm">{optimizedProduct.variant_taxable !== false ? 'Yes' : 'No'}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                </TabsContent>
                 
-                <div>
-                  <Label className="text-sm font-medium">Description:</Label>
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-md mt-1 max-h-60 overflow-y-auto">
-                    <div className="text-sm prose prose-sm max-w-none" 
-                         dangerouslySetInnerHTML={{ __html: originalProduct.body_html || 'No description' }} />
+                <TabsContent value="shopping" className="space-y-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-red-600">Original Version</h3>
+                      
+                      <div className="grid grid-cols-1 gap-4">
+                        <div>
+                          <Label className="text-sm font-medium">Condition:</Label>
+                          <div className="p-3 bg-red-50 border border-red-200 rounded-md mt-1">
+                            <p className="text-sm">Not available</p>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <Label className="text-sm font-medium">Gender:</Label>
+                          <div className="p-3 bg-red-50 border border-red-200 rounded-md mt-1">
+                            <p className="text-sm">Not available</p>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <Label className="text-sm font-medium">Age Group:</Label>
+                          <div className="p-3 bg-red-50 border border-red-200 rounded-md mt-1">
+                            <p className="text-sm">Not available</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-green-600">AI Optimized Version</h3>
+                      
+                      <div className="grid grid-cols-1 gap-4">
+                        <div>
+                          <Label className="text-sm font-medium">Condition:</Label>
+                          <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
+                            <p className="text-sm capitalize">{optimizedProduct.google_shopping_condition || 'new'}</p>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <Label className="text-sm font-medium">Gender:</Label>
+                          <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
+                            <p className="text-sm capitalize">{optimizedProduct.google_shopping_gender || 'unisex'}</p>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <Label className="text-sm font-medium">Age Group:</Label>
+                          <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
+                            <p className="text-sm capitalize">{optimizedProduct.google_shopping_age_group || 'adult'}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                
-                <div>
-                  <Label className="text-sm font-medium">Category:</Label>
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-md mt-1">
-                    <p className="text-sm">{originalProduct.category || 'No category'}</p>
-                  </div>
-                </div>
-                
-                <div>
-                  <Label className="text-sm font-medium">Tags:</Label>
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-md mt-1">
-                    <p className="text-sm">{originalProduct.tags || 'No tags'}</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-green-600">AI Optimized Version</h3>
-                
-                <div>
-                  <Label className="text-sm font-medium">Title:</Label>
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
-                    <p className="text-sm">{optimizedProduct.title}</p>
-                  </div>
-                </div>
-                
-                <div>
-                  <Label className="text-sm font-medium">Vendor:</Label>
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
-                    <p className="text-sm">{optimizedProduct.vendor || 'No vendor'}</p>
-                  </div>
-                </div>
-                
-                <div>
-                  <Label className="text-sm font-medium">Type:</Label>
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
-                    <p className="text-sm">{optimizedProduct.type}</p>
-                  </div>
-                </div>
-                
-                <div>
-                  <Label className="text-sm font-medium">Description:</Label>
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1 max-h-60 overflow-y-auto">
-                    <div className="text-sm prose prose-sm max-w-none" 
-                         dangerouslySetInnerHTML={{ __html: optimizedProduct.description }} />
-                  </div>
-                </div>
-                
-                <div>
-                  <Label className="text-sm font-medium">Category:</Label>
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
-                    <p className="text-sm">{optimizedProduct.category}</p>
-                  </div>
-                </div>
-                
-                <div>
-                  <Label className="text-sm font-medium">Tags:</Label>
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
-                    <p className="text-sm">{optimizedProduct.tags}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+                </TabsContent>
+              </Tabs>
             
             <div className="flex flex-wrap justify-between items-center gap-2 pt-4">
               <div className="flex space-x-2">
