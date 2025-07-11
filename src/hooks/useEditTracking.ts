@@ -94,6 +94,19 @@ export const useEditTracking = ({ onProductUpdate }: EditTrackingProps) => {
       );
     }
 
+    // If this was a manual edit, trigger pattern analysis in background
+    if (editType === 'manual' && edits.length > 0) {
+      // Trigger pattern analysis asynchronously without waiting
+      setTimeout(async () => {
+        try {
+          await supabase.functions.invoke('analyze-edit-patterns');
+          console.log('Background pattern analysis triggered after manual edit');
+        } catch (error) {
+          console.warn('Background pattern analysis failed:', error);
+        }
+      }, 1000);
+    }
+
     // Call the original update handler
     onProductUpdate(productHandle, updatedData);
   };

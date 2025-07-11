@@ -104,8 +104,34 @@ FOR DESCRIPTION - MUST start with: "<p><strong>Transform" and NEVER include "Pro
 FINAL CHECK: Your response MUST be ONLY the JSON object starting with { and ending with }. NO explanations, NO text outside JSON, NO markdown formatting.`;
 }
 
-export async function callOpenAI(request: OptimizeProductRequest, apiKey: string): Promise<OptimizedProductData> {
-  const prompt = createPrompt(request);
+export async function callOpenAI(request: OptimizeProductRequest, apiKey: string, userId?: string): Promise<OptimizedProductData> {
+  // Fetch user's learned patterns if available
+  let userPatterns = '';
+  if (userId) {
+    try {
+      const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.50.3');
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+      const { data: patterns } = await supabase
+        .from('user_edit_patterns')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('is_approved', true)
+        .order('confidence_score', { ascending: false });
+
+      if (patterns && patterns.length > 0) {
+        userPatterns = `\n\nUSER'S LEARNED PREFERENCES (apply these patterns to the optimization):
+${patterns.map(p => `- ${p.pattern_type}: ${JSON.stringify(p.pattern_data)}`).join('\n')}`;
+        console.log('Using learned patterns:', patterns.length, 'patterns found');
+      }
+    } catch (error) {
+      console.log('Could not fetch user patterns:', error.message);
+    }
+  }
+
+  const prompt = createPrompt(request) + userPatterns;
   
   console.log('Calling OpenAI API...');
   console.log('OpenAI API Key exists:', !!apiKey);

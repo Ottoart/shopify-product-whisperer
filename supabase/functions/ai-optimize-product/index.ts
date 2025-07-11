@@ -76,10 +76,10 @@ serve(async (req) => {
       );
     }
     
-    // Call OpenAI
+    // Call OpenAI with user patterns
     let optimizedData;
     try {
-      optimizedData = await callOpenAI(validatedRequest, env.openAIApiKey);
+      optimizedData = await callOpenAI(validatedRequest, env.openAIApiKey, user.id);
     } catch (e) {
       console.error('OpenAI API call failed:', e);
       return new Response(
