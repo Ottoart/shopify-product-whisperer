@@ -1,7 +1,25 @@
 import type { OptimizeProductRequest, OptimizedProductData } from './types.ts';
 
 function createPrompt(request: OptimizeProductRequest): string {
-  const { productData, useDirectAI, customPromptTemplate } = request;
+  const { productData, useDirectAI, customPromptTemplate, generateSEO, enhanceAllFields } = request;
+  
+  // Enhanced prompt for comprehensive field generation
+  const seoEnhancement = generateSEO ? `
+🎯 SPECIAL FOCUS ON SEO OPTIMIZATION:
+- Generate compelling SEO title different from main title (max 60 chars)
+- Create conversion-focused meta description (max 160 chars)
+- Optimize all content for search engine visibility
+- Include relevant keywords naturally in descriptions` : '';
+
+  const fieldEnhancement = enhanceAllFields ? `
+🎯 COMPREHENSIVE FIELD ENHANCEMENT:
+- Analyze current pricing: $${productData.current_price || 'Not set'}
+- Current compare price: $${productData.current_compare_at_price || 'Not set'}
+- Current SEO title: "${productData.current_seo_title || 'Not set'}"
+- Current SEO description: "${productData.current_seo_description || 'Not set'}"
+- Generate optimized pricing suggestions based on product quality and market positioning
+- Create comprehensive inventory and shipping recommendations
+- Enhance Google Shopping attributes for maximum visibility` : '';
   
   if (useDirectAI && customPromptTemplate) {
     // Use custom template with placeholder replacement
@@ -14,6 +32,8 @@ function createPrompt(request: OptimizeProductRequest): string {
     
     // Add JSON format requirement to custom prompt with ALL required fields
     return `${customPrompt}
+${seoEnhancement}
+${fieldEnhancement}
 
 CRITICAL REQUIREMENT: You MUST respond with ONLY a valid JSON object. No explanations, no additional text, no formatting, no markdown - ONLY the JSON object below:
 
@@ -23,6 +43,8 @@ IMPORTANT INSTRUCTIONS:
 - For "category": Use the exact Google Shopping category path format
 - ALL fields are REQUIRED and MUST be included in your response
 - Generate content in ENGLISH ONLY
+- If pricing fields are null/empty, suggest appropriate pricing based on product analysis
+- Generate comprehensive SEO fields for maximum search visibility
 
 {
   "title": "your optimized title in English (max 60 chars)",
@@ -33,11 +55,16 @@ IMPORTANT INSTRUCTIONS:
   "seo_title": "SEO optimized title different from main title (max 60 chars)",
   "seo_description": "SEO meta description with benefits and CTA (max 160 chars)",
   "vendor": "${productData.vendor || 'Premium Beauty'}",
+  "published": true,
   "variant_price": ${productData.variant_price || 'null'},
   "variant_compare_at_price": ${productData.variant_compare_at_price || 'null'},
   "variant_sku": "${productData.variant_sku || ''}",
   "variant_barcode": "${productData.variant_barcode || ''}",
-  "variant_grams": ${productData.variant_grams || 'null'},
+  "variant_grams": ${productData.variant_grams || 100},
+  "variant_inventory_qty": ${productData.variant_inventory_qty || 50},
+  "variant_inventory_policy": "${productData.variant_inventory_policy || 'deny'}",
+  "variant_requires_shipping": ${productData.variant_requires_shipping !== false ? 'true' : 'false'},
+  "variant_taxable": ${productData.variant_taxable !== false ? 'true' : 'false'},
   "google_shopping_condition": "new",
   "google_shopping_gender": "unisex",
   "google_shopping_age_group": "adult"
@@ -57,6 +84,12 @@ Type: ${productData.type || 'Not specified'}
 Description: ${productData.description || 'No description'}
 Tags: ${productData.tags || 'No tags'}
 Vendor: ${productData.vendor || 'Not specified'}
+Current Price: $${productData.current_price || 'Not set'}
+Current Compare Price: $${productData.current_compare_at_price || 'Not set'}
+Current SEO Title: "${productData.current_seo_title || 'Not set'}"
+Current SEO Description: "${productData.current_seo_description || 'Not set'}"
+${seoEnhancement}
+${fieldEnhancement}
 
 🔥 COPYWRITING EXCELLENCE STANDARDS:
 ✅ Write engaging, benefit-focused headlines that hook readers
@@ -66,6 +99,9 @@ Vendor: ${productData.vendor || 'Not specified'}
 ✅ Generate extensive, specific tag systems for maximum discoverability
 ✅ Focus on consumer benefits, not just features
 ✅ Create urgency and desire through persuasive copy
+✅ Generate compelling SEO titles and meta descriptions for maximum search visibility
+✅ Suggest optimized pricing based on product quality and market positioning
+✅ Provide comprehensive inventory and shipping recommendations
 
 MANDATORY JSON OUTPUT WITH PROFESSIONAL COPYWRITING:
 
@@ -78,11 +114,16 @@ MANDATORY JSON OUTPUT WITH PROFESSIONAL COPYWRITING:
   "seo_title": "[Brand] [Product] – [Key Benefit] [Product Type] (max 60 chars)",
   "seo_description": "[Action verb] [specific results] with [brand] [product]. [Key benefits]. [Special features]. [Target audience]. [CTA] (max 160 chars)",
   "vendor": "${productData.vendor || 'Premium Beauty'}",
+  "published": true,
   "variant_price": ${productData.variant_price || 'null'},
   "variant_compare_at_price": ${productData.variant_compare_at_price || 'null'},
   "variant_sku": "${productData.variant_sku || ''}",
   "variant_barcode": "${productData.variant_barcode || ''}",
-  "variant_grams": ${productData.variant_grams || 'null'},
+  "variant_grams": ${productData.variant_grams || 100},
+  "variant_inventory_qty": ${productData.variant_inventory_qty || 50},
+  "variant_inventory_policy": "${productData.variant_inventory_policy || 'deny'}",
+  "variant_requires_shipping": ${productData.variant_requires_shipping !== false ? 'true' : 'false'},
+  "variant_taxable": ${productData.variant_taxable !== false ? 'true' : 'false'},
   "google_shopping_condition": "new",
   "google_shopping_gender": "unisex",
   "google_shopping_age_group": "adult"
@@ -213,11 +254,16 @@ ${patterns.map(p => `- ${p.pattern_type}: ${JSON.stringify(p.pattern_data)}`).jo
       seo_title: optimizedData.seo_title || optimizedData.title,
       seo_description: optimizedData.seo_description || '',
       vendor: optimizedData.vendor,
+      published: optimizedData.published !== undefined ? optimizedData.published : true,
       variant_price: optimizedData.variant_price,
       variant_compare_at_price: optimizedData.variant_compare_at_price,
       variant_sku: optimizedData.variant_sku,
       variant_barcode: optimizedData.variant_barcode,
       variant_grams: optimizedData.variant_grams,
+      variant_inventory_qty: optimizedData.variant_inventory_qty,
+      variant_inventory_policy: optimizedData.variant_inventory_policy,
+      variant_requires_shipping: optimizedData.variant_requires_shipping,
+      variant_taxable: optimizedData.variant_taxable,
       google_shopping_condition: optimizedData.google_shopping_condition,
       google_shopping_gender: optimizedData.google_shopping_gender,
       google_shopping_age_group: optimizedData.google_shopping_age_group,

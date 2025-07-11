@@ -93,10 +93,18 @@ export function SingleProductProcessor({
             google_shopping_condition: product.googleShoppingCondition,
             google_shopping_gender: product.googleShoppingGender,
             google_shopping_age_group: product.googleShoppingAgeGroup,
-            category: product.category
+            category: product.category,
+            // Include current values for fields that need enhancement
+            current_seo_title: product.seoTitle,
+            current_seo_description: product.seoDescription,
+            current_price: product.variantPrice,
+            current_compare_at_price: product.variantCompareAtPrice,
+            image_src: product.imageSrc
           },
           useDirectAI: useDirectAI,
-          customPromptTemplate: useDirectAI ? customPromptTemplate : undefined
+          customPromptTemplate: useDirectAI ? customPromptTemplate : undefined,
+          generateSEO: true,
+          enhanceAllFields: true
         }
       });
 
