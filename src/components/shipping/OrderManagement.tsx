@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { useOrders, type Order } from "@/hooks/useOrders";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   Search, 
   Filter, 
@@ -21,118 +23,59 @@ import {
   Edit2,
   Printer,
   Download,
-  Store
+  Store,
+  RefreshCw,
+  Zap
 } from "lucide-react";
-
-interface Order {
-  id: string;
-  orderNumber: string;
-  customer: string;
-  store: string;
-  status: 'awaiting' | 'shipped' | 'error' | 'processing';
-  total: number;
-  shippingCountry: string;
-  date: string;
-  weight?: number;
-  address: {
-    valid: boolean;
-    line1: string;
-    city: string;
-    state: string;
-    zip: string;
-    country: string;
-  };
-  shippingMethod?: string;
-  tags: string[];
-  trackingNumber?: string;
-  items: Array<{
-    name: string;
-    quantity: number;
-    sku: string;
-  }>;
-}
 
 export function OrderManagement() {
   const { toast } = useToast();
+  const { orders, loading, fetchOrders } = useOrders();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStore, setFilterStore] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
+  const [syncing, setSyncing] = useState(false);
 
-  // Mock data - replace with real data from your API
-  const [orders] = useState<Order[]>([
-    {
-      id: "1",
-      orderNumber: "ORD-001",
-      customer: "John Smith",
-      store: "Shopify Store",
-      status: "awaiting",
-      total: 129.99,
-      shippingCountry: "US",
-      date: "2024-01-15",
-      weight: 2.5,
-      address: {
-        valid: true,
-        line1: "123 Main St",
-        city: "New York",
-        state: "NY",
-        zip: "10001",
-        country: "US"
-      },
-      shippingMethod: "UPS Ground",
-      tags: ["priority"],
-      items: [
-        { name: "Product A", quantity: 2, sku: "SKU-A" }
-      ]
-    },
-    {
-      id: "2",
-      orderNumber: "ORD-002",
-      customer: "Jane Doe",
-      store: "Amazon",
-      status: "error",
-      total: 89.50,
-      shippingCountry: "CA",
-      date: "2024-01-16",
-      address: {
-        valid: false,
-        line1: "456 Invalid Ave",
-        city: "Toronto",
-        state: "ON",
-        zip: "",
-        country: "CA"
-      },
-      tags: ["international"],
-      items: [
-        { name: "Product B", quantity: 1, sku: "SKU-B" }
-      ]
-    },
-    {
-      id: "3",
-      orderNumber: "ORD-003",
-      customer: "Bob Wilson",
-      store: "Shopify Store",
-      status: "shipped",
-      total: 245.00,
-      shippingCountry: "US",
-      date: "2024-01-14",
-      weight: 5.2,
-      address: {
-        valid: true,
-        line1: "789 Oak St",
-        city: "Los Angeles",
-        state: "CA",
-        zip: "90210",
-        country: "US"
-      },
-      shippingMethod: "FedEx Express",
-      trackingNumber: "1Z999AA1234567890",
-      tags: ["high-value"],
-      items: [
-        { name: "Product C", quantity: 1, sku: "SKU-C" }
-      ]
+  const handleSyncOrders = async () => {
+    setSyncing(true);
+    toast({
+      title: "🔄 Syncing orders...",
+      description: "Fetching latest orders from connected stores",
+    });
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Not authenticated');
+      }
+
+      const response = await supabase.functions.invoke('sync-orders', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (response.error) {
+        throw response.error;
+      }
+
+      await fetchOrders(); // Refresh the orders list
+      
+      toast({
+        title: "✅ Sync completed!",
+        description: response.data.message || "Orders have been synchronized",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Sync failed",
+        description: error.message || "Failed to sync orders",
+        variant: "destructive"
+      });
+    } finally {
+      setSyncing(false);
     }
-  ]);
+  };
 
   const getStatusBadge = (status: Order['status']) => {
     switch (status) {
@@ -144,6 +87,10 @@ export function OrderManagement() {
         return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Error</Badge>;
       case 'processing':
         return <Badge variant="secondary"><Package className="h-3 w-3 mr-1" />Processing</Badge>;
+      case 'delivered':
+        return <Badge variant="default" className="bg-green-600 text-white"><CheckCircle className="h-3 w-3 mr-1" />Delivered</Badge>;
+      case 'cancelled':
+        return <Badge variant="outline" className="bg-gray-100 text-gray-800"><XCircle className="h-3 w-3 mr-1" />Cancelled</Badge>;
       default:
         return <Badge variant="outline">Unknown</Badge>;
     }
@@ -152,7 +99,7 @@ export function OrderManagement() {
   const getWarningIcons = (order: Order) => {
     const warnings = [];
     
-    if (!order.weight) {
+    if (!order.packageDetails.weight) {
       warnings.push(
         <div key="weight" title="Missing weight">
           <AlertTriangle className="h-4 w-4 text-yellow-500" />
@@ -160,7 +107,7 @@ export function OrderManagement() {
       );
     }
     
-    if (!order.address.valid) {
+    if (!order.shippingAddress.validated) {
       warnings.push(
         <div key="address" title="Invalid address">
           <MapPin className="h-4 w-4 text-red-500" />
@@ -168,7 +115,7 @@ export function OrderManagement() {
       );
     }
     
-    if (!order.shippingMethod) {
+    if (!order.shippingDetails.method) {
       warnings.push(
         <div key="shipping" title="No shipping method selected">
           <Truck className="h-4 w-4 text-orange-500" />
@@ -181,8 +128,8 @@ export function OrderManagement() {
 
   const filteredOrders = orders.filter(order => {
     const matchesSearch = order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         order.customer.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStore = filterStore === "all" || order.store === filterStore;
+                         order.customerName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStore = filterStore === "all" || order.storeName === filterStore;
     const matchesStatus = filterStatus === "all" || order.status === filterStatus;
     
     return matchesSearch && matchesStore && matchesStatus;
@@ -221,18 +168,49 @@ export function OrderManagement() {
     }, 3000);
   };
 
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="p-12 text-center">
+            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+            <h3 className="text-lg font-medium mb-2">Loading orders...</h3>
+            <p className="text-muted-foreground">Fetching your latest orders</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Search and Filters */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            Order Management
-          </CardTitle>
-          <CardDescription>
-            Live feed of orders with color-coded statuses, filtering, and batch actions
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                Order Management
+              </CardTitle>
+              <CardDescription>
+                Live feed of orders with color-coded statuses, filtering, and batch actions
+              </CardDescription>
+            </div>
+            <Button onClick={handleSyncOrders} disabled={syncing}>
+              {syncing ? (
+                <>
+                  <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full mr-2"></div>
+                  Syncing...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Sync Orders
+                </>
+              )}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-col md:flex-row gap-4">
@@ -252,9 +230,9 @@ export function OrderManagement() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Stores</SelectItem>
-                <SelectItem value="Shopify Store">Shopify Store</SelectItem>
-                <SelectItem value="Amazon">Amazon</SelectItem>
-                <SelectItem value="eBay">eBay</SelectItem>
+                {Array.from(new Set(orders.map(o => o.storeName))).map(store => (
+                  <SelectItem key={store} value={store}>{store}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
@@ -265,9 +243,11 @@ export function OrderManagement() {
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
                 <SelectItem value="awaiting">Awaiting Shipment</SelectItem>
-                <SelectItem value="shipped">Shipped</SelectItem>
-                <SelectItem value="error">Error</SelectItem>
                 <SelectItem value="processing">Processing</SelectItem>
+                <SelectItem value="shipped">Shipped</SelectItem>
+                <SelectItem value="delivered">Delivered</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+                <SelectItem value="error">Error</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -313,7 +293,7 @@ export function OrderManagement() {
                       <h3 className="font-semibold text-lg">{order.orderNumber}</h3>
                       <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                         <Store className="h-3 w-3 mr-1" />
-                        {order.store}
+                        {order.storeName}
                       </Badge>
                       {getStatusBadge(order.status)}
                       <div className="flex gap-1">
@@ -323,7 +303,7 @@ export function OrderManagement() {
                     
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Calendar className="h-4 w-4" />
-                      {order.date}
+                      {new Date(order.orderDate).toLocaleDateString()}
                     </div>
                   </div>
 
@@ -331,30 +311,32 @@ export function OrderManagement() {
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
                     <div>
                       <span className="font-medium">Customer:</span>
-                      <p>{order.customer}</p>
+                      <p>{order.customerName}</p>
                     </div>
                     <div>
                       <span className="font-medium">Store:</span>
-                      <p>{order.store}</p>
+                      <p>{order.storeName}</p>
                     </div>
                     <div>
                       <span className="font-medium">Total:</span>
                       <p className="flex items-center gap-1">
                         <DollarSign className="h-3 w-3" />
-                        {order.total.toFixed(2)}
+                        {order.totalAmount.toFixed(2)} {order.currency}
                       </p>
                     </div>
                     <div>
                       <span className="font-medium">Shipping:</span>
-                      <p>{order.shippingCountry}</p>
+                      <p>{order.shippingAddress.country}</p>
                     </div>
                   </div>
 
                   {/* Address */}
                   <div className="text-sm">
                     <span className="font-medium">Address:</span>
-                    <p className={order.address.valid ? "text-muted-foreground" : "text-red-600"}>
-                      {order.address.line1}, {order.address.city}, {order.address.state} {order.address.zip}, {order.address.country}
+                    <p className={order.shippingAddress.validated ? "text-muted-foreground" : "text-red-600"}>
+                      {order.shippingAddress.line1}
+                      {order.shippingAddress.line2 && `, ${order.shippingAddress.line2}`}
+                      , {order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zip}, {order.shippingAddress.country}
                     </p>
                   </div>
 
@@ -364,7 +346,7 @@ export function OrderManagement() {
                     <div className="flex flex-wrap gap-2 mt-1">
                       {order.items.map((item, index) => (
                         <Badge key={index} variant="outline">
-                          {item.quantity}x {item.name} ({item.sku})
+                          {item.quantity}x {item.productTitle} {item.sku && `(${item.sku})`}
                         </Badge>
                       ))}
                     </div>
@@ -385,10 +367,10 @@ export function OrderManagement() {
                   )}
 
                   {/* Tracking */}
-                  {order.trackingNumber && (
+                  {order.shippingDetails.trackingNumber && (
                     <div className="text-sm">
                       <span className="font-medium">Tracking:</span>
-                      <p className="font-mono">{order.trackingNumber}</p>
+                      <p className="font-mono">{order.shippingDetails.trackingNumber}</p>
                     </div>
                   )}
 
@@ -404,7 +386,7 @@ export function OrderManagement() {
                         Create Label
                       </Button>
                     )}
-                    {order.trackingNumber && (
+                    {order.shippingDetails.trackingNumber && (
                       <Button size="sm" variant="outline">
                         <Package className="h-4 w-4 mr-1" />
                         Track
@@ -422,12 +404,18 @@ export function OrderManagement() {
             <CardContent className="p-12 text-center">
               <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-medium mb-2">No orders found</h3>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground mb-4">
                 {searchTerm || filterStore !== "all" || filterStatus !== "all" 
                   ? "Try adjusting your filters or search terms."
-                  : "Orders will appear here once you start receiving them."
+                  : "No orders available. Sync with your connected stores to see orders."
                 }
               </p>
+              {orders.length === 0 && (
+                <Button onClick={handleSyncOrders} disabled={syncing}>
+                  <Zap className="h-4 w-4 mr-2" />
+                  Sync Orders from Stores
+                </Button>
+              )}
             </CardContent>
           </Card>
         )}
