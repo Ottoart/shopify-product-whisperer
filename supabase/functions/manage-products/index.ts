@@ -19,7 +19,7 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { action, productData, productId } = await req.json();
+    const { action, productData, productId, storeUrl, accessToken } = await req.json();
     
     // Get user from authorization header
     const authHeader = req.headers.get('Authorization');
@@ -74,6 +74,71 @@ serve(async (req) => {
 
         if (updateError) {
           throw updateError;
+        }
+
+        // Also sync to Shopify if credentials provided
+        if (storeUrl && accessToken && productData.handle) {
+          try {
+            const shopifyUrl = `https://${storeUrl}/admin/api/2023-10/products.json?handle=${productData.handle}`;
+            
+            // First, get the product from Shopify to get its ID
+            const getResponse = await fetch(shopifyUrl, {
+              method: 'GET',
+              headers: {
+                'X-Shopify-Access-Token': accessToken,
+                'Content-Type': 'application/json',
+              },
+            });
+
+            if (!getResponse.ok) {
+              console.error('Failed to get product from Shopify:', await getResponse.text());
+            } else {
+              const getResult = await getResponse.json();
+              if (getResult.products && getResult.products.length > 0) {
+                const shopifyProduct = getResult.products[0];
+                
+                // Update the product in Shopify
+                const updateUrl = `https://${storeUrl}/admin/api/2023-10/products/${shopifyProduct.id}.json`;
+                const updateResponse = await fetch(updateUrl, {
+                  method: 'PUT',
+                  headers: {
+                    'X-Shopify-Access-Token': accessToken,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    product: {
+                      id: shopifyProduct.id,
+                      title: productData.title,
+                      body_html: productData.body_html,
+                      vendor: productData.vendor,
+                      product_type: productData.type,
+                      tags: productData.tags,
+                      published: productData.published,
+                    }
+                  }),
+                });
+
+                if (!updateResponse.ok) {
+                  console.error('Failed to update product in Shopify:', await updateResponse.text());
+                } else {
+                  console.log('Product successfully synced to Shopify');
+                  
+                  // Update sync status in database
+                  await supabase
+                    .from('products')
+                    .update({
+                      shopify_sync_status: 'synced',
+                      shopify_synced_at: new Date().toISOString(),
+                    })
+                    .eq('id', productId)
+                    .eq('user_id', user.id);
+                }
+              }
+            }
+          } catch (shopifyError) {
+            console.error('Shopify sync error:', shopifyError);
+            // Don't fail the entire operation if Shopify sync fails
+          }
         }
 
         result = { success: true, product: updateData, message: 'Product updated successfully' };
