@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTabPersistence } from "@/hooks/useTabPersistence";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -26,6 +27,7 @@ export const ProductActivity = ({ onProductsUpdated, storeUrl }: ProductActivity
   const [isDeleting, setIsDeleting] = useState(false);
   const { session } = useSessionContext();
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useTabPersistence('product-activity', 'recent');
 
   const fetchActivityData = async () => {
     if (!session?.user?.id) return;
@@ -330,7 +332,7 @@ export const ProductActivity = ({ onProductsUpdated, storeUrl }: ProductActivity
       </CardHeader>
 
       <CardContent>
-        <Tabs defaultValue="recent" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="recent" className="flex items-center gap-2">
               <Clock className="h-4 w-4" />

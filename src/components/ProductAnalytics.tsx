@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTabPersistence } from "@/hooks/useTabPersistence";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +34,7 @@ export const ProductAnalytics = () => {
   const [recommendations, setRecommendations] = useState<AIRecommendation[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useTabPersistence('product-analytics', 'insights');
 
   useEffect(() => {
     if (products.length > 0) {
@@ -236,7 +238,7 @@ export const ProductAnalytics = () => {
         </Card>
       </div>
 
-      <Tabs defaultValue="insights" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="insights">Product Insights</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>

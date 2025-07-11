@@ -51,7 +51,14 @@ export const ProductListItem = ({
     return `https://${cleanUrl}/products/${product.handle}`;
   };
 
+  const getShopifyAdminUrl = () => {
+    if (!storeUrl || !product.handle) return null;
+    const cleanUrl = storeUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    return `https://${cleanUrl}/admin/products?query=handle:${product.handle}`;
+  };
+
   const productUrl = getProductUrl();
+  const adminUrl = getShopifyAdminUrl();
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -71,8 +78,20 @@ export const ProductListItem = ({
                   size="sm"
                   className="h-6 w-6 p-0"
                   onClick={() => window.open(productUrl, '_blank')}
+                  title="View in store"
                 >
                   <ExternalLink className="h-3 w-3" />
+                </Button>
+              )}
+              {adminUrl && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0"
+                  onClick={() => window.open(adminUrl, '_blank')}
+                  title="Edit in Shopify Admin"
+                >
+                  <Edit3 className="h-3 w-3" />
                 </Button>
               )}
             </div>

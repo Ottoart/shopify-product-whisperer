@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTabPersistence } from "@/hooks/useTabPersistence";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -118,6 +119,11 @@ export function ProductComparison({
   const [selectedDraftId, setSelectedDraftId] = useState<string>('');
   const { toast } = useToast();
   const { session } = useSessionContext();
+  
+  // Tab persistence
+  const [mainTab, setMainTab] = useTabPersistence('product-comparison-main', 'comparison');
+  const [comparisonTab, setComparisonTab] = useTabPersistence('product-comparison-inner', 'basic');
+  const [editTab, setEditTab] = useTabPersistence('product-edit-inner', 'basic');
   
   // Initialize hooks for AI reprocessing and draft management
   const { optimizeWithLearning, isOptimizing } = useAIOptimizationWithLearning();
@@ -426,14 +432,14 @@ export function ProductComparison({
           <DialogTitle>Product Optimization Comparison</DialogTitle>
         </DialogHeader>
         
-        <Tabs defaultValue="comparison" className="w-full">
+        <Tabs value={mainTab} onValueChange={setMainTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="comparison">Before vs After</TabsTrigger>
             <TabsTrigger value="edit">Edit Optimized Version</TabsTrigger>
           </TabsList>
           
             <TabsContent value="comparison" className="space-y-4">
-              <Tabs defaultValue="basic" className="w-full">
+              <Tabs value={comparisonTab} onValueChange={setComparisonTab} className="w-full">
                 <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="basic">Basic Info</TabsTrigger>
                   <TabsTrigger value="seo">SEO & Publishing</TabsTrigger>
@@ -1085,7 +1091,7 @@ export function ProductComparison({
               </div>
             </div>
             
-            <Tabs defaultValue="basic" className="w-full">
+            <Tabs value={editTab} onValueChange={setEditTab} className="w-full">
               <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="basic">Basic Info</TabsTrigger>
                 <TabsTrigger value="seo">SEO</TabsTrigger>

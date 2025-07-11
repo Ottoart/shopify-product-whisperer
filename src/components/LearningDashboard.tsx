@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTabPersistence } from "@/hooks/useTabPersistence";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -52,6 +53,7 @@ export const LearningDashboard = () => {
   const [stats, setStats] = useState<PatternStats | null>(null);
   const { session } = useSessionContext();
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useTabPersistence('learning-dashboard', 'overview');
 
   useEffect(() => {
     if (session?.user?.id) {
@@ -370,7 +372,7 @@ export const LearningDashboard = () => {
               </div>
             </div>
           ) : (
-            <Tabs defaultValue="overview" className="space-y-6">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
               <TabsList className="grid w-full grid-cols-3 max-w-md mx-auto">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="patterns">Patterns</TabsTrigger>

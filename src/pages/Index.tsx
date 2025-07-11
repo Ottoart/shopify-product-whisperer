@@ -223,7 +223,7 @@ const Index = () => {
                     onAddToQueue={addToQueue}
                     onProductsUpdated={handleProductsUpdated}
                     onProductUpdated={handleUpdateProduct}
-                    storeUrl=""
+                    storeUrl={localStorage.getItem('shopify_domain') || ''}
                   />
                 </CardContent>
             </Card>
