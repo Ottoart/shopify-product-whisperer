@@ -611,13 +611,33 @@ export function ProductComparison({
                            </span>
                          )}
                        </h4>
-                       <Textarea
-                         value={editedDescription}
-                         onChange={(e) => setEditedDescription(e.target.value)}
-                         className={`max-h-60 resize-none ${isFieldModified('description', editedDescription) ? 'border-blue-300 bg-blue-50' : 'bg-green-50 border-green-200'}`}
-                         placeholder="Enter product description (HTML supported)"
-                         rows={8}
-                       />
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h4 className="text-md font-medium text-green-600">Optimized Description Preview:</h4>
+                            {isFieldModified('description', editedDescription) && (
+                              <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                                <Edit3 className="h-3 w-3" />
+                                Modified
+                              </span>
+                            )}
+                          </div>
+                          <div className={`p-4 border rounded-md max-h-60 overflow-y-auto ${isFieldModified('description', editedDescription) ? 'border-blue-300 bg-blue-50' : 'bg-green-50 border-green-200'}`}>
+                            <div className="prose prose-sm max-w-none" 
+                                 dangerouslySetInnerHTML={{ __html: editedDescription || 'No description' }} />
+                          </div>
+                          <details className="mt-2">
+                            <summary className="text-sm text-gray-600 cursor-pointer hover:text-gray-800">
+                              Edit HTML Source
+                            </summary>
+                            <Textarea
+                              value={editedDescription}
+                              onChange={(e) => setEditedDescription(e.target.value)}
+                              className={`mt-2 max-h-40 resize-none text-xs font-mono ${isFieldModified('description', editedDescription) ? 'border-blue-300 bg-blue-50' : 'bg-green-50 border-green-200'}`}
+                              placeholder="Enter product description (HTML supported)"
+                              rows={6}
+                            />
+                          </details>
+                        </div>
                      </div>
                   </div>
                 </TabsContent>
