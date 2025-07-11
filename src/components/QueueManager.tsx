@@ -105,6 +105,7 @@ REQUIREMENTS:
       tags: string | null;
       type: string | null;
       category: string | null;
+      vendor: string | null;
     };
     optimizedProduct: {
       title: string;
@@ -187,7 +188,13 @@ REQUIREMENTS:
             title: product.title,
             type: product.type,
             description: product.bodyHtml,
-            tags: product.tags
+            tags: product.tags,
+            vendor: product.vendor || 'Premium Beauty',
+            variant_price: product.variantPrice,
+            variant_compare_at_price: product.variantCompareAtPrice,
+            variant_sku: product.variantSku,
+            variant_barcode: product.variantBarcode,
+            variant_grams: product.variantGrams
           },
           useDirectAI: useDirectAI,
           customPromptTemplate: useDirectAI ? customPromptTemplate : undefined
@@ -200,7 +207,13 @@ REQUIREMENTS:
               title: product.title,
               type: product.type,
               description: product.bodyHtml,
-              tags: product.tags
+              tags: product.tags,
+              vendor: product.vendor || 'Premium Beauty', // Include vendor information
+              variant_price: product.variantPrice,
+              variant_compare_at_price: product.variantCompareAtPrice,
+              variant_sku: product.variantSku,
+              variant_barcode: product.variantBarcode,
+              variant_grams: product.variantGrams
             },
             useDirectAI: useDirectAI,
             customPromptTemplate: useDirectAI ? customPromptTemplate : undefined
@@ -250,7 +263,8 @@ REQUIREMENTS:
             body_html: product.bodyHtml,
             tags: product.tags,
             type: product.type,
-            category: null // Since this will be a new field, existing products won't have it
+            category: null, // Since this will be a new field, existing products won't have it
+            vendor: product.vendor
           },
           optimizedProduct: {
             title: data.optimizedData.title,
@@ -723,7 +737,12 @@ REQUIREMENTS:
                     type: productData.type,
                     description: productData.description,
                     tags: productData.tags,
-                    vendor: productData.vendor
+                    vendor: productData.vendor,
+                    variant_price: productData.variant_price,
+                    variant_compare_at_price: productData.variant_compare_at_price,
+                    variant_sku: productData.variant_sku,
+                    variant_barcode: productData.variant_barcode,
+                    variant_grams: productData.variant_grams
                   },
                   useDirectAI: useDirectAI,
                   customPromptTemplate: useDirectAI ? customPromptTemplate : undefined

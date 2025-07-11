@@ -22,6 +22,7 @@ interface ProductComparisonProps {
     tags: string | null;
     type: string | null;
     category: string | null;
+    vendor: string | null;
   };
   optimizedProduct: {
     title: string;
@@ -125,7 +126,7 @@ export function ProductComparison({
         type: originalProduct.type,
         description: originalProduct.body_html,
         tags: originalProduct.tags,
-        vendor: 'Premium Beauty' // Default vendor
+        vendor: originalProduct.vendor || 'Premium Beauty' // Use actual vendor or fallback
       };
       
       onReprocess(productData);
