@@ -98,24 +98,13 @@ serve(async (req) => {
       );
     }
     
-    // Update database
-    try {
-      await updateProduct(
-        validatedRequest.productHandle,
-        user.id,
-        optimizedData,
-        env.supabaseUrl,
-        env.supabaseServiceKey
-      );
-    } catch (e) {
-      console.error('Database operation failed:', e);
-      return new Response(
-        JSON.stringify({ error: 'Database operation failed' } as ApiResponse),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
+    // Don't automatically update database - return data for manual review
     console.log('=== SUCCESS ===');
+    console.log('Returning optimized data for manual review:', {
+      seo_title: optimizedData.seo_title,
+      seo_description: optimizedData.seo_description,
+      vendor: optimizedData.vendor
+    });
     
     return new Response(
       JSON.stringify({ 
