@@ -17,44 +17,44 @@
     --popover: 0 0% 100%;
     --popover-foreground: 215 35% 15%;
 
-    /* PrepFox Orange - Primary/Dominant brand color */
-    --primary: 20 85% 55%;
+    /* Burnt Orange - Primary/Dominant brand color */
+    --primary: 15 90% 52%;
     --primary-foreground: 0 0% 98%;
-    --primary-glow: 20 85% 65%;
+    --primary-glow: 15 90% 62%;
 
-    /* Secondary colors with lighter orange tones */
-    --secondary: 25 75% 95%;
-    --secondary-foreground: 15 60% 25%;
+    /* Warm peach secondary colors */
+    --secondary: 25 80% 92%;
+    --secondary-foreground: 10 70% 28%;
 
-    /* Muted colors with warm orange undertones */
-    --muted: 25 40% 96%;
-    --muted-foreground: 20 30% 45%;
+    /* Soft orange muted colors */
+    --muted: 20 50% 94%;
+    --muted-foreground: 15 40% 42%;
 
-    /* PrepFox Navy - Now accent/supporting color */
-    --accent: 210 45% 25%;
+    /* Deep coral accent color */
+    --accent: 8 75% 45%;
     --accent-foreground: 0 0% 98%;
-    --accent-glow: 210 45% 35%;
+    --accent-glow: 8 75% 55%;
 
     /* Status colors */
     --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 98%;
 
-    /* Border and input colors with orange undertones */
-    --border: 25 30% 90%;
-    --input: 25 30% 90%;
-    --ring: 20 85% 55%;
+    /* Border and input colors with warm orange undertones */
+    --border: 20 40% 88%;
+    --input: 20 40% 88%;
+    --ring: 15 90% 52%;
 
-    /* PrepFox Orange-Dominant Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(20 85% 55%), hsl(20 85% 65%));
-    --gradient-secondary: linear-gradient(135deg, hsl(25 75% 95%), hsl(25 40% 90%));
-    --gradient-accent: linear-gradient(135deg, hsl(210 45% 25%), hsl(210 45% 35%));
-    --gradient-success: linear-gradient(135deg, hsl(20 85% 55%), hsl(210 45% 25%));
+    /* Burnt Orange Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(15 90% 52%), hsl(15 90% 62%));
+    --gradient-secondary: linear-gradient(135deg, hsl(25 80% 92%), hsl(20 50% 88%));
+    --gradient-accent: linear-gradient(135deg, hsl(8 75% 45%), hsl(8 75% 55%));
+    --gradient-success: linear-gradient(135deg, hsl(15 90% 52%), hsl(8 75% 45%));
     
-    /* Elegant shadows with dominant orange */
-    --shadow-elegant: 0 10px 30px -10px hsl(20 85% 55% / 0.3);
-    --shadow-card: 0 4px 20px -2px hsl(20 85% 55% / 0.1);
-    --shadow-glow: 0 0 40px hsl(20 85% 55% / 0.5);
-    --shadow-progress: 0 0 20px hsl(20 85% 55% / 0.4);
+    /* Elegant shadows with burnt orange */
+    --shadow-elegant: 0 10px 30px -10px hsl(15 90% 52% / 0.3);
+    --shadow-card: 0 4px 20px -2px hsl(15 90% 52% / 0.1);
+    --shadow-glow: 0 0 40px hsl(15 90% 52% / 0.5);
+    --shadow-progress: 0 0 20px hsl(15 90% 52% / 0.4);
     
     /* Smooth transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -62,15 +62,15 @@
 
     --radius: 0.5rem;
 
-    /* Sidebar with Orange-dominant theme */
-    --sidebar-background: 25 50% 98%;
-    --sidebar-foreground: 15 50% 25%;
-    --sidebar-primary: 20 85% 55%;
+    /* Sidebar with Burnt Orange theme */
+    --sidebar-background: 20 60% 96%;
+    --sidebar-foreground: 10 60% 25%;
+    --sidebar-primary: 15 90% 52%;
     --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 25 60% 95%;
-    --sidebar-accent-foreground: 15 50% 25%;
-    --sidebar-border: 25 40% 90%;
-    --sidebar-ring: 20 85% 55%;
+    --sidebar-accent: 25 70% 90%;
+    --sidebar-accent-foreground: 10 60% 25%;
+    --sidebar-border: 20 40% 88%;
+    --sidebar-ring: 15 90% 52%;
   }
 
   .dark {
@@ -84,46 +84,46 @@
     --popover: 215 40% 10%;
     --popover-foreground: 210 20% 95%;
 
-    --primary: 20 85% 60%;
+    --primary: 15 85% 58%;
     --primary-foreground: 0 0% 98%;
-    --primary-glow: 20 85% 70%;
+    --primary-glow: 15 85% 68%;
 
-    --secondary: 25 40% 12%;
-    --secondary-foreground: 20 50% 85%;
+    --secondary: 20 50% 15%;
+    --secondary-foreground: 25 60% 80%;
 
-    --muted: 25 30% 15%;
-    --muted-foreground: 20 40% 65%;
+    --muted: 18 40% 18%;
+    --muted-foreground: 20 50% 60%;
 
-    --accent: 210 45% 35%;
+    --accent: 8 70% 50%;
     --accent-foreground: 0 0% 98%;
-    --accent-glow: 210 45% 45%;
+    --accent-glow: 8 70% 60%;
 
     --destructive: 0 70% 60%;
     --destructive-foreground: 0 0% 98%;
 
     --border: 25 25% 20%;
     --input: 25 25% 20%;
-    --ring: 20 85% 60%;
+    --ring: 15 85% 58%;
 
-    /* Dark mode gradients - orange dominant */
-    --gradient-primary: linear-gradient(135deg, hsl(20 85% 60%), hsl(20 85% 70%));
-    --gradient-secondary: linear-gradient(135deg, hsl(25 40% 12%), hsl(25 30% 18%));
-    --gradient-accent: linear-gradient(135deg, hsl(210 45% 35%), hsl(210 45% 45%));
-    --gradient-success: linear-gradient(135deg, hsl(20 85% 60%), hsl(210 45% 35%));
+    /* Dark mode gradients - burnt orange */
+    --gradient-primary: linear-gradient(135deg, hsl(15 85% 58%), hsl(15 85% 68%));
+    --gradient-secondary: linear-gradient(135deg, hsl(20 50% 15%), hsl(18 40% 18%));
+    --gradient-accent: linear-gradient(135deg, hsl(8 70% 50%), hsl(8 70% 60%));
+    --gradient-success: linear-gradient(135deg, hsl(15 85% 58%), hsl(8 70% 50%));
 
-    --shadow-elegant: 0 10px 30px -10px hsl(20 85% 55% / 0.5);
-    --shadow-card: 0 4px 20px -2px hsl(25 45% 8% / 0.8);
-    --shadow-glow: 0 0 40px hsl(20 85% 60% / 0.6);
-    --shadow-progress: 0 0 20px hsl(20 85% 60% / 0.5);
+    --shadow-elegant: 0 10px 30px -10px hsl(15 85% 58% / 0.5);
+    --shadow-card: 0 4px 20px -2px hsl(20 50% 8% / 0.8);
+    --shadow-glow: 0 0 40px hsl(15 85% 58% / 0.6);
+    --shadow-progress: 0 0 20px hsl(15 85% 58% / 0.5);
 
-    --sidebar-background: 25 45% 8%;
-    --sidebar-foreground: 20 40% 85%;
-    --sidebar-primary: 20 85% 60%;
+    --sidebar-background: 20 50% 10%;
+    --sidebar-foreground: 25 50% 80%;
+    --sidebar-primary: 15 85% 58%;
     --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 25 30% 15%;
-    --sidebar-accent-foreground: 20 40% 85%;
-    --sidebar-border: 25 25% 20%;
-    --sidebar-ring: 20 85% 60%;
+    --sidebar-accent: 18 40% 18%;
+    --sidebar-accent-foreground: 25 50% 80%;
+    --sidebar-border: 20 40% 20%;
+    --sidebar-ring: 15 85% 58%;
   }
 }
 
