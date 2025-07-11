@@ -54,6 +54,7 @@ export const ProductList = ({
     setter(newSet);
   };
 
+  // Filter products based on search and selected filters
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.vendor.toLowerCase().includes(searchTerm.toLowerCase()) ||
