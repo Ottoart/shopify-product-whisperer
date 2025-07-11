@@ -110,10 +110,21 @@ serve(async (req) => {
         );
 
         if (!shopifyResponse.ok) {
-          throw new Error(`Shopify API error for ${storeConfig.store_name}: ${shopifyResponse.statusText}`);
+          const errorText = await shopifyResponse.text();
+          console.error(`Shopify API error for ${storeConfig.store_name}: ${shopifyResponse.status} ${shopifyResponse.statusText}`, errorText);
+          throw new Error(`Shopify API error for ${storeConfig.store_name}: ${shopifyResponse.status} ${shopifyResponse.statusText}`);
         }
 
-        const shopifyData = await shopifyResponse.json();
+        const responseText = await shopifyResponse.text();
+        console.log(`Shopify response for ${storeConfig.store_name}:`, responseText.substring(0, 500));
+        
+        let shopifyData;
+        try {
+          shopifyData = JSON.parse(responseText);
+        } catch (parseError) {
+          console.error(`Failed to parse JSON response from ${storeConfig.store_name}:`, parseError);
+          throw new Error(`Invalid JSON response from Shopify for ${storeConfig.store_name}. Check if domain and access token are correct.`);
+        }
         const shopifyOrders = shopifyData.orders || [];
 
         console.log(`Found ${shopifyOrders.length} orders from ${storeConfig.store_name}`);
