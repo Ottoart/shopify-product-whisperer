@@ -205,8 +205,8 @@ export function SingleProductProcessor({
               </div>
               <div>
                 <div>Processing Product</div>
-                <div className="text-sm font-normal text-muted-foreground truncate">
-                  {product.title}
+                <div className="text-sm font-normal text-muted-foreground">
+                  AI optimization in progress
                 </div>
               </div>
             </DialogTitle>
