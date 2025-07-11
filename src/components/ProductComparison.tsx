@@ -24,6 +24,21 @@ interface ProductComparisonProps {
     type: string | null;
     category: string | null;
     vendor: string | null;
+    seo_title?: string | null;
+    seo_description?: string | null;
+    published?: boolean | null;
+    variant_price?: number | null;
+    variant_compare_at_price?: number | null;
+    variant_sku?: string | null;
+    variant_barcode?: string | null;
+    variant_grams?: number | null;
+    variant_inventory_qty?: number | null;
+    variant_inventory_policy?: string | null;
+    variant_requires_shipping?: boolean | null;
+    variant_taxable?: boolean | null;
+    google_shopping_condition?: string | null;
+    google_shopping_gender?: string | null;
+    google_shopping_age_group?: string | null;
   };
   optimizedProduct: {
     title: string;
@@ -475,42 +490,42 @@ export function ProductComparison({
                         <div>
                           <Label className="text-sm font-medium">Price:</Label>
                           <div className="p-3 bg-red-50 border border-red-200 rounded-md mt-1">
-                            <p className="text-sm">Not available</p>
+                            <p className="text-sm">${originalProduct.variant_price || 'Not set'}</p>
                           </div>
                         </div>
                         
                         <div>
                           <Label className="text-sm font-medium">Compare At Price:</Label>
                           <div className="p-3 bg-red-50 border border-red-200 rounded-md mt-1">
-                            <p className="text-sm">Not available</p>
+                            <p className="text-sm">${originalProduct.variant_compare_at_price || 'Not set'}</p>
                           </div>
                         </div>
                         
                         <div>
                           <Label className="text-sm font-medium">SKU:</Label>
                           <div className="p-3 bg-red-50 border border-red-200 rounded-md mt-1">
-                            <p className="text-sm">Not available</p>
+                            <p className="text-sm">{originalProduct.variant_sku || 'Not set'}</p>
                           </div>
                         </div>
                         
                         <div>
                           <Label className="text-sm font-medium">Barcode:</Label>
                           <div className="p-3 bg-red-50 border border-red-200 rounded-md mt-1">
-                            <p className="text-sm">Not available</p>
+                            <p className="text-sm">{originalProduct.variant_barcode || 'Not set'}</p>
                           </div>
                         </div>
                         
                         <div>
                           <Label className="text-sm font-medium">Weight (g):</Label>
                           <div className="p-3 bg-red-50 border border-red-200 rounded-md mt-1">
-                            <p className="text-sm">Not available</p>
+                            <p className="text-sm">{originalProduct.variant_grams || 0}g</p>
                           </div>
                         </div>
                         
                         <div>
                           <Label className="text-sm font-medium">Inventory:</Label>
                           <div className="p-3 bg-red-50 border border-red-200 rounded-md mt-1">
-                            <p className="text-sm">Not available</p>
+                            <p className="text-sm">{originalProduct.variant_inventory_qty || 0} units</p>
                           </div>
                         </div>
                       </div>

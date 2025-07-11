@@ -302,7 +302,22 @@ export function SingleProductProcessor({
             tags: product.tags,
             type: product.type,
             category: product.category || null,
-            vendor: product.vendor
+            vendor: product.vendor,
+            seo_title: product.seoTitle,
+            seo_description: product.seoDescription,
+            published: product.published,
+            variant_price: product.variantPrice,
+            variant_compare_at_price: product.variantCompareAtPrice,
+            variant_sku: product.variantSku,
+            variant_barcode: product.variantBarcode,
+            variant_grams: product.variantGrams,
+            variant_inventory_qty: product.variantInventoryQty,
+            variant_inventory_policy: product.variantInventoryPolicy,
+            variant_requires_shipping: product.variantRequiresShipping,
+            variant_taxable: product.variantTaxable,
+            google_shopping_condition: product.googleShoppingCondition,
+            google_shopping_gender: product.googleShoppingGender,
+            google_shopping_age_group: product.googleShoppingAgeGroup
           }}
           optimizedProduct={{
             title: optimizedData.title,
