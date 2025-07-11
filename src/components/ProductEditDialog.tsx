@@ -123,24 +123,18 @@ export const ProductEditDialog = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader className="border-b pb-4">
-          <DialogTitle className="text-xl font-semibold">Optimize Product</DialogTitle>
-          <DialogDescription className="text-muted-foreground">
+        <DialogHeader>
+          <DialogTitle>Optimize Product</DialogTitle>
+          <DialogDescription>
             AI-powered product optimization and sync to Shopify.
           </DialogDescription>
           {(product.updated_at || product.shopify_synced_at) && (
-            <div className="flex flex-col gap-1 text-xs text-muted-foreground bg-muted/30 rounded-md p-3 mt-2">
+            <div className="text-xs text-muted-foreground space-y-1 mt-2">
               {product.updated_at && (
-                <div className="flex justify-between">
-                  <span>Last edited:</span>
-                  <span className="font-mono">{new Date(product.updated_at).toLocaleString()}</span>
-                </div>
+                <div>Last edited: {new Date(product.updated_at).toLocaleString()}</div>
               )}
               {product.shopify_synced_at && (
-                <div className="flex justify-between">
-                  <span>Last synced:</span>
-                  <span className="font-mono text-success">{new Date(product.shopify_synced_at).toLocaleString()}</span>
-                </div>
+                <div>Last synced: {new Date(product.shopify_synced_at).toLocaleString()}</div>
               )}
             </div>
           )}
