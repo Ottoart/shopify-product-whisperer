@@ -79,7 +79,17 @@ serve(async (req) => {
     // Call OpenAI with user patterns
     let optimizedData;
     try {
+      console.log('Calling OpenAI with request data:', {
+        productHandle: validatedRequest.productHandle,
+        generateSEO: validatedRequest.generateSEO,
+        enhanceAllFields: validatedRequest.enhanceAllFields,
+        vendor: validatedRequest.productData?.vendor
+      });
       optimizedData = await callOpenAI(validatedRequest, env.openAIApiKey, user.id);
+      console.log('OpenAI returned optimized data with keys:', Object.keys(optimizedData));
+      console.log('Generated SEO title:', optimizedData.seo_title);
+      console.log('Generated SEO description:', optimizedData.seo_description);
+      console.log('Generated vendor:', optimizedData.vendor);
     } catch (e) {
       console.error('OpenAI API call failed:', e);
       return new Response(

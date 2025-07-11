@@ -228,7 +228,7 @@ ${patterns.map(p => `- ${p.pattern_type}: ${JSON.stringify(p.pattern_data)}`).jo
   console.log('Response structure:', Object.keys(aiResponse));
   
   const aiContent = aiResponse.choices[0].message.content;
-  console.log('AI response received:', aiContent.substring(0, 100) + '...');
+  console.log('AI response received:', aiContent.substring(0, 200) + '...');
   
   // Parse AI response
   try {
@@ -237,6 +237,10 @@ ${patterns.map(p => `- ${p.pattern_type}: ${JSON.stringify(p.pattern_data)}`).jo
     const jsonString = jsonMatch ? jsonMatch[0] : aiContent;
     const optimizedData = JSON.parse(jsonString);
     console.log('AI response parsed successfully');
+    console.log('Parsed data keys:', Object.keys(optimizedData));
+    console.log('SEO Title generated:', optimizedData.seo_title);
+    console.log('SEO Description generated:', optimizedData.seo_description);
+    console.log('Vendor generated:', optimizedData.vendor);
     
     // Validate required fields
     if (!optimizedData.title || !optimizedData.description || !optimizedData.tags) {

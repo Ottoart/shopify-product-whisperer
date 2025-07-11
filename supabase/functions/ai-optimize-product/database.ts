@@ -67,11 +67,15 @@ export async function updateProduct(
     updateData.category = optimizedData.category;
   }
 
-  // Always update SEO fields (usually not manually edited)
+  // Always update SEO fields (usually not manually edited) - with debugging
+  console.log('AI generated seo_title:', optimizedData.seo_title);
+  console.log('AI generated seo_description:', optimizedData.seo_description);
+  console.log('AI generated vendor:', optimizedData.vendor);
+  
   updateData.seo_title = optimizedData.seo_title;
   updateData.seo_description = optimizedData.seo_description;
 
-  // Add optional fields only if they have values and weren't manually edited
+  // Update vendor (only preserve if manually edited very recently)
   if (optimizedData.vendor && !wasManuallyEdited('vendor')) {
     updateData.vendor = optimizedData.vendor;
   }
