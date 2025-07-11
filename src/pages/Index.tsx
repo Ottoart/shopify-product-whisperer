@@ -54,6 +54,21 @@ export interface UpdatedProduct {
   tags: string;
   category?: string;
   vendor?: string;
+  seoTitle?: string;
+  seoDescription?: string;
+  published?: boolean;
+  variantPrice?: number;
+  variantCompareAtPrice?: number;
+  variantSku?: string;
+  variantBarcode?: string;
+  variantGrams?: number;
+  variantInventoryQty?: number;
+  variantInventoryPolicy?: string;
+  variantRequiresShipping?: boolean;
+  variantTaxable?: boolean;
+  googleShoppingCondition?: string;
+  googleShoppingGender?: string;
+  googleShoppingAgeGroup?: string;
 }
 
 const Index = () => {

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAIOptimizationWithLearning } from "@/hooks/useAIOptimizationWithLearning";
@@ -30,6 +31,22 @@ interface ProductComparisonProps {
     tags: string;
     type: string;
     category: string;
+    vendor?: string;
+    seo_title?: string;
+    seo_description?: string;
+    published?: boolean;
+    variant_price?: number;
+    variant_compare_at_price?: number;
+    variant_sku?: string;
+    variant_barcode?: string;
+    variant_grams?: number;
+    variant_inventory_qty?: number;
+    variant_inventory_policy?: string;
+    variant_requires_shipping?: boolean;
+    variant_taxable?: boolean;
+    google_shopping_condition?: string;
+    google_shopping_gender?: string;
+    google_shopping_age_group?: string;
   };
   onSave: () => void;
   onReprocess?: (productData: any) => void;
@@ -43,11 +60,37 @@ export function ProductComparison({
   onSave,
   onReprocess
 }: ProductComparisonProps) {
+  // Basic fields
   const [editedTitle, setEditedTitle] = useState(optimizedProduct.title);
   const [editedDescription, setEditedDescription] = useState(optimizedProduct.description);
   const [editedTags, setEditedTags] = useState(optimizedProduct.tags);
   const [editedType, setEditedType] = useState(optimizedProduct.type);
   const [editedCategory, setEditedCategory] = useState(optimizedProduct.category);
+  const [editedVendor, setEditedVendor] = useState(optimizedProduct.vendor || '');
+  
+  // SEO fields
+  const [editedSeoTitle, setEditedSeoTitle] = useState(optimizedProduct.seo_title || '');
+  const [editedSeoDescription, setEditedSeoDescription] = useState(optimizedProduct.seo_description || '');
+  
+  // Product settings
+  const [editedPublished, setEditedPublished] = useState(optimizedProduct.published || false);
+  
+  // Variant fields
+  const [editedVariantPrice, setEditedVariantPrice] = useState(optimizedProduct.variant_price || 0);
+  const [editedVariantCompareAtPrice, setEditedVariantCompareAtPrice] = useState(optimizedProduct.variant_compare_at_price || 0);
+  const [editedVariantSku, setEditedVariantSku] = useState(optimizedProduct.variant_sku || '');
+  const [editedVariantBarcode, setEditedVariantBarcode] = useState(optimizedProduct.variant_barcode || '');
+  const [editedVariantGrams, setEditedVariantGrams] = useState(optimizedProduct.variant_grams || 0);
+  const [editedVariantInventoryQty, setEditedVariantInventoryQty] = useState(optimizedProduct.variant_inventory_qty || 0);
+  const [editedVariantInventoryPolicy, setEditedVariantInventoryPolicy] = useState(optimizedProduct.variant_inventory_policy || 'deny');
+  const [editedVariantRequiresShipping, setEditedVariantRequiresShipping] = useState(optimizedProduct.variant_requires_shipping !== false);
+  const [editedVariantTaxable, setEditedVariantTaxable] = useState(optimizedProduct.variant_taxable !== false);
+  
+  // Google Shopping fields
+  const [editedGoogleShoppingCondition, setEditedGoogleShoppingCondition] = useState(optimizedProduct.google_shopping_condition || 'new');
+  const [editedGoogleShoppingGender, setEditedGoogleShoppingGender] = useState(optimizedProduct.google_shopping_gender || 'unisex');
+  const [editedGoogleShoppingAgeGroup, setEditedGoogleShoppingAgeGroup] = useState(optimizedProduct.google_shopping_age_group || 'adult');
+  
   const [isLoading, setIsLoading] = useState(false);
   const [draftName, setDraftName] = useState('');
   const [selectedDraftId, setSelectedDraftId] = useState<string>('');
@@ -64,6 +107,22 @@ export function ProductComparison({
     setEditedTags(optimizedProduct.tags);
     setEditedType(optimizedProduct.type);
     setEditedCategory(optimizedProduct.category);
+    setEditedVendor(optimizedProduct.vendor || '');
+    setEditedSeoTitle(optimizedProduct.seo_title || '');
+    setEditedSeoDescription(optimizedProduct.seo_description || '');
+    setEditedPublished(optimizedProduct.published || false);
+    setEditedVariantPrice(optimizedProduct.variant_price || 0);
+    setEditedVariantCompareAtPrice(optimizedProduct.variant_compare_at_price || 0);
+    setEditedVariantSku(optimizedProduct.variant_sku || '');
+    setEditedVariantBarcode(optimizedProduct.variant_barcode || '');
+    setEditedVariantGrams(optimizedProduct.variant_grams || 0);
+    setEditedVariantInventoryQty(optimizedProduct.variant_inventory_qty || 0);
+    setEditedVariantInventoryPolicy(optimizedProduct.variant_inventory_policy || 'deny');
+    setEditedVariantRequiresShipping(optimizedProduct.variant_requires_shipping !== false);
+    setEditedVariantTaxable(optimizedProduct.variant_taxable !== false);
+    setEditedGoogleShoppingCondition(optimizedProduct.google_shopping_condition || 'new');
+    setEditedGoogleShoppingGender(optimizedProduct.google_shopping_gender || 'unisex');
+    setEditedGoogleShoppingAgeGroup(optimizedProduct.google_shopping_age_group || 'adult');
   }, [optimizedProduct]);
 
   const handleSave = async () => {
@@ -77,6 +136,22 @@ export function ProductComparison({
           category: editedCategory,
           body_html: editedDescription,
           tags: editedTags,
+          vendor: editedVendor,
+          seo_title: editedSeoTitle,
+          seo_description: editedSeoDescription,
+          published: editedPublished,
+          variant_price: editedVariantPrice,
+          variant_compare_at_price: editedVariantCompareAtPrice,
+          variant_sku: editedVariantSku,
+          variant_barcode: editedVariantBarcode,
+          variant_grams: editedVariantGrams,
+          variant_inventory_qty: editedVariantInventoryQty,
+          variant_inventory_policy: editedVariantInventoryPolicy,
+          variant_requires_shipping: editedVariantRequiresShipping,
+          variant_taxable: editedVariantTaxable,
+          google_shopping_condition: editedGoogleShoppingCondition,
+          google_shopping_gender: editedGoogleShoppingGender,
+          google_shopping_age_group: editedGoogleShoppingAgeGroup,
           updated_at: new Date().toISOString(),
         })
         .eq('handle', originalProduct.handle);
@@ -87,7 +162,7 @@ export function ProductComparison({
 
       toast({
         title: "Product updated successfully",
-        description: "Your changes have been saved.",
+        description: "All changes have been saved.",
       });
       
       // Notify QueueManager that user accepted changes
@@ -126,7 +201,7 @@ export function ProductComparison({
         type: originalProduct.type,
         description: originalProduct.body_html,
         tags: originalProduct.tags,
-        vendor: originalProduct.vendor || 'Premium Beauty' // Use actual vendor or fallback
+        vendor: originalProduct.vendor
       };
       
       onReprocess(productData);
@@ -159,28 +234,54 @@ export function ProductComparison({
       tags: editedTags,
       type: editedType,
       category: editedCategory,
+      vendor: editedVendor,
+      seo_title: editedSeoTitle,
+      seo_description: editedSeoDescription,
+      published: editedPublished,
+      variant_price: editedVariantPrice,
+      variant_compare_at_price: editedVariantCompareAtPrice,
+      variant_sku: editedVariantSku,
+      variant_barcode: editedVariantBarcode,
+      variant_grams: editedVariantGrams,
+      variant_inventory_qty: editedVariantInventoryQty,
+      variant_inventory_policy: editedVariantInventoryPolicy,
+      variant_requires_shipping: editedVariantRequiresShipping,
+      variant_taxable: editedVariantTaxable,
+      google_shopping_condition: editedGoogleShoppingCondition,
+      google_shopping_gender: editedGoogleShoppingGender,
+      google_shopping_age_group: editedGoogleShoppingAgeGroup,
     };
 
     saveDraft(draftName, optimizedData);
-    setDraftName(''); // Clear draft name after saving
+    setDraftName('');
   };
 
   const handleLoadDraft = (draftId: string) => {
     const draft = drafts?.find(d => d.id === draftId);
     if (draft && draft.optimized_data && typeof draft.optimized_data === 'object') {
-      const data = draft.optimized_data as {
-        title: string;
-        description: string;
-        tags: string;
-        type: string;
-        category: string;
-      };
+      const data = draft.optimized_data as any;
       
-      setEditedTitle(data.title);
-      setEditedDescription(data.description);
-      setEditedTags(data.tags);
-      setEditedType(data.type);
-      setEditedCategory(data.category);
+      setEditedTitle(data.title || '');
+      setEditedDescription(data.description || '');
+      setEditedTags(data.tags || '');
+      setEditedType(data.type || '');
+      setEditedCategory(data.category || '');
+      setEditedVendor(data.vendor || '');
+      setEditedSeoTitle(data.seo_title || '');
+      setEditedSeoDescription(data.seo_description || '');
+      setEditedPublished(data.published || false);
+      setEditedVariantPrice(data.variant_price || 0);
+      setEditedVariantCompareAtPrice(data.variant_compare_at_price || 0);
+      setEditedVariantSku(data.variant_sku || '');
+      setEditedVariantBarcode(data.variant_barcode || '');
+      setEditedVariantGrams(data.variant_grams || 0);
+      setEditedVariantInventoryQty(data.variant_inventory_qty || 0);
+      setEditedVariantInventoryPolicy(data.variant_inventory_policy || 'deny');
+      setEditedVariantRequiresShipping(data.variant_requires_shipping !== false);
+      setEditedVariantTaxable(data.variant_taxable !== false);
+      setEditedGoogleShoppingCondition(data.google_shopping_condition || 'new');
+      setEditedGoogleShoppingGender(data.google_shopping_gender || 'unisex');
+      setEditedGoogleShoppingAgeGroup(data.google_shopping_age_group || 'adult');
       
       toast({
         title: "Draft Loaded",
@@ -191,7 +292,7 @@ export function ProductComparison({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Product Optimization Comparison</DialogTitle>
         </DialogHeader>
@@ -203,7 +304,7 @@ export function ProductComparison({
           </TabsList>
           
           <TabsContent value="comparison" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-red-600">Original Version</h3>
                 
@@ -211,6 +312,13 @@ export function ProductComparison({
                   <Label className="text-sm font-medium">Title:</Label>
                   <div className="p-3 bg-red-50 border border-red-200 rounded-md mt-1">
                     <p className="text-sm">{originalProduct.title}</p>
+                  </div>
+                </div>
+                
+                <div>
+                  <Label className="text-sm font-medium">Vendor:</Label>
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-md mt-1">
+                    <p className="text-sm">{originalProduct.vendor || 'No vendor'}</p>
                   </div>
                 </div>
                 
@@ -255,6 +363,13 @@ export function ProductComparison({
                 </div>
                 
                 <div>
+                  <Label className="text-sm font-medium">Vendor:</Label>
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
+                    <p className="text-sm">{optimizedProduct.vendor || 'No vendor'}</p>
+                  </div>
+                </div>
+                
+                <div>
                   <Label className="text-sm font-medium">Type:</Label>
                   <div className="p-3 bg-green-50 border border-green-200 rounded-md mt-1">
                     <p className="text-sm">{optimizedProduct.type}</p>
@@ -268,7 +383,6 @@ export function ProductComparison({
                          dangerouslySetInnerHTML={{ __html: optimizedProduct.description }} />
                   </div>
                 </div>
-                
                 
                 <div>
                   <Label className="text-sm font-medium">Category:</Label>
@@ -379,87 +493,276 @@ export function ProductComparison({
               </div>
             </div>
             
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="edit-title">Product Title</Label>
-                <Input
-                  id="edit-title"
-                  value={editedTitle}
-                  onChange={(e) => setEditedTitle(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
+            <Tabs defaultValue="basic" className="w-full">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="basic">Basic Info</TabsTrigger>
+                <TabsTrigger value="seo">SEO</TabsTrigger>
+                <TabsTrigger value="variant">Variant Details</TabsTrigger>
+                <TabsTrigger value="shopping">Google Shopping</TabsTrigger>
+              </TabsList>
               
-              <div>
-                <Label htmlFor="edit-type">Product Type</Label>
-                <Input
-                  id="edit-type"
-                  value={editedType}
-                  onChange={(e) => setEditedType(e.target.value)}
-                  className="mt-1"
-                  placeholder="e.g., Shampoo, Conditioner, Hair Oil"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="edit-description">Product Description (HTML)</Label>
-                <Textarea
-                  id="edit-description"
-                  value={editedDescription}
-                  onChange={(e) => setEditedDescription(e.target.value)}
-                  rows={15}
-                  className="mt-1 font-mono text-sm"
-                  placeholder="Enter HTML formatted description..."
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="edit-tags">Tags (comma-separated)</Label>
-                <Input
-                  id="edit-tags"
-                  value={editedTags}
-                  onChange={(e) => setEditedTags(e.target.value)}
-                  className="mt-1"
-                  placeholder="tag1, tag2, tag3"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="edit-category">Product Category</Label>
-                <Input
-                  id="edit-category"
-                  value={editedCategory}
-                  onChange={(e) => setEditedCategory(e.target.value)}
-                  className="mt-1"
-                  placeholder="e.g., Health & Beauty > Personal Care > Cosmetics > Hair Care"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Preview</Label>
-                <div className="p-4 border rounded-md bg-gray-50">
-                  <h4 className="font-semibold mb-2">{editedTitle}</h4>
-                  <div className="text-sm text-gray-600 mb-2">
-                    <strong>Type:</strong> {editedType}
+              <TabsContent value="basic" className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="edit-title">Product Title</Label>
+                    <Input
+                      id="edit-title"
+                      value={editedTitle}
+                      onChange={(e) => setEditedTitle(e.target.value)}
+                      className="mt-1"
+                    />
                   </div>
-                  <div className="text-sm text-gray-600 mb-2">
-                    <strong>Category:</strong> {editedCategory}
+                  
+                  <div>
+                    <Label htmlFor="edit-vendor">Vendor/Brand</Label>
+                    <Input
+                      id="edit-vendor"
+                      value={editedVendor}
+                      onChange={(e) => setEditedVendor(e.target.value)}
+                      className="mt-1"
+                      placeholder="Enter vendor or brand name"
+                    />
                   </div>
-                  <div className="prose prose-sm max-w-none mb-2" 
-                       dangerouslySetInnerHTML={{ __html: editedDescription }} />
-                  <div className="text-sm text-gray-600">
-                    <strong>Tags:</strong> {editedTags}
+                  
+                  <div>
+                    <Label htmlFor="edit-type">Product Type</Label>
+                    <Input
+                      id="edit-type"
+                      value={editedType}
+                      onChange={(e) => setEditedType(e.target.value)}
+                      className="mt-1"
+                      placeholder="e.g., Shampoo, Conditioner, Hair Oil"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="edit-category">Product Category</Label>
+                    <Input
+                      id="edit-category"
+                      value={editedCategory}
+                      onChange={(e) => setEditedCategory(e.target.value)}
+                      className="mt-1"
+                      placeholder="e.g., Health & Beauty > Personal Care > Cosmetics > Hair Care"
+                    />
                   </div>
                 </div>
-              </div>
-            </div>
+                
+                <div>
+                  <Label htmlFor="edit-tags">Tags (comma-separated)</Label>
+                  <Input
+                    id="edit-tags"
+                    value={editedTags}
+                    onChange={(e) => setEditedTags(e.target.value)}
+                    className="mt-1"
+                    placeholder="tag1, tag2, tag3"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="edit-description">Product Description (HTML)</Label>
+                  <Textarea
+                    id="edit-description"
+                    value={editedDescription}
+                    onChange={(e) => setEditedDescription(e.target.value)}
+                    rows={15}
+                    className="mt-1 font-mono text-sm"
+                    placeholder="Enter HTML formatted description..."
+                  />
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="published"
+                    checked={editedPublished}
+                    onCheckedChange={setEditedPublished}
+                  />
+                  <Label htmlFor="published">Published</Label>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="seo" className="space-y-4">
+                <div>
+                  <Label htmlFor="edit-seo-title">SEO Title</Label>
+                  <Input
+                    id="edit-seo-title"
+                    value={editedSeoTitle}
+                    onChange={(e) => setEditedSeoTitle(e.target.value)}
+                    className="mt-1"
+                    placeholder="SEO optimized title"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="edit-seo-description">SEO Description</Label>
+                  <Textarea
+                    id="edit-seo-description"
+                    value={editedSeoDescription}
+                    onChange={(e) => setEditedSeoDescription(e.target.value)}
+                    rows={4}
+                    className="mt-1"
+                    placeholder="SEO meta description"
+                  />
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="variant" className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="edit-price">Price ($)</Label>
+                    <Input
+                      id="edit-price"
+                      type="number"
+                      step="0.01"
+                      value={editedVariantPrice}
+                      onChange={(e) => setEditedVariantPrice(parseFloat(e.target.value) || 0)}
+                      className="mt-1"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="edit-compare-price">Compare At Price ($)</Label>
+                    <Input
+                      id="edit-compare-price"
+                      type="number"
+                      step="0.01"
+                      value={editedVariantCompareAtPrice}
+                      onChange={(e) => setEditedVariantCompareAtPrice(parseFloat(e.target.value) || 0)}
+                      className="mt-1"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="edit-sku">SKU</Label>
+                    <Input
+                      id="edit-sku"
+                      value={editedVariantSku}
+                      onChange={(e) => setEditedVariantSku(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="edit-barcode">Barcode</Label>
+                    <Input
+                      id="edit-barcode"
+                      value={editedVariantBarcode}
+                      onChange={(e) => setEditedVariantBarcode(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="edit-weight">Weight (grams)</Label>
+                    <Input
+                      id="edit-weight"
+                      type="number"
+                      value={editedVariantGrams}
+                      onChange={(e) => setEditedVariantGrams(parseInt(e.target.value) || 0)}
+                      className="mt-1"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="edit-inventory">Inventory Quantity</Label>
+                    <Input
+                      id="edit-inventory"
+                      type="number"
+                      value={editedVariantInventoryQty}
+                      onChange={(e) => setEditedVariantInventoryQty(parseInt(e.target.value) || 0)}
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <Label htmlFor="edit-inventory-policy">Inventory Policy</Label>
+                  <Select value={editedVariantInventoryPolicy} onValueChange={setEditedVariantInventoryPolicy}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="deny">Deny (Don't allow overselling)</SelectItem>
+                      <SelectItem value="continue">Continue (Allow overselling)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="requires-shipping"
+                      checked={editedVariantRequiresShipping}
+                      onCheckedChange={setEditedVariantRequiresShipping}
+                    />
+                    <Label htmlFor="requires-shipping">Requires Shipping</Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="taxable"
+                      checked={editedVariantTaxable}
+                      onCheckedChange={setEditedVariantTaxable}
+                    />
+                    <Label htmlFor="taxable">Taxable</Label>
+                  </div>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="shopping" className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="edit-condition">Condition</Label>
+                    <Select value={editedGoogleShoppingCondition} onValueChange={setEditedGoogleShoppingCondition}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="new">New</SelectItem>
+                        <SelectItem value="refurbished">Refurbished</SelectItem>
+                        <SelectItem value="used">Used</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="edit-gender">Gender</Label>
+                    <Select value={editedGoogleShoppingGender} onValueChange={setEditedGoogleShoppingGender}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="unisex">Unisex</SelectItem>
+                        <SelectItem value="male">Male</SelectItem>
+                        <SelectItem value="female">Female</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="edit-age-group">Age Group</Label>
+                    <Select value={editedGoogleShoppingAgeGroup} onValueChange={setEditedGoogleShoppingAgeGroup}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="adult">Adult</SelectItem>
+                        <SelectItem value="kids">Kids</SelectItem>
+                        <SelectItem value="toddler">Toddler</SelectItem>
+                        <SelectItem value="infant">Infant</SelectItem>
+                        <SelectItem value="newborn">Newborn</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
             
             <div className="flex justify-end space-x-2 pt-4">
               <Button variant="outline" onClick={handleCancel}>
                 Cancel
               </Button>
               <Button onClick={handleSave} disabled={isLoading}>
-                {isLoading ? 'Saving...' : 'Save Changes'}
+                {isLoading ? 'Saving...' : 'Save All Changes'}
               </Button>
             </div>
           </TabsContent>

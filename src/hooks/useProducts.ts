@@ -165,6 +165,21 @@ export const useProducts = () => {
           body_html: updatedData.description,
           tags: updatedData.tags,
           vendor: updatedData.vendor,
+          seo_title: updatedData.seoTitle,
+          seo_description: updatedData.seoDescription,
+          published: updatedData.published,
+          variant_price: updatedData.variantPrice,
+          variant_compare_at_price: updatedData.variantCompareAtPrice,
+          variant_sku: updatedData.variantSku,
+          variant_barcode: updatedData.variantBarcode,
+          variant_grams: updatedData.variantGrams,
+          variant_inventory_qty: updatedData.variantInventoryQty,
+          variant_inventory_policy: updatedData.variantInventoryPolicy,
+          variant_requires_shipping: updatedData.variantRequiresShipping,
+          variant_taxable: updatedData.variantTaxable,
+          google_shopping_condition: updatedData.googleShoppingCondition,
+          google_shopping_gender: updatedData.googleShoppingGender,
+          google_shopping_age_group: updatedData.googleShoppingAgeGroup,
         })
         .eq('handle', handle)
         .eq('user_id', session.user.id);

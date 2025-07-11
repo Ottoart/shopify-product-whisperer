@@ -78,11 +78,22 @@ export function SingleProductProcessor({
             description: product.bodyHtml,
             tags: product.tags,
             vendor: product.vendor,
+            seo_title: product.seoTitle,
+            seo_description: product.seoDescription,
+            published: product.published,
             variant_price: product.variantPrice,
             variant_compare_at_price: product.variantCompareAtPrice,
             variant_sku: product.variantSku,
             variant_barcode: product.variantBarcode,
-            variant_grams: product.variantGrams
+            variant_grams: product.variantGrams,
+            variant_inventory_qty: product.variantInventoryQty,
+            variant_inventory_policy: product.variantInventoryPolicy,
+            variant_requires_shipping: product.variantRequiresShipping,
+            variant_taxable: product.variantTaxable,
+            google_shopping_condition: product.googleShoppingCondition,
+            google_shopping_gender: product.googleShoppingGender,
+            google_shopping_age_group: product.googleShoppingAgeGroup,
+            category: product.category
           },
           useDirectAI: useDirectAI,
           customPromptTemplate: useDirectAI ? customPromptTemplate : undefined
@@ -144,7 +155,22 @@ export function SingleProductProcessor({
       description: optimizedData.description,
       tags: optimizedData.tags,
       category: optimizedData.category || 'Health & Beauty > Personal Care',
-      vendor: optimizedData.vendor || product.vendor
+      vendor: optimizedData.vendor || product.vendor,
+      seoTitle: optimizedData.seo_title || product.seoTitle,
+      seoDescription: optimizedData.seo_description || product.seoDescription,
+      published: optimizedData.published !== undefined ? optimizedData.published : product.published,
+      variantPrice: optimizedData.variant_price || product.variantPrice,
+      variantCompareAtPrice: optimizedData.variant_compare_at_price || product.variantCompareAtPrice,
+      variantSku: optimizedData.variant_sku || product.variantSku,
+      variantBarcode: optimizedData.variant_barcode || product.variantBarcode,
+      variantGrams: optimizedData.variant_grams || product.variantGrams,
+      variantInventoryQty: optimizedData.variant_inventory_qty || product.variantInventoryQty,
+      variantInventoryPolicy: optimizedData.variant_inventory_policy || product.variantInventoryPolicy,
+      variantRequiresShipping: optimizedData.variant_requires_shipping !== undefined ? optimizedData.variant_requires_shipping : product.variantRequiresShipping,
+      variantTaxable: optimizedData.variant_taxable !== undefined ? optimizedData.variant_taxable : product.variantTaxable,
+      googleShoppingCondition: optimizedData.google_shopping_condition || product.googleShoppingCondition,
+      googleShoppingGender: optimizedData.google_shopping_gender || product.googleShoppingGender,
+      googleShoppingAgeGroup: optimizedData.google_shopping_age_group || product.googleShoppingAgeGroup
     };
 
     onProductUpdated(product.handle, updatedData);
