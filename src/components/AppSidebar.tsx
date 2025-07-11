@@ -59,7 +59,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar
-      className={collapsed ? "w-14" : "w-64"}
+      className={`${collapsed ? "w-12" : "w-56"} transition-all duration-300 hover:w-56 group`}
       collapsible="icon"
     >
       <SidebarContent>
@@ -67,7 +67,9 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupLabel className="text-primary font-semibold">
             <Home className="h-4 w-4 mr-2" />
-            {!collapsed && "PrepFox"}
+            <span className={`${collapsed ? "group-hover:inline hidden" : "inline"} transition-all duration-300`}>
+              PrepFox
+            </span>
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -79,15 +81,13 @@ export function AppSidebar() {
                       end={item.url === "/"}
                       className={getNavCls}
                       title={collapsed ? item.description : undefined}
-                    >
-                      <item.icon className="h-4 w-4" />
-                      {!collapsed && (
-                        <div className="flex flex-col">
-                          <span>{item.title}</span>
-                          <span className="text-xs text-muted-foreground">{item.description}</span>
+                      >
+                        <item.icon className="h-4 w-4 flex-shrink-0" />
+                        <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col transition-all duration-300 overflow-hidden`}>
+                          <span className="whitespace-nowrap">{item.title}</span>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">{item.description}</span>
                         </div>
-                      )}
-                    </NavLink>
+                      </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -99,7 +99,9 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupLabel className="text-primary">
             <Zap className="h-4 w-4 mr-2" />
-            {!collapsed && "Tools"}
+            <span className={`${collapsed ? "group-hover:inline hidden" : "inline"} transition-all duration-300`}>
+              Tools
+            </span>
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -110,15 +112,13 @@ export function AppSidebar() {
                       to={item.url} 
                       className={getNavCls}
                       title={collapsed ? item.description : undefined}
-                    >
-                      <item.icon className="h-4 w-4" />
-                      {!collapsed && (
-                        <div className="flex flex-col">
-                          <span>{item.title}</span>
-                          <span className="text-xs text-muted-foreground">{item.description}</span>
+                      >
+                        <item.icon className="h-4 w-4 flex-shrink-0" />
+                        <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col transition-all duration-300 overflow-hidden`}>
+                          <span className="whitespace-nowrap">{item.title}</span>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">{item.description}</span>
                         </div>
-                      )}
-                    </NavLink>
+                      </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -130,7 +130,9 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupLabel className="text-primary">
             <Database className="h-4 w-4 mr-2" />
-            {!collapsed && "Shopify"}
+            <span className={`${collapsed ? "group-hover:inline hidden" : "inline"} transition-all duration-300`}>
+              Shopify
+            </span>
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -141,15 +143,13 @@ export function AppSidebar() {
                       to={item.url} 
                       className={getNavCls}
                       title={collapsed ? item.description : undefined}
-                    >
-                      <item.icon className="h-4 w-4" />
-                      {!collapsed && (
-                        <div className="flex flex-col">
-                          <span>{item.title}</span>
-                          <span className="text-xs text-muted-foreground">{item.description}</span>
+                      >
+                        <item.icon className="h-4 w-4 flex-shrink-0" />
+                        <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col transition-all duration-300 overflow-hidden`}>
+                          <span className="whitespace-nowrap">{item.title}</span>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">{item.description}</span>
                         </div>
-                      )}
-                    </NavLink>
+                      </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -161,7 +161,9 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupLabel className="text-primary">
             <Settings className="h-4 w-4 mr-2" />
-            {!collapsed && "Settings"}
+            <span className={`${collapsed ? "group-hover:inline hidden" : "inline"} transition-all duration-300`}>
+              Settings
+            </span>
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -172,15 +174,13 @@ export function AppSidebar() {
                       to={item.url} 
                       className={getNavCls}
                       title={collapsed ? item.description : undefined}
-                    >
-                      <item.icon className="h-4 w-4" />
-                      {!collapsed && (
-                        <div className="flex flex-col">
-                          <span>{item.title}</span>
-                          <span className="text-xs text-muted-foreground">{item.description}</span>
+                      >
+                        <item.icon className="h-4 w-4 flex-shrink-0" />
+                        <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col transition-all duration-300 overflow-hidden`}>
+                          <span className="whitespace-nowrap">{item.title}</span>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">{item.description}</span>
                         </div>
-                      )}
-                    </NavLink>
+                      </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
