@@ -309,7 +309,23 @@ export function SingleProductProcessor({
             description: optimizedData.description,
             tags: optimizedData.tags,
             type: optimizedData.type || product.type,
-            category: optimizedData.category || 'Health & Beauty > Personal Care'
+            category: optimizedData.category || 'Health & Beauty > Personal Care',
+            vendor: optimizedData.vendor,
+            seo_title: optimizedData.seo_title,
+            seo_description: optimizedData.seo_description,
+            published: optimizedData.published,
+            variant_price: optimizedData.variant_price,
+            variant_compare_at_price: optimizedData.variant_compare_at_price,
+            variant_sku: optimizedData.variant_sku,
+            variant_barcode: optimizedData.variant_barcode,
+            variant_grams: optimizedData.variant_grams,
+            variant_inventory_qty: optimizedData.variant_inventory_qty,
+            variant_inventory_policy: optimizedData.variant_inventory_policy,
+            variant_requires_shipping: optimizedData.variant_requires_shipping,
+            variant_taxable: optimizedData.variant_taxable,
+            google_shopping_condition: optimizedData.google_shopping_condition,
+            google_shopping_gender: optimizedData.google_shopping_gender,
+            google_shopping_age_group: optimizedData.google_shopping_age_group
           }}
           onSave={handleSaveOptimization}
           onReprocess={async (productData) => {
