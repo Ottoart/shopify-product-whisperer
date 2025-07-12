@@ -168,17 +168,28 @@ serve(async (req) => {
     }
 
     const totalSynced = syncResults.reduce((sum, result) => sum + (result.synced || 0), 0);
+    const totalErrors = syncResults.filter(result => result.error).length;
+    const totalStores = syncResults.length;
+    
+    // Determine overall success - if all stores failed, it's a failure
+    const isSuccess = totalErrors < totalStores; // Success if at least one store worked
+    
+    const message = totalErrors === 0 
+      ? `Sync completed successfully. Total orders synced: ${totalSynced}`
+      : totalErrors === totalStores
+      ? `Sync failed for all stores. No orders synced.`
+      : `Sync partially completed. ${totalSynced} orders synced from ${totalStores - totalErrors} of ${totalStores} stores.`;
 
     return new Response(
       JSON.stringify({ 
-        success: true, 
-        message: `Sync completed. Total orders synced: ${totalSynced}`,
+        success: isSuccess, 
+        message,
         synced: totalSynced,
         results: syncResults
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 
+        status: isSuccess ? 200 : 400
       }
     );
 
