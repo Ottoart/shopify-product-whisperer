@@ -47,6 +47,72 @@ export function ShippingOverview() {
   const { toast } = useToast();
   
   const [dateRange, setDateRange] = useState("last30days");
+  const [syncing, setSyncing] = useState(false);
+  const [storeConfigs, setStoreConfigs] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetchStoreConfigs();
+  }, []);
+
+  const fetchStoreConfigs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('store_configurations')
+        .select('*')
+        .eq('is_active', true);
+      
+      if (error) throw error;
+      setStoreConfigs(data || []);
+    } catch (error) {
+      console.error('Error fetching store configs:', error);
+    }
+  };
+
+  const handleSyncOrders = async () => {
+    setSyncing(true);
+    try {
+      const response = await supabase.functions.invoke('sync-orders');
+      if (response.error) throw response.error;
+      
+      toast({
+        title: "Sync initiated",
+        description: "Updating orders from all stores...",
+      });
+    } catch (error) {
+      console.error('Error syncing orders:', error);
+      toast({
+        title: "Sync failed",
+        description: "Failed to sync orders. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleSyncSpecificStore = async (storeName: string) => {
+    setSyncing(true);
+    try {
+      const response = await supabase.functions.invoke('sync-orders', {
+        body: { storeName }
+      });
+      if (response.error) throw response.error;
+      
+      toast({
+        title: "Store sync initiated",
+        description: `Updating orders from ${storeName}...`,
+      });
+    } catch (error) {
+      console.error('Error syncing store:', error);
+      toast({
+        title: "Sync failed",
+        description: `Failed to sync ${storeName}. Please try again.`,
+        variant: "destructive",
+      });
+    } finally {
+      setSyncing(false);
+    }
+  };
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [dailyData, setDailyData] = useState<DailyData[]>([]);
