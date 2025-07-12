@@ -5,8 +5,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StoreConfig } from '@/components/StoreConfig';
 
 const Settings = () => {
-  const [storeUrl, setStoreUrl] = useState(() => localStorage.getItem('shopify_domain') || '');
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('shopify_access_token') || '');
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -54,17 +52,6 @@ const Settings = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="p-4 border border-border rounded-lg">
-                    <h4 className="font-medium mb-2">Shopify Private App</h4>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Your Shopify private app credentials for secure API access
-                    </p>
-                    <div className="text-sm">
-                      <p><strong>Status:</strong> {apiKey ? 'Connected' : 'Not configured'}</p>
-                      <p><strong>Store:</strong> {storeUrl || 'Not set'}</p>
-                    </div>
-                  </div>
-                  
                   <div className="p-4 border border-border rounded-lg">
                     <h4 className="font-medium mb-2">OpenAI Integration</h4>
                     <p className="text-sm text-muted-foreground">
