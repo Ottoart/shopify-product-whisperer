@@ -10,7 +10,11 @@ import {
   Zap,
   Users,
   TrendingUp,
-  Globe
+  Globe,
+  Truck,
+  MapPin,
+  RotateCcw,
+  Calculator
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 
@@ -43,6 +47,13 @@ const toolItems = [
   { title: "Analytics", url: "/analytics", icon: TrendingUp, description: "View performance metrics" },
   { title: "Product Activity", url: "/activity", icon: Activity, description: "Track product changes" },
   { title: "Bulk Editor", url: "/bulk-editor", icon: FileText, description: "Edit multiple products" },
+];
+
+const shippingItems = [
+  { title: "Order Management", url: "/shipping", icon: Package, description: "Manage orders and shipping" },
+  { title: "Tracking Center", url: "/shipping/tracking", icon: MapPin, description: "Track shipment status" },
+  { title: "Returns Portal", url: "/shipping/returns", icon: RotateCcw, description: "Handle returns and refunds" },
+  { title: "Rate Calculator", url: "/shipping/rates", icon: Calculator, description: "Calculate shipping costs" },
 ];
 
 const settingsItems = [
@@ -108,6 +119,37 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {toolItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink 
+                      to={item.url} 
+                      className={getNavCls}
+                      title={collapsed ? item.description : undefined}
+                      >
+                        <item.icon className="h-4 w-4 flex-shrink-0" />
+                        <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col transition-all duration-300 overflow-hidden`}>
+                          <span className="whitespace-nowrap">{item.title}</span>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">{item.description}</span>
+                        </div>
+                      </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Shipping */}
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-primary">
+            <Truck className="h-4 w-4 mr-2" />
+            <span className={`${collapsed ? "group-hover:inline hidden" : "inline"} transition-all duration-300`}>
+              Shipping
+            </span>
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {shippingItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink 
