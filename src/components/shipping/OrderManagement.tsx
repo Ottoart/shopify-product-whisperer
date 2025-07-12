@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { SyncProgressDialog } from './SyncProgressDialog';
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -212,14 +211,15 @@ export function OrderManagement() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <Card>
-          <CardContent className="p-12 text-center">
-            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-            <h3 className="text-lg font-medium mb-2">Loading orders...</h3>
-            <p className="text-muted-foreground">Fetching your latest orders</p>
-          </CardContent>
-        </Card>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-semibold">Loading Orders...</h1>
+        </div>
+        <div className="border rounded-lg p-12 text-center">
+          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+          <h3 className="text-lg font-medium mb-2">Loading orders...</h3>
+          <p className="text-muted-foreground">Fetching your latest orders</p>
+        </div>
       </div>
     );
   }
