@@ -366,31 +366,11 @@ async function syncWalmartOrders(storeConfig: any, user: any, supabase: any, syn
   
   console.log(`Fetching orders from Walmart API: ${apiUrl}`);
   
-  // For Walmart API, we need to generate an access token using client credentials
-  // access_token field contains Client ID, domain field contains Client Secret
-  const clientId = storeConfig.access_token;
-  const clientSecret = storeConfig.domain;
+  // For Walmart API, we'll use the stored access_token directly as the bearer token
+  // This assumes the access_token is already a valid Walmart API token
+  const accessToken = storeConfig.access_token;
   
-  console.log(`Using Walmart credentials: Client ID: ${clientId.substring(0, 8)}...`);
-  
-  // First, get access token
-  const tokenResponse = await fetch('https://marketplace.walmartapis.com/v3/token', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Authorization': `Basic ${btoa(`${clientId}:${clientSecret}`)}`
-    },
-    body: 'grant_type=client_credentials'
-  });
-
-  if (!tokenResponse.ok) {
-    const errorText = await tokenResponse.text();
-    console.error(`Walmart token error: ${tokenResponse.status} ${tokenResponse.statusText}`, errorText);
-    throw new Error(`Failed to get Walmart access token: ${tokenResponse.status} ${tokenResponse.statusText}`);
-  }
-
-  const tokenData = await tokenResponse.json();
-  const accessToken = tokenData.access_token;
+  console.log(`Using Walmart access token: ${accessToken.substring(0, 8)}...`);
 
   // Now fetch orders with the access token
   const ordersResponse = await fetch(apiUrl, {
