@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Store, Plus, Trash2, Eye, EyeOff } from "lucide-react";
+import { Store, Plus, Trash2, Eye, EyeOff, Edit, Save, X } from "lucide-react";
 
 interface StoreConfiguration {
   id: string;
@@ -24,6 +24,8 @@ export function StoreConfig() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [showTokens, setShowTokens] = useState<{ [key: string]: boolean }>({});
+  const [editingStore, setEditingStore] = useState<string | null>(null);
+  const [editData, setEditData] = useState<{[key: string]: {store_name: string, domain: string, access_token: string}}>({});
   const [formData, setFormData] = useState({
     store_name: "",
     domain: "",
@@ -130,6 +132,71 @@ export function StoreConfig() {
     }));
   };
 
+  const startEdit = (store: StoreConfiguration) => {
+    setEditingStore(store.id);
+    setEditData(prev => ({
+      ...prev,
+      [store.id]: {
+        store_name: store.store_name,
+        domain: store.domain,
+        access_token: store.access_token
+      }
+    }));
+  };
+
+  const cancelEdit = (storeId: string) => {
+    setEditingStore(null);
+    setEditData(prev => {
+      const newData = { ...prev };
+      delete newData[storeId];
+      return newData;
+    });
+  };
+
+  const handleUpdate = async (storeId: string) => {
+    const data = editData[storeId];
+    if (!data || !data.store_name || !data.domain || !data.access_token) {
+      toast({
+        title: "Missing fields",
+        description: "Please fill in all required fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('store_configurations')
+        .update({
+          store_name: data.store_name,
+          domain: data.domain,
+          access_token: data.access_token
+        })
+        .eq('id', storeId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Store updated successfully!",
+        description: "Your Shopify store configuration has been saved"
+      });
+
+      setEditingStore(null);
+      setEditData(prev => {
+        const newData = { ...prev };
+        delete newData[storeId];
+        return newData;
+      });
+      fetchStores();
+    } catch (error: any) {
+      toast({
+        title: "Error updating store",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
   if (loading) {
     return (
       <Card>
@@ -211,44 +278,121 @@ export function StoreConfig() {
           {stores.map((store) => (
             <Card key={store.id}>
               <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-3">
-                      <h3 className="font-semibold text-lg">{store.store_name}</h3>
-                      <Badge variant="outline">Shopify</Badge>
-                      {store.is_active && <Badge variant="default">Active</Badge>}
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Domain: {store.domain}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm text-muted-foreground">
-                        Token: {showTokens[store.id] 
-                          ? store.access_token 
-                          : '••••••••••••••••••••••••••••••••'
-                        }
-                      </p>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => toggleTokenVisibility(store.id)}
-                      >
-                        {showTokens[store.id] ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDelete(store.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                 <div className="flex items-center justify-between">
+                   {editingStore === store.id ? (
+                     // Edit mode
+                     <div className="space-y-4 flex-1 mr-4">
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                         <div>
+                           <Label htmlFor={`edit_store_name_${store.id}`}>Store Name</Label>
+                           <Input
+                             id={`edit_store_name_${store.id}`}
+                             value={editData[store.id]?.store_name || ''}
+                             onChange={(e) => setEditData(prev => ({
+                               ...prev,
+                               [store.id]: { ...prev[store.id], store_name: e.target.value }
+                             }))}
+                           />
+                         </div>
+                         <div>
+                           <Label htmlFor={`edit_domain_${store.id}`}>Store Domain</Label>
+                           <Input
+                             id={`edit_domain_${store.id}`}
+                             placeholder="mystore.myshopify.com"
+                             value={editData[store.id]?.domain || ''}
+                             onChange={(e) => setEditData(prev => ({
+                               ...prev,
+                               [store.id]: { ...prev[store.id], domain: e.target.value }
+                             }))}
+                           />
+                         </div>
+                       </div>
+                       <div>
+                         <Label htmlFor={`edit_access_token_${store.id}`}>Access Token</Label>
+                         <Input
+                           id={`edit_access_token_${store.id}`}
+                           type="password"
+                           placeholder="shpat_xxxxxxxxxxxxxxxxxxxxx"
+                           value={editData[store.id]?.access_token || ''}
+                           onChange={(e) => setEditData(prev => ({
+                             ...prev,
+                             [store.id]: { ...prev[store.id], access_token: e.target.value }
+                           }))}
+                         />
+                       </div>
+                     </div>
+                   ) : (
+                     // View mode
+                     <div className="space-y-2">
+                       <div className="flex items-center gap-3">
+                         <h3 className="font-semibold text-lg">{store.store_name}</h3>
+                         <Badge variant="outline">Shopify</Badge>
+                         {store.is_active && <Badge variant="default">Active</Badge>}
+                       </div>
+                       <p className="text-sm text-muted-foreground">
+                         Domain: {store.domain}
+                       </p>
+                       <div className="flex items-center gap-2">
+                         <p className="text-sm text-muted-foreground">
+                           Token: {showTokens[store.id] 
+                             ? store.access_token 
+                             : '••••••••••••••••••••••••••••••••'
+                           }
+                         </p>
+                         <Button
+                           size="sm"
+                           variant="ghost"
+                           onClick={() => toggleTokenVisibility(store.id)}
+                         >
+                           {showTokens[store.id] ? (
+                             <EyeOff className="h-4 w-4" />
+                           ) : (
+                             <Eye className="h-4 w-4" />
+                           )}
+                         </Button>
+                       </div>
+                     </div>
+                   )}
+                   
+                   <div className="flex gap-2">
+                     {editingStore === store.id ? (
+                       // Edit mode buttons
+                       <>
+                         <Button
+                           variant="default"
+                           size="sm"
+                           onClick={() => handleUpdate(store.id)}
+                         >
+                           <Save className="h-4 w-4" />
+                         </Button>
+                         <Button
+                           variant="outline"
+                           size="sm"
+                           onClick={() => cancelEdit(store.id)}
+                         >
+                           <X className="h-4 w-4" />
+                         </Button>
+                       </>
+                     ) : (
+                       // View mode buttons
+                       <>
+                         <Button
+                           variant="outline"
+                           size="sm"
+                           onClick={() => startEdit(store)}
+                         >
+                           <Edit className="h-4 w-4" />
+                         </Button>
+                         <Button
+                           variant="outline"
+                           size="sm"
+                           onClick={() => handleDelete(store.id)}
+                         >
+                           <Trash2 className="h-4 w-4" />
+                         </Button>
+                       </>
+                     )}
+                   </div>
                 </div>
               </CardContent>
             </Card>
