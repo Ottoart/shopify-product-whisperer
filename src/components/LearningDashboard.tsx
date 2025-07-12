@@ -146,7 +146,7 @@ export const LearningDashboard = () => {
           .eq('field_name', fieldName)
           .eq('edit_type', 'manual')
           .order('created_at', { ascending: false })
-          .limit(3); // Get up to 3 examples per pattern type
+          .limit(8); // Get up to 8 examples per pattern type
 
         if (error) {
           console.error('Error loading edit examples:', error);
@@ -223,12 +223,22 @@ export const LearningDashboard = () => {
 
       if (error) throw error;
 
-      // Reload examples after deletion
+      // Update local state immediately
+      setEditExamples(prev => {
+        const updated = { ...prev };
+        Object.keys(updated).forEach(patternType => {
+          updated[patternType] = updated[patternType].filter(ex => ex.id !== editId);
+        });
+        return updated;
+      });
+
+      // Reload examples and patterns to ensure accuracy
       await loadEditExamples(patterns);
+      await loadPatterns(); // Refresh patterns as they may be affected
       
       toast({
         title: "Edit Removed",
-        description: "The erroneous edit has been removed. Re-analyze patterns to update learning.",
+        description: "The edit has been removed and patterns updated automatically.",
       });
     } catch (error) {
       console.error('Error deleting edit:', error);
@@ -246,14 +256,22 @@ export const LearningDashboard = () => {
     try {
       const { error } = await supabase
         .from('user_edit_patterns')
-        .update({ is_approved: isApproved })
+        .update({ 
+          is_approved: isApproved,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', patternId);
 
       if (error) throw error;
 
+      // Update local state immediately
       setPatterns(prev => 
         prev.map(p => 
-          p.id === patternId ? { ...p, is_approved: isApproved } : p
+          p.id === patternId ? { 
+            ...p, 
+            is_approved: isApproved,
+            updated_at: new Date().toISOString()
+          } : p
         )
       );
 
@@ -262,13 +280,52 @@ export const LearningDashboard = () => {
         description: isApproved ? "AI will apply this style to future optimizations" : "AI will avoid this pattern",
       });
       
-      // Reload to update stats
-      loadPatterns();
+      // Reload to update stats and ensure consistency
+      await loadPatterns();
     } catch (error) {
       console.error('Error updating pattern:', error);
       toast({
         title: "Update Failed",
         description: "Failed to update pattern approval.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updatePatternData = async (patternId: string, newData: any) => {
+    try {
+      const { error } = await supabase
+        .from('user_edit_patterns')
+        .update({ 
+          pattern_data: newData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', patternId);
+
+      if (error) throw error;
+
+      // Update local state
+      setPatterns(prev => 
+        prev.map(p => 
+          p.id === patternId ? { 
+            ...p, 
+            pattern_data: newData,
+            updated_at: new Date().toISOString()
+          } : p
+        )
+      );
+
+      toast({
+        title: "Pattern Updated",
+        description: "Pattern data has been successfully updated.",
+      });
+      
+      await loadPatterns();
+    } catch (error) {
+      console.error('Error updating pattern data:', error);
+      toast({
+        title: "Update Failed",
+        description: "Failed to update pattern data.",
         variant: "destructive",
       });
     }
@@ -603,63 +660,90 @@ export const LearningDashboard = () => {
                             </p>
                           </div>
 
-                          <div className="space-y-3">
-                            <h5 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
-                              Examples of Your Changes:
-                            </h5>
                             <div className="space-y-3">
-                              {editExamples[pattern.pattern_type]?.length > 0 ? (
-                                editExamples[pattern.pattern_type].map((example, idx) => (
-                                   <div key={idx} className="space-y-2 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border">
-                                     <div className="flex items-center justify-between">
-                                       <div className="flex items-center gap-2">
-                                         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                                           Product: {example.product_handle}
-                                         </span>
-                                         <span className="text-xs text-muted-foreground">
-                                           {new Date(example.created_at).toLocaleDateString()}
-                                         </span>
+                              <div className="flex items-center justify-between">
+                                <h5 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+                                  Examples of Your Changes ({editExamples[pattern.pattern_type]?.length || 0} found):
+                                </h5>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => loadEditExamples(patterns)}
+                                  className="text-xs h-6"
+                                >
+                                  Refresh Examples
+                                </Button>
+                              </div>
+                              <div className="space-y-3 max-h-96 overflow-y-auto">
+                                {editExamples[pattern.pattern_type]?.length > 0 ? (
+                                  editExamples[pattern.pattern_type].map((example, idx) => (
+                                     <div key={example.id} className="space-y-2 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border hover:shadow-sm transition-shadow">
+                                       <div className="flex items-center justify-between">
+                                         <div className="flex items-center gap-2">
+                                           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                             Product: {example.product_handle}
+                                           </span>
+                                           <span className="text-xs text-muted-foreground">
+                                             {new Date(example.created_at).toLocaleDateString()}
+                                           </span>
+                                           <Badge variant="secondary" className="text-xs">
+                                             #{idx + 1}
+                                           </Badge>
+                                         </div>
+                                         <Button
+                                           size="sm"
+                                           variant="outline"
+                                           onClick={() => deleteEditExample(example.id)}
+                                           disabled={isDeletingEdit === example.id}
+                                           className="text-red-600 border-red-200 hover:bg-red-50 h-6 w-6 p-0"
+                                           title="Remove this example - patterns will auto-update"
+                                         >
+                                           {isDeletingEdit === example.id ? (
+                                             <Loader2 className="h-3 w-3 animate-spin" />
+                                           ) : (
+                                             <Trash2 className="h-3 w-3" />
+                                           )}
+                                         </Button>
                                        </div>
-                                       <Button
-                                         size="sm"
-                                         variant="outline"
-                                         onClick={() => deleteEditExample(example.id)}
-                                         disabled={isDeletingEdit === example.id}
-                                         className="text-red-600 border-red-200 hover:bg-red-50 h-6 w-6 p-0"
-                                         title="Remove this erroneous example"
-                                       >
-                                         {isDeletingEdit === example.id ? (
-                                           <Loader2 className="h-3 w-3 animate-spin" />
-                                         ) : (
-                                           <Trash2 className="h-3 w-3" />
-                                         )}
-                                       </Button>
-                                     </div>
-                                    <div className="space-y-2">
-                                      <div className="p-2 bg-red-50 dark:bg-red-950 rounded border border-red-200 dark:border-red-800">
-                                        <div className="text-xs font-medium text-red-600 dark:text-red-400 mb-1">Before:</div>
-                                        <div className="text-sm text-red-800 dark:text-red-200 font-mono">
-                                          {example.before_value || 'Empty'}
+                                      <div className="space-y-2">
+                                        <div className="p-3 bg-red-50 dark:bg-red-950 rounded border border-red-200 dark:border-red-800">
+                                          <div className="text-xs font-medium text-red-600 dark:text-red-400 mb-1">Before ({example.field_name}):</div>
+                                          <div className="text-sm text-red-800 dark:text-red-200 font-mono break-all">
+                                            {example.before_value || '(Empty)'}
+                                          </div>
                                         </div>
-                                      </div>
-                                      <div className="p-2 bg-green-50 dark:bg-green-950 rounded border border-green-200 dark:border-green-800">
-                                        <div className="text-xs font-medium text-green-600 dark:text-green-400 mb-1">After:</div>
-                                        <div className="text-sm text-green-800 dark:text-green-200 font-mono">
-                                          {example.after_value || 'Empty'}
+                                        <div className="p-3 bg-green-50 dark:bg-green-950 rounded border border-green-200 dark:border-green-800">
+                                          <div className="text-xs font-medium text-green-600 dark:text-green-400 mb-1">After ({example.field_name}):</div>
+                                          <div className="text-sm text-green-800 dark:text-green-200 font-mono break-all">
+                                            {example.after_value || '(Empty)'}
+                                          </div>
                                         </div>
+                                        {example.before_value && example.after_value && (
+                                          <div className="p-2 bg-blue-50 dark:bg-blue-950 rounded border border-blue-200 dark:border-blue-800">
+                                            <div className="text-xs font-medium text-blue-600 dark:text-blue-400 mb-1">Change Summary:</div>
+                                            <div className="text-xs text-blue-800 dark:text-blue-200">
+                                              {example.before_value.length} → {example.after_value.length} characters
+                                              {example.before_value.split(' ').length !== example.after_value.split(' ').length && 
+                                                ` | ${example.before_value.split(' ').length} → ${example.after_value.split(' ').length} words`
+                                              }
+                                            </div>
+                                          </div>
+                                        )}
                                       </div>
                                     </div>
+                                  ))
+                                ) : (
+                                  <div className="text-sm p-4 bg-yellow-50 dark:bg-yellow-950 rounded-lg border border-yellow-200 dark:border-yellow-800 text-center">
+                                    <p className="text-yellow-800 dark:text-yellow-200 mb-2">
+                                      No specific examples found for this pattern type.
+                                    </p>
+                                    <p className="text-xs text-yellow-600 dark:text-yellow-400">
+                                      AI learned this pattern from your general editing behavior across multiple fields.
+                                    </p>
                                   </div>
-                                ))
-                              ) : (
-                                <div className="text-sm p-3 bg-yellow-50 dark:bg-yellow-950 rounded-lg border border-yellow-200 dark:border-yellow-800 text-center">
-                                  <p className="text-yellow-800 dark:text-yellow-200">
-                                    No specific examples found. AI learned this pattern from your general editing behavior.
-                                  </p>
-                                </div>
-                              )}
+                                )}
+                              </div>
                             </div>
-                          </div>
 
                           {pattern.pattern_data && (
                             <div className="space-y-3">
