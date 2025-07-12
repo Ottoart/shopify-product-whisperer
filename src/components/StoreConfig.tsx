@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Store, Plus, Trash2, Eye, EyeOff, Edit, Save, X } from "lucide-react";
+import { Store, Plus, Trash2, Eye, EyeOff, Edit, Save, X, Settings } from "lucide-react";
 import { MarketplaceSelector } from "./MarketplaceSelector";
+import { StoreSettings } from "./StoreSettings";
 
 interface StoreConfiguration {
   id: string;
@@ -29,11 +30,22 @@ export function StoreConfig() {
   const [editingStore, setEditingStore] = useState<string | null>(null);
   const [editData, setEditData] = useState<{[key: string]: {store_name: string, domain: string, access_token: string}}>({});
   const [selectedMarketplace, setSelectedMarketplace] = useState<any>(null);
+  const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     store_name: "",
     domain: "",
     access_token: ""
   });
+
+  // If a store is selected, show the store settings
+  if (selectedStoreId) {
+    return (
+      <StoreSettings 
+        storeId={selectedStoreId} 
+        onBack={() => setSelectedStoreId(null)} 
+      />
+    );
+  }
 
   useEffect(() => {
     fetchStores();
@@ -403,23 +415,31 @@ export function StoreConfig() {
                          </Button>
                        </>
                      ) : (
-                       // View mode buttons
-                       <>
-                         <Button
-                           variant="outline"
-                           size="sm"
-                           onClick={() => startEdit(store)}
-                         >
-                           <Edit className="h-4 w-4" />
-                         </Button>
-                         <Button
-                           variant="outline"
-                           size="sm"
-                           onClick={() => handleDelete(store.id)}
-                         >
-                           <Trash2 className="h-4 w-4" />
-                         </Button>
-                       </>
+                        // View mode buttons
+                        <>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => setSelectedStoreId(store.id)}
+                          >
+                            <Settings className="h-4 w-4 mr-2" />
+                            Manage
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => startEdit(store)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDelete(store.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
                      )}
                    </div>
                 </div>
