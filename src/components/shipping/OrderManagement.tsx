@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { SyncProgressDialog } from './SyncProgressDialog';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { useOrders, type Order } from "@/hooks/useOrders";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,7 +28,10 @@ import {
   Download,
   Store,
   RefreshCw,
-  Zap
+  Zap,
+  MoreHorizontal,
+  Tag,
+  Users
 } from "lucide-react";
 
 export function OrderManagement() {
@@ -220,246 +224,281 @@ export function OrderManagement() {
     );
   }
 
+  const getAge = (orderDate: string) => {
+    const now = new Date();
+    const orderTime = new Date(orderDate);
+    const diffHours = Math.floor((now.getTime() - orderTime.getTime()) / (1000 * 60 * 60));
+    
+    if (diffHours < 24) {
+      return `${diffHours} hr`;
+    } else {
+      const diffDays = Math.floor(diffHours / 24);
+      return `${diffDays} hr`;
+    }
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Search and Filters */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5" />
-                {storeFilter ? `${storeFilter} Orders` : "Order Management"}
-              </CardTitle>
-              <CardDescription>
-                {storeFilter 
-                  ? `Orders from ${storeFilter} store only`
-                  : "Live feed of orders with color-coded statuses, filtering, and batch actions"
-                }
-              </CardDescription>
-            </div>
-            <Button onClick={handleSyncOrders} disabled={syncing}>
-              {syncing ? (
-                <>
-                  <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full mr-2"></div>
-                  Syncing...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Sync Orders
-                </>
-              )}
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search orders, customers..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            
-            <Select value={filterStore} onValueChange={setFilterStore}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="Filter by store" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Stores</SelectItem>
-                {Array.from(new Set(orders.map(o => o.storeName))).map(store => (
-                  <SelectItem key={store} value={store}>{store}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+    <div className="space-y-4">
+      {/* Header Section with Title and Reload */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl font-semibold">
+            {storeFilter ? `${storeFilter} - ` : ""}Awaiting Shipment
+          </h1>
+          <Button variant="ghost" size="sm" onClick={handleSyncOrders} disabled={syncing}>
+            <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
+            Reload
+          </Button>
+        </div>
+      </div>
 
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="awaiting">Awaiting Shipment</SelectItem>
-                <SelectItem value="processing">Processing</SelectItem>
-                <SelectItem value="shipped">Shipped</SelectItem>
-                <SelectItem value="delivered">Delivered</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
-                <SelectItem value="error">Error</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+      {/* Action Buttons Row */}
+      <div className="flex flex-wrap gap-2">
+        <Button disabled={selectedOrders.length === 0}>
+          <Printer className="h-4 w-4 mr-1" />
+          Create + Print Labels
+        </Button>
+        <Button variant="outline" disabled={selectedOrders.length === 0}>
+          Get Rate
+        </Button>
+        <Button variant="outline" disabled={selectedOrders.length === 0}>
+          <Printer className="h-4 w-4 mr-1" />
+          Print
+        </Button>
+        <Button variant="outline" disabled={selectedOrders.length === 0}>
+          <Users className="h-4 w-4 mr-1" />
+          Assign To
+        </Button>
+        <Button variant="outline" disabled={selectedOrders.length === 0}>
+          <Tag className="h-4 w-4 mr-1" />
+          Tag
+        </Button>
+        <Button variant="outline">
+          <Package className="h-4 w-4 mr-1" />
+          New Order
+        </Button>
+        <Button variant="outline" disabled={selectedOrders.length === 0}>
+          Bulk Update
+        </Button>
+        <Button variant="outline" disabled={selectedOrders.length === 0}>
+          Allocate
+        </Button>
+        <Button variant="outline" disabled={selectedOrders.length === 0}>
+          <MoreHorizontal className="h-4 w-4 mr-1" />
+          Other Actions
+        </Button>
+      </div>
 
-          {/* Bulk Actions */}
-          {selectedOrders.length > 0 && (
-            <div className="flex flex-wrap gap-2 p-4 bg-primary/5 rounded-lg border">
-              <span className="text-sm font-medium">
-                {selectedOrders.length} order{selectedOrders.length !== 1 ? 's' : ''} selected:
-              </span>
-              <Button size="sm" onClick={() => handleBulkAction("Print Labels")}>
-                <Printer className="h-4 w-4 mr-1" />
-                Print Labels
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => handleBulkAction("Update Status")}>
-                <Edit2 className="h-4 w-4 mr-1" />
-                Bulk Edit
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => handleBulkAction("Export")}>
-                <Download className="h-4 w-4 mr-1" />
-                Export
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Filter Controls */}
+      <div className="flex flex-wrap gap-2 items-center">
+        <Button variant="outline" size="sm" className="bg-blue-50 text-blue-700">
+          All
+        </Button>
+        <span className="text-sm text-muted-foreground">Filter By:</span>
+        
+        <Select value={filterStore} onValueChange={setFilterStore}>
+          <SelectTrigger className="w-32 h-8">
+            <SelectValue placeholder="Store" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Stores</SelectItem>
+            {Array.from(new Set(orders.map(o => o.storeName))).map(store => (
+              <SelectItem key={store} value={store}>{store}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-      {/* Orders List */}
-      <div className="space-y-4">
-        {filteredOrders.map((order) => (
-          <Card key={order.id} className="hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-start gap-4">
-                <Checkbox
-                  checked={selectedOrders.includes(order.id)}
-                  onCheckedChange={() => handleSelectOrder(order.id)}
+        <Select>
+          <SelectTrigger className="w-32 h-8">
+            <SelectValue placeholder="Destination" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select>
+          <SelectTrigger className="w-32 h-8">
+            <SelectValue placeholder="Assignee" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select>
+          <SelectTrigger className="w-24 h-8">
+            <SelectValue placeholder="Tag" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select>
+          <SelectTrigger className="w-36 h-8">
+            <SelectValue placeholder="Allocation Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select>
+          <SelectTrigger className="w-32 h-8">
+            <SelectValue placeholder="Order Date" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select>
+          <SelectTrigger className="w-24 h-8">
+            <SelectValue placeholder="Other" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Button variant="outline" size="sm">
+          Saved Filters
+        </Button>
+
+        <div className="ml-auto flex items-center gap-2">
+          <Button variant="outline" size="sm">
+            Group By
+          </Button>
+          <Button variant="outline" size="sm">
+            Columns
+          </Button>
+        </div>
+      </div>
+
+      {/* Orders Table */}
+      <div className="border rounded-lg">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/50">
+              <TableHead className="w-12">
+                <Checkbox 
+                  checked={selectedOrders.length === filteredOrders.length && filteredOrders.length > 0}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      setSelectedOrders(filteredOrders.map(o => o.id));
+                    } else {
+                      setSelectedOrders([]);
+                    }
+                  }}
                 />
-                
-                <div className="flex-1 space-y-4">
-                  {/* Header Row */}
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
-                    <div className="flex items-center gap-3">
-                      <h3 className="font-semibold text-lg">{order.orderNumber}</h3>
-                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                        <Store className="h-3 w-3 mr-1" />
-                        {order.storeName}
-                      </Badge>
-                      {getStatusBadge(order.status)}
-                      <div className="flex gap-1">
-                        {getWarningIcons(order)}
+              </TableHead>
+              <TableHead className="min-w-32">Order #</TableHead>
+              <TableHead className="min-w-80">Item Name</TableHead>
+              <TableHead className="w-20">Quantity</TableHead>
+              <TableHead className="min-w-40">Recipient</TableHead>
+              <TableHead className="w-20">Age</TableHead>
+              <TableHead className="min-w-24">Order</TableHead>
+              <TableHead className="w-20">Status</TableHead>
+              <TableHead className="w-24">Weight</TableHead>
+              <TableHead className="min-w-32">Notes</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredOrders.map((order) => (
+              <TableRow key={order.id} className="hover:bg-muted/30">
+                <TableCell>
+                  <Checkbox
+                    checked={selectedOrders.includes(order.id)}
+                    onCheckedChange={() => handleSelectOrder(order.id)}
+                  />
+                </TableCell>
+                <TableCell>
+                  <div className="font-mono text-blue-600 hover:underline cursor-pointer">
+                    {order.orderNumber}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="space-y-1">
+                    {order.items.map((item, index) => (
+                      <div key={index} className="text-sm">
+                        {item.productTitle}
+                        {item.sku && <span className="text-muted-foreground"> ({item.sku})</span>}
                       </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Calendar className="h-4 w-4" />
-                      {new Date(order.orderDate).toLocaleDateString()}
-                    </div>
+                    ))}
                   </div>
-
-                  {/* Details Row */}
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
-                    <div>
-                      <span className="font-medium">Customer:</span>
-                      <p>{order.customerName}</p>
-                    </div>
-                    <div>
-                      <span className="font-medium">Store:</span>
-                      <p>{order.storeName}</p>
-                    </div>
-                    <div>
-                      <span className="font-medium">Total:</span>
-                      <p className="flex items-center gap-1">
-                        <DollarSign className="h-3 w-3" />
-                        {order.totalAmount.toFixed(2)} {order.currency}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="font-medium">Shipping:</span>
-                      <p>{order.shippingAddress.country}</p>
-                    </div>
+                </TableCell>
+                <TableCell>
+                  <div className="space-y-1">
+                    {order.items.map((item, index) => (
+                      <div key={index} className="text-sm">{item.quantity}</div>
+                    ))}
                   </div>
-
-                  {/* Address */}
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-green-500 rounded-full flex-shrink-0"></div>
+                    <span className="text-sm">{order.customerName}</span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <span className="text-sm">{getAge(order.orderDate)}</span>
+                </TableCell>
+                <TableCell>
                   <div className="text-sm">
-                    <span className="font-medium">Address:</span>
-                    <p className={order.shippingAddress.validated ? "text-muted-foreground" : "text-red-600"}>
-                      {order.shippingAddress.line1}
-                      {order.shippingAddress.line2 && `, ${order.shippingAddress.line2}`}
-                      , {order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zip}, {order.shippingAddress.country}
-                    </p>
+                    {new Date(order.orderDate).toLocaleDateString('en-US', { 
+                      month: '2-digit', 
+                      day: '2-digit', 
+                      year: 'numeric' 
+                    })}
                   </div>
-
-                  {/* Items */}
-                  <div className="text-sm">
-                    <span className="font-medium">Items:</span>
-                    <div className="flex flex-wrap gap-2 mt-1">
-                      {order.items.map((item, index) => (
-                        <Badge key={index} variant="outline">
-                          {item.quantity}x {item.productTitle} {item.sku && `(${item.sku})`}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Tags */}
-                  {order.tags.length > 0 && (
-                    <div className="text-sm">
-                      <span className="font-medium">Tags:</span>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {order.tags.map((tag, index) => (
-                          <Badge key={index} variant="secondary">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Tracking */}
-                  {order.shippingDetails.trackingNumber && (
-                    <div className="text-sm">
-                      <span className="font-medium">Tracking:</span>
-                      <p className="font-mono">{order.shippingDetails.trackingNumber}</p>
-                    </div>
-                  )}
-
-                  {/* Actions */}
-                  <div className="flex flex-wrap gap-2 pt-2 border-t">
-                    <Button size="sm" variant="outline">
-                      <Edit2 className="h-4 w-4 mr-1" />
-                      Edit
-                    </Button>
-                    {order.status === 'awaiting' && (
-                      <Button size="sm">
-                        <Truck className="h-4 w-4 mr-1" />
-                        Create Label
-                      </Button>
-                    )}
-                    {order.shippingDetails.trackingNumber && (
-                      <Button size="sm" variant="outline">
-                        <Package className="h-4 w-4 mr-1" />
-                        Track
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                </TableCell>
+                <TableCell>
+                  <span className="text-xs px-2 py-1 bg-orange-100 text-orange-800 rounded">
+                    {order.status === 'awaiting' ? 'ON' : order.status.toUpperCase()}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <span className="text-sm">
+                    {order.packageDetails?.weight ? 
+                      `${order.packageDetails.weight} kg` : 
+                      '0 kg'
+                    }
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <span className="text-sm text-muted-foreground">
+                    {order.notes || '-'}
+                  </span>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
 
         {filteredOrders.length === 0 && (
-          <Card>
-            <CardContent className="p-12 text-center">
-              <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">No orders found</h3>
-              <p className="text-muted-foreground mb-4">
-                {searchTerm || filterStore !== "all" || filterStatus !== "all" 
-                  ? "Try adjusting your filters or search terms."
-                  : "No orders available. Sync with your connected stores to see orders."
-                }
-              </p>
-              {orders.length === 0 && (
-                <Button onClick={handleSyncOrders} disabled={syncing}>
-                  <Zap className="h-4 w-4 mr-2" />
-                  Sync Orders from Stores
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+          <div className="p-12 text-center">
+            <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-medium mb-2">No orders found</h3>
+            <p className="text-muted-foreground mb-4">
+              {searchTerm || filterStore !== "all" || filterStatus !== "all" 
+                ? "Try adjusting your filters or search terms."
+                : "No orders available. Sync with your connected stores to see orders."
+              }
+            </p>
+            {orders.length === 0 && (
+              <Button onClick={handleSyncOrders} disabled={syncing}>
+                <Zap className="h-4 w-4 mr-2" />
+                Sync Orders from Stores
+              </Button>
+            )}
+          </div>
         )}
+      </div>
+
+      {/* Footer with pagination info */}
+      <div className="text-sm text-muted-foreground">
+        Viewing 1 - {filteredOrders.length} of {filteredOrders.length}
       </div>
 
       <SyncProgressDialog
