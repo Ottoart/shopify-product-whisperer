@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { SyncProgressDialog } from './SyncProgressDialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -36,13 +37,19 @@ export function OrderManagement() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [syncing, setSyncing] = useState(false);
+  const [showSyncDialog, setShowSyncDialog] = useState(false);
+  const [syncData, setSyncData] = useState<any>(null);
+  const [syncCompleted, setSyncCompleted] = useState(false);
+  const [syncError, setSyncError] = useState(false);
+  const [backgroundSync, setBackgroundSync] = useState(false);
 
   const handleSyncOrders = async () => {
     setSyncing(true);
-    toast({
-      title: "🔄 Syncing orders...",
-      description: "Fetching latest orders from connected stores",
-    });
+    setShowSyncDialog(true);
+    setSyncCompleted(false);
+    setSyncError(false);
+    setSyncData(null);
+    setBackgroundSync(false);
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -60,21 +67,42 @@ export function OrderManagement() {
         throw response.error;
       }
 
-      await fetchOrders(); // Refresh the orders list
+      setSyncData(response.data);
+      setSyncCompleted(true);
+
+      // Only refresh orders if not in background mode
+      if (!backgroundSync) {
+        await fetchOrders();
+      }
       
-      toast({
-        title: "✅ Sync completed!",
-        description: response.data.message || "Orders have been synchronized",
-      });
+      if (!backgroundSync) {
+        toast({
+          title: "✅ Sync completed!",
+          description: response.data.message || "Orders have been synchronized",
+        });
+      }
     } catch (error: any) {
-      toast({
-        title: "Sync failed",
-        description: error.message || "Failed to sync orders",
-        variant: "destructive"
-      });
+      setSyncError(true);
+      setSyncData({ error: error.message });
+      
+      if (!backgroundSync) {
+        toast({
+          title: "Sync failed",
+          description: error.message || "Failed to sync orders",
+          variant: "destructive"
+        });
+      }
     } finally {
       setSyncing(false);
     }
+  };
+
+  const handleContinueBackground = () => {
+    setBackgroundSync(true);
+    toast({
+      title: "📱 Sync moved to background",
+      description: "We'll notify you when it's complete. Keep working!",
+    });
   };
 
   const getStatusBadge = (status: Order['status']) => {
@@ -420,6 +448,15 @@ export function OrderManagement() {
           </Card>
         )}
       </div>
+
+      <SyncProgressDialog
+        open={showSyncDialog}
+        onOpenChange={setShowSyncDialog}
+        onContinueBackground={handleContinueBackground}
+        syncData={syncData}
+        isCompleted={syncCompleted}
+        isError={syncError}
+      />
     </div>
   );
 }
