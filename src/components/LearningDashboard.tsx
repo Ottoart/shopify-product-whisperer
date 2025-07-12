@@ -61,6 +61,7 @@ export const LearningDashboard = () => {
   const [editExamples, setEditExamples] = useState<Record<string, EditExample[]>>({});
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshingExamples, setIsRefreshingExamples] = useState(false);
   const [stats, setStats] = useState<PatternStats | null>(null);
   const [isDeletingEdit, setIsDeletingEdit] = useState<string | null>(null);
   const { session } = useSessionContext();
@@ -73,7 +74,14 @@ export const LearningDashboard = () => {
     }
   }, [session?.user?.id]);
 
-  const loadPatterns = async () => {
+  const loadPatterns = async (showProgress = false) => {
+    if (showProgress) {
+      toast({
+        title: "🧠 Loading AI Patterns",
+        description: "Fetching your learned editing patterns...",
+      });
+    }
+    
     try {
       const { data, error } = await supabase
         .from('user_edit_patterns')
@@ -86,8 +94,15 @@ export const LearningDashboard = () => {
       const patternsData = data || [];
       setPatterns(patternsData);
       
+      if (showProgress) {
+        toast({
+          title: "📊 Analyzing Pattern Data",
+          description: `Processing ${patternsData.length} patterns and loading examples...`,
+        });
+      }
+      
       // Load edit examples for each pattern type
-      await loadEditExamples(patternsData);
+      await loadEditExamples(patternsData, showProgress);
       
       // Calculate stats
       if (patternsData.length > 0) {
@@ -115,6 +130,18 @@ export const LearningDashboard = () => {
           mostFrequentType: mostFrequent,
           recentActivity: recentCount
         });
+        
+        if (showProgress) {
+          toast({
+            title: "✅ Dashboard Updated",
+            description: `Loaded ${patternsData.length} patterns with ${approved} approved. Average confidence: ${Math.round(avgConf * 100)}%`,
+          });
+        }
+      } else if (showProgress) {
+        toast({
+          title: "📭 No Patterns Found",
+          description: "Start editing products manually to generate AI learning patterns.",
+        });
       }
     } catch (error) {
       console.error('Error loading patterns:', error);
@@ -128,14 +155,31 @@ export const LearningDashboard = () => {
     }
   };
 
-  const loadEditExamples = async (patternsData: EditPattern[]) => {
+  const loadEditExamples = async (patternsData: EditPattern[], showProgress = false) => {
+    if (showProgress) {
+      setIsRefreshingExamples(true);
+      toast({
+        title: "🔄 Refreshing Examples",
+        description: "Loading latest edit examples for all patterns...",
+      });
+    }
+    
     try {
       const examples: Record<string, EditExample[]> = {};
       
       // Get unique pattern types
       const patternTypes = [...new Set(patternsData.map(p => p.pattern_type))];
       
-      for (const patternType of patternTypes) {
+      for (let i = 0; i < patternTypes.length; i++) {
+        const patternType = patternTypes[i];
+        
+        if (showProgress) {
+          toast({
+            title: `📋 Loading Examples (${i + 1}/${patternTypes.length})`,
+            description: `Fetching examples for ${patternType.replace(/_/g, ' ')} pattern...`,
+          });
+        }
+        
         // Map pattern type to field names
         const fieldName = getFieldNameForPatternType(patternType);
         
@@ -159,8 +203,27 @@ export const LearningDashboard = () => {
       }
       
       setEditExamples(examples);
+      
+      if (showProgress) {
+        const totalExamples = Object.values(examples).reduce((sum, exs) => sum + exs.length, 0);
+        toast({
+          title: "✅ Examples Refreshed",
+          description: `Loaded ${totalExamples} examples across ${patternTypes.length} pattern types.`,
+        });
+      }
     } catch (error) {
       console.error('Error loading edit examples:', error);
+      if (showProgress) {
+        toast({
+          title: "❌ Refresh Failed",
+          description: "Failed to refresh examples. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      if (showProgress) {
+        setIsRefreshingExamples(false);
+      }
     }
   };
 
@@ -177,6 +240,11 @@ export const LearningDashboard = () => {
   const analyzePatterns = async () => {
     setIsAnalyzing(true);
     try {
+      toast({
+        title: "🔬 Starting AI Analysis",
+        description: "Analyzing your editing history to discover new patterns...",
+      });
+      
       console.log('Calling analyze-edit-patterns function...');
       const { data, error } = await supabase.functions.invoke('analyze-edit-patterns');
 
@@ -193,18 +261,24 @@ export const LearningDashboard = () => {
           title: "🧠 AI Analysis Complete!",
           description: `Discovered ${data.patterns.length} new learning patterns from your edits.`,
         });
-        await loadPatterns();
+        
+        toast({
+          title: "📊 Updating Dashboard",
+          description: "Refreshing patterns and examples with new discoveries...",
+        });
+        
+        await loadPatterns(true);
       } else {
         console.log('No patterns found, data:', data);
         toast({
-          title: "No New Patterns",
-          description: data?.message || "Make more manual edits to build patterns.",
+          title: "🔍 Analysis Complete",
+          description: data?.message || "No new patterns found. Continue editing to build more patterns.",
         });
       }
     } catch (error) {
       console.error('Error analyzing patterns:', error);
       toast({
-        title: "Analysis Failed",
+        title: "❌ Analysis Failed",
         description: `Failed to analyze editing patterns: ${error.message}`,
         variant: "destructive",
       });
@@ -215,6 +289,12 @@ export const LearningDashboard = () => {
 
   const deleteEditExample = async (editId: string) => {
     setIsDeletingEdit(editId);
+    
+    toast({
+      title: "🗑️ Removing Edit Example",
+      description: "Deleting selected example and updating patterns...",
+    });
+    
     try {
       const { error } = await supabase
         .from('product_edit_history')
@@ -222,6 +302,11 @@ export const LearningDashboard = () => {
         .eq('id', editId);
 
       if (error) throw error;
+
+      toast({
+        title: "📊 Updating Examples",
+        description: "Refreshing examples display after deletion...",
+      });
 
       // Update local state immediately
       setEditExamples(prev => {
@@ -233,17 +318,17 @@ export const LearningDashboard = () => {
       });
 
       // Reload examples and patterns to ensure accuracy
-      await loadEditExamples(patterns);
-      await loadPatterns(); // Refresh patterns as they may be affected
+      await loadEditExamples(patterns, true);
+      await loadPatterns(true); // Refresh patterns as they may be affected
       
       toast({
-        title: "Edit Removed",
-        description: "The edit has been removed and patterns updated automatically.",
+        title: "✅ Edit Removed Successfully",
+        description: "Example deleted and patterns updated automatically.",
       });
     } catch (error) {
       console.error('Error deleting edit:', error);
       toast({
-        title: "Delete Failed",
+        title: "❌ Delete Failed",
         description: "Failed to remove edit example.",
         variant: "destructive",
       });
@@ -668,10 +753,21 @@ export const LearningDashboard = () => {
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  onClick={() => loadEditExamples(patterns)}
+                                  onClick={() => loadEditExamples(patterns, true)}
+                                  disabled={isRefreshingExamples}
                                   className="text-xs h-6"
+                                  title="Refresh examples from database with progress tracking"
                                 >
-                                  Refresh Examples
+                                  {isRefreshingExamples ? (
+                                    <>
+                                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                      Refreshing...
+                                    </>
+                                  ) : (
+                                    <>
+                                      🔄 Refresh Examples
+                                    </>
+                                  )}
                                 </Button>
                               </div>
                               <div className="space-y-3 max-h-96 overflow-y-auto">
