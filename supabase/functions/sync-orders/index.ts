@@ -104,10 +104,11 @@ serve(async (req) => {
     if (req.method === 'POST') {
       try {
         const body = await req.json();
-        storeFilter = body.storeFilter;
+        storeFilter = body.storeFilter || body.storeName;
         console.log(`Store filter requested: ${storeFilter}`);
       } catch (e) {
         // No body or invalid JSON, proceed without filter
+        console.log('No request body or invalid JSON, syncing all stores');
       }
     }
 
