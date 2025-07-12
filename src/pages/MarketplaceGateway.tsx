@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   Store, 
   Package, 
@@ -48,10 +49,8 @@ export default function MarketplaceGateway() {
       id: 'shopify',
       name: 'Shopify',
       logo: '🛍️',
-      connected: true,
-      lastSync: '5 min ago',
-      accountName: 'my-store.myshopify.com',
-      status: 'connected'
+      connected: false,
+      status: 'disconnected'
     },
     {
       id: 'amazon-com',
@@ -82,6 +81,13 @@ export default function MarketplaceGateway() {
       status: 'disconnected'
     },
     {
+      id: 'walmart',
+      name: 'Walmart Canada Store',
+      logo: '🛒',
+      connected: false,
+      status: 'disconnected'
+    },
+    {
       id: 'ebay',
       name: 'eBay',
       logo: '🏪',
@@ -89,6 +95,51 @@ export default function MarketplaceGateway() {
       status: 'disconnected'
     }
   ]);
+
+  useEffect(() => {
+    fetchStoreConnections();
+  }, []);
+
+  const fetchStoreConnections = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: storeConfigs, error } = await supabase
+        .from('store_configurations')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true);
+
+      if (error) {
+        console.error('Error fetching store configurations:', error);
+        return;
+      }
+
+      if (storeConfigs && storeConfigs.length > 0) {
+        setMarketplaces(prev => prev.map(marketplace => {
+          const storeConfig = storeConfigs.find(config => 
+            config.platform === marketplace.id || 
+            config.store_name === marketplace.name ||
+            (marketplace.id === 'walmart' && config.platform === 'walmart')
+          );
+          
+          if (storeConfig) {
+            return {
+              ...marketplace,
+              connected: true,
+              status: 'connected' as const,
+              lastSync: '5 min ago',
+              accountName: storeConfig.store_name
+            };
+          }
+          return marketplace;
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching store connections:', error);
+    }
+  };
 
   const modules: Module[] = [
     {
