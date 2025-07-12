@@ -347,12 +347,18 @@ async function syncWalmartOrders(storeConfig: any, user: any, supabase: any, syn
   console.log(`Fetching orders from Walmart API: ${apiUrl}`);
   
   // For Walmart API, we need to generate an access token using client credentials
+  // access_token field contains Client ID, domain field contains Client Secret
+  const clientId = storeConfig.access_token;
+  const clientSecret = storeConfig.domain;
+  
+  console.log(`Using Walmart credentials: Client ID: ${clientId.substring(0, 8)}...`);
+  
   // First, get access token
   const tokenResponse = await fetch('https://marketplace.walmartapis.com/v3/token', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
-      'Authorization': `Basic ${btoa(`${storeConfig.access_token}:${storeConfig.domain}`)}`
+      'Authorization': `Basic ${btoa(`${clientId}:${clientSecret}`)}`
     },
     body: 'grant_type=client_credentials'
   });
