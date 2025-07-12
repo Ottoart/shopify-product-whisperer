@@ -97,10 +97,18 @@ serve(async (req) => {
 
       try {
         // Fetch orders from Shopify
-        // Extract shop name from domain (remove .myshopify.com if present)
-        const shopName = storeConfig.domain.replace('.myshopify.com', '').replace('.myshopifystore.com', '');
-        const shopifyResponse = await fetch(
-          `https://${shopName}.myshopify.com/admin/api/2023-10/orders.json?status=any&limit=250`,
+        // Use the domain as-is, or construct proper URL
+        let apiUrl;
+        if (storeConfig.domain.includes('.myshopify.com') || storeConfig.domain.includes('.myshopifystore.com')) {
+          // Domain already includes the full shopify domain
+          apiUrl = `https://${storeConfig.domain}/admin/api/2023-10/orders.json?status=any&limit=250`;
+        } else {
+          // Domain is just the shop name, add .myshopify.com
+          apiUrl = `https://${storeConfig.domain}.myshopify.com/admin/api/2023-10/orders.json?status=any&limit=250`;
+        }
+        
+        console.log(`Fetching orders from: ${apiUrl}`);
+        const shopifyResponse = await fetch(apiUrl,
           {
             headers: {
               'X-Shopify-Access-Token': storeConfig.access_token,
