@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { useOrders, type Order } from "@/hooks/useOrders";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,7 +31,8 @@ import {
   Zap,
   MoreHorizontal,
   Tag,
-  Users
+  Users,
+  ChevronDown
 } from "lucide-react";
 
 export function OrderManagement() {
@@ -48,6 +50,7 @@ export function OrderManagement() {
   const [syncCompleted, setSyncCompleted] = useState(false);
   const [syncError, setSyncError] = useState(false);
   const [backgroundSync, setBackgroundSync] = useState(false);
+  const [storeConfigs, setStoreConfigs] = useState<any[]>([]);
 
   // Update local filter when URL parameter changes
   useEffect(() => {
@@ -55,6 +58,18 @@ export function OrderManagement() {
       setFilterStore(storeFilter);
     }
   }, [storeFilter]);
+
+  // Fetch store configurations
+  useEffect(() => {
+    const fetchStoreConfigs = async () => {
+      const { data } = await supabase
+        .from('store_configurations')
+        .select('*')
+        .eq('is_active', true);
+      setStoreConfigs(data || []);
+    };
+    fetchStoreConfigs();
+  }, []);
 
   const handleSyncOrders = async () => {
     setSyncing(true);
@@ -105,6 +120,53 @@ export function OrderManagement() {
           variant: "destructive"
         });
       }
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleSyncSpecificStore = async (storeName: string) => {
+    setSyncing(true);
+    setShowSyncDialog(true);
+    setSyncCompleted(false);
+    setSyncError(false);
+    setSyncData(null);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Not authenticated');
+      }
+
+      // Pass specific store filter to the sync function
+      const response = await supabase.functions.invoke('sync-orders', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: { storeFilter: storeName }
+      });
+
+      if (response.error) {
+        throw response.error;
+      }
+
+      setSyncData(response.data);
+      setSyncCompleted(true);
+      await fetchOrders();
+      
+      toast({
+        title: "✅ Store sync completed!",
+        description: `${storeName} orders have been synchronized`,
+      });
+    } catch (error: any) {
+      setSyncError(true);
+      setSyncData({ error: error.message });
+      
+      toast({
+        title: "Sync failed",
+        description: error.message || `Failed to sync ${storeName} orders`,
+        variant: "destructive"
+      });
     } finally {
       setSyncing(false);
     }
@@ -249,6 +311,31 @@ export function OrderManagement() {
             <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
             Reload
           </Button>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" disabled={syncing}>
+                <Zap className="h-4 w-4 mr-1" />
+                Update Syncing
+                <ChevronDown className="h-4 w-4 ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleSyncOrders}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Sync All Stores
+              </DropdownMenuItem>
+              {storeConfigs.map((store) => (
+                <DropdownMenuItem 
+                  key={store.id} 
+                  onClick={() => handleSyncSpecificStore(store.store_name)}
+                >
+                  <Store className="h-4 w-4 mr-2" />
+                  Sync {store.store_name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
