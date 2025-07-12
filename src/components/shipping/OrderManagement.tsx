@@ -301,7 +301,7 @@ export function OrderManagement() {
 
   return (
     <div className="space-y-4">
-      {/* Header Section with Title and Reload */}
+      {/* Header Section with Title and Store Sync */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h1 className="text-xl font-semibold">
@@ -311,27 +311,37 @@ export function OrderManagement() {
             <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
             Reload
           </Button>
-          
+        </div>
+        
+        {/* Update All Stores Button - positioned like ShipStation */}
+        <div className="flex items-center gap-2">
+          <div className="text-sm text-muted-foreground">
+            {storeConfigs.length} Active Stores
+          </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" disabled={syncing}>
-                <Zap className="h-4 w-4 mr-1" />
-                Update Syncing
-                <ChevronDown className="h-4 w-4 ml-1" />
+              <Button variant="outline" disabled={syncing} className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
+                <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
+                Update All Stores
+                <ChevronDown className="h-4 w-4 ml-2" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem onClick={handleSyncOrders}>
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Sync All Stores
               </DropdownMenuItem>
+              <div className="px-2 py-1 text-xs text-muted-foreground border-t mt-1">
+                Individual Stores:
+              </div>
               {storeConfigs.map((store) => (
                 <DropdownMenuItem 
                   key={store.id} 
                   onClick={() => handleSyncSpecificStore(store.store_name)}
+                  className="pl-6"
                 >
                   <Store className="h-4 w-4 mr-2" />
-                  Sync {store.store_name}
+                  {store.store_name}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
