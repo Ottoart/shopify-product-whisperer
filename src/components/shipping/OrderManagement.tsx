@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { SyncProgressDialog } from './SyncProgressDialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,8 +33,10 @@ import {
 export function OrderManagement() {
   const { toast } = useToast();
   const { orders, loading, fetchOrders } = useOrders();
+  const [searchParams] = useSearchParams();
+  const storeFilter = searchParams.get('store');
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStore, setFilterStore] = useState("all");
+  const [filterStore, setFilterStore] = useState(storeFilter || "all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [syncing, setSyncing] = useState(false);
@@ -42,6 +45,13 @@ export function OrderManagement() {
   const [syncCompleted, setSyncCompleted] = useState(false);
   const [syncError, setSyncError] = useState(false);
   const [backgroundSync, setBackgroundSync] = useState(false);
+
+  // Update local filter when URL parameter changes
+  useEffect(() => {
+    if (storeFilter) {
+      setFilterStore(storeFilter);
+    }
+  }, [storeFilter]);
 
   const handleSyncOrders = async () => {
     setSyncing(true);
@@ -219,10 +229,13 @@ export function OrderManagement() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Package className="h-5 w-5" />
-                Order Management
+                {storeFilter ? `${storeFilter} Orders` : "Order Management"}
               </CardTitle>
               <CardDescription>
-                Live feed of orders with color-coded statuses, filtering, and batch actions
+                {storeFilter 
+                  ? `Orders from ${storeFilter} store only`
+                  : "Live feed of orders with color-coded statuses, filtering, and batch actions"
+                }
               </CardDescription>
             </div>
             <Button onClick={handleSyncOrders} disabled={syncing}>

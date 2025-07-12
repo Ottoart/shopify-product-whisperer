@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   BarChart3, 
   Package, 
@@ -14,7 +15,8 @@ import {
   Truck,
   MapPin,
   RotateCcw,
-  Calculator
+  Calculator,
+  Store
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 
@@ -65,6 +67,26 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const currentPath = location.pathname;
+  const [stores, setStores] = useState<Array<{id: string, store_name: string, platform: string}>>([]);
+
+  useEffect(() => {
+    const fetchStores = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('store_configurations')
+          .select('id, store_name, platform')
+          .eq('is_active', true)
+          .order('store_name');
+        
+        if (error) throw error;
+        setStores(data || []);
+      } catch (error) {
+        console.error('Error fetching stores:', error);
+      }
+    };
+
+    fetchStores();
+  }, []);
 
   const isActive = (path: string) => currentPath === path;
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
@@ -149,23 +171,91 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {shippingItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+              {/* Main Order Management - All Stores */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <NavLink 
+                    to="/shipping" 
+                    end
+                    className={getNavCls}
+                    title={collapsed ? "View all orders from all stores" : undefined}
+                    >
+                      <Package className="h-4 w-4 flex-shrink-0" />
+                      <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col transition-all duration-300 overflow-hidden`}>
+                        <span className="whitespace-nowrap">All Orders</span>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">View orders from all stores</span>
+                      </div>
+                    </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {/* Dynamic Store Subcategories */}
+              {stores.map((store) => (
+                <SidebarMenuItem key={store.id}>
                   <SidebarMenuButton asChild>
                     <NavLink 
-                      to={item.url} 
+                      to={`/shipping?store=${encodeURIComponent(store.store_name)}`}
                       className={getNavCls}
-                      title={collapsed ? item.description : undefined}
+                      title={collapsed ? `Orders from ${store.store_name}` : undefined}
                       >
-                        <item.icon className="h-4 w-4 flex-shrink-0" />
+                        <Store className="h-4 w-4 flex-shrink-0 ml-4" />
                         <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col transition-all duration-300 overflow-hidden`}>
-                          <span className="whitespace-nowrap">{item.title}</span>
-                          <span className="text-xs text-muted-foreground whitespace-nowrap">{item.description}</span>
+                          <span className="whitespace-nowrap">{store.store_name}</span>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">{store.platform} orders</span>
                         </div>
                       </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+
+              {/* Other Shipping Tools */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <NavLink 
+                    to="/shipping/tracking" 
+                    className={getNavCls}
+                    title={collapsed ? "Track shipment status" : undefined}
+                    >
+                      <MapPin className="h-4 w-4 flex-shrink-0" />
+                      <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col transition-all duration-300 overflow-hidden`}>
+                        <span className="whitespace-nowrap">Tracking Center</span>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">Track shipment status</span>
+                      </div>
+                    </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <NavLink 
+                    to="/shipping/returns" 
+                    className={getNavCls}
+                    title={collapsed ? "Handle returns and refunds" : undefined}
+                    >
+                      <RotateCcw className="h-4 w-4 flex-shrink-0" />
+                      <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col transition-all duration-300 overflow-hidden`}>
+                        <span className="whitespace-nowrap">Returns Portal</span>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">Handle returns and refunds</span>
+                      </div>
+                    </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <NavLink 
+                    to="/shipping/rates" 
+                    className={getNavCls}
+                    title={collapsed ? "Calculate shipping costs" : undefined}
+                    >
+                      <Calculator className="h-4 w-4 flex-shrink-0" />
+                      <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col transition-all duration-300 overflow-hidden`}>
+                        <span className="whitespace-nowrap">Rate Calculator</span>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">Calculate shipping costs</span>
+                      </div>
+                    </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
