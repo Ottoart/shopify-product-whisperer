@@ -54,9 +54,30 @@ export default function MarketplaceGateway() {
       status: 'connected'
     },
     {
-      id: 'amazon',
-      name: 'Amazon',
+      id: 'amazon-com',
+      name: 'Amazon.com (US)',
       logo: '📦',
+      connected: false,
+      status: 'disconnected'
+    },
+    {
+      id: 'amazon-ca',
+      name: 'Amazon.ca (Canada)',
+      logo: '🍁',
+      connected: false,
+      status: 'disconnected'
+    },
+    {
+      id: 'walmart-com',
+      name: 'Walmart.com (US)',
+      logo: '🏬',
+      connected: false,
+      status: 'disconnected'
+    },
+    {
+      id: 'walmart-ca',
+      name: 'Walmart.ca (Canada)',
+      logo: '🇨🇦',
       connected: false,
       status: 'disconnected'
     },
@@ -64,13 +85,6 @@ export default function MarketplaceGateway() {
       id: 'ebay',
       name: 'eBay',
       logo: '🏪',
-      connected: false,
-      status: 'disconnected'
-    },
-    {
-      id: 'walmart',
-      name: 'Walmart',
-      logo: '🏬',
       connected: false,
       status: 'disconnected'
     }
@@ -115,13 +129,106 @@ export default function MarketplaceGateway() {
     }
   ];
 
+  const getMarketplaceInstructions = (marketplaceId: string) => {
+    const instructions = {
+      'amazon-com': {
+        title: 'Amazon.com (US) Connection',
+        steps: [
+          '1. Go to Amazon Seller Central (sellercentral.amazon.com)',
+          '2. Navigate to Settings → User Permissions',
+          '3. Click "Manage Permissions" then "Visit Manage Your Apps"',
+          '4. Click "Authorize a developer" and enter Developer ID: "PrepFox"',
+          '5. Generate your MWS Auth Token and copy it',
+          '6. You\'ll also need your Seller ID and Marketplace ID (US: ATVPDKIKX0DER)'
+        ],
+        credentials: ['MWS Auth Token', 'Seller ID', 'Access Key ID', 'Secret Access Key']
+      },
+      'amazon-ca': {
+        title: 'Amazon.ca (Canada) Connection',
+        steps: [
+          '1. Go to Amazon Seller Central Canada (sellercentral.amazon.ca)',
+          '2. Navigate to Settings → User Permissions',
+          '3. Click "Manage Permissions" then "Visit Manage Your Apps"',
+          '4. Click "Authorize a developer" and enter Developer ID: "PrepFox"',
+          '5. Generate your MWS Auth Token and copy it',
+          '6. You\'ll also need your Seller ID and Marketplace ID (CA: A2EUQ1WTGCTBG2)'
+        ],
+        credentials: ['MWS Auth Token', 'Seller ID', 'Access Key ID', 'Secret Access Key']
+      },
+      'walmart-com': {
+        title: 'Walmart.com (US) Connection',
+        steps: [
+          '1. Go to Walmart Partner Center (partner.walmart.com)',
+          '2. Sign in with your Walmart seller account',
+          '3. Navigate to Settings → API Access',
+          '4. Click "Generate New Keys" under API Keys section',
+          '5. Copy your Consumer ID and Private Key',
+          '6. Note your Channel Type ID (usually "item" for product listings)'
+        ],
+        credentials: ['Consumer ID', 'Private Key', 'Channel Type ID']
+      },
+      'walmart-ca': {
+        title: 'Walmart.ca (Canada) Connection',
+        steps: [
+          '1. Go to Walmart Canada Partner Center (partner.walmart.ca)',
+          '2. Sign in with your Walmart Canada seller account',
+          '3. Navigate to Settings → API Access',
+          '4. Click "Generate New Keys" under API Keys section',
+          '5. Copy your Consumer ID and Private Key',
+          '6. Note your Channel Type ID for Canadian marketplace'
+        ],
+        credentials: ['Consumer ID', 'Private Key', 'Channel Type ID']
+      }
+    };
+    return instructions[marketplaceId as keyof typeof instructions];
+  };
+
   const handleConnect = async (marketplaceId: string) => {
     if (marketplaceId === 'shopify') {
       navigate('/shopify-integration');
       return;
     }
 
-    // Update marketplace status to syncing
+    const instructions = getMarketplaceInstructions(marketplaceId);
+    if (instructions) {
+      // Show connection instructions
+      toast({
+        title: `📋 ${instructions.title}`,
+        description: "Please follow the setup instructions to get your API credentials",
+      });
+      
+      // You can expand this to show a modal with detailed instructions
+      // For now, we'll simulate the connection process
+      setMarketplaces(prev => prev.map(m => 
+        m.id === marketplaceId 
+          ? { ...m, status: 'syncing' as const }
+          : m
+      ));
+
+      // Simulate connection process
+      setTimeout(() => {
+        setMarketplaces(prev => prev.map(m => 
+          m.id === marketplaceId 
+            ? { 
+                ...m, 
+                connected: true, 
+                status: 'connected' as const,
+                lastSync: 'just now',
+                accountName: `your-${marketplaceId}-account`
+              }
+            : m
+        ));
+
+        toast({
+          title: "🎉 Connection successful!",
+          description: `${marketplaces.find(m => m.id === marketplaceId)?.name} store connected. Orders are syncing...`,
+        });
+      }, 3000);
+      
+      return;
+    }
+
+    // Default connection flow for other marketplaces
     setMarketplaces(prev => prev.map(m => 
       m.id === marketplaceId 
         ? { ...m, status: 'syncing' as const }
@@ -133,7 +240,6 @@ export default function MarketplaceGateway() {
       description: "This could take a few seconds ☕",
     });
 
-    // Simulate connection process
     setTimeout(() => {
       setMarketplaces(prev => prev.map(m => 
         m.id === marketplaceId 
@@ -234,7 +340,7 @@ export default function MarketplaceGateway() {
           Connected Marketplaces
         </h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {marketplaces.map((marketplace) => (
             <Card key={marketplace.id} className="hover:shadow-md transition-shadow">
               <CardHeader className="pb-3">
@@ -256,6 +362,14 @@ export default function MarketplaceGateway() {
                   <p className="text-xs text-muted-foreground">
                     Last synced: {marketplace.lastSync}
                   </p>
+                )}
+                
+                {/* Show setup instructions for marketplace-specific connections */}
+                {!marketplace.connected && getMarketplaceInstructions(marketplace.id) && (
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <p className="font-medium">Setup Required:</p>
+                    <p>API credentials needed from {marketplace.name} seller account</p>
+                  </div>
                 )}
                 
                 <Button 
