@@ -37,7 +37,11 @@ export function StoreConfig() {
     access_token: ""
   });
 
-  // If a store is selected, show the store settings
+  useEffect(() => {
+    fetchStores();
+  }, []);
+
+  // If a store is selected, show the store settings (MOVED AFTER ALL HOOKS)
   if (selectedStoreId) {
     return (
       <StoreSettings 
@@ -46,10 +50,6 @@ export function StoreConfig() {
       />
     );
   }
-
-  useEffect(() => {
-    fetchStores();
-  }, []);
 
   const fetchStores = async () => {
     try {
