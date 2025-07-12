@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { useOrders, type Order } from "@/hooks/useOrders";
 import { supabase } from "@/integrations/supabase/client";
@@ -307,10 +307,31 @@ export function OrderManagement() {
           <h1 className="text-xl font-semibold">
             {storeFilter ? `${storeFilter} - ` : ""}Awaiting Shipment
           </h1>
-          <Button variant="ghost" size="sm" onClick={handleSyncOrders} disabled={syncing}>
-            <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
-            Reload
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" disabled={syncing}>
+                <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
+                Update Stores ({storeConfigs.length})
+                <ChevronDown className="h-4 w-4 ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleSyncOrders()}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Sync All Stores
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {storeConfigs.map((store) => (
+                <DropdownMenuItem 
+                  key={store.id} 
+                  onClick={() => handleSyncSpecificStore(store.store_name)}
+                >
+                  <Store className="h-4 w-4 mr-2" />
+                  Sync {store.store_name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         
         {/* Update All Stores Button - positioned like ShipStation */}
