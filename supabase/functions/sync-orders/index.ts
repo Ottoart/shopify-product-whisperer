@@ -99,12 +99,31 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
+    // Parse request body to check for store filter
+    let storeFilter = null;
+    if (req.method === 'POST') {
+      try {
+        const body = await req.json();
+        storeFilter = body.storeFilter;
+        console.log(`Store filter requested: ${storeFilter}`);
+      } catch (e) {
+        // No body or invalid JSON, proceed without filter
+      }
+    }
+
     // Get active store configurations for the user
-    const { data: storeConfigs, error: configError } = await supabase
+    let storeQuery = supabase
       .from('store_configurations')
       .select('*')
       .eq('user_id', user.id)
       .eq('is_active', true);
+
+    // Apply store filter if provided
+    if (storeFilter) {
+      storeQuery = storeQuery.eq('store_name', storeFilter);
+    }
+
+    const { data: storeConfigs, error: configError } = await storeQuery;
 
     if (configError) {
       throw new Error(`Failed to fetch store configurations: ${configError.message}`);
