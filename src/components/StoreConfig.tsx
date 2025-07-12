@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Store, Plus, Trash2, Eye, EyeOff, Edit, Save, X } from "lucide-react";
+import { MarketplaceSelector } from "./MarketplaceSelector";
 
 interface StoreConfiguration {
   id: string;
@@ -23,9 +24,11 @@ export function StoreConfig() {
   const [stores, setStores] = useState<StoreConfiguration[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [showMarketplaceSelector, setShowMarketplaceSelector] = useState(false);
   const [showTokens, setShowTokens] = useState<{ [key: string]: boolean }>({});
   const [editingStore, setEditingStore] = useState<string | null>(null);
   const [editData, setEditData] = useState<{[key: string]: {store_name: string, domain: string, access_token: string}}>({});
+  const [selectedMarketplace, setSelectedMarketplace] = useState<any>(null);
   const [formData, setFormData] = useState({
     store_name: "",
     domain: "",
@@ -77,7 +80,7 @@ export function StoreConfig() {
         .insert({
           user_id: user.id,
           store_name: formData.store_name,
-          platform: 'shopify',
+          platform: selectedMarketplace?.platform || 'shopify',
           domain: formData.domain,
           access_token: formData.access_token
         });
@@ -86,10 +89,11 @@ export function StoreConfig() {
 
       toast({
         title: "Store added successfully!",
-        description: "Your Shopify store has been configured"
+        description: `Your ${selectedMarketplace?.name || 'Shopify'} store has been configured`
       });
 
       setFormData({ store_name: "", domain: "", access_token: "" });
+      setSelectedMarketplace(null);
       setShowForm(false);
       fetchStores();
     } catch (error: any) {
@@ -123,6 +127,11 @@ export function StoreConfig() {
         variant: "destructive"
       });
     }
+  };
+
+  const handleMarketplaceSelect = (marketplace: any) => {
+    setSelectedMarketplace(marketplace);
+    setShowForm(true);
   };
 
   const toggleTokenVisibility = (storeId: string) => {
@@ -222,22 +231,31 @@ export function StoreConfig() {
                 Manage your connected stores for order syncing and fulfillment
               </CardDescription>
             </div>
-            <Button onClick={() => setShowForm(!showForm)}>
+            <Button onClick={() => setShowMarketplaceSelector(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Add Store
             </Button>
           </div>
         </CardHeader>
 
-        {showForm && (
+        {showForm && selectedMarketplace && (
           <CardContent className="border-t">
-            <form onSubmit={handleSubmit} className="space-y-4 pt-6">
+            <div className="mb-4 p-3 bg-muted/50 rounded-lg">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{selectedMarketplace.logo}</span>
+                <div>
+                  <h4 className="font-medium">{selectedMarketplace.name}</h4>
+                  <p className="text-sm text-muted-foreground">{selectedMarketplace.description}</p>
+                </div>
+              </div>
+            </div>
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="store_name">Store Name</Label>
                   <Input
                     id="store_name"
-                    placeholder="My Shopify Store"
+                    placeholder={`My ${selectedMarketplace.name} Store`}
                     value={formData.store_name}
                     onChange={(e) => setFormData(prev => ({ ...prev, store_name: e.target.value }))}
                   />
@@ -246,7 +264,11 @@ export function StoreConfig() {
                   <Label htmlFor="domain">Store Domain</Label>
                   <Input
                     id="domain"
-                    placeholder="mystore.myshopify.com"
+                    placeholder={
+                      selectedMarketplace.platform === 'shopify' 
+                        ? "mystore.myshopify.com"
+                        : `your-${selectedMarketplace.platform}-domain.com`
+                    }
                     value={formData.domain}
                     onChange={(e) => setFormData(prev => ({ ...prev, domain: e.target.value }))}
                   />
@@ -257,14 +279,21 @@ export function StoreConfig() {
                 <Input
                   id="access_token"
                   type="password"
-                  placeholder="shpat_xxxxxxxxxxxxxxxxxxxxx"
+                  placeholder={
+                    selectedMarketplace.platform === 'shopify' 
+                      ? "shpat_xxxxxxxxxxxxxxxxxxxxx"
+                      : "Your API key or access token"
+                  }
                   value={formData.access_token}
                   onChange={(e) => setFormData(prev => ({ ...prev, access_token: e.target.value }))}
                 />
               </div>
               <div className="flex gap-2">
                 <Button type="submit">Add Store</Button>
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+                <Button type="button" variant="outline" onClick={() => {
+                  setShowForm(false);
+                  setSelectedMarketplace(null);
+                }}>
                   Cancel
                 </Button>
               </div>
@@ -324,11 +353,11 @@ export function StoreConfig() {
                    ) : (
                      // View mode
                      <div className="space-y-2">
-                       <div className="flex items-center gap-3">
-                         <h3 className="font-semibold text-lg">{store.store_name}</h3>
-                         <Badge variant="outline">Shopify</Badge>
-                         {store.is_active && <Badge variant="default">Active</Badge>}
-                       </div>
+                        <div className="flex items-center gap-3">
+                          <h3 className="font-semibold text-lg">{store.store_name}</h3>
+                          <Badge variant="outline">{store.platform}</Badge>
+                          {store.is_active && <Badge variant="default">Active</Badge>}
+                        </div>
                        <p className="text-sm text-muted-foreground">
                          Domain: {store.domain}
                        </p>
@@ -408,13 +437,19 @@ export function StoreConfig() {
             <p className="text-muted-foreground mb-4">
               Add your first store to start syncing orders and managing fulfillment
             </p>
-            <Button onClick={() => setShowForm(true)}>
+            <Button onClick={() => setShowMarketplaceSelector(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Add Store
             </Button>
           </CardContent>
         </Card>
       )}
+
+      <MarketplaceSelector
+        open={showMarketplaceSelector}
+        onOpenChange={setShowMarketplaceSelector}
+        onSelect={handleMarketplaceSelect}
+      />
     </div>
   );
 }
