@@ -94,7 +94,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar
-      className={`${collapsed ? "w-12" : "w-56"} transition-all duration-300 hover:w-56 group`}
+      className={collapsed ? "w-14" : "w-64"}
       collapsible="icon"
     >
       <SidebarContent>
