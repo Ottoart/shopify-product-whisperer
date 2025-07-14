@@ -73,6 +73,7 @@ export function OrderManagement() {
   const [activeCategory, setActiveCategory] = useState("awaiting");
   const [showLabelModal, setShowLabelModal] = useState(false);
   const [selectedOrderForLabel, setSelectedOrderForLabel] = useState<Order | null>(null);
+  const [editableOrder, setEditableOrder] = useState<Order | null>(null);
   
   const [categories, setCategories] = useState<OrderCategory[]>([
     { id: "awaiting_payment", name: "Awaiting Payment", count: 1, isExpanded: false },
@@ -289,6 +290,7 @@ export function OrderManagement() {
 
   const handleOrderClick = (order: Order) => {
     setSelectedOrderForLabel(order);
+    setEditableOrder({...order}); // Create editable copy
     setShowLabelModal(true);
   };
 
@@ -776,66 +778,213 @@ export function OrderManagement() {
 
       {/* Shipping Label Modal */}
       <Dialog open={showLabelModal} onOpenChange={setShowLabelModal}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Create Shipping Label</DialogTitle>
+            <DialogTitle>Create Shipping Label - Order #{selectedOrderForLabel?.orderNumber}</DialogTitle>
           </DialogHeader>
-          {selectedOrderForLabel && (
+          {selectedOrderForLabel && editableOrder && (
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Order Details</CardTitle>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Package className="h-5 w-5" />
+                      Order Details
+                    </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div>
-                      <strong>Order #:</strong> {selectedOrderForLabel.orderNumber}
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Order #</label>
+                        <div className="text-lg font-mono">{selectedOrderForLabel.orderNumber}</div>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Customer</label>
+                        <div>{selectedOrderForLabel.customerName}</div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Order Total</label>
+                        <div className="text-lg font-semibold">{formatCurrency(selectedOrderForLabel.totalAmount, selectedOrderForLabel.currency)}</div>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Order Date</label>
+                        <div>{new Date(selectedOrderForLabel.orderDate).toLocaleDateString()}</div>
+                      </div>
                     </div>
                     <div>
-                      <strong>Customer:</strong> {selectedOrderForLabel.customerName}
-                    </div>
-                    <div>
-                      <strong>Total:</strong> {formatCurrency(selectedOrderForLabel.totalAmount, selectedOrderForLabel.currency)}
-                    </div>
-                    <div>
-                      <strong>Weight:</strong> {formatWeight(selectedOrderForLabel.packageDetails?.weight || 0)}
+                      <label className="text-sm font-medium text-muted-foreground">Items Summary</label>
+                      <div className="text-sm">{selectedOrderForLabel.items.length} items, {getTotalQuantity(selectedOrderForLabel.items)} total quantity</div>
                     </div>
                   </CardContent>
                 </Card>
 
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Shipping Address</CardTitle>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <MapPin className="h-5 w-5" />
+                      Shipping Address
+                      <Button variant="ghost" size="sm" className="ml-auto">
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                    </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div>{selectedOrderForLabel.customerName}</div>
-                    <div>{selectedOrderForLabel.shippingAddress.line1}</div>
-                    {selectedOrderForLabel.shippingAddress.line2 && (
-                      <div>{selectedOrderForLabel.shippingAddress.line2}</div>
-                    )}
-                    <div>
-                      {selectedOrderForLabel.shippingAddress.city}, {selectedOrderForLabel.shippingAddress.state} {selectedOrderForLabel.shippingAddress.zip}
+                  <CardContent className="space-y-3">
+                    <div className="space-y-2">
+                      <Input 
+                        value={editableOrder.customerName}
+                        onChange={(e) => setEditableOrder({...editableOrder, customerName: e.target.value})}
+                        placeholder="Customer Name"
+                      />
+                      <Input 
+                        value={editableOrder.shippingAddress.line1}
+                        onChange={(e) => setEditableOrder({
+                          ...editableOrder, 
+                          shippingAddress: {...editableOrder.shippingAddress, line1: e.target.value}
+                        })}
+                        placeholder="Address Line 1"
+                      />
+                      <Input 
+                        value={editableOrder.shippingAddress.line2 || ''}
+                        onChange={(e) => setEditableOrder({
+                          ...editableOrder, 
+                          shippingAddress: {...editableOrder.shippingAddress, line2: e.target.value}
+                        })}
+                        placeholder="Address Line 2 (Optional)"
+                      />
+                      <div className="grid grid-cols-3 gap-2">
+                        <Input 
+                          value={editableOrder.shippingAddress.city}
+                          onChange={(e) => setEditableOrder({
+                            ...editableOrder, 
+                            shippingAddress: {...editableOrder.shippingAddress, city: e.target.value}
+                          })}
+                          placeholder="City"
+                        />
+                        <Input 
+                          value={editableOrder.shippingAddress.state}
+                          onChange={(e) => setEditableOrder({
+                            ...editableOrder, 
+                            shippingAddress: {...editableOrder.shippingAddress, state: e.target.value}
+                          })}
+                          placeholder="State"
+                        />
+                        <Input 
+                          value={editableOrder.shippingAddress.zip}
+                          onChange={(e) => setEditableOrder({
+                            ...editableOrder, 
+                            shippingAddress: {...editableOrder.shippingAddress, zip: e.target.value}
+                          })}
+                          placeholder="ZIP"
+                        />
+                      </div>
+                      <Input 
+                        value={editableOrder.shippingAddress.country}
+                        onChange={(e) => setEditableOrder({
+                          ...editableOrder, 
+                          shippingAddress: {...editableOrder.shippingAddress, country: e.target.value}
+                        })}
+                        placeholder="Country"
+                      />
                     </div>
-                    <div>{selectedOrderForLabel.shippingAddress.country}</div>
                   </CardContent>
                 </Card>
               </div>
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Items</CardTitle>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Package className="h-5 w-5" />
+                    Package Details
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2">
+                  <div className="grid grid-cols-4 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground block mb-1">Weight (grams)</label>
+                      <Input 
+                        type="number"
+                        value={editableOrder.packageDetails?.weight || 0}
+                        onChange={(e) => setEditableOrder({
+                          ...editableOrder, 
+                          packageDetails: {
+                            ...editableOrder.packageDetails,
+                            weight: parseInt(e.target.value) || 0
+                          }
+                        })}
+                        placeholder="Weight"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground block mb-1">Length (cm)</label>
+                      <Input 
+                        type="number"
+                        value={editableOrder.packageDetails?.length || 0}
+                        onChange={(e) => setEditableOrder({
+                          ...editableOrder, 
+                          packageDetails: {
+                            ...editableOrder.packageDetails,
+                            length: parseInt(e.target.value) || 0
+                          }
+                        })}
+                        placeholder="Length"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground block mb-1">Width (cm)</label>
+                      <Input 
+                        type="number"
+                        value={editableOrder.packageDetails?.width || 0}
+                        onChange={(e) => setEditableOrder({
+                          ...editableOrder, 
+                          packageDetails: {
+                            ...editableOrder.packageDetails,
+                            width: parseInt(e.target.value) || 0
+                          }
+                        })}
+                        placeholder="Width"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground block mb-1">Height (cm)</label>
+                      <Input 
+                        type="number"
+                        value={editableOrder.packageDetails?.height || 0}
+                        onChange={(e) => setEditableOrder({
+                          ...editableOrder, 
+                          packageDetails: {
+                            ...editableOrder.packageDetails,
+                            height: parseInt(e.target.value) || 0
+                          }
+                        })}
+                        placeholder="Height"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Order Items</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
                     {selectedOrderForLabel.items.map((item, index) => (
-                      <div key={index} className="flex justify-between items-center p-2 bg-muted rounded">
-                        <div>
+                      <div key={index} className="flex items-center gap-4 p-3 border rounded-lg">
+                        <div className="w-12 h-12 bg-gray-200 rounded border flex-shrink-0 flex items-center justify-center">
+                          <Package className="h-6 w-6 text-gray-500" />
+                        </div>
+                        <div className="flex-1">
                           <div className="font-medium">{item.productTitle}</div>
                           <div className="text-sm text-muted-foreground">SKU: {item.sku || "N/A"}</div>
+                          <div className="text-sm text-muted-foreground">Weight: {item.weight ? formatWeight(item.weight) : "Not specified"}</div>
                         </div>
                         <div className="text-right">
-                          <div>Qty: {item.quantity}</div>
-                          <div className="text-sm">{formatCurrency(item.price)}</div>
+                          <div className="text-lg font-semibold">Qty: {item.quantity}</div>
+                          <div className="text-sm text-muted-foreground">{formatCurrency(item.price)} each</div>
+                          <div className="font-medium">{formatCurrency(item.price * item.quantity)} total</div>
                         </div>
                       </div>
                     ))}
@@ -845,47 +994,58 @@ export function OrderManagement() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Shipping Services</CardTitle>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Truck className="h-5 w-5" />
+                    Available Shipping Services
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    <div className="grid grid-cols-3 gap-4 p-3 border rounded hover:bg-muted cursor-pointer">
-                      <div>
-                        <div className="font-medium">UPS Ground</div>
-                        <div className="text-sm text-muted-foreground">3-5 business days</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-lg font-bold">$8.90</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm">Delivery by</div>
-                        <div className="font-medium">Dec 18, 2024</div>
-                      </div>
+                    <div className="text-sm text-muted-foreground mb-3">
+                      Click "Get Rates" to fetch real-time shipping rates for this package
                     </div>
-                    <div className="grid grid-cols-3 gap-4 p-3 border rounded hover:bg-muted cursor-pointer">
-                      <div>
-                        <div className="font-medium">UPS 2nd Day Air</div>
-                        <div className="text-sm text-muted-foreground">2 business days</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-lg font-bold">$24.50</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm">Delivery by</div>
-                        <div className="font-medium">Dec 16, 2024</div>
-                      </div>
+                    <div className="flex justify-center">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          toast({
+                            title: "Getting rates...",
+                            description: "Fetching shipping rates from carriers"
+                          });
+                        }}
+                      >
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Get Shipping Rates
+                      </Button>
+                    </div>
+                    <div className="text-center text-sm text-muted-foreground">
+                      No shipping rates available. Get rates to compare services and costs.
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setShowLabelModal(false)}>
-                  Cancel
-                </Button>
-                <Button>
-                  Create Label
-                </Button>
+              <div className="flex justify-between items-center pt-4">
+                <div className="text-sm text-muted-foreground">
+                  Total package weight: {formatWeight(editableOrder.packageDetails?.weight || 0)}
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => setShowLabelModal(false)}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={() => {
+                      toast({
+                        title: "Label creation not yet implemented",
+                        description: "This feature will be available once shipping rates are integrated.",
+                        variant: "destructive"
+                      });
+                    }}
+                  >
+                    <Printer className="h-4 w-4 mr-2" />
+                    Create Label
+                  </Button>
+                </div>
               </div>
             </div>
           )}
