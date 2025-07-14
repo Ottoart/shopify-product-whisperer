@@ -494,6 +494,35 @@ export function OrderManagement() {
               <div className="text-sm text-muted-foreground">
                 {storeConfigs.length} Active Stores
               </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" disabled={syncing} className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
+                    <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
+                    Update All Stores
+                    <ChevronDown className="h-4 w-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={handleSyncOrders}>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Sync All Stores
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleResyncWithItems}>
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    Fix Missing Items (Re-sync)
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  {storeConfigs.map((store) => (
+                    <DropdownMenuItem 
+                      key={store.id} 
+                      onClick={() => handleSyncSpecificStore(store.store_name)}
+                    >
+                      <Store className="h-4 w-4 mr-2" />
+                      {store.store_name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
 

@@ -18,11 +18,7 @@ import {
   Calculator,
   Store,
   DollarSign,
-  Warehouse,
-  RefreshCw,
-  AlertTriangle,
-  ChevronDown,
-  ChevronRight
+  Warehouse
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 
@@ -35,19 +31,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubItem,
-  SidebarMenuSubButton,
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
 
 const mainItems = [
   { title: "Marketplace Gateway", url: "/marketplace-gateway", icon: Globe, description: "Central connection hub" },
@@ -87,9 +73,6 @@ export function AppSidebar() {
   const location = useLocation();
   const currentPath = location.pathname;
   const [stores, setStores] = useState<Array<{id: string, store_name: string, platform: string}>>([]);
-  const [syncMenuOpen, setSyncMenuOpen] = useState(false);
-  const [syncing, setSyncing] = useState(false);
-  const { toast } = useToast();
 
   useEffect(() => {
     const fetchStores = async () => {
@@ -113,92 +96,6 @@ export function AppSidebar() {
   const isActive = (path: string) => currentPath === path;
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
     isActive ? "bg-accent text-accent-foreground font-medium" : "hover:bg-accent/50";
-
-  const handleSyncOrders = async () => {
-    setSyncing(true);
-    try {
-      const response = await fetch('/api/sync-orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      
-      if (!response.ok) throw new Error('Sync failed');
-      
-      toast({
-        title: "Sync completed",
-        description: "Orders have been synced successfully",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Sync failed",
-        description: error.message,
-        variant: "destructive"
-      });
-    } finally {
-      setSyncing(false);
-    }
-  };
-
-  const handleSyncSpecificStore = async (storeName: string) => {
-    setSyncing(true);
-    try {
-      const response = await fetch('/api/sync-orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ storeName })
-      });
-      
-      if (!response.ok) throw new Error('Store sync failed');
-      
-      toast({
-        title: "Store sync completed",
-        description: `${storeName} orders synced successfully`,
-      });
-    } catch (error: any) {
-      toast({
-        title: "Store sync failed",
-        description: error.message,
-        variant: "destructive"
-      });
-    } finally {
-      setSyncing(false);
-    }
-  };
-
-  const handleResyncWithItems = async () => {
-    if (!confirm('This will delete all existing orders and re-sync them with their items. Continue?')) {
-      return;
-    }
-
-    setSyncing(true);
-    try {
-      // First clear all existing orders and items
-      const { error: deleteError } = await supabase
-        .from('orders')
-        .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000');
-      
-      if (deleteError) {
-        console.warn('Could not clear existing orders:', deleteError.message);
-      }
-
-      toast({
-        title: "Database cleared",
-        description: "Now syncing fresh orders with items...",
-      });
-
-      // Then trigger normal sync
-      await handleSyncOrders();
-    } catch (error: any) {
-      toast({
-        title: "Error during resync",
-        description: error.message,
-        variant: "destructive"
-      });
-    } finally {
-      setSyncing(false);
-    }
-  };
 
   return (
     <Sidebar
@@ -314,69 +211,6 @@ export function AppSidebar() {
                     </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-
-              {/* Sync Orders Menu */}
-              <Collapsible open={syncMenuOpen} onOpenChange={setSyncMenuOpen}>
-                <SidebarMenuItem>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton
-                      className="hover:bg-accent/50"
-                      title={collapsed ? "Order sync options" : undefined}
-                    >
-                      <RefreshCw className={`h-4 w-4 flex-shrink-0 ${syncing ? 'animate-spin' : ''}`} />
-                      <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col transition-all duration-300 overflow-hidden`}>
-                        <span className="whitespace-nowrap">Sync Orders</span>
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">Update order data</span>
-                      </div>
-                      {!collapsed && (
-                        syncMenuOpen ? <ChevronDown className="h-4 w-4 ml-auto" /> : <ChevronRight className="h-4 w-4 ml-auto" />
-                      )}
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                     <SidebarMenuSub>
-                      <SidebarMenuSubItem>
-                        <Button 
-                          variant="ghost"
-                          size="sm"
-                          onClick={handleSyncOrders}
-                          disabled={syncing}
-                          className="w-full justify-start hover:bg-accent/50 h-8"
-                        >
-                          <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
-                          <span>Sync All Stores</span>
-                        </Button>
-                      </SidebarMenuSubItem>
-                      <SidebarMenuSubItem>
-                        <Button 
-                          variant="ghost"
-                          size="sm"
-                          onClick={handleResyncWithItems}
-                          disabled={syncing}
-                          className="w-full justify-start hover:bg-accent/50 h-8"
-                        >
-                          <AlertTriangle className="h-4 w-4 mr-2" />
-                          <span>Fix Missing Items</span>
-                        </Button>
-                      </SidebarMenuSubItem>
-                      {stores.map((store) => (
-                        <SidebarMenuSubItem key={`sync-${store.id}`}>
-                          <Button 
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleSyncSpecificStore(store.store_name)}
-                            disabled={syncing}
-                            className="w-full justify-start hover:bg-accent/50 h-8"
-                          >
-                            <Store className="h-4 w-4 mr-2" />
-                            <span>Sync {store.store_name}</span>
-                          </Button>
-                        </SidebarMenuSubItem>
-                      ))}
-                    </SidebarMenuSub>
-                  </CollapsibleContent>
-                </SidebarMenuItem>
-              </Collapsible>
 
               {/* Dynamic Store Subcategories */}
               {stores.map((store) => (
