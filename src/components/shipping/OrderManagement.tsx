@@ -377,6 +377,44 @@ export function OrderManagement() {
     }, 3000);
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedOrders.length === 0) {
+      toast({
+        title: "No orders selected",
+        description: "Please select orders to delete.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete ${selectedOrders.length} selected orders? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .delete()
+        .in('id', selectedOrders);
+
+      if (error) throw error;
+
+      toast({
+        title: "✅ Orders deleted",
+        description: `${selectedOrders.length} orders have been deleted successfully.`,
+      });
+
+      setSelectedOrders([]);
+      await fetchOrders();
+    } catch (error: any) {
+      toast({
+        title: "Error deleting orders",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -548,6 +586,15 @@ export function OrderManagement() {
             </Button>
             <Button variant="outline" disabled={selectedOrders.length === 0}>
               Allocate
+            </Button>
+            <Button 
+              variant="destructive" 
+              size="sm"
+              disabled={selectedOrders.length === 0}
+              onClick={handleBulkDelete}
+            >
+              <XCircle className="h-4 w-4 mr-1" />
+              Delete Selected ({selectedOrders.length})
             </Button>
             <Button variant="outline" disabled={selectedOrders.length === 0}>
               <MoreHorizontal className="h-4 w-4 mr-1" />
