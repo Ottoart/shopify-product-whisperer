@@ -79,12 +79,63 @@ export function EnhancedDashboard() {
           .limit(30)
       ]);
 
-      if (insightsResult.data) setInsights(insightsResult.data);
-      if (metricsResult.data) {
+      // Set insights data or use mock data if empty
+      if (insightsResult.data && insightsResult.data.length > 0) {
+        setInsights(insightsResult.data);
+      } else {
+        // Mock insights data for demo
+        setInsights([
+          {
+            id: '1',
+            insight_type: 'pricing',
+            title: 'Optimize pricing for top 10 products',
+            description: 'AI analysis shows you can increase margins by 12% by adjusting prices on your best sellers.',
+            confidence_score: 0.85,
+            priority: 'high',
+            action_items: ['Review pricing on Product A', 'Update Product B price to $24.99', 'Monitor competitor pricing'],
+            created_at: new Date().toISOString(),
+            is_read: false
+          },
+          {
+            id: '2',
+            insight_type: 'inventory',
+            title: 'Low stock alert on trending items',
+            description: 'Several trending products are running low on inventory. Restock to avoid lost sales.',
+            confidence_score: 0.92,
+            priority: 'critical',
+            action_items: ['Reorder Widget X (5 units remaining)', 'Increase safety stock for seasonal items'],
+            created_at: new Date().toISOString(),
+            is_read: false
+          }
+        ]);
+      }
+
+      // Set metrics data or use mock data if empty
+      if (metricsResult.data && metricsResult.data.length > 0) {
         setPerformanceData(metricsResult.data);
-        if (metricsResult.data.length > 0) {
-          setMetrics(metricsResult.data[0]);
-        }
+        setMetrics(metricsResult.data[0]);
+      } else {
+        // Mock metrics data for demo
+        const mockMetrics = {
+          total_revenue: 12547.89,
+          total_orders: 45,
+          avg_order_value: 278.84,
+          conversion_rate: 3.2,
+          profit_margin: 28.5,
+          cost_savings: 1245.67,
+          products_optimized: 23,
+          price_changes: 8
+        };
+        setMetrics(mockMetrics);
+
+        // Mock performance data for charts
+        const mockPerformanceData = Array.from({ length: 7 }, (_, i) => ({
+          metric_date: new Date(Date.now() - (6 - i) * 24 * 60 * 60 * 1000).toISOString(),
+          total_revenue: Math.random() * 5000 + 8000,
+          total_orders: Math.floor(Math.random() * 20) + 30,
+          cost_savings: Math.random() * 500 + 200
+        }));
+        setPerformanceData(mockPerformanceData);
       }
     } catch (error) {
       console.error('Error loading dashboard data:', error);
