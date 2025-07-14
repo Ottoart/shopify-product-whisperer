@@ -663,7 +663,7 @@ export function OrderManagement() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Stores</SelectItem>
-                {Array.from(new Set(orders.map(o => o.storeName).filter(name => name && name.trim() !== ""))).map(store => (
+                {orders.length > 0 && Array.from(new Set(orders.map(o => o.storeName).filter(name => name && name.trim() !== ""))).map(store => (
                   <SelectItem key={store} value={store}>{store}</SelectItem>
                 ))}
               </SelectContent>
@@ -675,10 +675,10 @@ export function OrderManagement() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Countries</SelectItem>
-                {Array.from(new Set(orders.map(o => o.shippingAddress.country).filter(country => country && country.trim() !== ""))).map(country => (
+                {orders.length > 0 && Array.from(new Set(orders.map(o => o.shippingAddress?.country).filter(country => country && country.trim() !== ""))).map(country => (
                   <SelectItem key={country} value={country}>{country}</SelectItem>
                 ))}
-                {Array.from(new Set(orders.map(o => o.shippingAddress.state).filter(state => state && state.trim() !== ""))).map(state => (
+                {orders.length > 0 && Array.from(new Set(orders.map(o => o.shippingAddress?.state).filter(state => state && state.trim() !== ""))).map(state => (
                   <SelectItem key={state} value={state}>{state}</SelectItem>
                 ))}
               </SelectContent>
@@ -690,7 +690,7 @@ export function OrderManagement() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Tags</SelectItem>
-                {Array.from(new Set(orders.flatMap(o => o.tags || []).filter(tag => tag && tag.trim() !== ""))).map(tag => (
+                {orders.length > 0 && Array.from(new Set(orders.flatMap(o => o.tags || []).filter(tag => tag && tag.trim() !== ""))).map(tag => (
                   <SelectItem key={tag} value={tag}>{tag}</SelectItem>
                 ))}
               </SelectContent>
