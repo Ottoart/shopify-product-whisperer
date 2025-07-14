@@ -128,17 +128,17 @@ export default function RuleBuilder() {
 
       const { error } = await supabase
         .from('repricing_rules')
-        .insert([{
+        .insert({
           user_id: user.id,
           name: rule.name,
           description: rule.description,
           rule_type: rule.rule_type,
           marketplaces: rule.marketplaces,
-          conditions: rule.conditions,
-          actions: rule.actions,
+          conditions: rule.conditions as any,
+          actions: rule.actions as any,
           is_active: rule.is_active,
           priority: rule.priority
-        }]);
+        });
 
       if (error) throw error;
 
