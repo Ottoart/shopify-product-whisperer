@@ -7,7 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { AlertTriangle, Copy, Trash2, Edit3, Eye } from 'lucide-react';
+import { AlertTriangle, Copy, Trash2, Edit3, Eye, ExternalLink } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -372,21 +372,31 @@ export function DuplicateDetectionTool() {
                     <div className="space-y-2">
                       {group.products.map((product, index) => (
                         <div key={product.id} className="flex items-center justify-between p-2 bg-muted/50 rounded">
-                          <div>
+                          <div className="flex-1">
                             <p className="font-medium text-sm">{product.title}</p>
                             <p className="text-xs text-muted-foreground">
                               SKU: {product.variant_sku || 'N/A'} • Created: {new Date(product.created_at).toLocaleDateString()}
                             </p>
                           </div>
-                          {index > 0 && (
+                          <div className="flex items-center gap-2">
                             <Button
                               size="sm"
-                              variant="outline"
-                              onClick={() => handleDeleteProduct(product.id)}
+                              variant="ghost"
+                              onClick={() => window.open(`/bulk-editor?handle=${product.handle}`, '_blank')}
+                              title="View product details"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <ExternalLink className="h-4 w-4" />
                             </Button>
-                          )}
+                            {index > 0 && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDeleteProduct(product.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
