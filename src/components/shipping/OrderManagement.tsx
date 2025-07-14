@@ -420,6 +420,18 @@ export function OrderManagement() {
       } else if (sortField === 'weight') {
         aValue = parseFloat((a.packageDetails.weight || 0).toString()) || 0;
         bValue = parseFloat((b.packageDetails.weight || 0).toString()) || 0;
+      } else if (sortField === 'itemSku') {
+        aValue = a.items[0]?.sku || '';
+        bValue = b.items[0]?.sku || '';
+      } else if (sortField === 'itemName') {
+        aValue = a.items[0]?.productTitle || '';
+        bValue = b.items[0]?.productTitle || '';
+      } else if (sortField === 'quantity') {
+        aValue = a.items.reduce((sum, item) => sum + item.quantity, 0);
+        bValue = b.items.reduce((sum, item) => sum + item.quantity, 0);
+      } else if (sortField === 'requestedService') {
+        aValue = a.shippingDetails.method || '';
+        bValue = b.shippingDetails.method || '';
       }
       
       // Convert to string for comparison if not already a number or date
@@ -827,9 +839,30 @@ export function OrderManagement() {
                      Order # {getSortIcon('orderNumber')}
                    </button>
                  </TableHead>
-                 <TableHead className="w-24">Item SKU</TableHead>
-                 <TableHead className="min-w-48">Item Name</TableHead>
-                 <TableHead className="w-20">Quantity</TableHead>
+                  <TableHead className="w-24">
+                    <button 
+                      className="flex items-center gap-1 hover:text-foreground/80" 
+                      onClick={() => handleSort('itemSku')}
+                    >
+                      Item SKU {getSortIcon('itemSku')}
+                    </button>
+                  </TableHead>
+                  <TableHead className="min-w-48">
+                    <button 
+                      className="flex items-center gap-1 hover:text-foreground/80" 
+                      onClick={() => handleSort('itemName')}
+                    >
+                      Item Name {getSortIcon('itemName')}
+                    </button>
+                  </TableHead>
+                  <TableHead className="w-20">
+                    <button 
+                      className="flex items-center gap-1 hover:text-foreground/80" 
+                      onClick={() => handleSort('quantity')}
+                    >
+                      Quantity {getSortIcon('quantity')}
+                    </button>
+                  </TableHead>
                  <TableHead className="min-w-40">
                    <button 
                      className="flex items-center gap-1 hover:text-foreground/80" 
@@ -872,7 +905,14 @@ export function OrderManagement() {
                      State {getSortIcon('state')}
                    </button>
                  </TableHead>
-                 <TableHead className="w-32">Requested Service</TableHead>
+                  <TableHead className="w-32">
+                    <button 
+                      className="flex items-center gap-1 hover:text-foreground/80" 
+                      onClick={() => handleSort('requestedService')}
+                    >
+                      Requested Service {getSortIcon('requestedService')}
+                    </button>
+                  </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
