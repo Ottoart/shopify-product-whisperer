@@ -35,6 +35,7 @@ import {
   Tag,
   Users,
   ChevronDown,
+  ChevronUp,
   ChevronRight,
   ExternalLink,
   StickyNote,
@@ -74,6 +75,8 @@ export function OrderManagement() {
   const [showLabelModal, setShowLabelModal] = useState(false);
   const [selectedOrderForLabel, setSelectedOrderForLabel] = useState<Order | null>(null);
   const [editableOrder, setEditableOrder] = useState<Order | null>(null);
+  const [sortField, setSortField] = useState<string>('');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   
   const [categories, setCategories] = useState<OrderCategory[]>([
     { id: "awaiting_payment", name: "Awaiting Payment", count: 1, isExpanded: false },
@@ -321,6 +324,22 @@ export function OrderManagement() {
     setFilterStatus(categoryId);
   };
 
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortIcon = (field: string) => {
+    if (sortField !== field) return <ChevronDown className="w-4 h-4 opacity-30" />;
+    return sortDirection === 'asc' ? 
+      <ChevronUp className="w-4 h-4" /> : 
+      <ChevronDown className="w-4 h-4" />;
+  };
+
   const handleOrderClick = (order: Order) => {
     console.log('Selected order:', order);
     console.log('Order items:', order.items);
@@ -329,7 +348,7 @@ export function OrderManagement() {
     setShowLabelModal(true);
   };
 
-  const filteredOrders = orders.filter(order => {
+  let filteredOrders = orders.filter(order => {
     const matchesSearch = searchTerm === "" || 
                          order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          order.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -377,6 +396,40 @@ export function OrderManagement() {
     return matchesSearch && matchesStore && matchesStatus && matchesDestination && 
            matchesTag && matchesOrderDate;
   });
+
+  // Apply sorting
+  if (sortField) {
+    filteredOrders = [...filteredOrders].sort((a, b) => {
+      let aValue: any = a[sortField as keyof typeof a];
+      let bValue: any = b[sortField as keyof typeof b];
+      
+      // Handle specific field mappings
+      if (sortField === 'recipient') {
+        aValue = a.customerName;
+        bValue = b.customerName;
+      } else if (sortField === 'state') {
+        aValue = a.shippingAddress.state;
+        bValue = b.shippingAddress.state;
+      } else if (sortField === 'orderDate') {
+        aValue = new Date(a.orderDate);
+        bValue = new Date(b.orderDate);
+      } else if (sortField === 'totalAmount') {
+        aValue = parseFloat(aValue) || 0;
+        bValue = parseFloat(bValue) || 0;
+      } else if (sortField === 'weight') {
+        aValue = parseFloat((a.packageDetails.weight || 0).toString()) || 0;
+        bValue = parseFloat((b.packageDetails.weight || 0).toString()) || 0;
+      }
+      
+      // Convert to string for comparison if not already a number or date
+      if (typeof aValue === 'string') aValue = aValue.toLowerCase();
+      if (typeof bValue === 'string') bValue = bValue.toLowerCase();
+      
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
 
   const handleSelectOrder = (orderId: string) => {
     setSelectedOrders(prev => 
@@ -765,18 +818,60 @@ export function OrderManagement() {
                     }}
                   />
                 </TableHead>
-                <TableHead className="min-w-32">Order #</TableHead>
-                <TableHead className="w-24">Item SKU</TableHead>
-                <TableHead className="min-w-48">Item Name</TableHead>
-                <TableHead className="w-20">Quantity</TableHead>
-                <TableHead className="min-w-40">Recipient</TableHead>
-                <TableHead className="w-20">Age</TableHead>
-                <TableHead className="w-24">Order Total</TableHead>
-                <TableHead className="w-24">Weight</TableHead>
-                <TableHead className="w-16">Notes</TableHead>
-                <TableHead className="w-24">Order Date</TableHead>
-                <TableHead className="w-16">State</TableHead>
-                <TableHead className="w-32">Requested Service</TableHead>
+                 <TableHead className="min-w-32">
+                   <button 
+                     className="flex items-center gap-1 hover:text-foreground/80" 
+                     onClick={() => handleSort('orderNumber')}
+                   >
+                     Order # {getSortIcon('orderNumber')}
+                   </button>
+                 </TableHead>
+                 <TableHead className="w-24">Item SKU</TableHead>
+                 <TableHead className="min-w-48">Item Name</TableHead>
+                 <TableHead className="w-20">Quantity</TableHead>
+                 <TableHead className="min-w-40">
+                   <button 
+                     className="flex items-center gap-1 hover:text-foreground/80" 
+                     onClick={() => handleSort('recipient')}
+                   >
+                     Recipient {getSortIcon('recipient')}
+                   </button>
+                 </TableHead>
+                 <TableHead className="w-20">Age</TableHead>
+                 <TableHead className="w-24">
+                   <button 
+                     className="flex items-center gap-1 hover:text-foreground/80" 
+                     onClick={() => handleSort('totalAmount')}
+                   >
+                     Order Total {getSortIcon('totalAmount')}
+                   </button>
+                 </TableHead>
+                 <TableHead className="w-24">
+                   <button 
+                     className="flex items-center gap-1 hover:text-foreground/80" 
+                     onClick={() => handleSort('weight')}
+                   >
+                     Weight {getSortIcon('weight')}
+                   </button>
+                 </TableHead>
+                 <TableHead className="w-16">Notes</TableHead>
+                 <TableHead className="w-24">
+                   <button 
+                     className="flex items-center gap-1 hover:text-foreground/80" 
+                     onClick={() => handleSort('orderDate')}
+                   >
+                     Order Date {getSortIcon('orderDate')}
+                   </button>
+                 </TableHead>
+                 <TableHead className="w-16">
+                   <button 
+                     className="flex items-center gap-1 hover:text-foreground/80" 
+                     onClick={() => handleSort('state')}
+                   >
+                     State {getSortIcon('state')}
+                   </button>
+                 </TableHead>
+                 <TableHead className="w-32">Requested Service</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
