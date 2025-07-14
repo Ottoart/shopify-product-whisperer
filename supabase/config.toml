@@ -3,9 +3,45 @@ project_id = "rtaomiqsnctigleqjojt"
 [api]
 enabled = true
 port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[functions.ai-generate-product-types]
+verify_jwt = true
+
+[functions.ai-optimize-product]
+verify_jwt = false
+
+[functions.analyze-brand-tone]
+verify_jwt = true
+
+[functions.analyze-edit-patterns]
+verify_jwt = true
+
+[functions.fetch-shopify-analytics]
+verify_jwt = true
+
+[functions.find-best-price]
+verify_jwt = true
+
+[functions.generate-ai-insights]
+verify_jwt = true
+
+[functions.manage-products]
+verify_jwt = true
 
 [functions.shopify-products]
 verify_jwt = false
 
-[functions.ai-optimize-product]
-verify_jwt = false
+[functions.sync-orders]
+verify_jwt = true
+
+[functions.sync-shopify-products]
+verify_jwt = true
+
+[functions.update-performance-metrics]
+verify_jwt = true
+
+[functions.update-store-config]
+verify_jwt = true

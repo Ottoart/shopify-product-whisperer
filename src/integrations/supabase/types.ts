@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_insights: {
+        Row: {
+          action_items: string[] | null
+          confidence_score: number | null
+          created_at: string
+          data_points: Json | null
+          description: string
+          expires_at: string | null
+          id: string
+          insight_type: string
+          is_read: boolean | null
+          priority: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          action_items?: string[] | null
+          confidence_score?: number | null
+          created_at?: string
+          data_points?: Json | null
+          description: string
+          expires_at?: string | null
+          id?: string
+          insight_type: string
+          is_read?: boolean | null
+          priority?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          action_items?: string[] | null
+          confidence_score?: number | null
+          created_at?: string
+          data_points?: Json | null
+          description?: string
+          expires_at?: string | null
+          id?: string
+          insight_type?: string
+          is_read?: boolean | null
+          priority?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       batch_operations: {
         Row: {
           completed_at: string | null
@@ -256,6 +301,54 @@ export type Database = {
           user_id?: string
           weight_lbs?: number | null
           width_inches?: number | null
+        }
+        Relationships: []
+      }
+      performance_metrics: {
+        Row: {
+          avg_order_value: number | null
+          conversion_rate: number | null
+          cost_savings: number | null
+          created_at: string
+          id: string
+          metric_date: string
+          price_changes: number | null
+          products_optimized: number | null
+          profit_margin: number | null
+          total_orders: number | null
+          total_revenue: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avg_order_value?: number | null
+          conversion_rate?: number | null
+          cost_savings?: number | null
+          created_at?: string
+          id?: string
+          metric_date?: string
+          price_changes?: number | null
+          products_optimized?: number | null
+          profit_margin?: number | null
+          total_orders?: number | null
+          total_revenue?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avg_order_value?: number | null
+          conversion_rate?: number | null
+          cost_savings?: number | null
+          created_at?: string
+          id?: string
+          metric_date?: string
+          price_changes?: number | null
+          products_optimized?: number | null
+          profit_margin?: number | null
+          total_orders?: number | null
+          total_revenue?: number | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
