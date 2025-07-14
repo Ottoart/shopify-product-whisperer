@@ -30,40 +30,39 @@ interface DuplicateGroup {
 export function DuplicateDetectionTool() {
   const [duplicateGroups, setDuplicateGroups] = useState<DuplicateGroup[]>([]);
   const [loading, setLoading] = useState(true);
+  const [progress, setProgress] = useState(0);
+  const [totalProducts, setTotalProducts] = useState(0);
   const [selectedGroup, setSelectedGroup] = useState<DuplicateGroup | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // Calculate similarity between two strings
+  // Fast similarity calculation using word overlap
   const calculateSimilarity = (str1: string, str2: string): number => {
-    const longer = str1.length > str2.length ? str1 : str2;
-    const shorter = str1.length > str2.length ? str2 : str1;
-    const editDistance = levenshteinDistance(longer, shorter);
-    return (longer.length - editDistance) / longer.length;
+    if (!str1 || !str2) return 0;
+    
+    const words1 = str1.toLowerCase().split(/\s+/).filter(word => word.length > 2);
+    const words2 = str2.toLowerCase().split(/\s+/).filter(word => word.length > 2);
+    
+    if (words1.length === 0 || words2.length === 0) return 0;
+    
+    const commonWords = words1.filter(word => words2.includes(word));
+    return (commonWords.length * 2) / (words1.length + words2.length);
   };
 
-  const levenshteinDistance = (str1: string, str2: string): number => {
-    const matrix = [];
-    for (let i = 0; i <= str2.length; i++) {
-      matrix[i] = [i];
+  // Quick exact match checks
+  const hasExactMatch = (product1: Product, product2: Product): { match: boolean; reason: string; similarity: number } => {
+    // Exact SKU match (highest priority)
+    if (product1.variant_sku && product2.variant_sku && 
+        product1.variant_sku.toLowerCase() === product2.variant_sku.toLowerCase()) {
+      return { match: true, reason: 'Identical SKU', similarity: 1.0 };
     }
-    for (let j = 0; j <= str1.length; j++) {
-      matrix[0][j] = j;
+    
+    // Exact title match
+    if (product1.title.toLowerCase() === product2.title.toLowerCase()) {
+      return { match: true, reason: 'Identical title', similarity: 1.0 };
     }
-    for (let i = 1; i <= str2.length; i++) {
-      for (let j = 1; j <= str1.length; j++) {
-        if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
-          matrix[i][j] = matrix[i - 1][j - 1];
-        } else {
-          matrix[i][j] = Math.min(
-            matrix[i - 1][j - 1] + 1,
-            matrix[i][j - 1] + 1,
-            matrix[i - 1][j] + 1
-          );
-        }
-      }
-    }
-    return matrix[str2.length][str1.length];
+    
+    return { match: false, reason: '', similarity: 0 };
   };
 
   const detectDuplicates = async () => {
@@ -71,76 +70,89 @@ export function DuplicateDetectionTool() {
 
     try {
       setLoading(true);
+      setProgress(0);
+      
+      // Limit to manageable batch size
+      const BATCH_SIZE = 500;
       const { data: products, error } = await supabase
         .from('products')
-        .select('*')
-        .eq('user_id', user.id);
+        .select('id, handle, title, body_html, variant_sku, vendor, type, created_at')
+        .eq('user_id', user.id)
+        .limit(BATCH_SIZE);
 
       if (error) throw error;
+      if (!products || products.length === 0) {
+        setDuplicateGroups([]);
+        return;
+      }
 
+      setTotalProducts(products.length);
       const groups: DuplicateGroup[] = [];
       const processed = new Set<string>();
 
-      products?.forEach((product, index) => {
-        if (processed.has(product.id)) return;
+      // Process in smaller chunks to prevent browser hanging
+      const processChunk = (startIndex: number, endIndex: number) => {
+        return new Promise<void>((resolve) => {
+          setTimeout(() => {
+            for (let i = startIndex; i < Math.min(endIndex, products.length); i++) {
+              const product = products[i];
+              if (processed.has(product.id)) continue;
 
-        const duplicates = [product];
-        
-        products.slice(index + 1).forEach(otherProduct => {
-          if (processed.has(otherProduct.id)) return;
+              const duplicates = [product];
+              
+              // Only check against remaining products (not all)
+              for (let j = i + 1; j < products.length; j++) {
+                const otherProduct = products[j];
+                if (processed.has(otherProduct.id)) continue;
 
-          const titleSimilarity = calculateSimilarity(
-            product.title.toLowerCase(),
-            otherProduct.title.toLowerCase()
-          );
+                // Quick exact match check first
+                const exactMatch = hasExactMatch(product, otherProduct);
+                if (exactMatch.match) {
+                  duplicates.push(otherProduct);
+                  processed.add(otherProduct.id);
+                  continue;
+                }
 
-          let reason = '';
-          let similarity = 0;
+                // Only do similarity check if no exact match and reasonable similarity threshold
+                const titleSimilarity = calculateSimilarity(product.title, otherProduct.title);
+                if (titleSimilarity > 0.85) { // Increased threshold for performance
+                  duplicates.push(otherProduct);
+                  processed.add(otherProduct.id);
+                }
+              }
 
-          if (titleSimilarity > 0.8) {
-            reason = 'Similar titles';
-            similarity = titleSimilarity;
-          } else if (product.variant_sku && otherProduct.variant_sku && 
-                    product.variant_sku === otherProduct.variant_sku) {
-            reason = 'Identical SKU';
-            similarity = 1.0;
-          } else if (product.body_html && otherProduct.body_html) {
-            const descSimilarity = calculateSimilarity(
-              product.body_html.toLowerCase(),
-              otherProduct.body_html.toLowerCase()
-            );
-            if (descSimilarity > 0.7) {
-              reason = 'Similar descriptions';
-              similarity = descSimilarity;
+              if (duplicates.length > 1) {
+                const similarity = duplicates.length > 2 ? 1.0 : 
+                  Math.max(...duplicates.slice(1).map(dup => {
+                    const exact = hasExactMatch(product, dup);
+                    return exact.match ? exact.similarity : calculateSimilarity(product.title, dup.title);
+                  }));
+
+                const reason = duplicates.some(dup => hasExactMatch(product, dup).match) 
+                  ? hasExactMatch(product, duplicates[1]).reason
+                  : 'Similar titles';
+
+                groups.push({
+                  id: `group-${i}`,
+                  products: duplicates,
+                  similarity,
+                  reason
+                });
+                duplicates.forEach(p => processed.add(p.id));
+              }
             }
-          }
-
-          if (similarity > 0.7) {
-            duplicates.push(otherProduct);
-            processed.add(otherProduct.id);
-          }
+            
+            setProgress(Math.round((endIndex / products.length) * 100));
+            resolve();
+          }, 0);
         });
+      };
 
-        if (duplicates.length > 1) {
-          const groupReason = duplicates.length > 2 ? 'Multiple matches' : 
-            duplicates.slice(1).map(dup => {
-              const titleSim = calculateSimilarity(product.title.toLowerCase(), dup.title.toLowerCase());
-              if (titleSim > 0.8) return 'Similar titles';
-              if (product.variant_sku && dup.variant_sku && product.variant_sku === dup.variant_sku) return 'Identical SKU';
-              return 'Similar descriptions';
-            })[0] || 'Similar content';
-
-          groups.push({
-            id: `group-${index}`,
-            products: duplicates,
-            similarity: Math.max(...duplicates.slice(1).map(dup => 
-              calculateSimilarity(product.title.toLowerCase(), dup.title.toLowerCase())
-            )),
-            reason: groupReason
-          });
-          duplicates.forEach(p => processed.add(p.id));
-        }
-      });
+      // Process in chunks of 50 to prevent blocking
+      const CHUNK_SIZE = 50;
+      for (let i = 0; i < products.length; i += CHUNK_SIZE) {
+        await processChunk(i, i + CHUNK_SIZE);
+      }
 
       setDuplicateGroups(groups);
     } catch (error) {
@@ -152,6 +164,7 @@ export function DuplicateDetectionTool() {
       });
     } finally {
       setLoading(false);
+      setProgress(0);
     }
   };
 
@@ -222,9 +235,19 @@ export function DuplicateDetectionTool() {
     return (
       <Card>
         <CardContent className="p-6">
-          <div className="flex items-center gap-2">
-            <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></div>
-            <span className="text-muted-foreground">Crunching your data… just a sec ☕</span>
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></div>
+              <span className="text-muted-foreground">Analyzing {totalProducts} products for duplicates… ☕</span>
+            </div>
+            {progress > 0 && (
+              <div className="w-full bg-muted rounded-full h-2">
+                <div 
+                  className="bg-primary h-2 rounded-full transition-all duration-300" 
+                  style={{ width: `${progress}%` }}
+                ></div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
