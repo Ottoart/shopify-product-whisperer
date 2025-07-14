@@ -503,7 +503,7 @@ export function CarrierManagement() {
         {/* Tabbed Interface */}
         <Tabs defaultValue="internal" className="space-y-6">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="internal">ShipStation Carriers</TabsTrigger>
+            <TabsTrigger value="internal">PrepFox Carriers</TabsTrigger>
             <TabsTrigger value="custom">Your Carrier Accounts</TabsTrigger>
           </TabsList>
 
