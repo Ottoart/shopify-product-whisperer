@@ -920,7 +920,22 @@ export function OrderManagement() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-gray-200 rounded border flex-shrink-0"></div>
+                        <div className="w-8 h-8 bg-gray-200 rounded border flex-shrink-0 overflow-hidden">
+                          {order.items[0]?.imageSrc ? (
+                            <img 
+                              src={order.items[0].imageSrc} 
+                              alt={order.items[0].productTitle}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                              <span className="text-xs text-gray-400">No Image</span>
+                            </div>
+                          )}
+                        </div>
                         <div className="text-sm">
                           {getItemSummary(order.items)}
                         </div>

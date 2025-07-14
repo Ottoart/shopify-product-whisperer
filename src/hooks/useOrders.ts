@@ -53,6 +53,7 @@ export interface OrderItem {
   quantity: number;
   price: number;
   weight?: number;
+  imageSrc?: string;
 }
 
 export const useOrders = () => {
@@ -65,6 +66,7 @@ export const useOrders = () => {
     try {
       setLoading(true);
       
+      // First fetch orders with order items
       const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
         .select(`
@@ -74,6 +76,32 @@ export const useOrders = () => {
         .order('created_at', { ascending: false });
 
       if (ordersError) throw ordersError;
+
+      // Get all unique product handles from order items
+      const productHandles = Array.from(
+        new Set(
+          (ordersData || [])
+            .flatMap(order => order.order_items)
+            .map(item => item.product_handle)
+            .filter(handle => handle)
+        )
+      );
+
+      // Fetch product images for these handles
+      let productImages: Record<string, string> = {};
+      if (productHandles.length > 0) {
+        const { data: productsData } = await supabase
+          .from('products')
+          .select('handle, image_src')
+          .in('handle', productHandles);
+        
+        productImages = (productsData || []).reduce((acc, product) => {
+          if (product.handle && product.image_src) {
+            acc[product.handle] = product.image_src;
+          }
+          return acc;
+        }, {} as Record<string, string>);
+      }
 
       const formattedOrders: Order[] = (ordersData || []).map(order => ({
         id: order.id,
@@ -122,7 +150,8 @@ export const useOrders = () => {
           sku: item.sku,
           quantity: item.quantity,
           price: item.price,
-          weight: item.weight_lbs
+          weight: item.weight_lbs,
+          imageSrc: item.product_handle ? productImages[item.product_handle] : undefined
         }))
       }));
 
