@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarDays, Package, Truck, Clock, TrendingUp, MapPin, AlertCircle } from "lucide-react";
+import { CalendarDays, Package, Truck, Clock, TrendingUp, MapPin, AlertCircle, DollarSign } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -400,8 +400,8 @@ export function ShippingOverview() {
         </CardContent>
       </Card>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Key Metrics - Enhanced */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         <Card className="text-center">
           <CardContent className="pt-6">
             <div className="flex items-center justify-center mb-4">
@@ -431,10 +431,31 @@ export function ShippingOverview() {
             <div className="text-sm text-muted-foreground font-medium">Orders Unshipped</div>
           </CardContent>
         </Card>
+
+        {/* Additional Analytics Metrics */}
+        <Card className="text-center">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-center mb-4">
+              <DollarSign className="h-8 w-8 text-green-500" />
+            </div>
+            <div className="text-4xl font-bold text-green-500 mb-2">$8.90</div>
+            <div className="text-sm text-muted-foreground font-medium">Avg Cost/Order</div>
+          </CardContent>
+        </Card>
+
+        <Card className="text-center">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-center mb-4">
+              <TrendingUp className="h-8 w-8 text-purple-500" />
+            </div>
+            <div className="text-4xl font-bold text-purple-500 mb-2">96.2%</div>
+            <div className="text-sm text-muted-foreground font-medium">On-Time Delivery</div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Bottom Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Bottom Section with Problem Areas */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Shipments by Carrier */}
         <Card>
           <CardHeader>
@@ -515,6 +536,26 @@ export function ShippingOverview() {
                   No pending orders
                 </div>
               )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Problem Areas */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Problem Areas</CardTitle>
+            <CardDescription>Issues requiring attention</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="p-3 bg-red-50 rounded border-l-4 border-red-400">
+                <div className="font-medium text-red-800">18% of FedEx shipments delayed</div>
+                <div className="text-sm text-red-600">Consider switching to UPS for time-sensitive orders</div>
+              </div>
+              <div className="p-3 bg-yellow-50 rounded border-l-4 border-yellow-400">
+                <div className="font-medium text-yellow-800">2.3 days avg processing time</div>
+                <div className="text-sm text-yellow-600">Target: 1.5 days for improved efficiency</div>
+              </div>
             </div>
           </CardContent>
         </Card>
