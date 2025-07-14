@@ -579,87 +579,115 @@ export function CarrierManagement() {
           </Card>
         )}
 
-        {/* Carriers Grid */}
-        <div className="grid gap-4">
-          <h2 className="text-xl font-semibold">Connected Carriers</h2>
-          {prepfoxCarriers.map((carrier) => (
-            <Card key={carrier.id}>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="text-3xl">{carrier.logo}</div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-lg">{carrier.name}</h3>
-                        <Badge variant="default" className="bg-green-100 text-green-800">
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          Connected
-                        </Badge>
-                        {carrier.isInternal && (
-                          <Badge variant="secondary">
-                            PrepFox {carrier.name.includes("PrepFox") ? "" : "Partner"}
-                          </Badge>
-                        )}
-                        {isAdmin && (
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <Badge variant="outline" className="text-xs">
-                                <Percent className="h-3 w-3 mr-1" />
-                                +{carrier.markup}%
-                              </Badge>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              Hidden markup applied to all rates
-                            </TooltipContent>
-                          </Tooltip>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {carrier.services.filter(s => s.enabled).length} of {carrier.services.length} services enabled
-                        • Last sync: {carrier.lastSync}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedCarrier(carrier);
-                        setIsServiceModalOpen(true);
-                      }}
-                    >
-                      <Settings className="h-4 w-4 mr-1" />
-                      Manage Services
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                    >
-                      <RefreshCw className="h-4 w-4 mr-1" />
-                      Re-Sync
-                    </Button>
-                  </div>
-                </div>
+        {/* Carrier Tabs */}
+        <Tabs defaultValue="prepfox" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="prepfox">PrepFox Carriers</TabsTrigger>
+            <TabsTrigger value="user-carriers">Your Carrier Accounts</TabsTrigger>
+          </TabsList>
 
-                {/* Service Preview */}
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {carrier.services.filter(s => s.enabled).slice(0, 4).map((service) => (
-                    <Badge key={service.id} variant="secondary" className="text-xs">
-                      {service.name}
-                    </Badge>
-                  ))}
-                  {carrier.services.filter(s => s.enabled).length > 4 && (
-                    <Badge variant="outline" className="text-xs">
-                      +{carrier.services.filter(s => s.enabled).length - 4} more
-                    </Badge>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+          <TabsContent value="prepfox" className="space-y-4">
+            <div className="grid gap-4">
+              <h2 className="text-xl font-semibold">PrepFox Managed Carriers</h2>
+              {prepfoxCarriers.map((carrier) => (
+                <Card key={carrier.id}>
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="text-3xl">{carrier.logo}</div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold text-lg">{carrier.name}</h3>
+                            <Badge variant="default" className="bg-green-100 text-green-800">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Connected
+                            </Badge>
+                            {carrier.isInternal && (
+                              <Badge variant="secondary">
+                                PrepFox {carrier.name.includes("PrepFox") ? "" : "Partner"}
+                              </Badge>
+                            )}
+                            {isAdmin && (
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <Badge variant="outline" className="text-xs">
+                                    <Percent className="h-3 w-3 mr-1" />
+                                    +{carrier.markup}%
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  Hidden markup applied to all rates
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {carrier.services.filter(s => s.enabled).length} of {carrier.services.length} services enabled
+                            • Last sync: {carrier.lastSync}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedCarrier(carrier);
+                            setIsServiceModalOpen(true);
+                          }}
+                        >
+                          <Settings className="h-4 w-4 mr-1" />
+                          Manage Services
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                        >
+                          <RefreshCw className="h-4 w-4 mr-1" />
+                          Re-Sync
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Service Preview */}
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {carrier.services.filter(s => s.enabled).slice(0, 4).map((service) => (
+                        <Badge key={service.id} variant="secondary" className="text-xs">
+                          {service.name}
+                        </Badge>
+                      ))}
+                      {carrier.services.filter(s => s.enabled).length > 4 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{carrier.services.filter(s => s.enabled).length - 4} more
+                        </Badge>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="user-carriers" className="space-y-4">
+            <div className="grid gap-4">
+              <h2 className="text-xl font-semibold">Your Connected Carrier Accounts</h2>
+              <Card className="border-dashed">
+                <CardContent className="p-12 text-center">
+                  <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No Personal Carriers Connected</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Connect your own carrier accounts for custom rates and services
+                  </p>
+                  <Button onClick={() => setIsAddCarrierOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Your Carrier Account
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
 
         {/* Modals */}
         <ServiceManagementModal />
