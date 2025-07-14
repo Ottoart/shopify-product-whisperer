@@ -64,6 +64,7 @@ export function CarrierManagement() {
   const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
   const [isPlanComparisonOpen, setIsPlanComparisonOpen] = useState(false);
   const [isAddCarrierOpen, setIsAddCarrierOpen] = useState(false);
+  const [connectedUserCarriers, setConnectedUserCarriers] = useState<any[]>([]);
 
   // Available PrepFox carriers (admin controlled)
   const [prepfoxCarriers, setPrepfoxCarriers] = useState<Carrier[]>([
@@ -491,13 +492,42 @@ export function CarrierManagement() {
               disabled={!isAdmin}
               onClick={() => {
                 if (isAdmin) {
+                  // Check if carrier is already connected
+                  const isAlreadyConnected = connectedUserCarriers.some(c => c.id === carrier.id);
+                  
+                  if (isAlreadyConnected) {
+                    toast({
+                      title: "Carrier Already Connected",
+                      description: `${carrier.name} is already connected to your account.`,
+                    });
+                    return;
+                  }
+                  
                   toast({
                     title: "Carrier Connection Started",
                     description: `Setting up ${carrier.name} connection...`,
                   });
-                  // Here you would typically handle the actual carrier connection
-                  // For now, we'll just show a success message
+                  
+                  // Add carrier to connected carriers
                   setTimeout(() => {
+                    const newConnectedCarrier = {
+                      id: carrier.id,
+                      name: carrier.name,
+                      logo: carrier.logo,
+                      connected: true,
+                      status: 'connected',
+                      services: [
+                        { id: `${carrier.id}-standard`, name: "Standard Service", enabled: true },
+                        { id: `${carrier.id}-express`, name: "Express Service", enabled: true }
+                      ],
+                      lastSync: "Just now",
+                      isInternal: false,
+                      markup: 0,
+                      adminControlled: false
+                    };
+                    
+                    setConnectedUserCarriers(prev => [...prev, newConnectedCarrier]);
+                    
                     toast({
                       title: "Carrier Connected",
                       description: `${carrier.name} has been successfully connected to your account.`,
@@ -688,20 +718,92 @@ export function CarrierManagement() {
 
           <TabsContent value="user-carriers" className="space-y-4">
             <div className="grid gap-4">
-              <h2 className="text-xl font-semibold">Your Connected Carrier Accounts</h2>
-              <Card className="border-dashed">
-                <CardContent className="p-12 text-center">
-                  <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium mb-2">No Personal Carriers Connected</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Connect your own carrier accounts for custom rates and services
-                  </p>
-                  <Button onClick={() => setIsAddCarrierOpen(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Your Carrier Account
-                  </Button>
-                </CardContent>
-              </Card>
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold">Your Connected Carrier Accounts</h2>
+                <Button onClick={() => setIsAddCarrierOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Your Carrier Account
+                </Button>
+              </div>
+              
+              {connectedUserCarriers.length === 0 ? (
+                <Card className="border-dashed">
+                  <CardContent className="p-12 text-center">
+                    <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-medium mb-2">No Personal Carriers Connected</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Connect your own carrier accounts for custom rates and services
+                    </p>
+                    <Button onClick={() => setIsAddCarrierOpen(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Your Carrier Account
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                connectedUserCarriers.map((carrier) => (
+                  <Card key={carrier.id}>
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="text-3xl">{carrier.logo}</div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-semibold text-lg">{carrier.name}</h3>
+                              <Badge variant="default" className="bg-green-100 text-green-800">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Connected
+                              </Badge>
+                              <Badge variant="outline">
+                                Personal Account
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {carrier.services.filter(s => s.enabled).length} of {carrier.services.length} services enabled
+                              • Last sync: {carrier.lastSync}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedCarrier(carrier);
+                              setIsServiceModalOpen(true);
+                            }}
+                          >
+                            <Settings className="h-4 w-4 mr-1" />
+                            Manage Services
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                          >
+                            <RefreshCw className="h-4 w-4 mr-1" />
+                            Re-Sync
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Service Preview */}
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {carrier.services.filter(s => s.enabled).slice(0, 4).map((service) => (
+                          <Badge key={service.id} variant="secondary" className="text-xs">
+                            {service.name}
+                          </Badge>
+                        ))}
+                        {carrier.services.filter(s => s.enabled).length > 4 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{carrier.services.filter(s => s.enabled).length - 4} more
+                          </Badge>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </div>
           </TabsContent>
         </Tabs>
