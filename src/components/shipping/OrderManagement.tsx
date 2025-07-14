@@ -289,6 +289,8 @@ export function OrderManagement() {
   };
 
   const handleOrderClick = (order: Order) => {
+    console.log('Selected order:', order);
+    console.log('Order items:', order.items);
     setSelectedOrderForLabel(order);
     setEditableOrder({...order}); // Create editable copy
     setShowLabelModal(true);
@@ -971,23 +973,35 @@ export function OrderManagement() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {selectedOrderForLabel.items.map((item, index) => (
-                      <div key={index} className="flex items-center gap-4 p-3 border rounded-lg">
-                        <div className="w-12 h-12 bg-gray-200 rounded border flex-shrink-0 flex items-center justify-center">
-                          <Package className="h-6 w-6 text-gray-500" />
+                    {selectedOrderForLabel.items && selectedOrderForLabel.items.length > 0 ? (
+                      selectedOrderForLabel.items.map((item, index) => (
+                        <div key={index} className="flex items-center gap-4 p-3 border rounded-lg">
+                          <div className="w-12 h-12 bg-gray-200 rounded border flex-shrink-0 flex items-center justify-center">
+                            <Package className="h-6 w-6 text-gray-500" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="font-medium">{item.productTitle}</div>
+                            <div className="text-sm text-muted-foreground">SKU: {item.sku || "N/A"}</div>
+                            <div className="text-sm text-muted-foreground">Weight: {item.weight ? formatWeight(item.weight) : "Not specified"}</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-lg font-semibold">Qty: {item.quantity}</div>
+                            <div className="text-sm text-muted-foreground">{formatCurrency(item.price)} each</div>
+                            <div className="font-medium">{formatCurrency(item.price * item.quantity)} total</div>
+                          </div>
                         </div>
-                        <div className="flex-1">
-                          <div className="font-medium">{item.productTitle}</div>
-                          <div className="text-sm text-muted-foreground">SKU: {item.sku || "N/A"}</div>
-                          <div className="text-sm text-muted-foreground">Weight: {item.weight ? formatWeight(item.weight) : "Not specified"}</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-lg font-semibold">Qty: {item.quantity}</div>
-                          <div className="text-sm text-muted-foreground">{formatCurrency(item.price)} each</div>
-                          <div className="font-medium">{formatCurrency(item.price * item.quantity)} total</div>
-                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Package className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                        <p>No items found for this order</p>
+                        <p className="text-sm mt-2">Order items may not have been synced yet</p>
+                        <Button variant="outline" size="sm" className="mt-3">
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          Sync Order Items
+                        </Button>
                       </div>
-                    ))}
+                    )}
                   </div>
                 </CardContent>
               </Card>
