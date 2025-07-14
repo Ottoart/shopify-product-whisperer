@@ -330,18 +330,52 @@ export function OrderManagement() {
   };
 
   const filteredOrders = orders.filter(order => {
-    const matchesSearch = order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         order.customerName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = searchTerm === "" || 
+                         order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         order.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         order.customerEmail.toLowerCase().includes(searchTerm.toLowerCase());
+    
     const matchesStore = filterStore === "all" || order.storeName === filterStore;
-    const matchesStatus = filterStatus === "all" || order.status === filterStatus;
-    const matchesDestination = filterDestination === "all";
-    const matchesAssignee = filterAssignee === "all";
-    const matchesTag = filterTag === "all";
-    const matchesAllocation = filterAllocation === "all";
-    const matchesOrderDate = filterOrderDate === "all";
+    
+    const matchesStatus = activeCategory === "all" || (() => {
+      switch (activeCategory) {
+        case "awaiting_payment": return order.status === "processing" || order.status === "awaiting";
+        case "on_hold": return order.status === "error";
+        case "awaiting": return order.status === "awaiting";
+        case "manual": return order.status === "awaiting";
+        case "rejected": return order.status === "error";
+        case "pending": return order.status === "processing";
+        case "shipped": return order.status === "shipped";
+        case "cancelled": return order.status === "cancelled";
+        case "alerts": return order.status === "error";
+        default: return true;
+      }
+    })();
+    
+    const matchesDestination = filterDestination === "all" || 
+                              order.shippingAddress.country === filterDestination ||
+                              order.shippingAddress.state === filterDestination;
+    
+    const matchesTag = filterTag === "all" || 
+                      (order.tags && order.tags.includes(filterTag));
+    
+    const matchesOrderDate = filterOrderDate === "all" || (() => {
+      const orderDate = new Date(order.orderDate);
+      const today = new Date();
+      const diffDays = Math.floor((today.getTime() - orderDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      switch (filterOrderDate) {
+        case "today": return diffDays === 0;
+        case "yesterday": return diffDays === 1;
+        case "last_7_days": return diffDays <= 7;
+        case "last_30_days": return diffDays <= 30;
+        case "older": return diffDays > 30;
+        default: return true;
+      }
+    })();
     
     return matchesSearch && matchesStore && matchesStatus && matchesDestination && 
-           matchesAssignee && matchesTag && matchesAllocation && matchesOrderDate;
+           matchesTag && matchesOrderDate;
   });
 
   const handleSelectOrder = (orderId: string) => {
@@ -602,6 +636,20 @@ export function OrderManagement() {
             </Button>
           </div>
 
+          {/* Search Bar */}
+          <div className="flex items-center gap-2 mb-4">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search orders by number, customer, or email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+
           {/* Filter Controls */}
           <div className="flex flex-wrap gap-2 items-center">
             <Button variant="outline" size="sm" className="bg-blue-50 text-blue-700">
@@ -626,7 +674,13 @@ export function OrderManagement() {
                 <SelectValue placeholder="Destination" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="all">All Countries</SelectItem>
+                {Array.from(new Set(orders.map(o => o.shippingAddress.country))).map(country => (
+                  <SelectItem key={country} value={country}>{country}</SelectItem>
+                ))}
+                {Array.from(new Set(orders.map(o => o.shippingAddress.state))).map(state => (
+                  <SelectItem key={state} value={state}>{state}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
@@ -635,7 +689,10 @@ export function OrderManagement() {
                 <SelectValue placeholder="Tags" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="all">All Tags</SelectItem>
+                {Array.from(new Set(orders.flatMap(o => o.tags || []))).map(tag => (
+                  <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
@@ -644,7 +701,9 @@ export function OrderManagement() {
                 <SelectValue placeholder="Assignee" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="all">All Assignees</SelectItem>
+                <SelectItem value="unassigned">Unassigned</SelectItem>
+                <SelectItem value="me">Assigned to Me</SelectItem>
               </SelectContent>
             </Select>
 
@@ -653,7 +712,10 @@ export function OrderManagement() {
                 <SelectValue placeholder="Allocation Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="all">All Allocations</SelectItem>
+                <SelectItem value="allocated">Allocated</SelectItem>
+                <SelectItem value="partial">Partially Allocated</SelectItem>
+                <SelectItem value="unallocated">Unallocated</SelectItem>
               </SelectContent>
             </Select>
 
@@ -662,7 +724,12 @@ export function OrderManagement() {
                 <SelectValue placeholder="Order Date" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="all">All Dates</SelectItem>
+                <SelectItem value="today">Today</SelectItem>
+                <SelectItem value="yesterday">Yesterday</SelectItem>
+                <SelectItem value="last_7_days">Last 7 Days</SelectItem>
+                <SelectItem value="last_30_days">Last 30 Days</SelectItem>
+                <SelectItem value="older">Older than 30 Days</SelectItem>
               </SelectContent>
             </Select>
 
