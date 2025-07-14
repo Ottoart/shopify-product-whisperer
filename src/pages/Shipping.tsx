@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Truck, Package, BarChart3, RotateCcw, Settings, Zap, Building2, Store } from "lucide-react";
+import { Truck, Package, RotateCcw, Settings, Zap, Building2, Store } from "lucide-react";
 import { OrderManagement } from "@/components/shipping/OrderManagement";
 
 import { CarrierRateComparison } from "@/components/shipping/CarrierRateComparison";
 import { ShippingRules } from "@/components/shipping/ShippingRules";
 import { TrackingPage } from "@/components/shipping/TrackingPage";
-import { ShippingAnalytics } from "@/components/shipping/ShippingAnalytics";
 import { ReturnsManagement } from "@/components/shipping/ReturnsManagement";
 import { BatchActionQueue } from "@/components/shipping/BatchActionQueue";
 import { CarrierManagement } from "@/components/shipping/CarrierManagement";
@@ -29,7 +28,7 @@ export default function Shipping() {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-9 h-auto gap-1 p-1">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-7 h-auto gap-1 p-1">
           <TabsTrigger value="orders" className="flex items-center gap-2">
             <Package className="h-4 w-4" />
             Orders
@@ -49,10 +48,6 @@ export default function Shipping() {
           <TabsTrigger value="tracking" className="flex items-center gap-2">
             <Zap className="h-4 w-4" />
             Tracking
-          </TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            Analytics
           </TabsTrigger>
           <TabsTrigger value="returns" className="flex items-center gap-2">
             <RotateCcw className="h-4 w-4" />
@@ -86,10 +81,6 @@ export default function Shipping() {
 
         <TabsContent value="tracking">
           <TrackingPage />
-        </TabsContent>
-
-        <TabsContent value="analytics">
-          <ShippingAnalytics />
         </TabsContent>
 
         <TabsContent value="returns">
