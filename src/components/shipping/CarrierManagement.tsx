@@ -492,48 +492,77 @@ export function CarrierManagement() {
               disabled={!isAdmin}
               onClick={() => {
                 if (isAdmin) {
-                  // Check if carrier is already connected
-                  const isAlreadyConnected = connectedUserCarriers.some(c => c.id === carrier.id);
+                  // Check if there's an internal version of this carrier
+                  const internalCarrier = prepfoxCarriers.find(c => 
+                    c.name.toLowerCase().includes(carrier.name.toLowerCase()) || 
+                    c.id.includes(carrier.id)
+                  );
                   
-                  if (isAlreadyConnected) {
+                  if (internalCarrier) {
+                    // Connect to internal system
                     toast({
-                      title: "Carrier Already Connected",
-                      description: `${carrier.name} is already connected to your account.`,
+                      title: "Connecting to Internal System",
+                      description: `Connecting to ${carrier.name} internal system...`,
                     });
-                    return;
+                    
+                    setTimeout(() => {
+                      // Enable the internal carrier if it's not already enabled
+                      setPrepfoxCarriers(prev => prev.map(c => 
+                        c.id === internalCarrier.id 
+                          ? { ...c, connected: true, status: 'connected' as const }
+                          : c
+                      ));
+                      
+                      toast({
+                        title: "Connected to Internal System",
+                        description: `${carrier.name} is now connected to the internal PrepFox system with discounted rates.`,
+                      });
+                      setIsAddCarrierOpen(false);
+                    }, 2000);
+                  } else {
+                    // Check if carrier is already connected as personal account
+                    const isAlreadyConnected = connectedUserCarriers.some(c => c.id === carrier.id);
+                    
+                    if (isAlreadyConnected) {
+                      toast({
+                        title: "Carrier Already Connected",
+                        description: `${carrier.name} is already connected to your account.`,
+                      });
+                      return;
+                    }
+                    
+                    // Add as personal account if no internal version exists
+                    toast({
+                      title: "Carrier Connection Started",
+                      description: `Setting up ${carrier.name} connection...`,
+                    });
+                    
+                    setTimeout(() => {
+                      const newConnectedCarrier = {
+                        id: carrier.id,
+                        name: carrier.name,
+                        logo: carrier.logo,
+                        connected: true,
+                        status: 'connected',
+                        services: [
+                          { id: `${carrier.id}-standard`, name: "Standard Service", enabled: true },
+                          { id: `${carrier.id}-express`, name: "Express Service", enabled: true }
+                        ],
+                        lastSync: "Just now",
+                        isInternal: false,
+                        markup: 0,
+                        adminControlled: false
+                      };
+                      
+                      setConnectedUserCarriers(prev => [...prev, newConnectedCarrier]);
+                      
+                      toast({
+                        title: "Carrier Connected",
+                        description: `${carrier.name} has been successfully connected to your account.`,
+                      });
+                      setIsAddCarrierOpen(false);
+                    }, 2000);
                   }
-                  
-                  toast({
-                    title: "Carrier Connection Started",
-                    description: `Setting up ${carrier.name} connection...`,
-                  });
-                  
-                  // Add carrier to connected carriers
-                  setTimeout(() => {
-                    const newConnectedCarrier = {
-                      id: carrier.id,
-                      name: carrier.name,
-                      logo: carrier.logo,
-                      connected: true,
-                      status: 'connected',
-                      services: [
-                        { id: `${carrier.id}-standard`, name: "Standard Service", enabled: true },
-                        { id: `${carrier.id}-express`, name: "Express Service", enabled: true }
-                      ],
-                      lastSync: "Just now",
-                      isInternal: false,
-                      markup: 0,
-                      adminControlled: false
-                    };
-                    
-                    setConnectedUserCarriers(prev => [...prev, newConnectedCarrier]);
-                    
-                    toast({
-                      title: "Carrier Connected",
-                      description: `${carrier.name} has been successfully connected to your account.`,
-                    });
-                    setIsAddCarrierOpen(false);
-                  }, 2000);
                 }
               }}
             >
