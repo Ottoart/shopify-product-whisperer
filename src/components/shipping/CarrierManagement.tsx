@@ -8,9 +8,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
-import { Building2, CheckCircle, XCircle, Settings, Plus, RefreshCw, AlertCircle, CreditCard, Crown, Zap, TestTube } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { 
+  Building2, CheckCircle, XCircle, Settings, Plus, RefreshCw, AlertCircle, 
+  CreditCard, Crown, Zap, TestTube, Shield, DollarSign, Eye, EyeOff, 
+  Users, Package, Globe, Truck, Percent, Lock 
+} from "lucide-react";
+
+interface CarrierService {
+  id: string;
+  name: string;
+  enabled: boolean;
+  markup?: number;
+}
 
 interface Carrier {
   id: string;
@@ -18,550 +30,489 @@ interface Carrier {
   logo: string;
   connected: boolean;
   status: 'connected' | 'disconnected' | 'error';
-  servicesEnabled: number;
+  services: CarrierService[];
   lastSync?: string;
-  plan?: 'free' | 'premium';
-  trialDaysLeft?: number;
-  internal?: boolean;
-  apiKey?: string;
-  username?: string;
-  accountNumber?: string;
-  customerId?: string;
-  postalCode?: string;
-  country?: string;
-  pickupType?: string;
-  services: string[];
-  activeServices: number;
-  totalServices: number;
-  active: boolean;
-  ratesEnabled: boolean;
-  labelsEnabled: boolean;
-  trackingEnabled: boolean;
-  negotiatedRates?: boolean;
-  lastUsed?: string;
-  carrierId?: string;
-  benefits: string[];
-  description: string;
+  isInternal?: boolean;
+  markup: number;
+  adminControlled: boolean;
 }
 
-interface AvailableCarrier {
+interface SubscriptionPlan {
   id: string;
   name: string;
-  logo: string;
-  description: string;
+  price: number;
+  shipments: number;
+  users: number;
+  labelType: string;
+  support: string;
+  carrierAddOn: number;
+  carrierAccess: number;
+  features: string[];
   popular?: boolean;
 }
 
 export function CarrierManagement() {
   const { toast } = useToast();
-  const [selectedCarrier, setSelectedCarrier] = useState<Carrier | null>(null);
-  const [selectedAvailableCarrier, setSelectedAvailableCarrier] = useState<AvailableCarrier | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isCarrierSelectorOpen, setIsCarrierSelectorOpen] = useState(false);
-  const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
-  const [modalType, setModalType] = useState<'connect' | 'edit'>('connect');
+  const { user } = useAuth();
   
-  // PrepFox Carriers (Free for trial, paid after)
-  const [prepfoxCarriers] = useState<Carrier[]>([
-    {
-      id: "canada-post",
-      name: "Canada Post",
-      logo: "🇨🇦",
-      connected: true,
-      status: 'connected',
-      servicesEnabled: 6,
-      lastSync: "2 hours ago",
-      plan: 'free',
-      trialDaysLeft: 23,
-      internal: true,
-      services: ["Regular Parcel", "Expedited Parcel", "Xpresspost", "Priority"],
-      activeServices: 6,
-      totalServices: 20,
-      active: true,
-      ratesEnabled: true,
-      labelsEnabled: true,
-      trackingEnabled: true,
-      lastUsed: "2 hours ago",
-      carrierId: "ss-337361",
-      benefits: ["Save on Canada Post rates through PrepFox", "Over 16.2 million addresses"],
-      description: "Save on Canada Post rates through PrepFox"
-    },
+  // Check if user is admin
+  const isAdmin = user?.email === 'ottman1@gmail.com';
+  
+  const [selectedCarrier, setSelectedCarrier] = useState<Carrier | null>(null);
+  const [showMarkupSettings, setShowMarkupSettings] = useState(false);
+  const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
+  const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
+  const [isPlanComparisonOpen, setIsPlanComparisonOpen] = useState(false);
+  const [isAddCarrierOpen, setIsAddCarrierOpen] = useState(false);
+
+  // Available PrepFox carriers (admin controlled)
+  const [prepfoxCarriers, setPrepfoxCarriers] = useState<Carrier[]>([
     {
       id: "ups-internal",
       name: "UPS",
       logo: "🤎",
       connected: true,
       status: 'connected',
-      servicesEnabled: 5,
-      lastSync: "1 day ago",
-      plan: 'free',
-      trialDaysLeft: 23,
-      internal: true,
-      services: ["UPS Ground", "UPS 2nd Day Air", "UPS Next Day Air", "UPS Worldwide Express"],
-      activeServices: 5,
-      totalServices: 11,
-      active: true,
-      ratesEnabled: true,
-      labelsEnabled: true,
-      trackingEnabled: true,
-      lastUsed: "1 day ago",
-      carrierId: "ss-1310534",
-      benefits: ["Save up to 68% over UPS retail rates", "Up to 68% off UPS Standard"],
-      description: "Save up to 68% over UPS retail rates"
+      services: [
+        { id: "ups-ground", name: "UPS Ground", enabled: true },
+        { id: "ups-2day", name: "UPS 2nd Day Air", enabled: true },
+        { id: "ups-next", name: "UPS Next Day Air", enabled: false },
+        { id: "ups-worldwide", name: "UPS Worldwide Express", enabled: true }
+      ],
+      lastSync: "2 hours ago",
+      isInternal: true,
+      markup: 15,
+      adminControlled: true
     },
     {
-      id: "sendle",
-      name: "Sendle",
-      logo: "📮",
+      id: "canada-post-internal",
+      name: "Canada Post",
+      logo: "🇨🇦",
       connected: true,
       status: 'connected',
-      servicesEnabled: 2,
-      lastSync: "3 days ago",
-      plan: 'free',
-      trialDaysLeft: 23,
-      internal: true,
-      services: ["Sendle Standard", "Sendle Express", "Sendle Pro"],
-      activeServices: 2,
-      totalServices: 4,
-      active: true,
-      ratesEnabled: true,
-      labelsEnabled: true,
-      trackingEnabled: true,
-      lastUsed: "3 days ago",
-      carrierId: "ss-1815121",
-      benefits: ["Save up to 50% off your shipping", "Free pickup, including residential delivery"],
-      description: "Save up to 50% off your shipping"
+      services: [
+        { id: "cp-regular", name: "Regular Parcel", enabled: true },
+        { id: "cp-expedited", name: "Expedited Parcel", enabled: true },
+        { id: "cp-xpress", name: "Xpresspost", enabled: false },
+        { id: "cp-priority", name: "Priority", enabled: true }
+      ],
+      lastSync: "1 hour ago",
+      isInternal: true,
+      markup: 15,
+      adminControlled: true
     },
     {
-      id: "fedex-internal",
-      name: "FedEx",
-      logo: "🟣",
+      id: "shipstation-internal",
+      name: "PrepFox Express",
+      logo: "🚚",
       connected: true,
       status: 'connected',
-      servicesEnabled: 6,
-      lastSync: "5 days ago",
-      plan: 'free',
-      trialDaysLeft: 23,
-      internal: true,
-      services: ["FedEx Ground", "FedEx Express Saver", "FedEx Standard Overnight"],
-      activeServices: 6,
-      totalServices: 12,
-      active: true,
-      ratesEnabled: true,
-      labelsEnabled: true,
-      trackingEnabled: true,
-      lastUsed: "5 days ago",
-      carrierId: "ss-1712943",
-      benefits: ["Save up to 68% on FedEx international shipping", "Save time on cross-border shipments"],
-      description: "Save up to 68% on FedEx international shipping"
-    },
-    {
-      id: "dhl-internal",
-      name: "DHL Express",
-      logo: "🟨",
-      connected: true,
-      status: 'connected',
-      servicesEnabled: 2,
-      lastSync: "1 week ago",
-      plan: 'free',
-      trialDaysLeft: 23,
-      internal: true,
-      services: ["DHL Express", "DHL Ground"],
-      activeServices: 2,
-      totalServices: 8,
-      active: true,
-      ratesEnabled: true,
-      labelsEnabled: true,
-      trackingEnabled: true,
-      lastUsed: "1 week ago",
-      carrierId: "ss-1793911",
-      benefits: ["Save up to 68% on DHL Express international shipments", "Fast, reliable delivery to over 220 countries"],
-      description: "Save up to 68% on DHL Express international shipments"
+      services: [
+        { id: "ss-standard", name: "Standard Delivery", enabled: true },
+        { id: "ss-express", name: "Express Delivery", enabled: true },
+        { id: "ss-overnight", name: "Overnight", enabled: false }
+      ],
+      lastSync: "30 minutes ago",
+      isInternal: true,
+      markup: 12,
+      adminControlled: true
     }
   ]);
 
-  // Available carriers to connect
-  const [availableCarriers] = useState<AvailableCarrier[]>([
-    { id: "ups", name: "UPS", logo: "🤎", description: "United Parcel Service", popular: true },
-    { id: "fedex", name: "FedEx", logo: "🟣", description: "Federal Express", popular: true },
-    { id: "canada-post", name: "Canada Post", logo: "🇨🇦", description: "Canada's postal service", popular: true },
-    { id: "dhl", name: "DHL Express", logo: "🟨", description: "International express", popular: true },
-    { id: "purolator", name: "Purolator", logo: "🟦", description: "Canadian courier" },
+  // Subscription plans
+  const subscriptionPlans: SubscriptionPlan[] = [
+    {
+      id: "parcel-lite",
+      name: "Parcel Lite",
+      price: 8.99,
+      shipments: 50,
+      users: 1,
+      labelType: "Branded",
+      support: "Live Chat",
+      carrierAddOn: 4.50,
+      carrierAccess: 1,
+      features: ["Inventory", "Receiving"]
+    },
+    {
+      id: "parcel-pro",
+      name: "Parcel Pro",
+      price: 26.99,
+      shipments: 500,
+      users: 1,
+      labelType: "Branded",
+      support: "Live Chat",
+      carrierAddOn: 18.00,
+      carrierAccess: 2,
+      features: ["Inventory", "Receiving"],
+      popular: true
+    },
+    {
+      id: "cargo-core",
+      name: "Cargo Core",
+      price: 53.99,
+      shipments: 1000,
+      users: 2,
+      labelType: "Customized",
+      support: "Live Chat",
+      carrierAddOn: 27.00,
+      carrierAccess: 3,
+      features: ["Inventory", "Receiving"]
+    },
+    {
+      id: "cargo-prime",
+      name: "Cargo Prime",
+      price: 89.99,
+      shipments: 2000,
+      users: 3,
+      labelType: "Customized",
+      support: "Live Chat",
+      carrierAddOn: 36.00,
+      carrierAccess: 4,
+      features: ["All Premium Features"]
+    },
+    {
+      id: "freight-elite",
+      name: "Freight Elite",
+      price: 134.99,
+      shipments: 5000,
+      users: 5,
+      labelType: "Customized",
+      support: "Phone + Chat",
+      carrierAddOn: 54.00,
+      carrierAccess: 6,
+      features: ["All Premium Features"]
+    },
+    {
+      id: "freight-command",
+      name: "Freight Command",
+      price: 206.10,
+      shipments: 7500,
+      users: 10,
+      labelType: "Customized",
+      support: "Priority Phone",
+      carrierAddOn: 86.40,
+      carrierAccess: 999,
+      features: ["All Premium Features"]
+    }
+  ];
+
+  const availableCarriers = [
+    { id: "ups", name: "UPS", logo: "🤎", description: "United Parcel Service" },
+    { id: "fedex", name: "FedEx", logo: "🟣", description: "Federal Express" },
+    { id: "canada-post", name: "Canada Post", logo: "🇨🇦", description: "Canada's postal service" },
+    { id: "dhl", name: "DHL Express", logo: "🟨", description: "International express" },
     { id: "usps", name: "USPS", logo: "📮", description: "United States Postal Service" },
-    { id: "aramex", name: "Aramex", logo: "🟧", description: "Middle East courier" },
-    { id: "gls", name: "GLS", logo: "🟩", description: "European parcel service" },
-    { id: "sendle", name: "Sendle", logo: "📮", description: "Australian courier" },
-    { id: "royal-mail", name: "Royal Mail", logo: "🇬🇧", description: "UK postal service" }
-  ]);
+    { id: "purolator", name: "Purolator", logo: "🟦", description: "Canadian courier" }
+  ];
 
-  const [userCarriers, setUserCarriers] = useState<Carrier[]>([
-    {
-      id: "usps-custom",
-      name: "USPS",
-      logo: "📮",
-      connected: true,
-      status: 'connected',
-      servicesEnabled: 3,
-      lastSync: "6 hours ago",
-      plan: 'premium',
-      accountNumber: "****5678",
-      services: ["Priority Mail", "Priority Mail Express", "First-Class Mail"],
-      activeServices: 3,
-      totalServices: 8,
-      active: true,
-      ratesEnabled: true,
-      labelsEnabled: true,
-      trackingEnabled: true,
-      negotiatedRates: true,
-      lastUsed: "6 hours ago",
-      carrierId: "custom-001",
-      benefits: ["Commercial pricing", "Enhanced delivery options"],
-      description: "Your connected USPS account"
-    }
-  ]);
-
-  const handleConnectCarrier = (availableCarrier: AvailableCarrier) => {
-    setSelectedAvailableCarrier(availableCarrier);
-    setIsCarrierSelectorOpen(false);
-    setIsModalOpen(true);
-    setModalType('connect');
-  };
-
-  const handleEditCarrier = (carrier: Carrier) => {
-    setSelectedCarrier(carrier);
-    setModalType('edit');
-    setIsModalOpen(true);
-  };
-
-  const handleDisconnectCarrier = (carrierId: string) => {
-    setUserCarriers(prev => prev.map(carrier => 
-      carrier.id === carrierId 
-        ? { 
-            ...carrier, 
-            connected: false, 
-            status: 'disconnected' as const,
-            active: false,
-            servicesEnabled: 0,
-            apiKey: undefined,
-            username: undefined,
-            accountNumber: undefined,
-            customerId: undefined,
-            postalCode: undefined,
-            country: undefined,
-            pickupType: undefined,
-            negotiatedRates: false,
-            lastUsed: undefined,
-            carrierId: undefined,
-            activeServices: 0
-          }
-        : carrier
-    ));
-    
-    const carrier = userCarriers.find(c => c.id === carrierId);
-    toast({
-      title: "Carrier disconnected",
-      description: `${carrier?.name} has been disconnected successfully.`,
-    });
-  };
-
-  const handleTestConnection = (carrierId: string) => {
-    const allCarriers = [...prepfoxCarriers, ...userCarriers];
-    const carrier = allCarriers.find(c => c.id === carrierId);
-    toast({
-      title: "🧪 Testing connection...",
-      description: `Verifying ${carrier?.name} API credentials.`,
-    });
-
-    setTimeout(() => {
-      toast({
-        title: "✅ Connection successful!",
-        description: `${carrier?.name} API is working correctly.`,
-      });
-    }, 2000);
-  };
-
-  const handleResync = (carrierId: string) => {
-    const allCarriers = [...prepfoxCarriers, ...userCarriers];
-    const carrier = allCarriers.find(c => c.id === carrierId);
-    toast({
-      title: "🔄 Syncing services...",
-      description: `Updating ${carrier?.name} services and rates.`,
-    });
-
-    setTimeout(() => {
-      toast({
-        title: "✅ Sync completed!",
-        description: `${carrier?.name} services updated successfully.`,
-      });
-    }, 2000);
-  };
-
-  const handleSaveCarrier = (formData: any) => {
-    if (!selectedAvailableCarrier) return;
-
-    const newCarrier: Carrier = {
-      id: `${selectedAvailableCarrier.id}-custom`,
-      name: selectedAvailableCarrier.name,
-      logo: selectedAvailableCarrier.logo,
-      connected: true,
-      status: 'connected',
-      servicesEnabled: 3,
-      lastSync: "Just now",
-      plan: 'premium',
-      services: ["Standard", "Express", "Priority"],
-      activeServices: 3,
-      totalServices: 8,
-      active: true,
-      ratesEnabled: true,
-      labelsEnabled: true,
-      trackingEnabled: true,
-      accountNumber: formData.accountNumber,
-      customerId: formData.customerId,
-      postalCode: formData.postalCode,
-      country: formData.country,
-      pickupType: formData.pickupType,
-      negotiatedRates: formData.negotiatedRates,
-      lastUsed: "Just now",
-      carrierId: `custom-${Date.now()}`,
-      benefits: ["Custom account rates", "Enhanced service options"],
-      description: `Your connected ${selectedAvailableCarrier.name} account`
-    };
-
-    setUserCarriers(prev => [...prev, newCarrier]);
-    setIsModalOpen(false);
-    setSelectedAvailableCarrier(null);
-    toast({
-      title: "✅ Carrier connected successfully!",
-      description: `${selectedAvailableCarrier.name} is now ready to use.`,
-    });
-  };
-
-  const getStatusBadge = (status: Carrier['status']) => {
-    switch (status) {
-      case 'connected':
-        return (
-          <Badge variant="default" className="bg-green-100 text-green-800 border-green-300">
-            <CheckCircle className="h-3 w-3 mr-1" />
-            Connected
-          </Badge>
-        );
-      case 'error':
-        return (
-          <Badge variant="destructive" className="bg-red-100 text-red-800 border-red-300">
-            <XCircle className="h-3 w-3 mr-1" />
-            Error
-          </Badge>
-        );
-      default:
-        return (
-          <Badge variant="outline" className="text-gray-600 border-gray-300">
-            <XCircle className="h-3 w-3 mr-1" />
-            Disconnected
-          </Badge>
-        );
+  const handleServiceToggle = (carrierId: string, serviceId: string) => {
+    if (isAdmin) {
+      setPrepfoxCarriers(prev => prev.map(carrier => 
+        carrier.id === carrierId 
+          ? {
+              ...carrier,
+              services: carrier.services.map(service =>
+                service.id === serviceId 
+                  ? { ...service, enabled: !service.enabled }
+                  : service
+              )
+            }
+          : carrier
+      ));
     }
   };
 
-  // Carrier Selector Modal
-  const CarrierSelectorModal = () => (
-    <Dialog open={isCarrierSelectorOpen} onOpenChange={setIsCarrierSelectorOpen}>
-      <DialogContent className="max-w-3xl">
-        <DialogHeader>
-          <DialogTitle>Select a Carrier to Connect</DialogTitle>
-          <DialogDescription>
-            Choose from our supported carriers to connect your shipping account.
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="grid grid-cols-3 gap-4 py-4">
-          {availableCarriers.map((carrier) => (
-            <button
-              key={carrier.id}
-              onClick={() => handleConnectCarrier(carrier)}
-              className="p-4 border rounded-lg hover:bg-muted transition-colors text-center space-y-2 group"
-            >
-              <div className="text-3xl mb-2">{carrier.logo}</div>
-              <div className="font-medium">{carrier.name}</div>
-              <div className="text-sm text-muted-foreground">{carrier.description}</div>
-              {carrier.popular && (
-                <Badge variant="secondary" className="mt-2">Popular</Badge>
+  const handleMarkupChange = (carrierId: string, newMarkup: number) => {
+    if (isAdmin) {
+      setPrepfoxCarriers(prev => prev.map(carrier => 
+        carrier.id === carrierId 
+          ? { ...carrier, markup: newMarkup }
+          : carrier
+      ));
+      toast({
+        title: "Markup Updated",
+        description: `Carrier markup set to ${newMarkup}%`,
+      });
+    }
+  };
+
+  const ServiceManagementModal = () => {
+    if (!selectedCarrier) return null;
+
+    return (
+      <Dialog open={isServiceModalOpen} onOpenChange={setIsServiceModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="text-2xl">{selectedCarrier.logo}</span>
+              {selectedCarrier.name} Services
+              {isAdmin && (
+                <Badge variant="destructive" className="ml-2">
+                  <Shield className="h-3 w-3 mr-1" />
+                  Admin
+                </Badge>
               )}
-            </button>
-          ))}
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
+            </DialogTitle>
+            <DialogDescription>
+              {isAdmin 
+                ? "Manage services and markup for this carrier (admin only)"
+                : "View available services for this carrier"
+              }
+            </DialogDescription>
+          </DialogHeader>
 
-  // Subscription Modal
+          <div className="space-y-6">
+            {/* Admin Markup Control */}
+            {isAdmin && (
+              <Card className="border-amber-200 bg-amber-50">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <DollarSign className="h-4 w-4" />
+                    Rate Markup Control
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowMarkupSettings(!showMarkupSettings)}
+                    >
+                      {showMarkupSettings ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                {showMarkupSettings && (
+                  <CardContent className="pt-0">
+                    <div className="flex items-center gap-4">
+                      <Label>Hidden Markup %:</Label>
+                      <Input
+                        type="number"
+                        value={selectedCarrier.markup}
+                        onChange={(e) => handleMarkupChange(selectedCarrier.id, Number(e.target.value))}
+                        className="w-24"
+                        min="0"
+                        max="50"
+                      />
+                      <span className="text-sm text-muted-foreground">
+                        All rates shown to users include this markup
+                      </span>
+                    </div>
+                  </CardContent>
+                )}
+              </Card>
+            )}
+
+            {/* Services List */}
+            <div className="space-y-3">
+              <h3 className="font-medium">Available Services</h3>
+              {selectedCarrier.services.map((service) => (
+                <div key={service.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Checkbox
+                      checked={service.enabled}
+                      onCheckedChange={() => isAdmin && handleServiceToggle(selectedCarrier.id, service.id)}
+                      disabled={!isAdmin}
+                    />
+                    <div>
+                      <div className="font-medium">{service.name}</div>
+                      {service.enabled && (
+                        <div className="text-sm text-green-600">
+                          ✓ Available to users
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {service.enabled && (
+                    <Badge variant="secondary">Active</Badge>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {!isAdmin && (
+              <div className="p-3 bg-blue-50 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  <Lock className="h-4 w-4 inline mr-1" />
+                  Service configuration is managed by your administrator
+                </p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button onClick={() => setIsServiceModalOpen(false)}>
+              {isAdmin ? "Save Changes" : "Close"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
   const SubscriptionModal = () => (
     <Dialog open={isSubscriptionModalOpen} onOpenChange={setIsSubscriptionModalOpen}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Crown className="h-5 w-5 text-yellow-500" />
-            Upgrade Your Shipping
+            Unlock More Shipping Tools
           </DialogTitle>
           <DialogDescription>
-            Choose a plan to unlock premium carrier integrations and advanced features.
+            Choose a PrepFox subscription plan to access more carriers and features.
           </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4 py-4">
           <div className="border rounded-lg p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold">Basic PrepFox Shipping</h3>
-              <Badge variant="secondary">Free Trial</Badge>
+              <h3 className="font-semibold">Parcel Pro</h3>
+              <Badge variant="default">Most Popular</Badge>
             </div>
             <p className="text-sm text-muted-foreground">
-              Access to PrepFox carriers with discounted rates
+              500 shipments, 2 carriers, all features
             </p>
-            <div className="text-2xl font-bold">$19.99<span className="text-sm font-normal text-muted-foreground">/month</span></div>
-            <p className="text-xs text-muted-foreground">Free for 30 days, then $19.99/month</p>
+            <div className="text-2xl font-bold">$26.99<span className="text-sm font-normal text-muted-foreground">/month</span></div>
+            <p className="text-xs text-muted-foreground">10% cheaper than ShipStation</p>
           </div>
           
-          <div className="border rounded-lg p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold">Premium Carrier Access</h3>
-              <Badge variant="default">Recommended</Badge>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Connect your own carrier accounts + PrepFox rates
-            </p>
-            <div className="text-2xl font-bold">$39.99<span className="text-sm font-normal text-muted-foreground">/month</span></div>
-          </div>
+          <Button 
+            className="w-full" 
+            onClick={() => setIsPlanComparisonOpen(true)}
+            variant="outline"
+          >
+            Compare All Plans
+          </Button>
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => setIsSubscriptionModalOpen(false)}>
             Maybe Later
           </Button>
-          <Button onClick={() => setIsSubscriptionModalOpen(false)}>
-            Start Free Trial
+          <Button onClick={() => window.open('/billing', '_blank')}>
+            Go to Billing
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 
-  // Carrier Configuration Modal
-  const CarrierConfigModal = () => {
-    const [formData, setFormData] = useState({
-      accountNumber: '',
-      customerId: '',
-      postalCode: '',
-      country: 'US',
-      pickupType: 'Daily Pickup',
-      negotiatedRates: false
-    });
+  const PlanComparisonModal = () => (
+    <Dialog open={isPlanComparisonOpen} onOpenChange={setIsPlanComparisonOpen}>
+      <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>PrepFox Shipping Plans</DialogTitle>
+          <DialogDescription>
+            Choose the plan that fits your shipping volume. All plans include premium carrier access.
+          </DialogDescription>
+        </DialogHeader>
 
-    const handleSubmit = (e: React.FormEvent) => {
-      e.preventDefault();
-      handleSaveCarrier(formData);
-    };
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {subscriptionPlans.map((plan) => (
+            <Card key={plan.id} className={`relative ${plan.popular ? 'border-primary shadow-lg' : ''}`}>
+              {plan.popular && (
+                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                  <Badge className="bg-primary">Most Popular</Badge>
+                </div>
+              )}
+              <CardHeader>
+                <CardTitle className="text-lg">{plan.name}</CardTitle>
+                <div className="text-3xl font-bold">
+                  ${plan.price}
+                  <span className="text-sm font-normal text-muted-foreground">/mo</span>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>Shipments</span>
+                    <span className="font-medium">{plan.shipments.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Users</span>
+                    <span className="font-medium">{plan.users}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Carrier Access</span>
+                    <span className="font-medium">
+                      {plan.carrierAccess === 999 ? 'Unlimited' : plan.carrierAccess}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Support</span>
+                    <span className="font-medium">{plan.support}</span>
+                  </div>
+                </div>
+                <div className="pt-2">
+                  <div className="text-xs text-muted-foreground mb-2">Features:</div>
+                  <div className="space-y-1">
+                    {plan.features.map((feature, idx) => (
+                      <div key={idx} className="text-xs flex items-center gap-1">
+                        <CheckCircle className="h-3 w-3 text-green-500" />
+                        {feature}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <Button className="w-full" variant={plan.popular ? "default" : "outline"}>
+                  {plan.popular ? "Start Free Trial" : "Choose Plan"}
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
-    return (
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <span className="text-2xl">{selectedAvailableCarrier?.logo}</span>
-              Configure your {selectedAvailableCarrier?.name} Account
-            </DialogTitle>
-            <DialogDescription>
-              Enter your {selectedAvailableCarrier?.name} account information to connect and start shipping.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="accountNumber">
-                {selectedAvailableCarrier?.name} Account # <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="accountNumber"
-                value={formData.accountNumber}
-                onChange={(e) => setFormData(prev => ({...prev, accountNumber: e.target.value}))}
-                placeholder="A90625"
-                required
-              />
+        <div className="mt-6 p-4 bg-muted rounded-lg">
+          <h4 className="font-medium mb-2">Add-On Features</h4>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>Product Bundles - $9.99/mo</div>
+            <div>Auto-Split - $7.99/mo</div>
+            <div>Branded Domains - $4.99/mo</div>
+            <div>Branded Tracking - $5.99/mo</div>
+            <div>Lot Tracking - $6.99/mo</div>
+            <div>Extra Users - $2.99/user/mo</div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+
+  const AddCarrierModal = () => (
+    <Dialog open={isAddCarrierOpen} onOpenChange={setIsAddCarrierOpen}>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>Available Carriers</DialogTitle>
+          <DialogDescription>
+            Select a carrier to connect. Only UPS, Canada Post, and PrepFox Express are available.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="grid grid-cols-3 gap-4 py-4">
+          {availableCarriers.slice(0, 3).map((carrier) => (
+            <button
+              key={carrier.id}
+              className="p-4 border rounded-lg hover:bg-muted transition-colors text-center space-y-2 disabled:opacity-50"
+              disabled={!isAdmin}
+            >
+              <div className="text-3xl mb-2">{carrier.logo}</div>
+              <div className="font-medium">{carrier.name}</div>
+              <div className="text-sm text-muted-foreground">{carrier.description}</div>
+              {!isAdmin && (
+                <Badge variant="outline" className="mt-2">Admin Only</Badge>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {!isAdmin && (
+          <div className="p-4 bg-amber-50 rounded-lg">
+            <div className="flex items-center gap-2 text-amber-800">
+              <Lock className="h-4 w-4" />
+              <span className="text-sm font-medium">
+                Only administrators can connect new carriers
+              </span>
             </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="postalCode">Account Postal Code <span className="text-destructive">*</span></Label>
-                <Input
-                  id="postalCode"
-                  value={formData.postalCode}
-                  onChange={(e) => setFormData(prev => ({...prev, postalCode: e.target.value}))}
-                  placeholder="60124"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="country">Country <span className="text-destructive">*</span></Label>
-                <Select value={formData.country} onValueChange={(value) => setFormData(prev => ({...prev, country: value}))}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="US">United States</SelectItem>
-                    <SelectItem value="CA">Canada</SelectItem>
-                    <SelectItem value="MX">Mexico</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="pickupType">Pickup Type</Label>
-              <Select value={formData.pickupType} onValueChange={(value) => setFormData(prev => ({...prev, pickupType: value}))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Daily Pickup">Daily Pickup</SelectItem>
-                  <SelectItem value="Customer Counter">Customer Counter</SelectItem>
-                  <SelectItem value="One Time Pickup">One Time Pickup</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="negotiatedRates"
-                checked={formData.negotiatedRates}
-                onCheckedChange={(checked) => setFormData(prev => ({...prev, negotiatedRates: checked as boolean}))}
-              />
-              <Label htmlFor="negotiatedRates" className="text-sm font-medium">
-                Enable Negotiated Rates
-              </Label>
-            </div>
-
-            <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-              <div className="flex items-center space-x-2">
-                <TestTube className="h-4 w-4 text-blue-600" />
-                <span className="text-sm font-medium">Test Connection</span>
-              </div>
-              <Button type="button" variant="outline" size="sm" onClick={() => handleTestConnection('test')}>
-                Test
-              </Button>
-            </div>
-
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit">
-                Connect Account
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-    );
-  };
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
 
   return (
     <TooltipProvider>
@@ -569,199 +520,152 @@ export function CarrierManagement() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Carrier Management</h1>
-            <p className="text-muted-foreground">Manage your shipping carriers and connections</p>
+            <h1 className="text-3xl font-bold">PrepFox Shipping & Carriers</h1>
+            <p className="text-muted-foreground">
+              Multi-tiered shipping carrier management {isAdmin && "(Administrator View)"}
+            </p>
           </div>
-          <Button onClick={() => setIsCarrierSelectorOpen(true)} className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Add Carrier
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => setIsSubscriptionModalOpen(true)} variant="outline">
+              <CreditCard className="h-4 w-4 mr-2" />
+              View Plans
+            </Button>
+            <Button onClick={() => setIsAddCarrierOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Carrier
+            </Button>
+          </div>
         </div>
 
-        {/* Subscription CTA */}
-        <Card className="border-l-4 border-l-yellow-500 bg-yellow-50/50">
-          <CardContent className="p-4">
-            <div className="flex items-start justify-between">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
+        {/* Admin Controls Banner */}
+        {isAdmin && (
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <Shield className="h-5 w-5 text-red-600" />
                 <div>
-                  <h3 className="font-medium text-yellow-900">Premium Carrier Access</h3>
-                  <p className="text-sm text-yellow-800 mt-1">
-                    You need a valid subscription to connect your own carrier accounts. 
-                    PrepFox carriers are free for 30 days, then $19.99/month.
+                  <h3 className="font-medium text-red-900">Administrator Access</h3>
+                  <p className="text-sm text-red-800">
+                    You can manage carrier accounts, adjust surcharges (default 15%), and control feature availability.
                   </p>
                 </div>
               </div>
-              <Button 
-                onClick={() => setIsSubscriptionModalOpen(true)}
-                variant="outline"
-                className="border-yellow-600 text-yellow-700 hover:bg-yellow-100"
-              >
-                <CreditCard className="h-4 w-4 mr-2" />
-                View Plans
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
-        {/* Tabbed Interface */}
-        <Tabs defaultValue="prepfox" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="prepfox">PrepFox Carriers</TabsTrigger>
-            <TabsTrigger value="custom">Your Carrier Accounts</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="prepfox">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Zap className="h-5 w-5 text-blue-600" />
-                  PrepFox Carriers
-                  <Badge variant="secondary" className="ml-2">Free Trial - 23 days left</Badge>
-                </CardTitle>
-                <CardDescription>
-                  Access discounted shipping rates through our carrier partnerships
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {prepfoxCarriers.map((carrier) => (
-                    <div key={carrier.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center gap-4">
-                        <div className="text-2xl">{carrier.logo}</div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-medium">{carrier.name}</h3>
-                            {getStatusBadge(carrier.status)}
-                          </div>
-                          <p className="text-sm text-muted-foreground">{carrier.description}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-6 text-sm">
-                        <div className="text-center">
-                          <div className="font-medium">{carrier.servicesEnabled}</div>
-                          <div className="text-muted-foreground">Services</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="font-medium">{carrier.lastSync}</div>
-                          <div className="text-muted-foreground">Last Sync</div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEditCarrier(carrier)}
-                          >
-                            <Settings className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleResync(carrier.id)}
-                          >
-                            <RefreshCw className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+        {/* Subscription CTA for Non-Admin */}
+        {!isAdmin && (
+          <Card className="border-l-4 border-l-blue-500 bg-blue-50/50">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-3">
+                  <Truck className="h-5 w-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <h3 className="font-medium text-blue-900">🚀 Unlock more shipping tools with a PrepFox subscription</h3>
+                    <p className="text-sm text-blue-800 mt-1">
+                      Access more carriers, higher shipping volumes, and premium features. 10% cheaper than ShipStation.
+                    </p>
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                <Button 
+                  onClick={() => window.open('/billing', '_blank')}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  Go to Payment & Subscription Settings
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-          <TabsContent value="custom">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Building2 className="h-5 w-5" />
-                  Your Carrier Accounts
-                </CardTitle>
-                <CardDescription>
-                  Connect your own carrier accounts for negotiated rates and additional services
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {userCarriers.length === 0 ? (
-                    <div className="text-center py-8">
-                      <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="font-medium mb-2">No carrier accounts connected</h3>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Connect your carrier accounts to access negotiated rates and additional services
-                      </p>
-                      <Button onClick={() => setIsCarrierSelectorOpen(true)}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add First Carrier
-                      </Button>
-                    </div>
-                  ) : (
-                    userCarriers.map((carrier) => (
-                      <div key={carrier.id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex items-center gap-4">
-                          <div className="text-2xl">{carrier.logo}</div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-medium">{carrier.name}</h3>
-                              {getStatusBadge(carrier.status)}
-                              {carrier.plan === 'premium' && (
-                                <Badge variant="default" className="ml-2">Premium</Badge>
-                              )}
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                              Account: {carrier.accountNumber}
-                            </p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-6 text-sm">
-                          <div className="text-center">
-                            <div className="font-medium">{carrier.servicesEnabled}</div>
-                            <div className="text-muted-foreground">Services</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="font-medium">{carrier.lastSync}</div>
-                            <div className="text-muted-foreground">Last Sync</div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEditCarrier(carrier)}
-                            >
-                              <Settings className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleResync(carrier.id)}
-                            >
-                              <RefreshCw className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDisconnectCarrier(carrier.id)}
-                              className="text-red-600 hover:text-red-700"
-                            >
-                              <XCircle className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
+        {/* Carriers Grid */}
+        <div className="grid gap-4">
+          <h2 className="text-xl font-semibold">Connected Carriers</h2>
+          {prepfoxCarriers.map((carrier) => (
+            <Card key={carrier.id}>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="text-3xl">{carrier.logo}</div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-lg">{carrier.name}</h3>
+                        <Badge variant="default" className="bg-green-100 text-green-800">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Connected
+                        </Badge>
+                        {carrier.isInternal && (
+                          <Badge variant="secondary">
+                            PrepFox {carrier.name.includes("PrepFox") ? "" : "Partner"}
+                          </Badge>
+                        )}
+                        {isAdmin && (
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Badge variant="outline" className="text-xs">
+                                <Percent className="h-3 w-3 mr-1" />
+                                +{carrier.markup}%
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              Hidden markup applied to all rates
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
                       </div>
-                    ))
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {carrier.services.filter(s => s.enabled).length} of {carrier.services.length} services enabled
+                        • Last sync: {carrier.lastSync}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedCarrier(carrier);
+                        setIsServiceModalOpen(true);
+                      }}
+                    >
+                      <Settings className="h-4 w-4 mr-1" />
+                      Manage Services
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                    >
+                      <RefreshCw className="h-4 w-4 mr-1" />
+                      Re-Sync
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Service Preview */}
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {carrier.services.filter(s => s.enabled).slice(0, 4).map((service) => (
+                    <Badge key={service.id} variant="secondary" className="text-xs">
+                      {service.name}
+                    </Badge>
+                  ))}
+                  {carrier.services.filter(s => s.enabled).length > 4 && (
+                    <Badge variant="outline" className="text-xs">
+                      +{carrier.services.filter(s => s.enabled).length - 4} more
+                    </Badge>
                   )}
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
+          ))}
+        </div>
 
         {/* Modals */}
-        <CarrierSelectorModal />
+        <ServiceManagementModal />
         <SubscriptionModal />
-        <CarrierConfigModal />
+        <PlanComparisonModal />
+        <AddCarrierModal />
       </div>
     </TooltipProvider>
   );
