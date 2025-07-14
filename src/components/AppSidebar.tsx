@@ -17,7 +17,8 @@ import {
   RotateCcw,
   Calculator,
   Store,
-  DollarSign
+  DollarSign,
+  Warehouse
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 
@@ -50,6 +51,7 @@ const toolItems = [
   { title: "Analytics", url: "/analytics", icon: TrendingUp, description: "View performance metrics" },
   { title: "Product Activity", url: "/activity", icon: Activity, description: "Track product changes" },
   { title: "Bulk Editor", url: "/bulk-editor", icon: FileText, description: "Edit multiple products" },
+  { title: "Inventory Management", url: "/inventory", icon: Warehouse, description: "Manage duplicates and variations" },
   { title: "Dynamic Repricing", url: "/repricing", icon: DollarSign, description: "Manage pricing strategies" },
   { title: "Store Connections", url: "/settings", icon: Store, description: "Manage connected stores" },
 ];
