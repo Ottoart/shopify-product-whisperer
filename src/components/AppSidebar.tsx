@@ -169,19 +169,31 @@ export function AppSidebar() {
         {/* Shipping */}
         <SidebarGroup>
           <SidebarGroupLabel className="text-primary">
-            <NavLink 
-              to="/shipping-overview" 
-              className="flex items-center hover:bg-accent/50 rounded-md p-1 -m-1"
-              title={collapsed ? "Shipping Overview" : undefined}
-            >
-              <Truck className="h-4 w-4 mr-2" />
-              <span className={`${collapsed ? "group-hover:inline hidden" : "inline"} transition-all duration-300`}>
-                Shipping
-              </span>
-            </NavLink>
+            <Truck className="h-4 w-4 mr-2" />
+            <span className={`${collapsed ? "group-hover:inline hidden" : "inline"} transition-all duration-300`}>
+              Shipping
+            </span>
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
+              {/* Shipping Overview */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <NavLink 
+                    to="/shipping-overview" 
+                    end
+                    className={getNavCls}
+                    title={collapsed ? "Shipping overview and analytics" : undefined}
+                    >
+                      <BarChart3 className="h-4 w-4 flex-shrink-0" />
+                      <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col transition-all duration-300 overflow-hidden`}>
+                        <span className="whitespace-nowrap">Overview</span>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">Shipping analytics</span>
+                      </div>
+                    </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
               {/* Main Order Management - All Stores */}
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
