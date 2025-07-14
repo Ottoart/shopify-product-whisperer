@@ -324,6 +324,7 @@ export function OrderManagement() {
     setFilterStatus(categoryId);
   };
 
+  // Sort functionality
   const handleSort = (field: string) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
