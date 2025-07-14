@@ -7,7 +7,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { AlertTriangle, Copy, Trash2, Edit3, Eye, ExternalLink } from 'lucide-react';
+import { AlertTriangle, Copy, Trash2, Edit3, Eye, ExternalLink, RefreshCw, Info, HelpCircle } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface Product {
   id: string;
@@ -33,8 +34,44 @@ export function DuplicateDetectionTool() {
   const [progress, setProgress] = useState(0);
   const [totalProducts, setTotalProducts] = useState(0);
   const [selectedGroup, setSelectedGroup] = useState<DuplicateGroup | null>(null);
+  const [lastScanTime, setLastScanTime] = useState<Date | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
+
+  // Cache management
+  const getCacheKey = () => `duplicate-scan-${user?.id}`;
+  
+  const saveScanResults = (groups: DuplicateGroup[]) => {
+    const cacheData = {
+      groups,
+      timestamp: new Date().toISOString(),
+      productCount: totalProducts
+    };
+    sessionStorage.setItem(getCacheKey(), JSON.stringify(cacheData));
+    setLastScanTime(new Date());
+  };
+
+  const loadCachedResults = () => {
+    try {
+      const cached = sessionStorage.getItem(getCacheKey());
+      if (cached) {
+        const data = JSON.parse(cached);
+        const cacheAge = Date.now() - new Date(data.timestamp).getTime();
+        
+        // Use cache if less than 5 minutes old
+        if (cacheAge < 5 * 60 * 1000) {
+          setDuplicateGroups(data.groups);
+          setTotalProducts(data.productCount);
+          setLastScanTime(new Date(data.timestamp));
+          setLoading(false);
+          return true;
+        }
+      }
+    } catch (error) {
+      console.error('Error loading cached results:', error);
+    }
+    return false;
+  };
 
   // Fast similarity calculation using word overlap
   const calculateSimilarity = (str1: string, str2: string): number => {
@@ -155,6 +192,7 @@ export function DuplicateDetectionTool() {
       }
 
       setDuplicateGroups(groups);
+      saveScanResults(groups);
     } catch (error) {
       console.error('Error detecting duplicates:', error);
       toast({
@@ -228,8 +266,15 @@ export function DuplicateDetectionTool() {
   };
 
   useEffect(() => {
-    detectDuplicates();
+    if (user && !loadCachedResults()) {
+      detectDuplicates();
+    }
   }, [user]);
+
+  const handleReAnalyze = () => {
+    sessionStorage.removeItem(getCacheKey());
+    detectDuplicates();
+  };
 
   if (loading) {
     return (
@@ -258,10 +303,39 @@ export function DuplicateDetectionTool() {
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-warning" />
-            Duplicate Detection Tool
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-warning" />
+              <CardTitle>Duplicate Detection Tool</CardTitle>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p>Automatically scans your inventory to find duplicate listings based on title similarity, SKU matches, and other criteria. Helps clean up your catalog and prevent overselling.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <div className="flex items-center gap-2">
+              {lastScanTime && (
+                <span className="text-xs text-muted-foreground">
+                  Last scan: {lastScanTime.toLocaleTimeString()}
+                </span>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleReAnalyze}
+                disabled={loading}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                Re-analyze
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {duplicateGroups.length === 0 ? (
@@ -280,10 +354,13 @@ export function DuplicateDetectionTool() {
               </p>
               
               {duplicateGroups.map((group) => (
-                <Card key={group.id} className="border-warning/20">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
+                <TooltipProvider key={group.id}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Card className="border-warning/20 cursor-help hover:border-warning/40 transition-colors">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
                         <Badge variant="secondary">
                           {group.products.length} products
                         </Badge>
@@ -399,14 +476,28 @@ export function DuplicateDetectionTool() {
                           </div>
                         </div>
                       ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
+                     </div>
+                   </CardContent>
+                 </Card>
+               </TooltipTrigger>
+               <TooltipContent className="max-w-xs">
+                 <div className="space-y-1">
+                   <p className="font-medium">Detection Method: {group.reason}</p>
+                   <p className="text-xs">Similarity: {Math.round(group.similarity * 100)}%</p>
+                   <p className="text-xs">
+                     {group.reason === 'Identical SKU' ? 'Products have the same SKU code' :
+                      group.reason === 'Identical title' ? 'Products have identical titles' :
+                      'Products have very similar titles and content'}
+                   </p>
+                 </div>
+               </TooltipContent>
+             </Tooltip>
+           </TooltipProvider>
+         ))}
+       </div>
+     )}
+   </CardContent>
+ </Card>
+</div>
+);
 }
