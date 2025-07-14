@@ -161,9 +161,62 @@ export function EbayOAuthForm({ marketplace, onBack, onSuccess }: EbayOAuthFormP
         </p>
       </div>
 
-      {/* Information */}
-      <div className="bg-muted/50 rounded-lg p-4 space-y-2">
-        <h4 className="font-medium">What happens next?</h4>
+      {/* Setup Instructions */}
+      <div className="bg-muted/50 rounded-lg p-4 space-y-4">
+        <h4 className="font-medium text-primary">📋 First Time Setup Required</h4>
+        <div className="space-y-3">
+          <div>
+            <h5 className="font-medium text-sm mb-2">1. Create eBay Developer Account</h5>
+            <a 
+              href="https://developer.ebay.com/signin?tab=register"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+            >
+              Register at eBay Developer Portal
+              <ExternalLink className="h-3 w-3" />
+            </a>
+          </div>
+          
+          <div>
+            <h5 className="font-medium text-sm mb-2">2. Create Your Application</h5>
+            <a 
+              href="https://developer.ebay.com/my/keys"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-sm text-primary hover:underline mb-2"
+            >
+              Go to Application Keys Management
+              <ExternalLink className="h-3 w-3" />
+            </a>
+            <ul className="text-xs text-muted-foreground space-y-1 ml-4">
+              <li>• Create a new "Production" or "Sandbox" app</li>
+              <li>• Copy your Client ID and Client Secret</li>
+              <li>• Add redirect URI: <code className="bg-background px-1 rounded text-xs">https://rtaomiqsnctigleqjojt.supabase.co/functions/v1/ebay-oauth-callback</code></li>
+            </ul>
+          </div>
+
+          <div>
+            <h5 className="font-medium text-sm mb-2">3. Required OAuth Scopes</h5>
+            <ul className="text-xs text-muted-foreground space-y-1 ml-4">
+              <li>• <code className="bg-background px-1 rounded text-xs">https://api.ebay.com/oauth/api_scope</code></li>
+              <li>• <code className="bg-background px-1 rounded text-xs">https://api.ebay.com/oauth/api_scope/sell.fulfillment</code></li>
+              <li>• <code className="bg-background px-1 rounded text-xs">https://api.ebay.com/oauth/api_scope/sell.account</code></li>
+            </ul>
+          </div>
+
+          <div>
+            <h5 className="font-medium text-sm mb-2">4. Configure App Credentials</h5>
+            <p className="text-xs text-muted-foreground mb-2">
+              Once you have your eBay app credentials, configure them in your app settings before proceeding.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Connection Flow */}
+      <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4 space-y-2">
+        <h4 className="font-medium">🔄 Connection Process</h4>
         <ul className="text-sm text-muted-foreground space-y-1">
           <li>• You'll be redirected to eBay's secure login page</li>
           <li>• Log in with your eBay seller account credentials</li>
