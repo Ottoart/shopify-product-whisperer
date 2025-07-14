@@ -26,6 +26,7 @@ interface DuplicateGroup {
   products: Product[];
   similarity: number;
   reason: string;
+  dismissed?: boolean;
 }
 
 export function DuplicateDetectionTool() {
@@ -35,6 +36,7 @@ export function DuplicateDetectionTool() {
   const [totalProducts, setTotalProducts] = useState(0);
   const [selectedGroup, setSelectedGroup] = useState<DuplicateGroup | null>(null);
   const [lastScanTime, setLastScanTime] = useState<Date | null>(null);
+  const [dismissedGroups, setDismissedGroups] = useState<Set<string>>(new Set());
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -206,7 +208,7 @@ export function DuplicateDetectionTool() {
     }
   };
 
-  const handleMergeProducts = async (products: Product[]) => {
+  const handleMergeProducts = async (products: Product[], groupId?: string) => {
     if (!user || products.length < 2) return;
 
     try {
@@ -223,12 +225,14 @@ export function DuplicateDetectionTool() {
       }
 
       toast({
-        title: 'Products merged',
-        description: `Merged ${toDelete.length} duplicate products into ${masterProduct.title}`
+        title: 'Products merged successfully',
+        description: `Merged ${toDelete.length} duplicate products into "${masterProduct.title}"`
       });
 
-      // Refresh the duplicate detection
-      detectDuplicates();
+      // Remove the merged group from the current list instead of full re-scan
+      if (groupId) {
+        setDuplicateGroups(prev => prev.filter(group => group.id !== groupId));
+      }
     } catch (error) {
       console.error('Error merging products:', error);
       toast({
@@ -239,7 +243,7 @@ export function DuplicateDetectionTool() {
     }
   };
 
-  const handleDeleteProduct = async (productId: string) => {
+  const handleDeleteProduct = async (productId: string, productTitle: string, groupId?: string) => {
     if (!user) return;
 
     try {
@@ -251,10 +255,23 @@ export function DuplicateDetectionTool() {
 
       toast({
         title: 'Product deleted',
-        description: 'Product has been removed successfully'
+        description: `"${productTitle}" has been permanently removed from your inventory`
       });
 
-      detectDuplicates();
+      // Update the current group instead of full re-scan
+      if (groupId) {
+        setDuplicateGroups(prev => prev.map(group => {
+          if (group.id === groupId) {
+            const updatedProducts = group.products.filter(p => p.id !== productId);
+            // If only one product left, remove the entire group
+            if (updatedProducts.length <= 1) {
+              return null;
+            }
+            return { ...group, products: updatedProducts };
+          }
+          return group;
+        }).filter(Boolean) as DuplicateGroup[]);
+      }
     } catch (error) {
       console.error('Error deleting product:', error);
       toast({
@@ -263,6 +280,16 @@ export function DuplicateDetectionTool() {
         variant: 'destructive'
       });
     }
+  };
+
+  const handleDismissGroup = (groupId: string) => {
+    setDismissedGroups(prev => new Set([...prev, groupId]));
+    setDuplicateGroups(prev => prev.filter(group => group.id !== groupId));
+    
+    toast({
+      title: 'Group dismissed',
+      description: 'This group will not appear in future scans during this session'
+    });
   };
 
   useEffect(() => {
@@ -346,12 +373,19 @@ export function DuplicateDetectionTool() {
             </Alert>
           ) : (
             <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Found {duplicateGroups.length} potential duplicate groups. 
-                <span className="block mt-1 text-xs">
-                  💡 Hover over each group to see how we're identifying duplicates.
-                </span>
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                  Found {duplicateGroups.length} potential duplicate groups.
+                  <span className="block mt-1 text-xs">
+                    💡 Hover over group headers to see detection details. Click "Compare" to review side-by-side.
+                  </span>
+                </p>
+                {dismissedGroups.size > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {dismissedGroups.size} groups dismissed this session
+                  </p>
+                )}
+              </div>
               
               {duplicateGroups.map((group) => (
                 <TooltipProvider key={group.id}>
@@ -369,6 +403,15 @@ export function DuplicateDetectionTool() {
                         </Badge>
                       </div>
                       <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDismissGroup(group.id)}
+                          title="Dismiss this group from detection"
+                        >
+                          ✕ Dismiss
+                        </Button>
+                        
                         <Dialog>
                           <DialogTrigger asChild>
                             <Button
@@ -394,13 +437,14 @@ export function DuplicateDetectionTool() {
                                       </CardTitle>
                                       {index > 0 && (
                                         <div className="flex gap-1">
-                                          <Button
-                                            size="sm"
-                                            variant="outline"
-                                            onClick={() => handleDeleteProduct(product.id)}
-                                          >
-                                            <Trash2 className="h-3 w-3" />
-                                          </Button>
+                                           <Button
+                                             size="sm"
+                                             variant="outline"
+                                             onClick={() => handleDeleteProduct(product.id, product.title, selectedGroup?.id)}
+                                             title="Delete this product permanently"
+                                           >
+                                             <Trash2 className="h-3 w-3" />
+                                           </Button>
                                           <Button size="sm" variant="outline">
                                             <Edit3 className="h-3 w-3" />
                                           </Button>
@@ -423,25 +467,29 @@ export function DuplicateDetectionTool() {
                                 </Card>
                               ))}
                             </div>
-                            <div className="flex justify-between pt-4">
-                              <Button
-                                onClick={() => handleMergeProducts(selectedGroup?.products || [])}
-                                className="bg-primary hover:bg-primary/90"
-                              >
-                                <Copy className="h-4 w-4 mr-2" />
-                                Merge Products
-                              </Button>
-                            </div>
+                             <div className="flex justify-between items-center pt-4">
+                               <p className="text-sm text-muted-foreground">
+                                 The first product will be kept as the master. All others will be deleted.
+                               </p>
+                               <Button
+                                 onClick={() => handleMergeProducts(selectedGroup?.products || [], selectedGroup?.id)}
+                                 className="bg-primary hover:bg-primary/90"
+                               >
+                                 <Copy className="h-4 w-4 mr-2" />
+                                 Merge Into Master
+                               </Button>
+                             </div>
                           </DialogContent>
                         </Dialog>
                         
                         <Button
                           size="sm"
-                          onClick={() => handleMergeProducts(group.products)}
+                          onClick={() => handleMergeProducts(group.products, group.id)}
                           className="bg-primary hover:bg-primary/90"
+                          title="Merge all products in this group"
                         >
                           <Copy className="h-4 w-4 mr-1" />
-                          Merge
+                          Quick Merge
                         </Button>
                       </div>
                     </div>
@@ -464,15 +512,16 @@ export function DuplicateDetectionTool() {
                             >
                               <ExternalLink className="h-4 w-4" />
                             </Button>
-                            {index > 0 && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleDeleteProduct(product.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
+                             {index > 0 && (
+                               <Button
+                                 size="sm"
+                                 variant="outline"
+                                 onClick={() => handleDeleteProduct(product.id, product.title, group.id)}
+                                 title={`Delete "${product.title}" permanently`}
+                               >
+                                 <Trash2 className="h-4 w-4" />
+                               </Button>
+                             )}
                           </div>
                         </div>
                       ))}
