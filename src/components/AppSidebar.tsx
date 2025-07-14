@@ -51,6 +51,7 @@ const toolItems = [
   { title: "Product Activity", url: "/activity", icon: Activity, description: "Track product changes" },
   { title: "Bulk Editor", url: "/bulk-editor", icon: FileText, description: "Edit multiple products" },
   { title: "Dynamic Repricing", url: "/repricing", icon: DollarSign, description: "Manage pricing strategies" },
+  { title: "Store Connections", url: "/settings", icon: Store, description: "Manage connected stores" },
 ];
 
 const shippingItems = [

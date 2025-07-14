@@ -345,14 +345,24 @@ export const ProductEditor = ({ product, isOpen, onClose, onProductUpdated }: Pr
               <DollarSign className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium">Dynamic Repricing</span>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => window.open('/repricing', '_blank')}
-              className="text-xs"
-            >
-              Manage Rules
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open('/settings', '_blank')}
+                className="text-xs"
+              >
+                Connect Store
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open('/repricing', '_blank')}
+                className="text-xs"
+              >
+                Manage Rules
+              </Button>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

@@ -11,7 +11,8 @@ import {
   RefreshCw,
   Settings,
   Plus,
-  ExternalLink
+  ExternalLink,
+  Store
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -161,9 +162,9 @@ export default function MarketplaceIntegrations() {
           <h2 className="text-2xl font-bold">Marketplace Integrations</h2>
           <p className="text-muted-foreground">Connect and manage your marketplace accounts</p>
         </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          Connect New Marketplace
+        <Button onClick={() => window.open('/settings', '_blank')} className="gap-2">
+          <Store className="h-4 w-4" />
+          Manage Store Connections
         </Button>
       </div>
 
