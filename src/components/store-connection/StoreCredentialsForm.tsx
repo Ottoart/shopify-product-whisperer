@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Marketplace } from "./types";
+import { EbayOAuthForm } from "./EbayOAuthForm";
 
 interface StoreCredentialsFormProps {
   marketplace: Marketplace;
@@ -152,6 +153,11 @@ const getFormConfig = (marketplace: Marketplace): { title: string; description: 
 };
 
 export function StoreCredentialsForm({ marketplace, onBack, onSuccess }: StoreCredentialsFormProps) {
+  // Use eBay OAuth flow for eBay marketplace
+  if (marketplace.platform === 'ebay') {
+    return <EbayOAuthForm marketplace={marketplace} onBack={onBack} onSuccess={onSuccess} />;
+  }
+
   const config = getFormConfig(marketplace);
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});

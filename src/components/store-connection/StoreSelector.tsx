@@ -39,8 +39,8 @@ const marketplaces: Marketplace[] = [
     name: "eBay",
     platform: "ebay",
     logo: "https://cdn.worldvectorlogo.com/logos/ebay-2.svg",
-    description: "List products on the global auction and shopping platform",
-    benefits: ["Auction format", "Global reach", "Best Match algorithm"]
+    description: "Connect with OAuth - no manual setup required",
+    benefits: ["Secure OAuth login", "Global reach", "Auction format"]
   },
   {
     id: "walmart-us",
