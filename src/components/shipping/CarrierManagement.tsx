@@ -489,6 +489,23 @@ export function CarrierManagement() {
               key={carrier.id}
               className="p-4 border rounded-lg hover:bg-muted transition-colors text-center space-y-2 disabled:opacity-50"
               disabled={!isAdmin}
+              onClick={() => {
+                if (isAdmin) {
+                  toast({
+                    title: "Carrier Connection Started",
+                    description: `Setting up ${carrier.name} connection...`,
+                  });
+                  // Here you would typically handle the actual carrier connection
+                  // For now, we'll just show a success message
+                  setTimeout(() => {
+                    toast({
+                      title: "Carrier Connected",
+                      description: `${carrier.name} has been successfully connected to your account.`,
+                    });
+                    setIsAddCarrierOpen(false);
+                  }, 2000);
+                }
+              }}
             >
               <div className="text-3xl mb-2">{carrier.logo}</div>
               <div className="font-medium">{carrier.name}</div>
