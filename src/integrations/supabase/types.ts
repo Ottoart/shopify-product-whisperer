@@ -62,6 +62,42 @@ export type Database = {
         }
         Relationships: []
       }
+      marketplace_sync_status: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          last_sync_at: string | null
+          marketplace: string
+          products_synced: number | null
+          sync_status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          last_sync_at?: string | null
+          marketplace: string
+          products_synced?: number | null
+          sync_status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          last_sync_at?: string | null
+          marketplace?: string
+          products_synced?: number | null
+          sync_status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string
@@ -223,6 +259,57 @@ export type Database = {
         }
         Relationships: []
       }
+      price_changes: {
+        Row: {
+          change_type: string
+          created_at: string
+          id: string
+          new_price: number | null
+          old_price: number | null
+          product_pricing_id: string
+          reason: string | null
+          rule_id: string | null
+          user_id: string
+        }
+        Insert: {
+          change_type: string
+          created_at?: string
+          id?: string
+          new_price?: number | null
+          old_price?: number | null
+          product_pricing_id: string
+          reason?: string | null
+          rule_id?: string | null
+          user_id: string
+        }
+        Update: {
+          change_type?: string
+          created_at?: string
+          id?: string
+          new_price?: number | null
+          old_price?: number | null
+          product_pricing_id?: string
+          reason?: string | null
+          rule_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_changes_product_pricing_id_fkey"
+            columns: ["product_pricing_id"]
+            isOneToOne: false
+            referencedRelation: "product_pricing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_changes_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "repricing_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_drafts: {
         Row: {
           created_at: string
@@ -285,6 +372,68 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      product_pricing: {
+        Row: {
+          competitor_price: number | null
+          cost_of_goods: number | null
+          created_at: string
+          current_price: number | null
+          id: string
+          last_repriced_at: string | null
+          marketplace: string
+          max_price: number | null
+          min_price: number | null
+          product_title: string
+          rule_id: string | null
+          sku: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          competitor_price?: number | null
+          cost_of_goods?: number | null
+          created_at?: string
+          current_price?: number | null
+          id?: string
+          last_repriced_at?: string | null
+          marketplace: string
+          max_price?: number | null
+          min_price?: number | null
+          product_title: string
+          rule_id?: string | null
+          sku: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          competitor_price?: number | null
+          cost_of_goods?: number | null
+          created_at?: string
+          current_price?: number | null
+          id?: string
+          last_repriced_at?: string | null
+          marketplace?: string
+          max_price?: number | null
+          min_price?: number | null
+          product_title?: string
+          rule_id?: string | null
+          sku?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_pricing_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "repricing_rules"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       products: {
         Row: {
@@ -425,6 +574,105 @@ export type Database = {
           display_name?: string | null
           id?: string
           phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      repricing_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string
+          id: string
+          is_resolved: boolean
+          message: string
+          product_pricing_id: string | null
+          resolved_at: string | null
+          rule_id: string | null
+          severity: string
+          user_id: string
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string
+          id?: string
+          is_resolved?: boolean
+          message: string
+          product_pricing_id?: string | null
+          resolved_at?: string | null
+          rule_id?: string | null
+          severity?: string
+          user_id: string
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string
+          id?: string
+          is_resolved?: boolean
+          message?: string
+          product_pricing_id?: string | null
+          resolved_at?: string | null
+          rule_id?: string | null
+          severity?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "repricing_alerts_product_pricing_id_fkey"
+            columns: ["product_pricing_id"]
+            isOneToOne: false
+            referencedRelation: "product_pricing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "repricing_alerts_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "repricing_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      repricing_rules: {
+        Row: {
+          actions: Json
+          conditions: Json
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          marketplaces: string[]
+          name: string
+          priority: number
+          rule_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          actions?: Json
+          conditions?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          marketplaces?: string[]
+          name: string
+          priority?: number
+          rule_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          actions?: Json
+          conditions?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          marketplaces?: string[]
+          name?: string
+          priority?: number
+          rule_type?: string
           updated_at?: string
           user_id?: string
         }
