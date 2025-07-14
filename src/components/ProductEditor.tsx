@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Edit3, Save, X } from 'lucide-react';
+import { Edit3, Save, X, DollarSign } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useSessionContext } from '@supabase/auth-helpers-react';
@@ -338,6 +338,21 @@ export const ProductEditor = ({ product, isOpen, onClose, onProductUpdated }: Pr
                 placeholder="0.00"
               />
             </div>
+          </div>
+
+          <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
+            <div className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">Dynamic Repricing</span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.open('/repricing', '_blank')}
+              className="text-xs"
+            >
+              Manage Rules
+            </Button>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

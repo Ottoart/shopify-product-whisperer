@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { DollarSign } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -247,6 +248,21 @@ export const ProductEditDialog = ({
               onCheckedChange={(checked) => handleInputChange('published', checked)}
             />
             <Label htmlFor="published">Published</Label>
+          </div>
+
+          <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
+            <div className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">Dynamic Repricing</span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.open('/repricing', '_blank')}
+              className="text-xs"
+            >
+              Manage Rules
+            </Button>
           </div>
         </div>
 

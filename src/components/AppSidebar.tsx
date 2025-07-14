@@ -16,7 +16,8 @@ import {
   MapPin,
   RotateCcw,
   Calculator,
-  Store
+  Store,
+  DollarSign
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 
@@ -49,6 +50,7 @@ const toolItems = [
   { title: "Analytics", url: "/analytics", icon: TrendingUp, description: "View performance metrics" },
   { title: "Product Activity", url: "/activity", icon: Activity, description: "Track product changes" },
   { title: "Bulk Editor", url: "/bulk-editor", icon: FileText, description: "Edit multiple products" },
+  { title: "Dynamic Repricing", url: "/repricing", icon: DollarSign, description: "Manage pricing strategies" },
 ];
 
 const shippingItems = [
