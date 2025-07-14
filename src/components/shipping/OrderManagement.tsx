@@ -230,6 +230,39 @@ export function OrderManagement() {
     });
   };
 
+  const handleResyncWithItems = async () => {
+    if (!confirm('This will delete all existing orders and re-sync them with their items. Continue?')) {
+      return;
+    }
+
+    try {
+      // First clear all existing orders and items
+      console.log('Clearing existing orders to ensure clean sync with items...');
+      const { error: deleteError } = await supabase
+        .from('orders')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all orders
+      
+      if (deleteError) {
+        console.warn('Could not clear existing orders:', deleteError.message);
+      }
+
+      toast({
+        title: "Database cleared",
+        description: "Now syncing fresh orders with items...",
+      });
+
+      // Then trigger normal sync
+      await handleSyncOrders();
+    } catch (error: any) {
+      toast({
+        title: "Error during resync",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
   const getStatusBadge = (status: Order['status']) => {
     switch (status) {
       case 'awaiting':
@@ -473,6 +506,10 @@ export function OrderManagement() {
                   <DropdownMenuItem onClick={handleSyncOrders}>
                     <RefreshCw className="h-4 w-4 mr-2" />
                     Sync All Stores
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleResyncWithItems}>
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    Fix Missing Items (Re-sync)
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   {storeConfigs.map((store) => (
