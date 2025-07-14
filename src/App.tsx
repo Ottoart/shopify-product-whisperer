@@ -61,8 +61,8 @@ const AppContent = () => {
             <main className="flex-1 overflow-auto">
               <Routes>
                 <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-                <Route path="/dashboard" element={<ProtectedRoute><MainDashboard /></ProtectedRoute>} />
-                <Route path="/ai-dashboard" element={<ProtectedRoute><PrepFoxDashboard /></ProtectedRoute>} />
+                <Route path="/dashboard" element={<ProtectedRoute><PrepFoxDashboard /></ProtectedRoute>} />
+                <Route path="/ai-dashboard" element={<ProtectedRoute><MainDashboard /></ProtectedRoute>} />
                 <Route path="/marketplace-gateway" element={<ProtectedRoute><MarketplaceGateway /></ProtectedRoute>} />
                 <Route path="/shipping" element={<ProtectedRoute><Shipping /></ProtectedRoute>} />
                 <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
