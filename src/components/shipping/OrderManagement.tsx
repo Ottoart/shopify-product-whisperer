@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useOrders, type Order } from "@/hooks/useOrders";
 import { supabase } from "@/integrations/supabase/client";
+import { ProductDetailsDialog } from './ProductDetailsDialog';
 import { 
   Search, 
   Filter, 
@@ -77,6 +78,9 @@ export function OrderManagement() {
   const [editableOrder, setEditableOrder] = useState<Order | null>(null);
   const [sortField, setSortField] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [showProductDialog, setShowProductDialog] = useState(false);
+  const [selectedProductHandle, setSelectedProductHandle] = useState('');
+  const [selectedProductTitle, setSelectedProductTitle] = useState('');
   
   const [categories, setCategories] = useState<OrderCategory[]>([
     { id: "awaiting_payment", name: "Awaiting Payment", count: 1, isExpanded: false },
@@ -572,6 +576,12 @@ export function OrderManagement() {
     return items.reduce((sum, item) => sum + item.quantity, 0);
   };
 
+  const handleProductClick = (productHandle: string, productTitle: string) => {
+    setSelectedProductHandle(productHandle);
+    setSelectedProductTitle(productTitle);
+    setShowProductDialog(true);
+  };
+
   return (
     <div className="flex h-screen">
       {/* Sidebar */}
@@ -976,7 +986,18 @@ export function OrderManagement() {
                             </div>
                           )}
                         </div>
-                        <div className="text-sm">
+                        <div 
+                          className={`text-sm ${
+                            order.items.length === 1 && order.items[0].productHandle 
+                              ? 'cursor-pointer hover:text-blue-600 hover:underline' 
+                              : ''
+                          }`}
+                          onClick={() => {
+                            if (order.items.length === 1 && order.items[0].productHandle) {
+                              handleProductClick(order.items[0].productHandle, order.items[0].productTitle);
+                            }
+                          }}
+                        >
                           {getItemSummary(order.items)}
                         </div>
                       </div>
@@ -1375,6 +1396,13 @@ export function OrderManagement() {
         syncData={syncData}
         isCompleted={syncCompleted}
         isError={syncError}
+      />
+
+      <ProductDetailsDialog
+        isOpen={showProductDialog}
+        onClose={() => setShowProductDialog(false)}
+        productHandle={selectedProductHandle}
+        productTitle={selectedProductTitle}
       />
     </div>
   );
