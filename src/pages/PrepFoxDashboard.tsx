@@ -27,6 +27,17 @@ const PrepFoxDashboard = () => {
                 <p className="text-primary-foreground/80">Modules & Individual Subscriptions</p>
               </div>
             </div>
+            <div className="text-right text-primary-foreground/90">
+              <p className="text-sm">Today</p>
+              <p className="text-lg font-semibold">
+                {new Date().toLocaleDateString('en-US', { 
+                  weekday: 'long', 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
+              </p>
+            </div>
           </div>
         </div>
       </div>
