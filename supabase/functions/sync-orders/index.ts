@@ -310,6 +310,7 @@ async function syncShopifyOrders(storeConfig: any, user: any, supabase: any, syn
     shopifyOrder.line_items.forEach((item: any) => {
       itemsToInsert.push({
         order_number: shopifyOrder.name, // We'll need to map this to order_id after insert
+        product_handle: item.sku || `product-${item.id}`, // Use SKU as handle or generate one
         product_title: item.title,
         variant_title: item.variant_title,
         sku: item.sku,
@@ -347,12 +348,17 @@ async function syncShopifyOrders(storeConfig: any, user: any, supabase: any, syn
     })).filter(item => item.order_id); // Only include items with valid order_id
 
     if (mappedItems.length > 0) {
+      console.log(`Inserting ${mappedItems.length} order items from ${storeConfig.store_name}...`);
       const { error: itemsError } = await supabase
         .from('order_items')
         .insert(mappedItems);
 
       if (itemsError) {
         console.error(`Failed to insert order items from ${storeConfig.store_name}:`, itemsError.message);
+        // Don't throw error, just log it - orders are already inserted
+        console.warn(`Orders synced but ${mappedItems.length} items failed to sync from ${storeConfig.store_name}`);
+      } else {
+        console.log(`Successfully inserted ${mappedItems.length} order items from ${storeConfig.store_name}`);
       }
     }
 
@@ -476,6 +482,7 @@ async function syncWalmartOrders(storeConfig: any, user: any, supabase: any, syn
         
         itemsToInsert.push({
           order_number: walmartOrder.purchaseOrderId,
+          product_handle: lineItem.item.sku || `product-${lineItem.lineNumber}`, // Use SKU as handle or generate one
           product_title: lineItem.item.productName,
           variant_title: null,
           sku: lineItem.item.sku,
@@ -514,12 +521,17 @@ async function syncWalmartOrders(storeConfig: any, user: any, supabase: any, syn
     })).filter(item => item.order_id);
 
     if (mappedItems.length > 0) {
+      console.log(`Inserting ${mappedItems.length} order items from ${storeConfig.store_name}...`);
       const { error: itemsError } = await supabase
         .from('order_items')
         .insert(mappedItems);
 
       if (itemsError) {
         console.error(`Failed to insert order items from ${storeConfig.store_name}:`, itemsError.message);
+        // Don't throw error, just log it - orders are already inserted
+        console.warn(`Orders synced but ${mappedItems.length} items failed to sync from ${storeConfig.store_name}`);
+      } else {
+        console.log(`Successfully inserted ${mappedItems.length} order items from ${storeConfig.store_name}`);
       }
     }
 
