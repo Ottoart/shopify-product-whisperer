@@ -169,10 +169,16 @@ export function AppSidebar() {
         {/* Shipping */}
         <SidebarGroup>
           <SidebarGroupLabel className="text-primary">
-            <Truck className="h-4 w-4 mr-2" />
-            <span className={`${collapsed ? "group-hover:inline hidden" : "inline"} transition-all duration-300`}>
-              Shipping
-            </span>
+            <NavLink 
+              to="/shipping-overview" 
+              className="flex items-center hover:bg-accent/50 rounded-md p-1 -m-1"
+              title={collapsed ? "Shipping Overview" : undefined}
+            >
+              <Truck className="h-4 w-4 mr-2" />
+              <span className={`${collapsed ? "group-hover:inline hidden" : "inline"} transition-all duration-300`}>
+                Shipping
+              </span>
+            </NavLink>
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>

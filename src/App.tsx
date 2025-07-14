@@ -15,6 +15,7 @@ import MainDashboard from "./pages/MainDashboard";
 import PrepFoxDashboard from "./pages/PrepFoxDashboard";
 import MarketplaceGateway from "./pages/MarketplaceGateway";
 import Shipping from "./pages/Shipping";
+import ShippingOverview from "./pages/ShippingOverview";
 import Analytics from "./pages/Analytics";
 import Activity from "./pages/Activity";
 import BulkEditor from "./pages/BulkEditor";
@@ -64,6 +65,7 @@ const AppContent = () => {
                 <Route path="/dashboard" element={<ProtectedRoute><PrepFoxDashboard /></ProtectedRoute>} />
                 <Route path="/ai-dashboard" element={<ProtectedRoute><MainDashboard /></ProtectedRoute>} />
                 <Route path="/marketplace-gateway" element={<ProtectedRoute><MarketplaceGateway /></ProtectedRoute>} />
+                <Route path="/shipping-overview" element={<ProtectedRoute><ShippingOverview /></ProtectedRoute>} />
                 <Route path="/shipping" element={<ProtectedRoute><Shipping /></ProtectedRoute>} />
                 <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
                 <Route path="/activity" element={<ProtectedRoute><Activity /></ProtectedRoute>} />
