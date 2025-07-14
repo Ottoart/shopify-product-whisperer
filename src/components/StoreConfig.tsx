@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Store, Plus, Trash2, Eye, EyeOff, Edit, Save, X, Settings } from "lucide-react";
-import { MarketplaceSelector } from "./MarketplaceSelector";
+import { StoreConnectionFlow } from "./store-connection/StoreConnectionFlow";
 import { StoreSettings } from "./StoreSettings";
 
 interface StoreConfiguration {
@@ -24,18 +24,11 @@ export function StoreConfig() {
   const { toast } = useToast();
   const [stores, setStores] = useState<StoreConfiguration[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [showMarketplaceSelector, setShowMarketplaceSelector] = useState(false);
+  const [showConnectionFlow, setShowConnectionFlow] = useState(false);
   const [showTokens, setShowTokens] = useState<{ [key: string]: boolean }>({});
   const [editingStore, setEditingStore] = useState<string | null>(null);
   const [editData, setEditData] = useState<{[key: string]: {store_name: string, domain: string, access_token: string}}>({});
-  const [selectedMarketplace, setSelectedMarketplace] = useState<any>(null);
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    store_name: "",
-    domain: "",
-    access_token: ""
-  });
 
   useEffect(() => {
     fetchStores();
@@ -71,50 +64,13 @@ export function StoreConfig() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.store_name || !formData.domain || !formData.access_token) {
-      toast({
-        title: "Missing fields",
-        description: "Please fill in all required fields",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      const { error } = await supabase
-        .from('store_configurations')
-        .insert({
-          user_id: user.id,
-          store_name: formData.store_name,
-          platform: selectedMarketplace?.platform || 'shopify',
-          domain: formData.domain,
-          access_token: formData.access_token
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: "Store added successfully!",
-        description: `Your ${selectedMarketplace?.name || 'Shopify'} store has been configured`
-      });
-
-      setFormData({ store_name: "", domain: "", access_token: "" });
-      setSelectedMarketplace(null);
-      setShowForm(false);
-      fetchStores();
-    } catch (error: any) {
-      toast({
-        title: "Error adding store",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
+  const handleConnectionSuccess = () => {
+    setShowConnectionFlow(false);
+    fetchStores();
+    toast({
+      title: "Store Connected",
+      description: "Your store has been successfully connected and is ready to use."
+    });
   };
 
   const handleDelete = async (id: string) => {
@@ -141,10 +97,6 @@ export function StoreConfig() {
     }
   };
 
-  const handleMarketplaceSelect = (marketplace: any) => {
-    setSelectedMarketplace(marketplace);
-    setShowForm(true);
-  };
 
   const toggleTokenVisibility = (storeId: string) => {
     setShowTokens(prev => ({
@@ -243,75 +195,13 @@ export function StoreConfig() {
                 Manage your connected stores for order syncing and fulfillment
               </CardDescription>
             </div>
-            <Button onClick={() => setShowMarketplaceSelector(true)}>
+            <Button onClick={() => setShowConnectionFlow(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Add Store
             </Button>
           </div>
         </CardHeader>
 
-        {showForm && selectedMarketplace && (
-          <CardContent className="border-t">
-            <div className="mb-4 p-3 bg-muted/50 rounded-lg">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">{selectedMarketplace.logo}</span>
-                <div>
-                  <h4 className="font-medium">{selectedMarketplace.name}</h4>
-                  <p className="text-sm text-muted-foreground">{selectedMarketplace.description}</p>
-                </div>
-              </div>
-            </div>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="store_name">Store Name</Label>
-                  <Input
-                    id="store_name"
-                    placeholder={`My ${selectedMarketplace.name} Store`}
-                    value={formData.store_name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, store_name: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="domain">Store Domain</Label>
-                  <Input
-                    id="domain"
-                    placeholder={
-                      selectedMarketplace.platform === 'shopify' 
-                        ? "mystore.myshopify.com"
-                        : `your-${selectedMarketplace.platform}-domain.com`
-                    }
-                    value={formData.domain}
-                    onChange={(e) => setFormData(prev => ({ ...prev, domain: e.target.value }))}
-                  />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="access_token">Access Token</Label>
-                <Input
-                  id="access_token"
-                  type="password"
-                  placeholder={
-                    selectedMarketplace.platform === 'shopify' 
-                      ? "shpat_xxxxxxxxxxxxxxxxxxxxx"
-                      : "Your API key or access token"
-                  }
-                  value={formData.access_token}
-                  onChange={(e) => setFormData(prev => ({ ...prev, access_token: e.target.value }))}
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button type="submit">Add Store</Button>
-                <Button type="button" variant="outline" onClick={() => {
-                  setShowForm(false);
-                  setSelectedMarketplace(null);
-                }}>
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        )}
       </Card>
 
       {stores.length > 0 && (
@@ -449,7 +339,7 @@ export function StoreConfig() {
         </div>
       )}
 
-      {stores.length === 0 && !showForm && (
+      {stores.length === 0 && (
         <Card>
           <CardContent className="p-12 text-center">
             <Store className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -457,7 +347,7 @@ export function StoreConfig() {
             <p className="text-muted-foreground mb-4">
               Add your first store to start syncing orders and managing fulfillment
             </p>
-            <Button onClick={() => setShowMarketplaceSelector(true)}>
+            <Button onClick={() => setShowConnectionFlow(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Add Store
             </Button>
@@ -465,10 +355,10 @@ export function StoreConfig() {
         </Card>
       )}
 
-      <MarketplaceSelector
-        open={showMarketplaceSelector}
-        onOpenChange={setShowMarketplaceSelector}
-        onSelect={handleMarketplaceSelect}
+      <StoreConnectionFlow
+        open={showConnectionFlow}
+        onOpenChange={setShowConnectionFlow}
+        onSuccess={handleConnectionSuccess}
       />
     </div>
   );
