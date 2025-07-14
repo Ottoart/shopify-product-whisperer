@@ -514,7 +514,7 @@ export function CarrierManagement() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Carrier</TableHead>
-                    <TableHead>Services</TableHead>
+                     <TableHead>Prepfox Carriers</TableHead>
                     <TableHead>Features & Benefits</TableHead>
                     <TableHead>Carrier ID</TableHead>
                     <TableHead>Actions</TableHead>
