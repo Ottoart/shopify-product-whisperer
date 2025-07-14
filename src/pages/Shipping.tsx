@@ -3,7 +3,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Truck, Package, RotateCcw, Settings, Zap, Building2, Store } from "lucide-react";
 import { OrderManagement } from "@/components/shipping/OrderManagement";
-
 import { CarrierRateComparison } from "@/components/shipping/CarrierRateComparison";
 import { ShippingRules } from "@/components/shipping/ShippingRules";
 import { TrackingPage } from "@/components/shipping/TrackingPage";
