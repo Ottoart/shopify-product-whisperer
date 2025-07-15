@@ -60,18 +60,28 @@ serve(async (req) => {
     ebayAuthUrl.searchParams.set('response_type', 'code');
     ebayAuthUrl.searchParams.set('redirect_uri', ebayRuName);
     
-    // Use correct eBay OAuth scopes for new OAuth security
+    // Use correct eBay OAuth scopes
     const scopes = isProduction ? [
-      'https://api.ebay.com/oauth/api_scope'
+      'https://api.ebay.com/oauth/api_scope/sell.marketing.readonly',
+      'https://api.ebay.com/oauth/api_scope/sell.marketing',
+      'https://api.ebay.com/oauth/api_scope/sell.inventory.readonly',
+      'https://api.ebay.com/oauth/api_scope/sell.inventory',
+      'https://api.ebay.com/oauth/api_scope/sell.account.readonly',
+      'https://api.ebay.com/oauth/api_scope/sell.account'
     ] : [
-      'https://api.sandbox.ebay.com/oauth/api_scope'
+      'https://api.sandbox.ebay.com/oauth/api_scope/sell.marketing.readonly',
+      'https://api.sandbox.ebay.com/oauth/api_scope/sell.marketing',
+      'https://api.sandbox.ebay.com/oauth/api_scope/sell.inventory.readonly',
+      'https://api.sandbox.ebay.com/oauth/api_scope/sell.inventory',
+      'https://api.sandbox.ebay.com/oauth/api_scope/sell.account.readonly',
+      'https://api.sandbox.ebay.com/oauth/api_scope/sell.account'
     ];
     
     ebayAuthUrl.searchParams.set('scope', scopes.join(' '));
     ebayAuthUrl.searchParams.set('state', state);
     
-    // Add required OAuth parameters for new security
-    ebayAuthUrl.searchParams.set('prompt', 'login');
+    // Remove prompt=login as it might cause issues
+    // ebayAuthUrl.searchParams.set('prompt', 'login');
 
     console.log('Final OAuth parameters:');
     console.log('- client_id:', ebayClientId.substring(0, 15) + '...');
