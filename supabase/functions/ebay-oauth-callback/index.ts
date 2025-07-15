@@ -113,20 +113,55 @@ serve(async (req) => {
     });
 
     console.log('Token response status:', tokenResponse.status);
+    console.log('Token response headers:', Object.fromEntries(tokenResponse.headers.entries()));
     
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
-      console.error('eBay token exchange failed:', errorText);
+      console.error('eBay token exchange failed:', tokenResponse.status, errorText);
       
       let errorDetails;
       try {
         errorDetails = JSON.parse(errorText);
-        console.error('Parsed error:', errorDetails);
+        console.error('Parsed error details:', JSON.stringify(errorDetails, null, 2));
       } catch (e) {
-        console.error('Could not parse error response');
+        console.error('Could not parse error response as JSON');
+        console.error('Raw error text:', errorText);
       }
       
-      throw new Error(`Token exchange failed: ${errorDetails?.error_description || errorText}`);
+      // Return a more detailed error page
+      const detailedErrorPage = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>eBay Connection Debug</title>
+          <style>
+            body { font-family: system-ui; padding: 2rem; }
+            .error { color: #dc2626; margin: 1rem 0; }
+            .debug { background: #f3f4f6; padding: 1rem; margin: 1rem 0; font-family: monospace; }
+          </style>
+        </head>
+        <body>
+          <h1>eBay Connection Debug Info</h1>
+          <div class="error">Token exchange failed with status: ${tokenResponse.status}</div>
+          <div class="debug">
+            <strong>Error Details:</strong><br>
+            ${errorDetails ? JSON.stringify(errorDetails, null, 2) : errorText}
+          </div>
+          <div class="debug">
+            <strong>Debug Info:</strong><br>
+            Code length: ${code.length}<br>
+            State: ${state}<br>
+            Token endpoint: ${tokenEndpoint}
+          </div>
+          <p><button onclick="window.close()">Close Window</button></p>
+        </body>
+        </html>
+      `;
+      
+      return new Response(detailedErrorPage, {
+        headers: { ...corsHeaders, 'Content-Type': 'text/html' },
+        status: 400
+      });
     }
 
     const tokenData = await tokenResponse.json();
