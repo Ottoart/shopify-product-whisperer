@@ -77,7 +77,7 @@ export const useOrders = () => {
 
       if (ordersError) throw ordersError;
 
-      // Get all unique product handles from order items
+      // Get all unique product handles and SKUs from order items
       const productHandles = Array.from(
         new Set(
           (ordersData || [])
@@ -87,8 +87,20 @@ export const useOrders = () => {
         )
       );
 
-      // Fetch product images for these handles
+      const productSkus = Array.from(
+        new Set(
+          (ordersData || [])
+            .flatMap(order => order.order_items)
+            .map(item => item.sku)
+            .filter(sku => sku)
+        )
+      );
+
+      // Fetch product images by handle and SKU
       let productImages: Record<string, string> = {};
+      let skuImages: Record<string, string> = {};
+      
+      // First try to fetch by handles
       if (productHandles.length > 0) {
         const { data: productsData } = await supabase
           .from('products')
@@ -96,6 +108,21 @@ export const useOrders = () => {
           .in('handle', productHandles);
         
         productImages = (productsData || []).reduce((acc, product) => {
+          if (product.handle && product.image_src) {
+            acc[product.handle] = product.image_src;
+          }
+          return acc;
+        }, {} as Record<string, string>);
+      }
+
+      // Then try to fetch by SKUs as handles (in case SKU is used as handle)
+      if (productSkus.length > 0) {
+        const { data: skuProductsData } = await supabase
+          .from('products')
+          .select('handle, image_src')
+          .in('handle', productSkus);
+        
+        skuImages = (skuProductsData || []).reduce((acc, product) => {
           if (product.handle && product.image_src) {
             acc[product.handle] = product.image_src;
           }
@@ -142,17 +169,27 @@ export const useOrders = () => {
         orderDate: order.order_date,
         shippedDate: order.shipped_date,
         deliveredDate: order.delivered_date,
-        items: order.order_items.map((item: any) => ({
-          id: item.id,
-          productHandle: item.product_handle,
-          productTitle: item.product_title,
-          variantTitle: item.variant_title,
-          sku: item.sku,
-          quantity: item.quantity,
-          price: item.price,
-          weight: item.weight_lbs,
-          imageSrc: item.product_handle ? productImages[item.product_handle] : undefined
-        }))
+        items: order.order_items.map((item: any) => {
+          // Try to get image from handle first, then try SKU as handle
+          let imageSrc = undefined;
+          if (item.product_handle && productImages[item.product_handle]) {
+            imageSrc = productImages[item.product_handle];
+          } else if (item.sku && skuImages[item.sku]) {
+            imageSrc = skuImages[item.sku];
+          }
+          
+          return {
+            id: item.id,
+            productHandle: item.product_handle,
+            productTitle: item.product_title,
+            variantTitle: item.variant_title,
+            sku: item.sku,
+            quantity: item.quantity,
+            price: item.price,
+            weight: item.weight_lbs,
+            imageSrc
+          };
+        })
       }));
 
       setOrders(formattedOrders);
