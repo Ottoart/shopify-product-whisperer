@@ -94,9 +94,18 @@ serve(async (req) => {
     console.log('=== Token Exchange Debug ===');
     console.log('Token endpoint:', tokenEndpoint);
     console.log('Client ID starts with:', ebayClientId.substring(0, 15) + '...');
+    console.log('Client ID full length:', ebayClientId.length);
     console.log('Client secret exists:', !!ebayClientSecret);
-    console.log('RU Name:', ebayRuName);
+    console.log('Client secret length:', ebayClientSecret?.length || 0);
+    console.log('RU Name (redirect_uri):', ebayRuName);
     console.log('Authorization code length:', code.length);
+    console.log('Authorization code starts with:', code.substring(0, 20) + '...');
+    
+    // Debug the Basic Auth header
+    const authString = `${ebayClientId}:${ebayClientSecret}`;
+    const base64Auth = btoa(authString);
+    console.log('Auth string length:', authString.length);
+    console.log('Base64 auth starts with:', base64Auth.substring(0, 20) + '...');
 
     // Exchange authorization code for access token
     const tokenResponse = await fetch(tokenEndpoint, {
