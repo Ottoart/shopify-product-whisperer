@@ -300,7 +300,7 @@ export function DuplicateDetectionTool() {
     try {
       const { data, error } = await supabase
         .from('store_configurations')
-        .select('domain, store_name')
+        .select('domain, store_name, storefront_domain')
         .eq('user_id', user.id)
         .eq('is_active', true)
         .limit(1)
@@ -332,11 +332,13 @@ export function DuplicateDetectionTool() {
       return `/bulk-editor?search=${encodeURIComponent(product.title)}`;
     }
     
-    // Extract store name and construct storefront URL
-    const storeName = storeConfig.domain.replace('.myshopify.com', '');
-    // For storefront URL, we need the actual domain (e.g., "prohair.ca")
-    // This should be configured in store settings, but for now using the store name
-    return `https://${storeName}.ca/products/${product.handle}`;
+    // Use the storefront domain if available, otherwise fallback to bulk editor
+    if (storeConfig.storefront_domain) {
+      return `https://${storeConfig.storefront_domain}/products/${product.handle}`;
+    }
+    
+    // Fallback to bulk editor if no storefront domain is configured
+    return `/bulk-editor?search=${encodeURIComponent(product.title)}`;
   };
 
   useEffect(() => {

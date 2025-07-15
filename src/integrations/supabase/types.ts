@@ -935,6 +935,7 @@ export type Database = {
           is_active: boolean
           platform: string
           store_name: string
+          storefront_domain: string | null
           updated_at: string
           user_id: string
         }
@@ -946,6 +947,7 @@ export type Database = {
           is_active?: boolean
           platform?: string
           store_name: string
+          storefront_domain?: string | null
           updated_at?: string
           user_id: string
         }
@@ -957,6 +959,7 @@ export type Database = {
           is_active?: boolean
           platform?: string
           store_name?: string
+          storefront_domain?: string | null
           updated_at?: string
           user_id?: string
         }
