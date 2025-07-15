@@ -162,11 +162,13 @@ export function AppSidebar() {
                 <div key={item.title}>
                   {/* Main Tool Item */}
                   <SidebarMenuItem>
-                    <SidebarMenuButton 
-                      onClick={() => !collapsed && toggleCatalogueItem(item.title)}
-                      className="cursor-pointer"
-                    >
-                      <div className="flex items-center w-full">
+                    <SidebarMenuButton asChild>
+                      <NavLink 
+                        to={item.url}
+                        onClick={() => !collapsed && toggleCatalogueItem(item.title)}
+                        className={getNavCls}
+                        title={collapsed ? item.description : undefined}
+                      >
                         <item.icon className="h-4 w-4 flex-shrink-0" />
                         <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col flex-1 transition-all duration-300 overflow-hidden ml-2`}>
                           <span className="whitespace-nowrap">{item.title}</span>
@@ -181,23 +183,6 @@ export function AppSidebar() {
                             )}
                           </div>
                         )}
-                      </div>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-
-                  {/* All Stores Link */}
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <NavLink 
-                        to={item.url} 
-                        className={getNavCls}
-                        title={collapsed ? `${item.description} - All stores` : undefined}
-                      >
-                        <div className="h-4 w-4 flex-shrink-0 ml-4" />
-                        <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col transition-all duration-300 overflow-hidden`}>
-                          <span className="whitespace-nowrap">All Stores</span>
-                          <span className="text-xs text-muted-foreground whitespace-nowrap">View all store data</span>
-                        </div>
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
