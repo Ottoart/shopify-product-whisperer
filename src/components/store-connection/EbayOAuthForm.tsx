@@ -47,17 +47,20 @@ export function EbayOAuthForm({ marketplace, onBack, onSuccess }: EbayOAuthFormP
       sessionStorage.setItem('ebay_oauth_state', state);
       sessionStorage.setItem('ebay_store_name', storeName);
       
-      // Construct eBay OAuth URL
-      const ebayAuthUrl = new URL('https://auth.ebay.com/oauth2/authorize');
-      ebayAuthUrl.searchParams.set('client_id', 'PrepFox-YourEbay-PRD-123456789'); // This should come from Supabase secrets
-      ebayAuthUrl.searchParams.set('response_type', 'code');
-      ebayAuthUrl.searchParams.set('redirect_uri', `https://rtaomiqsnctigleqjojt.supabase.co/functions/v1/ebay-oauth-callback`);
-      ebayAuthUrl.searchParams.set('scope', 'https://api.ebay.com/oauth/api_scope https://api.ebay.com/oauth/api_scope/sell.inventory https://api.ebay.com/oauth/api_scope/sell.account https://api.ebay.com/oauth/api_scope/sell.fulfillment https://api.ebay.com/oauth/api_scope/sell.marketing');
-      ebayAuthUrl.searchParams.set('state', state);
+      // Get OAuth URL from backend with real credentials
+      const { data: oauthData, error: oauthError } = await supabase.functions.invoke('ebay-oauth-url', {
+        body: { state }
+      });
+
+      if (oauthError || !oauthData?.oauth_url) {
+        throw new Error(oauthError?.message || 'Failed to generate OAuth URL');
+      }
+
+      console.log('Generated OAuth URL with Client ID:', oauthData.client_id?.substring(0, 10) + '...');
 
       // Open OAuth flow in a popup window
       const popup = window.open(
-        ebayAuthUrl.toString(),
+        oauthData.oauth_url,
         'ebay-oauth',
         'width=600,height=700,scrollbars=yes,resizable=yes'
       );
