@@ -75,7 +75,7 @@ serve(async (req) => {
 
     console.log('Final OAuth parameters:');
     console.log('- client_id:', ebayClientId.substring(0, 15) + '...');
-    console.log('- redirect_uri:', ebayRuName);
+    console.log('- redirect_uri:', ebayAuthUrl.searchParams.get('redirect_uri'));
     console.log('- scope:', scopes.join(' '));
     console.log('- state:', state);
     console.log('Generated OAuth URL successfully');
