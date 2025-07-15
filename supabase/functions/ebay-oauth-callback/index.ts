@@ -179,7 +179,7 @@ serve(async (req) => {
             window.close();
           } else {
             setTimeout(() => {
-              window.location.href = '${Deno.env.get('SITE_URL') || 'http://localhost:5173'}/settings';
+              window.location.href = 'https://www.ebay.com/sh/lst/active';
             }, 3000);
           }
         </script>
