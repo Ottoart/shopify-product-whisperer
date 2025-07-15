@@ -40,7 +40,10 @@ export const ProductListItem = ({
     variantPrice: product.variantPrice || 0,
     variantCompareAtPrice: product.variantCompareAtPrice || 0,
     variantSku: product.variantSku || '',
-    variantInventoryQty: product.variantInventoryQty || 0
+    variantInventoryQty: product.variantInventoryQty || 0,
+    seoTitle: product.seoTitle || '',
+    seoDescription: product.seoDescription || '',
+    variantGrams: product.variantGrams || 0
   });
   
   const { session } = useSessionContext();
@@ -101,7 +104,10 @@ export const ProductListItem = ({
         { field: 'variant_price', before: product.variantPrice?.toString(), after: editedProduct.variantPrice?.toString() },
         { field: 'variant_compare_at_price', before: product.variantCompareAtPrice?.toString(), after: editedProduct.variantCompareAtPrice?.toString() },
         { field: 'variant_sku', before: product.variantSku, after: editedProduct.variantSku },
-        { field: 'variant_inventory_qty', before: product.variantInventoryQty?.toString(), after: editedProduct.variantInventoryQty?.toString() }
+        { field: 'variant_inventory_qty', before: product.variantInventoryQty?.toString(), after: editedProduct.variantInventoryQty?.toString() },
+        { field: 'seo_title', before: product.seoTitle, after: editedProduct.seoTitle },
+        { field: 'seo_description', before: product.seoDescription, after: editedProduct.seoDescription },
+        { field: 'variant_grams', before: product.variantGrams?.toString(), after: editedProduct.variantGrams?.toString() }
       ];
 
       // Filter out unchanged fields and track each edit
@@ -140,6 +146,9 @@ export const ProductListItem = ({
           variant_compare_at_price: editedProduct.variantCompareAtPrice,
           variant_sku: editedProduct.variantSku,
           variant_inventory_qty: editedProduct.variantInventoryQty,
+          seo_title: editedProduct.seoTitle,
+          seo_description: editedProduct.seoDescription,
+          variant_grams: editedProduct.variantGrams,
           updated_at: new Date().toISOString()
         })
         .eq('handle', product.handle)
@@ -242,7 +251,10 @@ export const ProductListItem = ({
       variantPrice: product.variantPrice || 0,
       variantCompareAtPrice: product.variantCompareAtPrice || 0,
       variantSku: product.variantSku || '',
-      variantInventoryQty: product.variantInventoryQty || 0
+      variantInventoryQty: product.variantInventoryQty || 0,
+      seoTitle: product.seoTitle || '',
+      seoDescription: product.seoDescription || '',
+      variantGrams: product.variantGrams || 0
     });
     setIsEditing(false);
   };
@@ -256,7 +268,10 @@ export const ProductListItem = ({
       editedProduct.variantPrice !== (product.variantPrice || 0) ||
       editedProduct.variantCompareAtPrice !== (product.variantCompareAtPrice || 0) ||
       editedProduct.variantSku !== (product.variantSku || '') ||
-      editedProduct.variantInventoryQty !== (product.variantInventoryQty || 0)
+      editedProduct.variantInventoryQty !== (product.variantInventoryQty || 0) ||
+      editedProduct.seoTitle !== (product.seoTitle || '') ||
+      editedProduct.seoDescription !== (product.seoDescription || '') ||
+      editedProduct.variantGrams !== (product.variantGrams || 0)
     );
   };
 
@@ -308,8 +323,8 @@ export const ProductListItem = ({
                     />
                   </div>
                   
-                  {/* Pricing */}
-                  <div className="grid grid-cols-4 gap-2">
+                  {/* Pricing & Basic Info */}
+                  <div className="grid grid-cols-5 gap-2">
                     <Input
                       type="number"
                       step="0.01"
@@ -338,6 +353,30 @@ export const ProductListItem = ({
                       onChange={(e) => setEditedProduct({ ...editedProduct, variantInventoryQty: parseInt(e.target.value) || 0 })}
                       placeholder="Inventory"
                       className="text-xs"
+                    />
+                    <Input
+                      type="number"
+                      value={editedProduct.variantGrams}
+                      onChange={(e) => setEditedProduct({ ...editedProduct, variantGrams: parseFloat(e.target.value) || 0 })}
+                      placeholder="Weight (g)"
+                      className="text-xs"
+                    />
+                  </div>
+                  
+                  {/* SEO Fields */}
+                  <div className="space-y-2">
+                    <Input
+                      value={editedProduct.seoTitle}
+                      onChange={(e) => setEditedProduct({ ...editedProduct, seoTitle: e.target.value })}
+                      placeholder="SEO Title"
+                      className="text-xs"
+                    />
+                    <Textarea
+                      value={editedProduct.seoDescription}
+                      onChange={(e) => setEditedProduct({ ...editedProduct, seoDescription: e.target.value })}
+                      placeholder="SEO Description"
+                      className="text-xs"
+                      rows={2}
                     />
                   </div>
                   
@@ -374,6 +413,12 @@ export const ProductListItem = ({
                     )}
                     <span>•</span>
                     <span>Stock: {product.variantInventoryQty || 0}</span>
+                    {product.variantGrams && product.variantGrams > 0 && (
+                      <>
+                        <span>•</span>
+                        <span>Weight: {product.variantGrams}g</span>
+                      </>
+                    )}
                     {product.type && (
                       <>
                         <span>•</span>
@@ -383,6 +428,20 @@ export const ProductListItem = ({
                       </>
                     )}
                   </div>
+                  {(product.seoTitle || product.seoDescription) && (
+                    <div className="text-xs text-muted-foreground mb-2">
+                      {product.seoTitle && (
+                        <div className="mb-1">
+                          <span className="font-medium">SEO Title:</span> {product.seoTitle}
+                        </div>
+                      )}
+                      {product.seoDescription && (
+                        <div>
+                          <span className="font-medium">SEO Description:</span> {product.seoDescription}
+                        </div>
+                      )}
+                    </div>
+                  )}
                   {product.tags && (
                     <div className="flex flex-wrap gap-1">
                       {product.tags.split(',').slice(0, 3).map((tag, index) => (
