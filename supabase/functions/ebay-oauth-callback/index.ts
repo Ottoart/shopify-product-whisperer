@@ -98,24 +98,35 @@ serve(async (req) => {
     });
 
     // Exchange authorization code for access token
+    // Try alternative approach for eBay token exchange
+    const authString = btoa(`${ebayClientId}:${ebayClientSecret}`);
+    
     const tokenResponse = await fetch(tokenEndpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': `Basic ${btoa(`${ebayClientId}:${ebayClientSecret}`)}`
+        'Authorization': `Basic ${authString}`,
+        'Accept': 'application/json'
       },
-      body: new URLSearchParams({
-        grant_type: 'authorization_code',
-        code: code,
-        redirect_uri: redirectUri
-      })
+      body: `grant_type=authorization_code&code=${encodeURIComponent(code)}&redirect_uri=${encodeURIComponent(redirectUri)}`
     });
 
+    console.log('Token response status:', tokenResponse.status);
+    
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
       console.error('eBay token exchange failed:', errorText);
       console.error('Response status:', tokenResponse.status);
       console.error('Response headers:', Object.fromEntries(tokenResponse.headers.entries()));
+      
+      // Try to parse the error for more details
+      try {
+        const errorJson = JSON.parse(errorText);
+        console.error('Parsed error:', errorJson);
+      } catch (e) {
+        console.error('Could not parse error as JSON');
+      }
+      
       throw new Error('Failed to exchange authorization code for token');
     }
 
