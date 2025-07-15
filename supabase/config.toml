@@ -45,3 +45,9 @@ verify_jwt = true
 
 [functions.update-store-config]
 verify_jwt = true
+
+[functions.ebay-webhook-handler]
+verify_jwt = false
+
+[functions.ebay-oauth-callback]
+verify_jwt = false
