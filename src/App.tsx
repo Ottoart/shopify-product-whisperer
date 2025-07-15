@@ -25,6 +25,7 @@ import SyncStatus from "./pages/SyncStatus";
 import Repricing from "./pages/Repricing";
 import Inventory from "./pages/Inventory";
 import Auth from "./pages/Auth";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
 import { LearningDashboard } from "./components/LearningDashboard";
 
@@ -76,6 +77,7 @@ const AppContent = () => {
                 <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                 <Route path="/sync-status" element={<ProtectedRoute><SyncStatus /></ProtectedRoute>} />
+                <Route path="/privacy-policy" element={<ProtectedRoute><PrivacyPolicy /></ProtectedRoute>} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="*" element={<ProtectedRoute><NotFound /></ProtectedRoute>} />
               </Routes>

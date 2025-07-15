@@ -13,7 +13,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, LogOut, Settings, Store } from "lucide-react";
+import { User, LogOut, Settings, Store, Shield } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface Profile {
   display_name: string | null;
@@ -31,6 +32,7 @@ interface StoreConfig {
 export function UserMenu() {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [stores, setStores] = useState<StoreConfig[]>([]);
 
@@ -157,9 +159,14 @@ export function UserMenu() {
           <span>Profile</span>
         </DropdownMenuItem>
         
-        <DropdownMenuItem>
+        <DropdownMenuItem onClick={() => navigate('/settings')}>
           <Settings className="mr-2 h-4 w-4" />
           <span>Settings</span>
+        </DropdownMenuItem>
+        
+        <DropdownMenuItem onClick={() => navigate('/privacy-policy')}>
+          <Shield className="mr-2 h-4 w-4" />
+          <span>Privacy Policy</span>
         </DropdownMenuItem>
         
         <DropdownMenuSeparator />
