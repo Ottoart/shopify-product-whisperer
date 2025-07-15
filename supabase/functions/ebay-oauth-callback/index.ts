@@ -6,14 +6,20 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  // Log every single request to this function
+  console.log('=== eBay OAuth Callback Function Invoked ===');
+  console.log('Timestamp:', new Date().toISOString());
+  console.log('Request method:', req.method);
+  console.log('Full request URL:', req.url);
+  console.log('Request headers:', Object.fromEntries(req.headers.entries()));
+  
   if (req.method === 'OPTIONS') {
+    console.log('Handling OPTIONS request (CORS preflight)');
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    console.log('=== eBay OAuth Callback Started ===');
-    console.log('Request method:', req.method);
-    console.log('Request URL:', req.url);
+    console.log('=== Processing eBay OAuth Callback ===');
     
     const url = new URL(req.url);
     console.log('Parsed URL pathname:', url.pathname);
