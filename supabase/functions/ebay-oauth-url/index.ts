@@ -23,40 +23,55 @@ serve(async (req) => {
     
     console.log('eBay Client ID exists:', !!ebayClientId);
     console.log('eBay Client ID length:', ebayClientId?.length || 0);
+    console.log('eBay Client ID preview:', ebayClientId?.substring(0, 15) + '...');
     
     if (!ebayClientId) {
       throw new Error('eBay Client ID not configured in secrets');
     }
 
     // Parse request body
-    const { state } = await req.json();
+    const { state, environment = 'production' } = await req.json();
     
     if (!state) {
       throw new Error('State parameter is required for OAuth security');
     }
 
     console.log('Generating OAuth URL with state:', state);
+    console.log('Using environment:', environment);
+
+    // Determine the correct eBay authorization URL based on environment
+    const isProduction = environment === 'production' || ebayClientId.includes('PRD');
+    const authBaseUrl = isProduction 
+      ? 'https://auth.ebay.com/oauth2/authorize'
+      : 'https://auth.sandbox.ebay.com/oauth2/authorize';
+    
+    console.log('Using auth URL:', authBaseUrl);
+    console.log('Is production environment:', isProduction);
 
     // Construct eBay OAuth URL with real credentials
-    const ebayAuthUrl = new URL('https://auth.ebay.com/oauth2/authorize');
+    const ebayAuthUrl = new URL(authBaseUrl);
     ebayAuthUrl.searchParams.set('client_id', ebayClientId);
     ebayAuthUrl.searchParams.set('response_type', 'code');
     ebayAuthUrl.searchParams.set('redirect_uri', `https://rtaomiqsnctigleqjojt.supabase.co/functions/v1/ebay-oauth-callback`);
-    ebayAuthUrl.searchParams.set('scope', [
+    
+    // Use more conservative scopes to avoid authorization issues
+    const scopes = [
       'https://api.ebay.com/oauth/api_scope',
-      'https://api.ebay.com/oauth/api_scope/sell.inventory',
       'https://api.ebay.com/oauth/api_scope/sell.account',
-      'https://api.ebay.com/oauth/api_scope/sell.fulfillment',
-      'https://api.ebay.com/oauth/api_scope/sell.marketing',
-      'https://api.ebay.com/oauth/api_scope/sell.analytics.readonly'
-    ].join(' '));
+      'https://api.ebay.com/oauth/api_scope/sell.inventory'
+    ];
+    
+    ebayAuthUrl.searchParams.set('scope', scopes.join(' '));
     ebayAuthUrl.searchParams.set('state', state);
 
     console.log('Generated OAuth URL successfully');
+    console.log('Final OAuth URL:', ebayAuthUrl.toString());
 
     return new Response(JSON.stringify({ 
       oauth_url: ebayAuthUrl.toString(),
-      client_id: ebayClientId
+      client_id: ebayClientId.substring(0, 15) + '...',
+      environment: isProduction ? 'production' : 'sandbox',
+      redirect_uri: 'https://rtaomiqsnctigleqjojt.supabase.co/functions/v1/ebay-oauth-callback'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

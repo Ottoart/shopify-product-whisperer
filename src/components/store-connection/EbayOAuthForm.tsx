@@ -56,7 +56,9 @@ export function EbayOAuthForm({ marketplace, onBack, onSuccess }: EbayOAuthFormP
         throw new Error(oauthError?.message || 'Failed to generate OAuth URL');
       }
 
-      console.log('Generated OAuth URL with Client ID:', oauthData.client_id?.substring(0, 10) + '...');
+      console.log('OAuth Environment:', oauthData.environment);
+      console.log('Redirect URI:', oauthData.redirect_uri);
+      console.log('Generated OAuth URL with Client ID:', oauthData.client_id);
 
       // Open OAuth flow in a popup window
       const popup = window.open(
