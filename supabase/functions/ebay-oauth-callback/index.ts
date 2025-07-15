@@ -11,11 +11,24 @@ serve(async (req) => {
   }
 
   try {
+    console.log('=== eBay OAuth Callback Started ===');
+    console.log('Request method:', req.method);
+    console.log('Request URL:', req.url);
+    
     const url = new URL(req.url);
+    console.log('Parsed URL pathname:', url.pathname);
+    console.log('All URL search params:', Array.from(url.searchParams.entries()));
+    
     const code = url.searchParams.get('code');
     const state = url.searchParams.get('state');
     const error = url.searchParams.get('error');
     const errorDescription = url.searchParams.get('error_description');
+    
+    console.log('OAuth parameters:');
+    console.log('- code exists:', !!code, 'length:', code?.length || 0);
+    console.log('- state exists:', !!state, 'value:', state);
+    console.log('- error:', error);
+    console.log('- errorDescription:', errorDescription);
 
     // Handle OAuth errors
     if (error) {
