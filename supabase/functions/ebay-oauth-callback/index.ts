@@ -86,13 +86,22 @@ serve(async (req) => {
 
     const redirectUri = `${Deno.env.get('SUPABASE_URL')}/functions/v1/ebay-oauth-callback`;
     
-    console.log('Token exchange details:');
+    console.log('=== TOKEN EXCHANGE DEBUG ===');
     console.log('- Environment:', isProduction ? 'production' : 'sandbox');
     console.log('- Token endpoint:', tokenEndpoint);
-    console.log('- Client ID length:', ebayClientId.length);
-    console.log('- Client secret length:', ebayClientSecret.length);
+    console.log('- Client ID:', ebayClientId);
+    console.log('- Client secret:', ebayClientSecret);
     console.log('- Redirect URI:', redirectUri);
-    console.log('- Authorization code length:', code.length);
+    console.log('- Authorization code:', code);
+    console.log('- Auth header will be:', `Basic ${btoa(`${ebayClientId}:${ebayClientSecret}`)}`);
+
+    const requestBody = new URLSearchParams({
+      grant_type: 'authorization_code',
+      code: code,
+      redirect_uri: redirectUri
+    });
+    
+    console.log('- Request body:', requestBody.toString());
 
     // Exchange authorization code for access token
     const tokenResponse = await fetch(tokenEndpoint, {
