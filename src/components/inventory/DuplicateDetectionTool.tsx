@@ -322,8 +322,8 @@ export function DuplicateDetectionTool() {
     // Extract store name from domain (e.g., "protoys.myshopify.com" -> "protoys")
     const storeName = storeConfig.domain.replace('.myshopify.com', '');
     
-    // Use the product ID to construct the admin URL
-    return `https://admin.shopify.com/store/${storeName}/products/${product.id}`;
+    // Use the product handle to construct the admin URL
+    return `https://admin.shopify.com/store/${storeName}/products/${product.handle}`;
   };
 
   // Generate product page URL for viewing
@@ -332,9 +332,11 @@ export function DuplicateDetectionTool() {
       return `/bulk-editor?search=${encodeURIComponent(product.title)}`;
     }
     
-    // Use the domain and handle to construct the public product URL
-    const domain = storeConfig.domain.replace('.myshopify.com', '');
-    return `https://${domain}.ca/products/${product.handle}`;
+    // Extract store name and construct storefront URL
+    const storeName = storeConfig.domain.replace('.myshopify.com', '');
+    // For storefront URL, we need the actual domain (e.g., "prohair.ca")
+    // This should be configured in store settings, but for now using the store name
+    return `https://${storeName}.ca/products/${product.handle}`;
   };
 
   useEffect(() => {
