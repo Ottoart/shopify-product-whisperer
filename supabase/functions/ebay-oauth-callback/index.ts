@@ -78,6 +78,13 @@ serve(async (req) => {
       ? 'https://api.ebay.com/identity/v1/oauth2/token'
       : 'https://api.sandbox.ebay.com/identity/v1/oauth2/token';
 
+    console.log('=== Token Exchange Debug ===');
+    console.log('Token endpoint:', tokenEndpoint);
+    console.log('Client ID starts with:', ebayClientId.substring(0, 15) + '...');
+    console.log('Client secret exists:', !!ebayClientSecret);
+    console.log('RU Name:', ebayRuName);
+    console.log('Authorization code length:', code.length);
+
     // Exchange authorization code for access token
     const tokenResponse = await fetch(tokenEndpoint, {
       method: 'POST',
@@ -92,10 +99,21 @@ serve(async (req) => {
       })
     });
 
+    console.log('Token response status:', tokenResponse.status);
+    
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
       console.error('eBay token exchange failed:', errorText);
-      throw new Error('Failed to exchange authorization code for token');
+      
+      let errorDetails;
+      try {
+        errorDetails = JSON.parse(errorText);
+        console.error('Parsed error:', errorDetails);
+      } catch (e) {
+        console.error('Could not parse error response');
+      }
+      
+      throw new Error(`Token exchange failed: ${errorDetails?.error_description || errorText}`);
     }
 
     const tokenData = await tokenResponse.json();
