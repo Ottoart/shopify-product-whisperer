@@ -20,13 +20,19 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const ebayClientId = Deno.env.get('EBAY_CLIENT_ID');
+    const ebayRuName = Deno.env.get('EBAY_RU_NAME');
     
     console.log('eBay Client ID exists:', !!ebayClientId);
     console.log('eBay Client ID length:', ebayClientId?.length || 0);
     console.log('eBay Client ID preview:', ebayClientId?.substring(0, 15) + '...');
+    console.log('eBay RU Name exists:', !!ebayRuName);
     
     if (!ebayClientId) {
       throw new Error('eBay Client ID not configured in secrets');
+    }
+    
+    if (!ebayRuName) {
+      throw new Error('eBay RU Name (redirect URI) not configured in secrets');
     }
 
     // Parse request body
@@ -52,7 +58,7 @@ serve(async (req) => {
     const ebayAuthUrl = new URL(authBaseUrl);
     ebayAuthUrl.searchParams.set('client_id', ebayClientId);
     ebayAuthUrl.searchParams.set('response_type', 'code');
-    ebayAuthUrl.searchParams.set('redirect_uri', `https://rtaomiqsnctigleqjojt.supabase.co/functions/v1/ebay-oauth-callback`);
+    ebayAuthUrl.searchParams.set('redirect_uri', ebayRuName);
     
     // Use more conservative scopes to avoid authorization issues
     const scopes = [
@@ -71,7 +77,7 @@ serve(async (req) => {
       oauth_url: ebayAuthUrl.toString(),
       client_id: ebayClientId.substring(0, 15) + '...',
       environment: isProduction ? 'production' : 'sandbox',
-      redirect_uri: 'https://rtaomiqsnctigleqjojt.supabase.co/functions/v1/ebay-oauth-callback'
+      redirect_uri: ebayRuName
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
