@@ -107,6 +107,60 @@ export type Database = {
         }
         Relationships: []
       }
+      marketplace_configurations: {
+        Row: {
+          access_token: string | null
+          created_at: string
+          deleted_at: string | null
+          deletion_reason: string | null
+          external_user_id: string
+          id: string
+          is_active: boolean
+          metadata: Json | null
+          platform: string
+          refresh_token: string | null
+          store_name: string | null
+          store_url: string | null
+          token_expires_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          deletion_reason?: string | null
+          external_user_id: string
+          id?: string
+          is_active?: boolean
+          metadata?: Json | null
+          platform: string
+          refresh_token?: string | null
+          store_name?: string | null
+          store_url?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          deletion_reason?: string | null
+          external_user_id?: string
+          id?: string
+          is_active?: boolean
+          metadata?: Json | null
+          platform?: string
+          refresh_token?: string | null
+          store_name?: string | null
+          store_url?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       marketplace_sync_status: {
         Row: {
           created_at: string
@@ -1075,6 +1129,42 @@ export type Database = {
           user_id?: string
           vendor_name?: string
           website_url?: string | null
+        }
+        Relationships: []
+      }
+      webhook_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          notification_id: string | null
+          payload: Json
+          platform: string
+          processed_at: string | null
+          processing_error: string | null
+          received_at: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          notification_id?: string | null
+          payload: Json
+          platform: string
+          processed_at?: string | null
+          processing_error?: string | null
+          received_at?: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          notification_id?: string | null
+          payload?: Json
+          platform?: string
+          processed_at?: string | null
+          processing_error?: string | null
+          received_at?: string
         }
         Relationships: []
       }
