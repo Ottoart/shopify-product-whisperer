@@ -43,7 +43,26 @@ serve(async (req: Request) => {
   }
 
   try {
+    console.log('=== eBay Webhook Handler Debug ===');
     console.log('Received eBay webhook:', req.method, req.url);
+    console.log('EBAY_VERIFICATION_TOKEN exists:', !!EBAY_VERIFICATION_TOKEN);
+    console.log('EBAY_VERIFICATION_TOKEN length:', EBAY_VERIFICATION_TOKEN?.length);
+    
+    // Test basic endpoint access
+    if (req.method === 'GET' && !req.url.includes('challenge_code')) {
+      return new Response(JSON.stringify({
+        status: 'eBay webhook handler is running',
+        hasVerificationToken: !!EBAY_VERIFICATION_TOKEN,
+        tokenLength: EBAY_VERIFICATION_TOKEN?.length,
+        endpoint: 'https://rtaomiqsnctigleqjojt.supabase.co/functions/v1/ebay-webhook-handler'
+      }), {
+        status: 200,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
+      });
+    }
     
     // Handle eBay verification requests (GET with challenge parameters)
     if (req.method === 'GET') {
@@ -84,10 +103,22 @@ serve(async (req: Request) => {
           }
         });
       } else {
-        console.log('Missing challenge_code or verification token');
-        return new Response('Missing challenge_code or verification token', { 
+        console.log('Missing challenge_code or verification token:', {
+          hasChallengeCode: !!challengeCode,
+          hasVerificationToken: !!EBAY_VERIFICATION_TOKEN,
+          challengeCode,
+          verificationTokenLength: EBAY_VERIFICATION_TOKEN?.length
+        });
+        return new Response(JSON.stringify({
+          error: 'Missing challenge_code or verification token',
+          hasChallengeCode: !!challengeCode,
+          hasVerificationToken: !!EBAY_VERIFICATION_TOKEN
+        }), { 
           status: 400,
-          headers: corsHeaders 
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json'
+          }
         });
       }
     }
