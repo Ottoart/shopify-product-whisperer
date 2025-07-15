@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useOrders, type Order } from "@/hooks/useOrders";
 import { supabase } from "@/integrations/supabase/client";
 import { ProductDetailsDialog } from './ProductDetailsDialog';
-import { TableColumnResizer } from './TableColumnResizer';
+
 import { 
   Search, 
   Filter, 
@@ -390,7 +390,6 @@ export function OrderManagement() {
 
         {/* Orders Table */}
         <div className="flex-1 overflow-auto">
-          <TableColumnResizer tableSelector=".orders-table" />
           <Table className="orders-table">
             <TableHeader className="sticky top-0 bg-background">
               <TableRow className="bg-muted/50">
