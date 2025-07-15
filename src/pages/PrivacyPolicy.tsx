@@ -98,14 +98,15 @@ const PrivacyPolicy = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>4. Amazon Marketplace Data</CardTitle>
+            <CardTitle>4. Marketplace Data Protection</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
+            <h4 className="font-semibold text-lg">Amazon Marketplace Data</h4>
             <p>
               As an Amazon Selling Partner API (SP-API) application, we handle Amazon marketplace data with special care:
             </p>
 
-            <h4 className="font-semibold">Amazon Information Usage</h4>
+            <h5 className="font-semibold">Amazon Information Usage</h5>
             <ul className="list-disc pl-6 space-y-2">
               <li>Product listing management and optimization</li>
               <li>Order processing and fulfillment coordination</li>
@@ -114,7 +115,7 @@ const PrivacyPolicy = () => {
               <li>Customer communication in accordance with Amazon policies</li>
             </ul>
 
-            <h4 className="font-semibold">Personally Identifiable Information (PII)</h4>
+            <h5 className="font-semibold">Amazon PII Handling</h5>
             <p>
               We access Amazon customer PII solely for:
             </p>
@@ -125,10 +126,94 @@ const PrivacyPolicy = () => {
               <li>Tax invoice generation when required</li>
             </ul>
 
-            <h4 className="font-semibold">Data Retention</h4>
             <p>
               Amazon customer PII is retained for more than 180 days after order shipment to comply with tax regulations, warranty obligations, and business record requirements. All Amazon data is handled in strict accordance with Amazon's Data Protection Policy.
             </p>
+
+            <div className="border-t pt-4 mt-6">
+              <h4 className="font-semibold text-lg">eBay Marketplace Data</h4>
+              <p>
+                As an eBay Developer Program participant, we comply with eBay's API License Agreement and Developer Program policies:
+              </p>
+
+              <h5 className="font-semibold">eBay Information Usage</h5>
+              <ul className="list-disc pl-6 space-y-2">
+                <li>Listing creation, management, and optimization across eBay platforms</li>
+                <li>Order management and fulfillment processing</li>
+                <li>Inventory synchronization and stock level management</li>
+                <li>Buyer-seller communication facilitation</li>
+                <li>Transaction monitoring and reporting</li>
+                <li>Fee calculation and financial reconciliation</li>
+              </ul>
+
+              <h5 className="font-semibold">eBay User Data Protection</h5>
+              <ul className="list-disc pl-6 space-y-2">
+                <li>User contact information is used only for transaction-related communications</li>
+                <li>Buyer shipping addresses are processed solely for order fulfillment</li>
+                <li>Payment information is handled through eBay's secure payment systems</li>
+                <li>User behavioral data is used only for listing optimization and fraud prevention</li>
+                <li>All data access complies with eBay's user privacy expectations</li>
+              </ul>
+
+              <h5 className="font-semibold">eBay Compliance Standards</h5>
+              <ul className="list-disc pl-6 space-y-2">
+                <li>No unauthorized data sharing with third parties</li>
+                <li>Secure data transmission using industry-standard encryption</li>
+                <li>Regular security audits and vulnerability assessments</li>
+                <li>Adherence to eBay's API rate limits and usage policies</li>
+                <li>Immediate incident reporting to eBay for security breaches</li>
+              </ul>
+            </div>
+
+            <div className="border-t pt-4 mt-6">
+              <h4 className="font-semibold text-lg">Walmart Marketplace Data</h4>
+              <p>
+                As a Walmart Marketplace Partner, we maintain strict compliance with Walmart's Partner API requirements and data protection standards:
+              </p>
+
+              <h5 className="font-semibold">Walmart Information Usage</h5>
+              <ul className="list-disc pl-6 space-y-2">
+                <li>Product catalog management and item setup</li>
+                <li>Inventory management and stock level updates</li>
+                <li>Order processing and shipment coordination</li>
+                <li>Price management and competitive analysis</li>
+                <li>Performance metrics tracking and reporting</li>
+                <li>Customer review and feedback management</li>
+              </ul>
+
+              <h5 className="font-semibold">Walmart Customer Data Handling</h5>
+              <ul className="list-disc pl-6 space-y-2">
+                <li>Customer shipping information is used exclusively for order fulfillment</li>
+                <li>Order details are processed to ensure accurate delivery</li>
+                <li>Customer communication is limited to order-related inquiries</li>
+                <li>Returns and refund data is managed according to Walmart policies</li>
+                <li>No customer data is used for marketing without explicit consent</li>
+              </ul>
+
+              <h5 className="font-semibold">Walmart Security Requirements</h5>
+              <ul className="list-disc pl-6 space-y-2">
+                <li>SOC 2 Type II compliance for data handling procedures</li>
+                <li>End-to-end encryption for all data transmissions</li>
+                <li>Multi-factor authentication for API access</li>
+                <li>Regular penetration testing and security assessments</li>
+                <li>24/7 monitoring and incident response capabilities</li>
+                <li>Data backup and disaster recovery procedures</li>
+              </ul>
+            </div>
+
+            <div className="border-t pt-4 mt-6">
+              <h4 className="font-semibold text-lg">Cross-Platform Data Management</h4>
+              <p>
+                When managing data across multiple marketplaces, we ensure:
+              </p>
+              <ul className="list-disc pl-6 space-y-2">
+                <li>Platform-specific data is kept segregated and secure</li>
+                <li>Cross-platform analytics respect each marketplace's privacy requirements</li>
+                <li>Unified reporting maintains individual platform data boundaries</li>
+                <li>Customer data from different platforms is never combined without consent</li>
+                <li>Each marketplace's specific compliance requirements are individually met</li>
+              </ul>
+            </div>
           </CardContent>
         </Card>
 
@@ -300,9 +385,15 @@ const PrivacyPolicy = () => {
             </p>
             <ul className="list-disc pl-6 space-y-2">
               <li>Amazon Selling Partner API Data Protection Policy</li>
+              <li>eBay Developer Program API License Agreement</li>
+              <li>eBay User Privacy Notice compliance requirements</li>
+              <li>Walmart Marketplace Partner API Terms of Service</li>
+              <li>Walmart Global Data Protection Standards</li>
               <li>Canadian Personal Information Protection and Electronic Documents Act (PIPEDA)</li>
               <li>California Consumer Privacy Act (CCPA) where applicable</li>
               <li>General Data Protection Regulation (GDPR) for EU users</li>
+              <li>PCI DSS compliance for payment data handling</li>
+              <li>SOC 2 Type II certification for security controls</li>
             </ul>
             <p>
               We regularly review and update our practices to ensure ongoing compliance with evolving privacy standards.
