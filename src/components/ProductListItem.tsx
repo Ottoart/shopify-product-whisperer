@@ -92,6 +92,43 @@ export const ProductListItem = ({
 
     setIsSaving(true);
     try {
+      // Track edits before saving
+      const editsToTrack = [
+        { field: 'title', before: product.title, after: editedProduct.title },
+        { field: 'vendor', before: product.vendor, after: editedProduct.vendor },
+        { field: 'type', before: product.type, after: editedProduct.type },
+        { field: 'tags', before: product.tags, after: editedProduct.tags },
+        { field: 'variant_price', before: product.variantPrice?.toString(), after: editedProduct.variantPrice?.toString() },
+        { field: 'variant_compare_at_price', before: product.variantCompareAtPrice?.toString(), after: editedProduct.variantCompareAtPrice?.toString() },
+        { field: 'variant_sku', before: product.variantSku, after: editedProduct.variantSku },
+        { field: 'variant_inventory_qty', before: product.variantInventoryQty?.toString(), after: editedProduct.variantInventoryQty?.toString() }
+      ];
+
+      // Filter out unchanged fields and track each edit
+      const changedEdits = editsToTrack.filter(edit => 
+        (edit.before || '') !== (edit.after || '')
+      );
+
+      console.log('Tracking edits for product:', product.handle, changedEdits);
+
+      // Track each edit in the edit history
+      for (const edit of changedEdits) {
+        try {
+          await supabase
+            .from('product_edit_history')
+            .insert({
+              user_id: session.user.id,
+              product_handle: product.handle,
+              field_name: edit.field,
+              before_value: edit.before || '',
+              after_value: edit.after || '',
+              edit_type: 'manual'
+            });
+        } catch (editError) {
+          console.error('Error tracking edit:', editError);
+        }
+      }
+
       const { error } = await supabase
         .from('products')
         .update({
@@ -112,7 +149,7 @@ export const ProductListItem = ({
 
       toast({
         title: "Product Updated",
-        description: "Changes saved successfully",
+        description: `Changes saved successfully${changedEdits.length > 0 ? ` (${changedEdits.length} edits tracked for AI learning)` : ''}`,
       });
 
       setIsEditing(false);

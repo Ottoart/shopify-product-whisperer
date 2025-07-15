@@ -66,6 +66,7 @@ export const LearningDashboard = () => {
   const [isRefreshingExamples, setIsRefreshingExamples] = useState(false);
   const [stats, setStats] = useState<PatternStats | null>(null);
   const [isDeletingEdit, setIsDeletingEdit] = useState<string | null>(null);
+  const [totalEditCount, setTotalEditCount] = useState<number>(0);
   const { session } = useSessionContext();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useTabPersistence('learning-dashboard', 'overview');
@@ -75,8 +76,14 @@ export const LearningDashboard = () => {
     console.log('Expected user ID from patterns:', '3a393edd-271d-4d32-b18d-e10fce7ee248');
     if (session?.user?.id) {
       loadPatterns();
+      loadTotalEditCount();
     }
   }, [session?.user?.id]);
+
+  const loadTotalEditCount = async () => {
+    const count = await getTotalEditHistoryCount();
+    setTotalEditCount(count);
+  };
 
   const loadPatterns = async (showProgress = false) => {
     if (showProgress) {
@@ -240,7 +247,34 @@ export const LearningDashboard = () => {
       case 'description_formatting': return 'description';
       case 'tag_preferences': return 'tags';
       case 'type_categorization': return 'type';
+      case 'vendor_preferences': return 'vendor';
+      case 'pricing_patterns': return 'variant_price';
+      case 'sku_formatting': return 'variant_sku';
+      case 'inventory_management': return 'variant_inventory_qty';
       default: return 'title';
+    }
+  };
+
+  // Add function to get total edit history count
+  const getTotalEditHistoryCount = async () => {
+    if (!session?.user?.id) return 0;
+    
+    try {
+      const { count, error } = await supabase
+        .from('product_edit_history')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', session.user.id)
+        .eq('edit_type', 'manual');
+      
+      if (error) {
+        console.error('Error getting edit history count:', error);
+        return 0;
+      }
+      
+      return count || 0;
+    } catch (error) {
+      console.error('Error getting edit history count:', error);
+      return 0;
     }
   };
 
@@ -1051,7 +1085,7 @@ export const LearningDashboard = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
                         <h5 className="font-medium mb-2">Most Learned Pattern</h5>
                         <p className="text-sm text-muted-foreground capitalize">
@@ -1062,6 +1096,12 @@ export const LearningDashboard = () => {
                         <h5 className="font-medium mb-2">Recent Activity</h5>
                         <p className="text-sm text-muted-foreground">
                           {stats?.recentActivity || 0} patterns learned this week
+                        </p>
+                      </div>
+                      <div className="p-4 bg-purple-50 dark:bg-purple-950 rounded-lg">
+                        <h5 className="font-medium mb-2">Total Edit History</h5>
+                        <p className="text-sm text-muted-foreground">
+                          {totalEditCount} manual edits tracked
                         </p>
                       </div>
                     </div>
