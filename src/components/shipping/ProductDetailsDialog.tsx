@@ -49,13 +49,26 @@ export function ProductDetailsDialog({ isOpen, onClose, productHandle, productTi
   const fetchProductDetails = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      // First try to find by handle
+      let { data, error } = await supabase
         .from('products')
         .select('*')
         .eq('handle', productHandle)
         .maybeSingle();
 
       if (error) throw error;
+      
+      // If no product found by handle, try to find by title match
+      if (!data) {
+        ({ data, error } = await supabase
+          .from('products')
+          .select('*')
+          .ilike('title', `%${productTitle}%`)
+          .limit(1)
+          .maybeSingle());
+          
+        if (error) throw error;
+      }
       
       if (data) {
         setProduct(data);
@@ -127,7 +140,7 @@ export function ProductDetailsDialog({ isOpen, onClose, productHandle, productTi
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto" aria-describedby="product-details-description">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             Edit Product Details
@@ -142,6 +155,9 @@ export function ProductDetailsDialog({ isOpen, onClose, productHandle, productTi
             </Button>
           </DialogTitle>
         </DialogHeader>
+        <div id="product-details-description" className="sr-only">
+          Edit product information including title, price, inventory, and other details
+        </div>
 
         {loading ? (
           <div className="flex items-center justify-center py-8">
