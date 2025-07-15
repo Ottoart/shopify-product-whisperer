@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -31,6 +31,7 @@ export const ProductListItem = ({
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [storeConfig, setStoreConfig] = useState<{domain: string} | null>(null);
   const [editedProduct, setEditedProduct] = useState({
     title: product.title,
     vendor: product.vendor,
@@ -45,12 +46,43 @@ export const ProductListItem = ({
   const { session } = useSessionContext();
   const { toast } = useToast();
 
+  useEffect(() => {
+    const fetchStoreConfig = async () => {
+      if (!session?.user?.id) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('store_configurations')
+          .select('domain')
+          .eq('user_id', session.user.id)
+          .eq('is_active', true)
+          .single();
+          
+        if (error) throw error;
+        setStoreConfig(data);
+      } catch (error) {
+        console.error('Error fetching store config:', error);
+      }
+    };
+
+    fetchStoreConfig();
+  }, [session?.user?.id]);
+
   const getProductUrl = (handle: string) => {
     if (storeUrl && storeUrl.trim()) {
       const cleanUrl = storeUrl.replace(/\/+$/, '');
       return `${cleanUrl}/products/${handle}`;
     }
     return null;
+  };
+
+  const getShopifyAdminUrl = (handle: string) => {
+    if (!storeConfig?.domain) {
+      return null;
+    }
+    
+    const storeName = storeConfig.domain.replace('.myshopify.com', '');
+    return `https://admin.shopify.com/store/${storeName}/products/${handle}`;
   };
 
   const handleSave = async () => {
@@ -380,12 +412,13 @@ export const ProductListItem = ({
                   >
                     <Edit3 className="h-3 w-3" />
                   </Button>
-                  {getProductUrl(product.handle) && (
+                  {getShopifyAdminUrl(product.handle) && (
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => window.open(getProductUrl(product.handle)!, '_blank')}
+                      onClick={() => window.open(getShopifyAdminUrl(product.handle)!, '_blank')}
                       className="transition-all duration-300 hover:scale-105"
+                      title="Edit product in Shopify"
                     >
                       <ExternalLink className="h-3 w-3" />
                     </Button>
