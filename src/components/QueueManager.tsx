@@ -123,6 +123,83 @@ REQUIREMENTS:
   const [showBulkWarning, setShowBulkWarning] = useState(false);
   const { toast } = useToast();
 
+  // Helper function to provide user-friendly error messages and solutions
+  const getUserFriendlyError = (error: any) => {
+    const errorMessage = error.message || '';
+    const errorName = error.name || '';
+    
+    // Session/Authentication errors
+    if (errorMessage.includes('non-2xx status code') || 
+        errorMessage.includes('Session not found') ||
+        errorMessage.includes('403') ||
+        errorName === 'FunctionsHttpError') {
+      return {
+        title: "Session Expired",
+        message: "Your login session has expired. Please sign out and sign back in to continue.",
+        solution: "Click your email in the top right corner, select 'Sign Out', then sign back in with your credentials."
+      };
+    }
+    
+    // OpenAI API errors
+    if (errorMessage.includes('429') || errorMessage.includes('rate limit')) {
+      return {
+        title: "Rate Limit Exceeded",
+        message: "Too many requests to OpenAI. The system will automatically retry with longer delays.",
+        solution: "Please wait a moment and try again. Consider processing fewer products at once."
+      };
+    }
+    
+    if (errorMessage.includes('401') && errorMessage.includes('OpenAI')) {
+      return {
+        title: "Invalid API Key",
+        message: "The OpenAI API key is missing or invalid.",
+        solution: "Please check your OpenAI API key in the project settings and ensure it's valid."
+      };
+    }
+    
+    if (errorMessage.includes('quota') || errorMessage.includes('insufficient_quota')) {
+      return {
+        title: "OpenAI Quota Exceeded",
+        message: "Your OpenAI API quota has been exceeded.",
+        solution: "Please check your OpenAI billing and add credits to your account."
+      };
+    }
+    
+    // Shopify integration errors
+    if (errorMessage.includes('Shopify') || errorMessage.includes('shopify')) {
+      return {
+        title: "Shopify Integration Error",
+        message: "Failed to sync changes to your Shopify store.",
+        solution: "Check your Shopify store credentials and ensure the store is accessible."
+      };
+    }
+    
+    // Network/Connection errors
+    if (errorMessage.includes('network') || errorMessage.includes('connection') || errorMessage.includes('timeout')) {
+      return {
+        title: "Connection Error",
+        message: "Network connection issue preventing the operation from completing.",
+        solution: "Please check your internet connection and try again."
+      };
+    }
+    
+    // Database errors
+    if (errorMessage.includes('database') || errorMessage.includes('supabase')) {
+      return {
+        title: "Database Error",
+        message: "An error occurred while saving your changes.",
+        solution: "Please try again. If the problem persists, contact support."
+      };
+    }
+    
+    // Generic fallback
+    return {
+      title: "Processing Error",
+      message: `An unexpected error occurred: ${errorMessage}`,
+      solution: "Please try again. If the problem persists, check the console for more details or contact support."
+    };
+  };
+
   const completedCount = queueItems.filter(item => item.status === 'completed').length;
   const errorCount = queueItems.filter(item => item.status === 'error').length;
   const progress = queueItems.length > 0 ? (completedCount / queueItems.length) * 100 : 0;
@@ -432,21 +509,28 @@ REQUIREMENTS:
           
       } catch (error: any) {
         console.error(`Error processing ${product.title}:`, error);
-        let errorMessage = `Failed: ${error.message}`;
         
-        if (error.message.includes('429') || error.message.includes('rate limit')) {
-          errorMessage = 'OpenAI rate limited - will retry with longer delays';
-        } else if (error.message.includes('non-2xx status code')) {
-          errorMessage = 'API error - check logs for details';
-        }
+        // Get user-friendly error message
+        const friendlyError = getUserFriendlyError(error);
         
-        onUpdateStatus(item.productId, 'error', errorMessage);
+        onUpdateStatus(item.productId, 'error', friendlyError.message);
         
         toast({
-          title: "Processing Error",
-          description: `${product.title}: ${errorMessage}`,
+          title: friendlyError.title,
+          description: `${product.title}: ${friendlyError.message}`,
           variant: "destructive",
         });
+        
+        // Show additional solution as a follow-up toast for critical errors
+        if (friendlyError.title === "Session Expired" || friendlyError.title === "Invalid API Key") {
+          setTimeout(() => {
+            toast({
+              title: "How to Fix",
+              description: friendlyError.solution,
+              variant: "default",
+            });
+          }, 2000);
+        }
       }
     }
     
@@ -839,11 +923,26 @@ REQUIREMENTS:
               });
             } catch (error: any) {
               setCurrentProcessing(null);
+              
+              // Get user-friendly error message for reprocessing
+              const friendlyError = getUserFriendlyError(error);
+              
               toast({
-                title: "Reprocessing Failed",
-                description: error.message || "Failed to reprocess product.",
+                title: friendlyError.title,
+                description: friendlyError.message,
                 variant: "destructive",
               });
+              
+              // Show solution for critical errors
+              if (friendlyError.title === "Session Expired" || friendlyError.title === "Invalid API Key") {
+                setTimeout(() => {
+                  toast({
+                    title: "How to Fix",
+                    description: friendlyError.solution,
+                    variant: "default",
+                  });
+                }, 2000);
+              }
             }
           }}
         />

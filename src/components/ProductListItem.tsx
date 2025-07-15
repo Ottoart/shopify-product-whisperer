@@ -49,6 +49,50 @@ export const ProductListItem = ({
   const { session } = useSessionContext();
   const { toast } = useToast();
 
+  // Helper function to provide user-friendly error messages and solutions
+  const getUserFriendlyError = (error: any) => {
+    const errorMessage = error.message || '';
+    const errorName = error.name || '';
+    
+    // Session/Authentication errors
+    if (errorMessage.includes('new row violates row-level security') ||
+        errorMessage.includes('permission denied') ||
+        errorMessage.includes('JWT') ||
+        errorMessage.includes('session') ||
+        errorName === 'AuthError') {
+      return {
+        title: "Session Expired",
+        message: "Your login session has expired. Please sign out and sign back in to continue.",
+        solution: "Click your email in the top right corner, select 'Sign Out', then sign back in with your credentials."
+      };
+    }
+    
+    // Database connection errors
+    if (errorMessage.includes('connection') || errorMessage.includes('network') || errorMessage.includes('timeout')) {
+      return {
+        title: "Connection Error",
+        message: "Network connection issue preventing save.",
+        solution: "Please check your internet connection and try again."
+      };
+    }
+    
+    // Validation errors
+    if (errorMessage.includes('invalid') || errorMessage.includes('constraint') || errorMessage.includes('violates')) {
+      return {
+        title: "Validation Error",
+        message: "Some product data is invalid or missing required fields.",
+        solution: "Please check all required fields are filled out correctly."
+      };
+    }
+    
+    // Generic fallback
+    return {
+      title: "Save Failed",
+      message: `Failed to save changes: ${errorMessage}`,
+      solution: "Please try again. If the problem persists, contact support."
+    };
+  };
+
   useEffect(() => {
     const fetchStoreConfig = async () => {
       if (!session?.user?.id) return;
@@ -172,11 +216,26 @@ export const ProductListItem = ({
       }, 100);
     } catch (error) {
       console.error('Error saving product:', error);
+      
+      // Get user-friendly error message
+      const friendlyError = getUserFriendlyError(error);
+      
       toast({
-        title: "Save Failed",
-        description: "Failed to save changes. Please try again.",
+        title: friendlyError.title,
+        description: friendlyError.message,
         variant: "destructive",
       });
+      
+      // Show solution for critical errors
+      if (friendlyError.title === "Session Expired") {
+        setTimeout(() => {
+          toast({
+            title: "How to Fix",
+            description: friendlyError.solution,
+            variant: "default",
+          });
+        }, 2000);
+      }
     } finally {
       setIsSaving(false);
     }
