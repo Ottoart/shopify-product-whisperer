@@ -156,13 +156,20 @@ export const ProductListItem = ({
 
       if (error) throw error;
 
+      console.log('Product saved successfully, calling onProductUpdated');
+      
       toast({
         title: "Product Updated",
         description: `Changes saved successfully${changedEdits.length > 0 ? ` (${changedEdits.length} edits tracked for AI learning)` : ''}`,
       });
 
       setIsEditing(false);
-      onProductUpdated();
+      
+      // Add a small delay to ensure database transaction is committed
+      setTimeout(() => {
+        console.log('Calling onProductUpdated after delay');
+        onProductUpdated();
+      }, 100);
     } catch (error) {
       console.error('Error saving product:', error);
       toast({
