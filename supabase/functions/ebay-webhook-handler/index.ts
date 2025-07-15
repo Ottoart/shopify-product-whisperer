@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3';
+import { crypto } from "https://deno.land/std@0.168.0/crypto/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,25 +15,25 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 // eBay webhook verification token - you'll set this in Supabase secrets
 const EBAY_VERIFICATION_TOKEN = Deno.env.get('EBAY_VERIFICATION_TOKEN');
 
-interface EbayWebhookEvent {
+interface EbayWebhookNotification {
   notificationId: string;
-  publishedDate: string;
-  notificationType: string;
-  implementationName: string;
-  version: string;
-  payload: {
+  eventDate: string;
+  publishDate: string;
+  publishAttemptCount: number;
+  data: {
+    username: string;
     userId: string;
     eiasToken: string;
-    notificationEventType: string;
-    timestamp: string;
-    eventId: string;
   };
 }
 
 interface EbayWebhookRequest {
-  notification: EbayWebhookEvent;
-  timestamp: string;
-  signature: string;
+  metadata: {
+    topic: string;
+    schemaVersion: string;
+    deprecated: boolean;
+  };
+  notification: EbayWebhookNotification;
 }
 
 serve(async (req: Request) => {
@@ -47,35 +48,47 @@ serve(async (req: Request) => {
     // Handle eBay verification requests (GET with challenge parameters)
     if (req.method === 'GET') {
       const url = new URL(req.url);
-      const challenge = url.searchParams.get('challenge_code');
-      const verificationToken = url.searchParams.get('verification_token');
+      const challengeCode = url.searchParams.get('challenge_code');
       
-      console.log('eBay verification request:', { challenge, verificationToken });
+      console.log('eBay verification request:', { challengeCode, url: req.url });
       
-      if (challenge && verificationToken) {
-        if (verificationToken === EBAY_VERIFICATION_TOKEN) {
-          console.log('Verification successful, returning challenge');
-          return new Response(challenge, { 
-            status: 200,
-            headers: {
-              ...corsHeaders,
-              'Content-Type': 'text/plain'
-            }
-          });
-        } else {
-          console.log('Verification failed - token mismatch');
-          return new Response('Verification failed', { 
-            status: 401,
-            headers: corsHeaders 
-          });
-        }
+      if (challengeCode && EBAY_VERIFICATION_TOKEN) {
+        // According to eBay docs, we need to hash: challengeCode + verificationToken + endpoint
+        const endpoint = req.url;
+        const dataToHash = challengeCode + EBAY_VERIFICATION_TOKEN + endpoint;
+        
+        console.log('Hashing data:', {
+          challengeCode,
+          verificationToken: EBAY_VERIFICATION_TOKEN,
+          endpoint
+        });
+        
+        // Create SHA-256 hash
+        const encoder = new TextEncoder();
+        const data = encoder.encode(dataToHash);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const challengeResponse = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        
+        console.log('Generated challenge response:', challengeResponse);
+        
+        // Return JSON response with challengeResponse field
+        return new Response(JSON.stringify({
+          challengeResponse: challengeResponse
+        }), {
+          status: 200,
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json'
+          }
+        });
+      } else {
+        console.log('Missing challenge_code or verification token');
+        return new Response('Missing challenge_code or verification token', { 
+          status: 400,
+          headers: corsHeaders 
+        });
       }
-      
-      // If no challenge parameters, treat as invalid request
-      return new Response('Invalid verification request', { 
-        status: 400,
-        headers: corsHeaders 
-      });
     }
     
     // Handle POST requests (actual webhook notifications)
@@ -103,27 +116,27 @@ serve(async (req: Request) => {
       return new Response('Invalid JSON', { status: 400 });
     }
 
-    const { notification } = webhookData;
+    const { notification, metadata } = webhookData;
     
     console.log('Processing eBay notification:', {
       notificationId: notification.notificationId,
-      notificationType: notification.notificationType,
-      eventType: notification.payload?.notificationEventType,
-      userId: notification.payload?.userId
+      topic: metadata.topic,
+      userId: notification.data.userId,
+      username: notification.data.username
     });
 
     // Handle different notification types
-    switch (notification.notificationType) {
+    switch (metadata.topic) {
       case 'MARKETPLACE_ACCOUNT_DELETION':
         await handleMarketplaceAccountDeletion(notification);
         break;
       
       default:
-        console.log('Unhandled notification type:', notification.notificationType);
+        console.log('Unhandled notification type:', metadata.topic);
     }
 
     // Log the webhook event for debugging
-    await logWebhookEvent(notification, webhookData.timestamp);
+    await logWebhookEvent(notification, metadata.topic);
 
     // Respond with 200 OK to acknowledge receipt
     return new Response(JSON.stringify({ 
@@ -154,13 +167,13 @@ serve(async (req: Request) => {
   }
 });
 
-async function handleMarketplaceAccountDeletion(notification: EbayWebhookEvent) {
-  const { userId, eiasToken, eventId } = notification.payload;
+async function handleMarketplaceAccountDeletion(notification: EbayWebhookNotification) {
+  const { userId, eiasToken, username } = notification.data;
   
   console.log('Handling marketplace account deletion:', {
     userId,
     eiasToken,
-    eventId
+    username
   });
 
   try {
@@ -208,16 +221,16 @@ async function handleMarketplaceAccountDeletion(notification: EbayWebhookEvent) 
   }
 }
 
-async function logWebhookEvent(notification: EbayWebhookEvent, timestamp: string) {
+async function logWebhookEvent(notification: EbayWebhookNotification, eventType: string) {
   try {
     const { error } = await supabase
       .from('webhook_events')
       .insert({
         platform: 'ebay',
-        event_type: notification.notificationType,
+        event_type: eventType,
         notification_id: notification.notificationId,
         payload: notification,
-        received_at: timestamp,
+        received_at: notification.publishDate,
         processed_at: new Date().toISOString()
       });
 
