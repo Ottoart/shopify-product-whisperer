@@ -313,7 +313,7 @@ export function DuplicateDetectionTool() {
     }
   };
 
-  // Generate Shopify admin URL
+  // Generate Shopify admin URL for editing
   const getShopifyAdminUrl = (product: Product) => {
     if (!storeConfig?.domain) {
       return `/bulk-editor?search=${encodeURIComponent(product.title)}`;
@@ -322,8 +322,19 @@ export function DuplicateDetectionTool() {
     // Extract store name from domain (e.g., "protoys.myshopify.com" -> "protoys")
     const storeName = storeConfig.domain.replace('.myshopify.com', '');
     
-    // Use the handle to construct the URL - Shopify typically uses handle in admin URLs
-    return `https://admin.shopify.com/store/${storeName}/products/${product.handle}`;
+    // Use the product ID to construct the admin URL
+    return `https://admin.shopify.com/store/${storeName}/products/${product.id}`;
+  };
+
+  // Generate product page URL for viewing
+  const getProductPageUrl = (product: Product) => {
+    if (!storeConfig?.domain) {
+      return `/bulk-editor?search=${encodeURIComponent(product.title)}`;
+    }
+    
+    // Use the domain and handle to construct the public product URL
+    const domain = storeConfig.domain.replace('.myshopify.com', '');
+    return `https://${domain}.ca/products/${product.handle}`;
   };
 
   useEffect(() => {
@@ -536,19 +547,27 @@ export function DuplicateDetectionTool() {
                            <div className="flex items-center gap-2">
                              <Button
                                size="sm"
-                               variant="ghost"
-                               onClick={() => window.open(getShopifyAdminUrl(product), '_blank')}
-                               title="Edit product in Shopify"
-                             >
-                               <ExternalLink className="h-4 w-4" />
-                             </Button>
-                             <Button
-                               size="sm"
                                variant="outline"
                                onClick={() => handleDeleteProduct(product.id, product.title, group.id)}
                                title={`Delete "${product.title}" permanently`}
                              >
                                <Trash2 className="h-4 w-4" />
+                             </Button>
+                             <Button
+                               size="sm"
+                               variant="ghost"
+                               onClick={() => window.open(getProductPageUrl(product), '_blank')}
+                               title="View product page"
+                             >
+                               <Eye className="h-4 w-4" />
+                             </Button>
+                             <Button
+                               size="sm"
+                               variant="ghost"
+                               onClick={() => window.open(getShopifyAdminUrl(product), '_blank')}
+                               title="Edit product in Shopify"
+                             >
+                               <Edit3 className="h-4 w-4" />
                              </Button>
                            </div>
                         </div>
