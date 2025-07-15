@@ -53,9 +53,9 @@ export function StoreConnectionFlow({ open, onOpenChange, onSuccess }: StoreConn
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden p-0">
+      <DialogContent className="max-w-4xl w-[95vw] max-h-[95vh] overflow-hidden p-0 flex flex-col">
         {/* Progress indicator */}
-        <div className="flex items-center justify-center p-4 border-b bg-muted/30">
+        <div className="flex items-center justify-center p-4 border-b bg-muted/30 flex-shrink-0">
           <div className="flex items-center gap-2">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
               currentStep === "select" ? "bg-primary text-primary-foreground" : 
@@ -85,7 +85,7 @@ export function StoreConnectionFlow({ open, onOpenChange, onSuccess }: StoreConn
           </div>
         </div>
 
-        <div className="p-6 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto p-6 min-h-0">
           {currentStep === "select" && (
             <StoreSelector onSelect={handleMarketplaceSelect} />
           )}
