@@ -69,6 +69,8 @@ export const LearningDashboard = () => {
   const [activeTab, setActiveTab] = useTabPersistence('learning-dashboard', 'overview');
 
   useEffect(() => {
+    console.log('Session user ID:', session?.user?.id);
+    console.log('Expected user ID from patterns:', '3a393edd-271d-4d32-b18d-e10fce7ee248');
     if (session?.user?.id) {
       loadPatterns();
     }
