@@ -12,8 +12,9 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-// eBay webhook verification token - you'll set this in Supabase secrets
+// eBay configuration - you'll set these in Supabase secrets
 const EBAY_VERIFICATION_TOKEN = Deno.env.get('EBAY_VERIFICATION_TOKEN');
+const EBAY_APP_ID = Deno.env.get('EBAY_APP_ID'); // Your App ID for reference
 
 interface EbayWebhookNotification {
   notificationId: string;
@@ -54,6 +55,7 @@ serve(async (req: Request) => {
         status: 'eBay webhook handler is running',
         hasVerificationToken: !!EBAY_VERIFICATION_TOKEN,
         tokenLength: EBAY_VERIFICATION_TOKEN?.length,
+        hasAppId: !!EBAY_APP_ID,
         endpoint: 'https://rtaomiqsnctigleqjojt.supabase.co/functions/v1/ebay-webhook-handler'
       }), {
         status: 200,
