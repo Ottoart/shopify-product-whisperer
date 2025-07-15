@@ -62,9 +62,19 @@ serve(async (req) => {
     
     // Use correct eBay OAuth scopes for new OAuth security
     const scopes = isProduction ? [
-      'https://api.ebay.com/oauth/api_scope'
+      'https://api.ebay.com/oauth/api_scope/sell.marketing.readonly',
+      'https://api.ebay.com/oauth/api_scope/sell.marketing',
+      'https://api.ebay.com/oauth/api_scope/sell.inventory.readonly',
+      'https://api.ebay.com/oauth/api_scope/sell.inventory',
+      'https://api.ebay.com/oauth/api_scope/sell.account.readonly',
+      'https://api.ebay.com/oauth/api_scope/sell.account'
     ] : [
-      'https://api.sandbox.ebay.com/oauth/api_scope'
+      'https://api.sandbox.ebay.com/oauth/api_scope/sell.marketing.readonly',
+      'https://api.sandbox.ebay.com/oauth/api_scope/sell.marketing',
+      'https://api.sandbox.ebay.com/oauth/api_scope/sell.inventory.readonly',
+      'https://api.sandbox.ebay.com/oauth/api_scope/sell.inventory',
+      'https://api.sandbox.ebay.com/oauth/api_scope/sell.account.readonly',
+      'https://api.sandbox.ebay.com/oauth/api_scope/sell.account'
     ];
     
     ebayAuthUrl.searchParams.set('scope', scopes.join(' '));
