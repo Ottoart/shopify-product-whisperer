@@ -39,6 +39,7 @@ const AppContent = () => {
       <BrowserRouter>
         <Routes>
           <Route path="/auth" element={<Auth />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="*" element={<Auth />} />
         </Routes>
       </BrowserRouter>
@@ -77,7 +78,7 @@ const AppContent = () => {
                 <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                 <Route path="/sync-status" element={<ProtectedRoute><SyncStatus /></ProtectedRoute>} />
-                <Route path="/privacy-policy" element={<ProtectedRoute><PrivacyPolicy /></ProtectedRoute>} />
+                
                 <Route path="/auth" element={<Auth />} />
                 <Route path="*" element={<ProtectedRoute><NotFound /></ProtectedRoute>} />
               </Routes>
