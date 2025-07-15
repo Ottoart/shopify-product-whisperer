@@ -140,33 +140,41 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const storeData = {
+    const marketplaceData = {
       user_id: userId,
-      store_name: storeName,
       platform: 'ebay',
-      domain: ebayUserId,
-      access_token: JSON.stringify({
-        access_token: tokenData.access_token,
-        refresh_token: tokenData.refresh_token,
-        expires_in: tokenData.expires_in,
+      external_user_id: ebayUserId,
+      access_token: tokenData.access_token,
+      refresh_token: tokenData.refresh_token,
+      token_expires_at: tokenData.expires_in ? 
+        new Date(Date.now() + tokenData.expires_in * 1000).toISOString() : null,
+      store_name: storeName,
+      store_url: null,
+      is_active: true,
+      metadata: {
         token_type: tokenData.token_type,
         scope: tokenData.scope,
         ebay_user_id: ebayUserId,
         ebay_username: ebayUsername,
         connected_at: new Date().toISOString()
-      }),
-      is_active: true
+      }
     };
 
+    console.log('Inserting marketplace configuration:', {
+      ...marketplaceData,
+      access_token: '[REDACTED]',
+      refresh_token: '[REDACTED]'
+    });
+
     const { data: storeConfig, error: dbError } = await supabase
-      .from('store_configurations')
-      .insert(storeData)
+      .from('marketplace_configurations')
+      .insert(marketplaceData)
       .select()
       .single();
 
     if (dbError) {
       console.error('Database error:', dbError);
-      throw new Error('Failed to save store configuration');
+      throw new Error(`Failed to save marketplace configuration: ${dbError.message}`);
     }
 
     // Success page with script to communicate with parent window
