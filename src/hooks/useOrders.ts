@@ -115,16 +115,16 @@ export const useOrders = () => {
         }, {} as Record<string, string>);
       }
 
-      // Then try to fetch by SKUs as handles (in case SKU is used as handle)
+      // Then try to fetch by SKUs as variant_sku
       if (productSkus.length > 0) {
         const { data: skuProductsData } = await supabase
           .from('products')
-          .select('handle, image_src')
-          .in('handle', productSkus);
+          .select('variant_sku, image_src')
+          .in('variant_sku', productSkus);
         
         skuImages = (skuProductsData || []).reduce((acc, product) => {
-          if (product.handle && product.image_src) {
-            acc[product.handle] = product.image_src;
+          if (product.variant_sku && product.image_src) {
+            acc[product.variant_sku] = product.image_src;
           }
           return acc;
         }, {} as Record<string, string>);
