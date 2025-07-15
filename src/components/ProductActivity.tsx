@@ -25,6 +25,7 @@ export const ProductActivity = ({ onProductsUpdated, storeUrl }: ProductActivity
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [storeConfig, setStoreConfig] = useState<{domain: string} | null>(null);
   const { session } = useSessionContext();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useTabPersistence('product-activity', 'recent');
@@ -108,6 +109,15 @@ export const ProductActivity = ({ onProductsUpdated, storeUrl }: ProductActivity
       return `${cleanUrl}/products/${handle}`;
     }
     return null;
+  };
+
+  const getShopifyAdminUrl = (handle: string) => {
+    if (!storeConfig?.domain) {
+      return null;
+    }
+    
+    const storeName = storeConfig.domain.replace('.myshopify.com', '');
+    return `https://admin.shopify.com/store/${storeName}/products/${handle}`;
   };
 
   const formatTimeAgo = (dateString: string) => {
@@ -300,6 +310,30 @@ export const ProductActivity = ({ onProductsUpdated, storeUrl }: ProductActivity
   };
 
   useEffect(() => {
+    const fetchStoreConfig = async () => {
+      if (!session?.user?.id) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('store_configurations')
+          .select('domain')
+          .eq('user_id', session.user.id)
+          .eq('is_active', true)
+          .limit(1);
+          
+        if (error) throw error;
+        if (data && data.length > 0) {
+          setStoreConfig(data[0]);
+        }
+      } catch (error) {
+        console.error('Error fetching store config:', error);
+      }
+    };
+
+    fetchStoreConfig();
+  }, [session?.user?.id]);
+
+  useEffect(() => {
     fetchActivityData();
   }, [session?.user?.id]);
 
@@ -427,11 +461,12 @@ export const ProductActivity = ({ onProductsUpdated, storeUrl }: ProductActivity
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
-                    {getProductUrl(product.handle) && (
+                    {getShopifyAdminUrl(product.handle) && (
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => window.open(getProductUrl(product.handle)!, '_blank')}
+                        onClick={() => window.open(getShopifyAdminUrl(product.handle)!, '_blank')}
+                        title="Edit product in Shopify"
                       >
                         <ExternalLink className="h-3 w-3" />
                       </Button>
@@ -517,11 +552,12 @@ export const ProductActivity = ({ onProductsUpdated, storeUrl }: ProductActivity
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
-                    {getProductUrl(product.handle) && (
+                    {getShopifyAdminUrl(product.handle) && (
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => window.open(getProductUrl(product.handle)!, '_blank')}
+                        onClick={() => window.open(getShopifyAdminUrl(product.handle)!, '_blank')}
+                        title="Edit product in Shopify"
                       >
                         <ExternalLink className="h-3 w-3" />
                       </Button>
