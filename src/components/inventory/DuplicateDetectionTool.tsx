@@ -435,21 +435,24 @@ export function DuplicateDetectionTool() {
                                       <CardTitle className="text-sm">
                                         {index === 0 ? "Master Product" : `Duplicate ${index}`}
                                       </CardTitle>
-                                      {index > 0 && (
-                                        <div className="flex gap-1">
-                                           <Button
-                                             size="sm"
-                                             variant="outline"
-                                             onClick={() => handleDeleteProduct(product.id, product.title, selectedGroup?.id)}
-                                             title="Delete this product permanently"
-                                           >
-                                             <Trash2 className="h-3 w-3" />
-                                           </Button>
-                                          <Button size="sm" variant="outline">
-                                            <Edit3 className="h-3 w-3" />
-                                          </Button>
-                                        </div>
-                                      )}
+                                      <div className="flex gap-1">
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => handleDeleteProduct(product.id, product.title, selectedGroup?.id)}
+                                          title="Delete this product permanently"
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                        </Button>
+                                        <Button 
+                                          size="sm" 
+                                          variant="outline"
+                                          onClick={() => window.open(`/bulk-editor?search=${encodeURIComponent(product.handle)}`, '_blank')}
+                                          title="Edit this product"
+                                        >
+                                          <Edit3 className="h-3 w-3" />
+                                        </Button>
+                                      </div>
                                     </div>
                                   </CardHeader>
                                   <CardContent className="space-y-2">
@@ -503,26 +506,24 @@ export function DuplicateDetectionTool() {
                               SKU: {product.variant_sku || 'N/A'} • Created: {new Date(product.created_at).toLocaleDateString()}
                             </p>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => window.open(`/bulk-editor?handle=${product.handle}`, '_blank')}
-                              title="View product details"
-                            >
-                              <ExternalLink className="h-4 w-4" />
-                            </Button>
-                             {index > 0 && (
-                               <Button
-                                 size="sm"
-                                 variant="outline"
-                                 onClick={() => handleDeleteProduct(product.id, product.title, group.id)}
-                                 title={`Delete "${product.title}" permanently`}
-                               >
-                                 <Trash2 className="h-4 w-4" />
-                               </Button>
-                             )}
-                          </div>
+                           <div className="flex items-center gap-2">
+                             <Button
+                               size="sm"
+                               variant="ghost"
+                               onClick={() => window.open(`/bulk-editor?search=${encodeURIComponent(product.handle)}`, '_blank')}
+                               title="View product details"
+                             >
+                               <ExternalLink className="h-4 w-4" />
+                             </Button>
+                             <Button
+                               size="sm"
+                               variant="outline"
+                               onClick={() => handleDeleteProduct(product.id, product.title, group.id)}
+                               title={`Delete "${product.title}" permanently`}
+                             >
+                               <Trash2 className="h-4 w-4" />
+                             </Button>
+                           </div>
                         </div>
                       ))}
                      </div>
