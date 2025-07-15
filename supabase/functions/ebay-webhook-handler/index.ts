@@ -44,7 +44,41 @@ serve(async (req: Request) => {
   try {
     console.log('Received eBay webhook:', req.method, req.url);
     
-    // Get request body and headers
+    // Handle eBay verification requests (GET with challenge parameters)
+    if (req.method === 'GET') {
+      const url = new URL(req.url);
+      const challenge = url.searchParams.get('challenge_code');
+      const verificationToken = url.searchParams.get('verification_token');
+      
+      console.log('eBay verification request:', { challenge, verificationToken });
+      
+      if (challenge && verificationToken) {
+        if (verificationToken === EBAY_VERIFICATION_TOKEN) {
+          console.log('Verification successful, returning challenge');
+          return new Response(challenge, { 
+            status: 200,
+            headers: {
+              ...corsHeaders,
+              'Content-Type': 'text/plain'
+            }
+          });
+        } else {
+          console.log('Verification failed - token mismatch');
+          return new Response('Verification failed', { 
+            status: 401,
+            headers: corsHeaders 
+          });
+        }
+      }
+      
+      // If no challenge parameters, treat as invalid request
+      return new Response('Invalid verification request', { 
+        status: 400,
+        headers: corsHeaders 
+      });
+    }
+    
+    // Handle POST requests (actual webhook notifications)
     const body = await req.text();
     const headers = Object.fromEntries(req.headers.entries());
     
