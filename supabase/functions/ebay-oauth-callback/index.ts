@@ -64,9 +64,15 @@ serve(async (req) => {
     }
 
     // Get eBay credentials from Supabase secrets
-    const ebayClientId = Deno.env.get('EBAY_CLIENT_ID');
-    const ebayClientSecret = Deno.env.get('EBAY_CLIENT_SECRET');
-    const ebayRuName = Deno.env.get('EBAY_RU_NAME'); // Redirect URI name registered with eBay
+    const ebayClientId = Deno.env.get('EBAY_CLIENT_ID')?.trim();
+    const ebayClientSecret = Deno.env.get('EBAY_CLIENT_SECRET')?.trim();
+    const ebayRuName = Deno.env.get('EBAY_RU_NAME')?.trim(); // Redirect URI name registered with eBay
+
+    console.log('Credentials validation:');
+    console.log('- Client ID exists:', !!ebayClientId);
+    console.log('- Client ID starts with:', ebayClientId?.substring(0, 10));
+    console.log('- Client secret exists:', !!ebayClientSecret);
+    console.log('- Client secret starts with:', ebayClientSecret?.substring(0, 10));
 
     if (!ebayClientId || !ebayClientSecret || !ebayRuName) {
       throw new Error('eBay credentials not configured');
