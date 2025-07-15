@@ -334,16 +334,6 @@ export function DuplicateDetectionTool() {
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-warning" />
               <CardTitle>Duplicate Detection Tool</CardTitle>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
-                    <p>Automatically scans your inventory to find duplicate listings based on title similarity, SKU matches, and other criteria. Helps clean up your catalog and prevent overselling.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
             </div>
             <div className="flex items-center gap-2">
               {lastScanTime && (
@@ -510,8 +500,8 @@ export function DuplicateDetectionTool() {
                              <Button
                                size="sm"
                                variant="ghost"
-                               onClick={() => window.open(`/bulk-editor?search=${encodeURIComponent(product.handle)}`, '_blank')}
-                               title="View product details"
+                               onClick={() => window.open(`/bulk-editor?search=${encodeURIComponent(product.title)}`, '_blank')}
+                               title="Edit product"
                              >
                                <ExternalLink className="h-4 w-4" />
                              </Button>
