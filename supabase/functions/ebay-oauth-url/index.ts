@@ -13,8 +13,8 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  try {
-    console.log('=== eBay OAuth URL Generator ===');
+  console.log('=== eBay OAuth URL Generator Request ===');
+    try {
     
     // Get environment variables
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
