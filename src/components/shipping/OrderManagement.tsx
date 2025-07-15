@@ -989,11 +989,12 @@ export function OrderManagement() {
                         <div 
                           className={`text-sm ${
                             order.items.length === 1 && order.items[0].productHandle 
-                              ? 'cursor-pointer hover:text-blue-600 hover:underline' 
+                              ? 'cursor-pointer hover:text-primary hover:underline text-blue-600' 
                               : ''
                           }`}
                           onClick={() => {
                             if (order.items.length === 1 && order.items[0].productHandle) {
+                              console.log('Clicking product:', order.items[0].productHandle, order.items[0].productTitle);
                               handleProductClick(order.items[0].productHandle, order.items[0].productTitle);
                             }
                           }}
