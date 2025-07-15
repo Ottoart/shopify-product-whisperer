@@ -18,7 +18,9 @@ import {
   Calculator,
   Store,
   DollarSign,
-  Warehouse
+  Warehouse,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 
@@ -73,6 +75,7 @@ export function AppSidebar() {
   const location = useLocation();
   const currentPath = location.pathname;
   const [stores, setStores] = useState<Array<{id: string, store_name: string, platform: string}>>([]);
+  const [expandedCatalogueItems, setExpandedCatalogueItems] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const fetchStores = async () => {
@@ -96,6 +99,16 @@ export function AppSidebar() {
   const isActive = (path: string) => currentPath === path;
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
     isActive ? "bg-accent text-accent-foreground font-medium" : "hover:bg-accent/50";
+
+  const toggleCatalogueItem = (itemTitle: string) => {
+    const newExpanded = new Set(expandedCatalogueItems);
+    if (newExpanded.has(itemTitle)) {
+      newExpanded.delete(itemTitle);
+    } else {
+      newExpanded.add(itemTitle);
+    }
+    setExpandedCatalogueItems(newExpanded);
+  };
 
   return (
     <Sidebar
@@ -135,32 +148,79 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Tools */}
+        {/* Catalogue */}
         <SidebarGroup>
           <SidebarGroupLabel className="text-primary">
-            <Zap className="h-4 w-4 mr-2" />
+            <Package className="h-4 w-4 mr-2" />
             <span className={`${collapsed ? "group-hover:inline hidden" : "inline"} transition-all duration-300`}>
-              Tools
+              Catalogue
             </span>
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {toolItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink 
-                      to={item.url} 
-                      className={getNavCls}
-                      title={collapsed ? item.description : undefined}
-                      >
+                <div key={item.title}>
+                  {/* Main Tool Item */}
+                  <SidebarMenuItem>
+                    <SidebarMenuButton 
+                      onClick={() => !collapsed && toggleCatalogueItem(item.title)}
+                      className="cursor-pointer"
+                    >
+                      <div className="flex items-center w-full">
                         <item.icon className="h-4 w-4 flex-shrink-0" />
-                        <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col transition-all duration-300 overflow-hidden`}>
+                        <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col flex-1 transition-all duration-300 overflow-hidden ml-2`}>
                           <span className="whitespace-nowrap">{item.title}</span>
                           <span className="text-xs text-muted-foreground whitespace-nowrap">{item.description}</span>
                         </div>
+                        {!collapsed && stores.length > 0 && (
+                          <div className="ml-auto">
+                            {expandedCatalogueItems.has(item.title) ? (
+                              <ChevronDown className="h-3 w-3 animate-fade-in" />
+                            ) : (
+                              <ChevronRight className="h-3 w-3 animate-fade-in" />
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+
+                  {/* All Stores Link */}
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild>
+                      <NavLink 
+                        to={item.url} 
+                        className={getNavCls}
+                        title={collapsed ? `${item.description} - All stores` : undefined}
+                      >
+                        <div className="h-4 w-4 flex-shrink-0 ml-4" />
+                        <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col transition-all duration-300 overflow-hidden`}>
+                          <span className="whitespace-nowrap">All Stores</span>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">View all store data</span>
+                        </div>
                       </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+
+                  {/* Expandable Store Subcategories */}
+                  {!collapsed && expandedCatalogueItems.has(item.title) && stores.map((store) => (
+                    <SidebarMenuItem key={`${item.title}-${store.id}`} className="animate-accordion-down">
+                      <SidebarMenuButton asChild>
+                        <NavLink 
+                          to={`${item.url}?store=${encodeURIComponent(store.store_name)}`}
+                          className={getNavCls}
+                          title={`${item.description} for ${store.store_name}`}
+                        >
+                          <Store className="h-4 w-4 flex-shrink-0 ml-8" />
+                          <div className="flex flex-col transition-all duration-300 overflow-hidden">
+                            <span className="whitespace-nowrap">{store.store_name}</span>
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">{store.platform} store</span>
+                          </div>
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </div>
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
