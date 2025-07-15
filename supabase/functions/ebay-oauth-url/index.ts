@@ -54,12 +54,11 @@ serve(async (req) => {
     console.log('Using auth URL:', authBaseUrl);
     console.log('Is production environment:', isProduction);
 
-    // Construct eBay OAuth URL with callback to our edge function
-    const callbackUrl = `${supabaseUrl}/functions/v1/ebay-oauth-callback`;
+    // Construct eBay OAuth URL using registered RU Name
     const ebayAuthUrl = new URL(authBaseUrl);
     ebayAuthUrl.searchParams.set('client_id', ebayClientId);
     ebayAuthUrl.searchParams.set('response_type', 'code');
-    ebayAuthUrl.searchParams.set('redirect_uri', callbackUrl);
+    ebayAuthUrl.searchParams.set('redirect_uri', ebayRuName);
     
     // Use correct eBay OAuth scopes
     const scopes = isProduction ? [
@@ -86,7 +85,7 @@ serve(async (req) => {
 
     console.log('Final OAuth parameters:');
     console.log('- client_id:', ebayClientId.substring(0, 15) + '...');
-    console.log('- redirect_uri:', callbackUrl);
+    console.log('- redirect_uri:', ebayRuName);
     console.log('- scope:', scopes.join(' '));
     console.log('- state:', state);
     console.log('Generated OAuth URL successfully');
@@ -96,7 +95,7 @@ serve(async (req) => {
       oauth_url: ebayAuthUrl.toString(),
       client_id: ebayClientId.substring(0, 15) + '...',
       environment: isProduction ? 'production' : 'sandbox',
-      redirect_uri: callbackUrl
+      redirect_uri: ebayRuName
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
