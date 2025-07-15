@@ -5,6 +5,7 @@ import { Auth } from '@/components/Auth';
 import { ProductList } from '@/components/ProductList';
 import { QueueManager } from '@/components/QueueManager';
 import { ProductTypeGenerator } from '@/components/ProductTypeGenerator';
+import { WelcomeBanner } from '@/components/WelcomeBanner';
 import { useProducts } from '@/hooks/useProducts';
 import { useEditTracking } from '@/hooks/useEditTracking';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -176,6 +177,9 @@ const Index = () => {
       </div>
 
       <div className="container mx-auto px-6 py-8 space-y-8">
+        {/* Welcome Banner for Setup Guidance */}
+        <WelcomeBanner />
+
         {/* Welcome Section for New Users */}
         {products.length === 0 && (
           <Card className="shadow-card border-0">
