@@ -72,8 +72,14 @@ serve(async (req) => {
       throw new Error('eBay credentials not configured');
     }
 
+    // Determine the correct token endpoint based on environment
+    const isProduction = ebayClientId.includes('PRD');
+    const tokenEndpoint = isProduction 
+      ? 'https://api.ebay.com/identity/v1/oauth2/token'
+      : 'https://api.sandbox.ebay.com/identity/v1/oauth2/token';
+
     // Exchange authorization code for access token
-    const tokenResponse = await fetch('https://api.ebay.com/identity/v1/oauth2/token', {
+    const tokenResponse = await fetch(tokenEndpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',

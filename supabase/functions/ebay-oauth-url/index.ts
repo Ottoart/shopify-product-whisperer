@@ -60,11 +60,17 @@ serve(async (req) => {
     ebayAuthUrl.searchParams.set('response_type', 'code');
     ebayAuthUrl.searchParams.set('redirect_uri', ebayRuName);
     
-    // Use more conservative scopes to avoid authorization issues
-    const scopes = [
+    // Use correct eBay scopes based on environment
+    const scopes = isProduction ? [
       'https://api.ebay.com/oauth/api_scope',
-      'https://api.ebay.com/oauth/api_scope/sell.account',
-      'https://api.ebay.com/oauth/api_scope/sell.inventory'
+      'https://api.ebay.com/oauth/api_scope/sell.marketing.readonly',
+      'https://api.ebay.com/oauth/api_scope/sell.inventory.readonly',
+      'https://api.ebay.com/oauth/api_scope/sell.account.readonly'
+    ] : [
+      'https://api.sandbox.ebay.com/oauth/api_scope',
+      'https://api.sandbox.ebay.com/oauth/api_scope/sell.marketing.readonly',
+      'https://api.sandbox.ebay.com/oauth/api_scope/sell.inventory.readonly',
+      'https://api.sandbox.ebay.com/oauth/api_scope/sell.account.readonly'
     ];
     
     ebayAuthUrl.searchParams.set('scope', scopes.join(' '));
