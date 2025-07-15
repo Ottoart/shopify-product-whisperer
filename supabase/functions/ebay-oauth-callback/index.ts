@@ -78,6 +78,16 @@ serve(async (req) => {
       ? 'https://api.ebay.com/identity/v1/oauth2/token'
       : 'https://api.sandbox.ebay.com/identity/v1/oauth2/token';
 
+    const redirectUri = `${Deno.env.get('SUPABASE_URL')}/functions/v1/ebay-oauth-callback`;
+    
+    console.log('Token exchange details:');
+    console.log('- Environment:', isProduction ? 'production' : 'sandbox');
+    console.log('- Token endpoint:', tokenEndpoint);
+    console.log('- Client ID length:', ebayClientId.length);
+    console.log('- Client secret length:', ebayClientSecret.length);
+    console.log('- Redirect URI:', redirectUri);
+    console.log('- Authorization code length:', code.length);
+
     // Exchange authorization code for access token
     const tokenResponse = await fetch(tokenEndpoint, {
       method: 'POST',
@@ -88,13 +98,15 @@ serve(async (req) => {
       body: new URLSearchParams({
         grant_type: 'authorization_code',
         code: code,
-        redirect_uri: `${Deno.env.get('SUPABASE_URL')}/functions/v1/ebay-oauth-callback`
+        redirect_uri: redirectUri
       })
     });
 
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
       console.error('eBay token exchange failed:', errorText);
+      console.error('Response status:', tokenResponse.status);
+      console.error('Response headers:', Object.fromEntries(tokenResponse.headers.entries()));
       throw new Error('Failed to exchange authorization code for token');
     }
 

@@ -96,7 +96,7 @@ serve(async (req) => {
       oauth_url: ebayAuthUrl.toString(),
       client_id: ebayClientId.substring(0, 15) + '...',
       environment: isProduction ? 'production' : 'sandbox',
-      redirect_uri: ebayRuName
+      redirect_uri: callbackUrl
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
