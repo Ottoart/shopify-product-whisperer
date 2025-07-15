@@ -70,6 +70,11 @@ serve(async (req) => {
     ebayAuthUrl.searchParams.set('scope', scopes.join(' '));
     ebayAuthUrl.searchParams.set('state', state);
 
+    console.log('Final OAuth parameters:');
+    console.log('- client_id:', ebayClientId.substring(0, 15) + '...');
+    console.log('- redirect_uri:', ebayRuName);
+    console.log('- scope:', scopes.join(' '));
+    console.log('- state:', state);
     console.log('Generated OAuth URL successfully');
     console.log('Final OAuth URL:', ebayAuthUrl.toString());
 
