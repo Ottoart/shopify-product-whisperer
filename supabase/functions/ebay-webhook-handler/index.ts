@@ -54,7 +54,8 @@ serve(async (req: Request) => {
       
       if (challengeCode && EBAY_VERIFICATION_TOKEN) {
         // According to eBay docs, we need to hash: challengeCode + verificationToken + endpoint
-        const endpoint = req.url;
+        // Use the full webhook endpoint URL as registered with eBay
+        const endpoint = 'https://rtaomiqsnctigleqjojt.supabase.co/functions/v1/ebay-webhook-handler';
         const dataToHash = challengeCode + EBAY_VERIFICATION_TOKEN + endpoint;
         
         console.log('Hashing data:', {
