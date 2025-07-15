@@ -88,7 +88,7 @@ serve(async (req) => {
       body: new URLSearchParams({
         grant_type: 'authorization_code',
         code: code,
-        redirect_uri: ebayRuName
+        redirect_uri: `${Deno.env.get('SUPABASE_URL')}/functions/v1/ebay-oauth-callback`
       })
     });
 
