@@ -20,9 +20,21 @@ interface StoreConfiguration {
   created_at: string;
 }
 
+interface MarketplaceConfiguration {
+  id: string;
+  store_name: string | null;
+  platform: string;
+  external_user_id: string;
+  access_token: string | null;
+  is_active: boolean;
+  created_at: string;
+  store_url: string | null;
+}
+
 export function StoreConfig() {
   const { toast } = useToast();
   const [stores, setStores] = useState<StoreConfiguration[]>([]);
+  const [marketplaces, setMarketplaces] = useState<MarketplaceConfiguration[]>([]);
   const [loading, setLoading] = useState(true);
   const [showConnectionFlow, setShowConnectionFlow] = useState(false);
   const [showTokens, setShowTokens] = useState<{ [key: string]: boolean }>({});
@@ -46,13 +58,23 @@ export function StoreConfig() {
 
   const fetchStores = async () => {
     try {
-      const { data, error } = await supabase
-        .from('store_configurations')
-        .select('*')
-        .order('created_at', { ascending: false });
+      // Fetch both store configurations and marketplace configurations
+      const [storeResult, marketplaceResult] = await Promise.all([
+        supabase
+          .from('store_configurations')
+          .select('*')
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('marketplace_configurations')
+          .select('*')
+          .order('created_at', { ascending: false })
+      ]);
 
-      if (error) throw error;
-      setStores(data || []);
+      if (storeResult.error) throw storeResult.error;
+      if (marketplaceResult.error) throw marketplaceResult.error;
+
+      setStores(storeResult.data || []);
+      setMarketplaces(marketplaceResult.data || []);
     } catch (error: any) {
       toast({
         title: "Error fetching stores",
@@ -91,6 +113,30 @@ export function StoreConfig() {
     } catch (error: any) {
       toast({
         title: "Error removing store",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteMarketplace = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('marketplace_configurations')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Marketplace connection removed",
+        description: "Marketplace configuration has been deleted"
+      });
+
+      fetchStores();
+    } catch (error: any) {
+      toast({
+        title: "Error removing marketplace",
         description: error.message,
         variant: "destructive"
       });
@@ -339,7 +385,73 @@ export function StoreConfig() {
         </div>
       )}
 
-      {stores.length === 0 && (
+      {/* Marketplace Configurations */}
+      {marketplaces.length > 0 && (
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Marketplace Connections</h3>
+          {marketplaces.map((marketplace) => (
+            <Card key={marketplace.id}>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                      <h3 className="font-semibold text-lg">
+                        {marketplace.store_name || `${marketplace.platform} Store`}
+                      </h3>
+                      <Badge variant="outline" className="capitalize">{marketplace.platform}</Badge>
+                      {marketplace.is_active && <Badge variant="default">Connected</Badge>}
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      User ID: {marketplace.external_user_id}
+                    </p>
+                    {marketplace.store_url && (
+                      <p className="text-sm text-muted-foreground">
+                        Store URL: {marketplace.store_url}
+                      </p>
+                    )}
+                    <p className="text-sm text-muted-foreground">
+                      Connected: {new Date(marketplace.created_at).toLocaleDateString()}
+                    </p>
+                    {marketplace.access_token && (
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm text-muted-foreground">
+                          Token: {showTokens[marketplace.id] 
+                            ? marketplace.access_token 
+                            : '••••••••••••••••••••••••••••••••'
+                          }
+                        </p>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => toggleTokenVisibility(marketplace.id)}
+                        >
+                          {showTokens[marketplace.id] ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeleteMarketplace(marketplace.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {stores.length === 0 && marketplaces.length === 0 && (
         <Card>
           <CardContent className="p-12 text-center">
             <Store className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
