@@ -88,7 +88,7 @@ serve(async (req) => {
       body: new URLSearchParams({
         grant_type: 'authorization_code',
         code: code,
-        redirect_uri: `https://rtaomiqsnctigleqjojt.supabase.co/functions/v1/ebay-oauth-callback`
+        redirect_uri: ebayRuName
       })
     });
 
