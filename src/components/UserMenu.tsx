@@ -164,6 +164,11 @@ export function UserMenu() {
           <span>Settings</span>
         </DropdownMenuItem>
         
+        <DropdownMenuItem onClick={() => navigate('/about')}>
+          <User className="mr-2 h-4 w-4" />
+          <span>About Us</span>
+        </DropdownMenuItem>
+        
         <DropdownMenuItem onClick={() => navigate('/privacy-policy')}>
           <Shield className="mr-2 h-4 w-4" />
           <span>Privacy Policy</span>

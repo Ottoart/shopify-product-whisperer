@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Shield, Mail, ExternalLink } from "lucide-react";
+import { Shield, Mail, ExternalLink, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export function Footer() {
@@ -18,6 +18,16 @@ export function Footer() {
           </div>
           
           <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => navigate('/about')}
+              className="justify-start md:justify-center"
+            >
+              <Users className="h-4 w-4 mr-2" />
+              About Us
+            </Button>
+
             <Button 
               variant="ghost" 
               size="sm"

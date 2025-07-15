@@ -26,6 +26,7 @@ import Repricing from "./pages/Repricing";
 import Inventory from "./pages/Inventory";
 import Auth from "./pages/Auth";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import { AboutUs } from "./pages/AboutUs";
 import NotFound from "./pages/NotFound";
 import { LearningDashboard } from "./components/LearningDashboard";
 
@@ -40,6 +41,7 @@ const AppContent = () => {
         <Routes>
           <Route path="/auth" element={<Auth />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/about" element={<AboutUs />} />
           <Route path="*" element={<Auth />} />
         </Routes>
       </BrowserRouter>
@@ -80,6 +82,8 @@ const AppContent = () => {
                 <Route path="/sync-status" element={<ProtectedRoute><SyncStatus /></ProtectedRoute>} />
                 
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                <Route path="/about" element={<AboutUs />} />
                 <Route path="*" element={<ProtectedRoute><NotFound /></ProtectedRoute>} />
               </Routes>
             </main>
