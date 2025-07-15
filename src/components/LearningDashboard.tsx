@@ -83,15 +83,18 @@ export const LearningDashboard = () => {
     }
     
     try {
+      console.log('Loading patterns for user:', session?.user?.id);
       const { data, error } = await supabase
         .from('user_edit_patterns')
         .select('*')
         .eq('user_id', session?.user?.id)
         .order('created_at', { ascending: false });
 
+      console.log('Query result:', { data, error });
       if (error) throw error;
       
       const patternsData = data || [];
+      console.log('Patterns loaded:', patternsData.length);
       setPatterns(patternsData);
       
       if (showProgress) {
