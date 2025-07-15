@@ -58,7 +58,7 @@ serve(async (req) => {
     const ebayAuthUrl = new URL(authBaseUrl);
     ebayAuthUrl.searchParams.set('client_id', ebayClientId);
     ebayAuthUrl.searchParams.set('response_type', 'code');
-    ebayAuthUrl.searchParams.set('redirect_uri', `https://rtaomiqsnctigleqjojt.supabase.co/functions/v1/ebay-oauth-callback`);
+    ebayAuthUrl.searchParams.set('redirect_uri', ebayRuName);
     
     // Use correct eBay OAuth scopes for new OAuth security
     const scopes = isProduction ? [
