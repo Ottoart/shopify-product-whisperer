@@ -1,28 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Settings as SettingsIcon, Store, Key, Database, Bell } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StoreConfig } from '@/components/StoreConfig';
-import { useSearchParams } from 'react-router-dom';
 
 const Settings = () => {
-  const [searchParams] = useSearchParams();
-
-  // Handle eBay OAuth redirect
-  useEffect(() => {
-    const code = searchParams.get('code');
-    const state = searchParams.get('state');
-    const expiresIn = searchParams.get('expires_in');
-    
-    if (code && state && expiresIn) {
-      console.log('eBay OAuth redirect detected, forwarding to callback...');
-      
-      // Redirect to Supabase callback function
-      const callbackUrl = `https://rtaomiqsnctigleqjojt.supabase.co/functions/v1/ebay-oauth-callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`;
-      window.location.href = callbackUrl;
-      return;
-    }
-  }, [searchParams]);
 
   return (
     <div className="min-h-screen bg-background p-6">

@@ -64,15 +64,9 @@ serve(async (req) => {
     }
 
     // Get eBay credentials from Supabase secrets
-    const ebayClientId = Deno.env.get('EBAY_CLIENT_ID')?.trim();
-    const ebayClientSecret = Deno.env.get('EBAY_CLIENT_SECRET')?.trim();
-    const ebayRuName = Deno.env.get('EBAY_RU_NAME')?.trim(); // Redirect URI name registered with eBay
-
-    console.log('Credentials validation:');
-    console.log('- Client ID exists:', !!ebayClientId);
-    console.log('- Client ID starts with:', ebayClientId?.substring(0, 10));
-    console.log('- Client secret exists:', !!ebayClientSecret);
-    console.log('- Client secret starts with:', ebayClientSecret?.substring(0, 10));
+    const ebayClientId = Deno.env.get('EBAY_CLIENT_ID');
+    const ebayClientSecret = Deno.env.get('EBAY_CLIENT_SECRET');
+    const ebayRuName = Deno.env.get('EBAY_RU_NAME'); // Redirect URI name registered with eBay
 
     if (!ebayClientId || !ebayClientSecret || !ebayRuName) {
       throw new Error('eBay credentials not configured');
@@ -84,49 +78,23 @@ serve(async (req) => {
       ? 'https://api.ebay.com/identity/v1/oauth2/token'
       : 'https://api.sandbox.ebay.com/identity/v1/oauth2/token';
 
-    const redirectUri = `${Deno.env.get('SUPABASE_URL')}/functions/v1/ebay-oauth-callback`;
-    
-    console.log('Token exchange attempt...');
-    console.log('- Environment:', isProduction ? 'production' : 'sandbox');
-    console.log('- Token endpoint:', tokenEndpoint);
-    console.log('- Redirect URI:', redirectUri);
-
-    const requestBody = new URLSearchParams({
-      grant_type: 'authorization_code',
-      code: code,
-      redirect_uri: redirectUri
-    });
-
     // Exchange authorization code for access token
-    // Try alternative approach for eBay token exchange
-    const authString = btoa(`${ebayClientId}:${ebayClientSecret}`);
-    
     const tokenResponse = await fetch(tokenEndpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': `Basic ${authString}`,
-        'Accept': 'application/json'
+        'Authorization': `Basic ${btoa(`${ebayClientId}:${ebayClientSecret}`)}`
       },
-      body: `grant_type=authorization_code&code=${encodeURIComponent(code)}&redirect_uri=${encodeURIComponent(redirectUri)}`
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: code,
+        redirect_uri: ebayRuName
+      })
     });
 
-    console.log('Token response status:', tokenResponse.status);
-    
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
       console.error('eBay token exchange failed:', errorText);
-      console.error('Response status:', tokenResponse.status);
-      console.error('Response headers:', Object.fromEntries(tokenResponse.headers.entries()));
-      
-      // Try to parse the error for more details
-      try {
-        const errorJson = JSON.parse(errorText);
-        console.error('Parsed error:', errorJson);
-      } catch (e) {
-        console.error('Could not parse error as JSON');
-      }
-      
       throw new Error('Failed to exchange authorization code for token');
     }
 
@@ -172,41 +140,33 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const marketplaceData = {
+    const storeData = {
       user_id: userId,
-      platform: 'ebay',
-      external_user_id: ebayUserId,
-      access_token: tokenData.access_token,
-      refresh_token: tokenData.refresh_token,
-      token_expires_at: tokenData.expires_in ? 
-        new Date(Date.now() + tokenData.expires_in * 1000).toISOString() : null,
       store_name: storeName,
-      store_url: null,
-      is_active: true,
-      metadata: {
+      platform: 'ebay',
+      domain: ebayUserId,
+      access_token: JSON.stringify({
+        access_token: tokenData.access_token,
+        refresh_token: tokenData.refresh_token,
+        expires_in: tokenData.expires_in,
         token_type: tokenData.token_type,
         scope: tokenData.scope,
         ebay_user_id: ebayUserId,
         ebay_username: ebayUsername,
         connected_at: new Date().toISOString()
-      }
+      }),
+      is_active: true
     };
 
-    console.log('Inserting marketplace configuration:', {
-      ...marketplaceData,
-      access_token: '[REDACTED]',
-      refresh_token: '[REDACTED]'
-    });
-
     const { data: storeConfig, error: dbError } = await supabase
-      .from('marketplace_configurations')
-      .insert(marketplaceData)
+      .from('store_configurations')
+      .insert(storeData)
       .select()
       .single();
 
     if (dbError) {
       console.error('Database error:', dbError);
-      throw new Error(`Failed to save marketplace configuration: ${dbError.message}`);
+      throw new Error('Failed to save store configuration');
     }
 
     // Success page with script to communicate with parent window

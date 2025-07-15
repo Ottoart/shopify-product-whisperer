@@ -54,39 +54,28 @@ serve(async (req) => {
     console.log('Using auth URL:', authBaseUrl);
     console.log('Is production environment:', isProduction);
 
-    // Construct eBay OAuth URL using full callback URL
-    const callbackUrl = `${supabaseUrl}/functions/v1/ebay-oauth-callback`;
+    // Construct eBay OAuth URL with real credentials
     const ebayAuthUrl = new URL(authBaseUrl);
     ebayAuthUrl.searchParams.set('client_id', ebayClientId);
     ebayAuthUrl.searchParams.set('response_type', 'code');
-    ebayAuthUrl.searchParams.set('redirect_uri', callbackUrl);
+    ebayAuthUrl.searchParams.set('redirect_uri', ebayRuName);
     
-    // Use correct eBay OAuth scopes
+    // Use correct eBay OAuth scopes for new OAuth security
     const scopes = isProduction ? [
-      'https://api.ebay.com/oauth/api_scope/sell.marketing.readonly',
-      'https://api.ebay.com/oauth/api_scope/sell.marketing',
-      'https://api.ebay.com/oauth/api_scope/sell.inventory.readonly',
-      'https://api.ebay.com/oauth/api_scope/sell.inventory',
-      'https://api.ebay.com/oauth/api_scope/sell.account.readonly',
-      'https://api.ebay.com/oauth/api_scope/sell.account'
+      'https://api.ebay.com/oauth/api_scope'
     ] : [
-      'https://api.sandbox.ebay.com/oauth/api_scope/sell.marketing.readonly',
-      'https://api.sandbox.ebay.com/oauth/api_scope/sell.marketing',
-      'https://api.sandbox.ebay.com/oauth/api_scope/sell.inventory.readonly',
-      'https://api.sandbox.ebay.com/oauth/api_scope/sell.inventory',
-      'https://api.sandbox.ebay.com/oauth/api_scope/sell.account.readonly',
-      'https://api.sandbox.ebay.com/oauth/api_scope/sell.account'
+      'https://api.sandbox.ebay.com/oauth/api_scope'
     ];
     
     ebayAuthUrl.searchParams.set('scope', scopes.join(' '));
     ebayAuthUrl.searchParams.set('state', state);
     
-    // Remove prompt=login as it might cause issues
-    // ebayAuthUrl.searchParams.set('prompt', 'login');
+    // Add required OAuth parameters for new security
+    ebayAuthUrl.searchParams.set('prompt', 'login');
 
     console.log('Final OAuth parameters:');
     console.log('- client_id:', ebayClientId.substring(0, 15) + '...');
-    console.log('- redirect_uri:', callbackUrl);
+    console.log('- redirect_uri:', ebayRuName);
     console.log('- scope:', scopes.join(' '));
     console.log('- state:', state);
     console.log('Generated OAuth URL successfully');
@@ -96,7 +85,7 @@ serve(async (req) => {
       oauth_url: ebayAuthUrl.toString(),
       client_id: ebayClientId.substring(0, 15) + '...',
       environment: isProduction ? 'production' : 'sandbox',
-      redirect_uri: callbackUrl
+      redirect_uri: ebayRuName
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
