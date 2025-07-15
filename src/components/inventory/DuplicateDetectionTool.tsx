@@ -37,6 +37,7 @@ export function DuplicateDetectionTool() {
   const [selectedGroup, setSelectedGroup] = useState<DuplicateGroup | null>(null);
   const [lastScanTime, setLastScanTime] = useState<Date | null>(null);
   const [dismissedGroups, setDismissedGroups] = useState<Set<string>>(new Set());
+  const [storeConfig, setStoreConfig] = useState<any>(null);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -292,9 +293,45 @@ export function DuplicateDetectionTool() {
     });
   };
 
+  // Fetch store configuration
+  const fetchStoreConfig = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('store_configurations')
+        .select('domain, store_name')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle();
+        
+      if (error) throw error;
+      setStoreConfig(data);
+    } catch (error) {
+      console.error('Error fetching store config:', error);
+    }
+  };
+
+  // Generate Shopify admin URL
+  const getShopifyAdminUrl = (product: Product) => {
+    if (!storeConfig?.domain) {
+      return `/bulk-editor?search=${encodeURIComponent(product.title)}`;
+    }
+    
+    // Extract store name from domain (e.g., "protoys.myshopify.com" -> "protoys")
+    const storeName = storeConfig.domain.replace('.myshopify.com', '');
+    
+    // Use the handle to construct the URL - Shopify typically uses handle in admin URLs
+    return `https://admin.shopify.com/store/${storeName}/products/${product.handle}`;
+  };
+
   useEffect(() => {
-    if (user && !loadCachedResults()) {
-      detectDuplicates();
+    if (user) {
+      fetchStoreConfig();
+      if (!loadCachedResults()) {
+        detectDuplicates();
+      }
     }
   }, [user]);
 
@@ -437,8 +474,8 @@ export function DuplicateDetectionTool() {
                                         <Button 
                                           size="sm" 
                                           variant="outline"
-                                          onClick={() => window.open(`/bulk-editor?search=${encodeURIComponent(product.handle)}`, '_blank')}
-                                          title="Edit this product"
+                                          onClick={() => window.open(getShopifyAdminUrl(product), '_blank')}
+                                          title="Edit product in Shopify"
                                         >
                                           <Edit3 className="h-3 w-3" />
                                         </Button>
@@ -500,8 +537,8 @@ export function DuplicateDetectionTool() {
                              <Button
                                size="sm"
                                variant="ghost"
-                               onClick={() => window.open(`/bulk-editor?search=${encodeURIComponent(product.title)}`, '_blank')}
-                               title="Edit product"
+                               onClick={() => window.open(getShopifyAdminUrl(product), '_blank')}
+                               title="Edit product in Shopify"
                              >
                                <ExternalLink className="h-4 w-4" />
                              </Button>
