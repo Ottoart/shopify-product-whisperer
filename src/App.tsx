@@ -26,6 +26,7 @@ import Repricing from "./pages/Repricing";
 import Inventory from "./pages/Inventory";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import { LearningDashboard } from "./components/LearningDashboard";
 
 const queryClient = new QueryClient();
 
@@ -63,7 +64,7 @@ const AppContent = () => {
               <Routes>
                 <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
                 <Route path="/dashboard" element={<ProtectedRoute><PrepFoxDashboard /></ProtectedRoute>} />
-                <Route path="/ai-dashboard" element={<ProtectedRoute><MainDashboard /></ProtectedRoute>} />
+                <Route path="/ai-dashboard" element={<ProtectedRoute><LearningDashboard /></ProtectedRoute>} />
                 <Route path="/marketplace-gateway" element={<ProtectedRoute><MarketplaceGateway /></ProtectedRoute>} />
                 <Route path="/shipping-overview" element={<ProtectedRoute><ShippingOverview /></ProtectedRoute>} />
                 <Route path="/shipping" element={<ProtectedRoute><Shipping /></ProtectedRoute>} />
