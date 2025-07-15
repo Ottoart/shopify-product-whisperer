@@ -22,7 +22,9 @@ import {
   Award,
   Timer,
   Hash,
-  Trash2
+  Trash2,
+  Copy,
+  RefreshCw
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -421,6 +423,34 @@ export const LearningDashboard = () => {
     }
   };
 
+  const updatePatternExamples = async (patternId: string, newExamples: string[]) => {
+    try {
+      // Get the current pattern data
+      const pattern = patterns.find(p => p.id === patternId);
+      if (!pattern) return;
+
+      // Update the pattern_data with new examples
+      const updatedPatternData = {
+        ...pattern.pattern_data,
+        examples: newExamples
+      };
+
+      await updatePatternData(patternId, updatedPatternData);
+
+      toast({
+        title: "Example Removed",
+        description: "Pattern example has been removed successfully.",
+      });
+    } catch (error) {
+      console.error('Error updating pattern examples:', error);
+      toast({
+        title: "Update Failed",
+        description: "Failed to update pattern examples.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getPatternIcon = (type: string) => {
     switch (type) {
       case 'title_style': return { icon: Hash, color: 'text-blue-500' };
@@ -729,138 +759,242 @@ export const LearningDashboard = () => {
               </TabsContent>
 
               <TabsContent value="patterns" className="space-y-4">
-                <div className="space-y-6">
-                  {patterns.map((pattern) => {
-                    const examples = getExampleChanges(pattern);
-                    
-                    return (
-                      <Card key={pattern.id} className="border-0 shadow-card">
-                        <CardHeader>
-                          <CardTitle className="capitalize text-lg">
-                            {pattern.pattern_type.replace(/_/g, ' ')} Pattern Details
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          <div className="space-y-3">
-                            <h5 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
-                              What AI Learned:
-                            </h5>
-                            <p className="text-sm leading-relaxed p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
-                              {pattern.description || getDetailedDescription(pattern)}
-                            </p>
-                          </div>
+                <Tabs defaultValue={patterns[0]?.pattern_type || "title_style"} className="space-y-4">
+                  <TabsList className="grid w-full grid-cols-4 max-w-4xl mx-auto">
+                    {patterns.map((pattern) => (
+                      <TabsTrigger 
+                        key={pattern.pattern_type} 
+                        value={pattern.pattern_type}
+                        className="text-xs"
+                      >
+                        {pattern.pattern_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
 
-                            <div className="space-y-3">
+                  {patterns.map((pattern) => (
+                    <TabsContent key={pattern.pattern_type} value={pattern.pattern_type} className="space-y-6">
+                      <Card className="border-0 shadow-card">
+                        <CardHeader>
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="capitalize text-lg">
+                              {pattern.pattern_type.replace(/_/g, ' ')} Pattern
+                            </CardTitle>
+                            <Badge 
+                              variant="outline" 
+                              className={`
+                                ${pattern.confidence_score >= 0.8 ? 'border-green-500 text-green-700 bg-green-50' : 
+                                  pattern.confidence_score >= 0.6 ? 'border-yellow-500 text-yellow-700 bg-yellow-50' : 
+                                  'border-red-500 text-red-700 bg-red-50'}
+                              `}
+                            >
+                              {Math.round(pattern.confidence_score * 100)}% confidence
+                            </Badge>
+                          </div>
+                          <p className="text-muted-foreground">
+                            {getDetailedDescription(pattern)}
+                          </p>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                          {/* Pattern Data Examples */}
+                          {pattern.pattern_data?.examples && (
+                            <div className="space-y-4">
                               <div className="flex items-center justify-between">
                                 <h5 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
-                                  Examples of Your Changes ({editExamples[pattern.pattern_type]?.length || 0} found):
+                                  Pattern Examples ({pattern.pattern_data.examples.length} available):
                                 </h5>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => loadEditExamples(patterns, true)}
-                                  disabled={isRefreshingExamples}
-                                  className="text-xs h-6"
-                                  title="Refresh examples from database with progress tracking"
-                                >
-                                  {isRefreshingExamples ? (
-                                    <>
-                                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                      Refreshing...
-                                    </>
-                                  ) : (
-                                    <>
-                                      🔄 Refresh Examples
-                                    </>
-                                  )}
-                                </Button>
+                                <div className="flex items-center gap-2">
+                                  <Switch
+                                    checked={pattern.is_approved}
+                                    onCheckedChange={(checked) => updatePatternApproval(pattern.id, checked)}
+                                  />
+                                  <span className="text-xs text-muted-foreground">
+                                    {pattern.is_approved ? "Active" : "Disabled"}
+                                  </span>
+                                </div>
                               </div>
-                              <div className="space-y-3 max-h-96 overflow-y-auto">
-                                {editExamples[pattern.pattern_type]?.length > 0 ? (
-                                  editExamples[pattern.pattern_type].map((example, idx) => (
-                                     <div key={example.id} className="space-y-2 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border hover:shadow-sm transition-shadow">
-                                       <div className="flex items-center justify-between">
-                                         <div className="flex items-center gap-2">
-                                           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                                             Product: {example.product_handle}
-                                           </span>
-                                           <span className="text-xs text-muted-foreground">
-                                             {new Date(example.created_at).toLocaleDateString()}
-                                           </span>
-                                           <Badge variant="secondary" className="text-xs">
-                                             #{idx + 1}
-                                           </Badge>
-                                         </div>
-                                         <Button
-                                           size="sm"
-                                           variant="outline"
-                                           onClick={() => deleteEditExample(example.id)}
-                                           disabled={isDeletingEdit === example.id}
-                                           className="text-red-600 border-red-200 hover:bg-red-50 h-6 w-6 p-0"
-                                           title="Remove this example - patterns will auto-update"
-                                         >
-                                           {isDeletingEdit === example.id ? (
-                                             <Loader2 className="h-3 w-3 animate-spin" />
-                                           ) : (
-                                             <Trash2 className="h-3 w-3" />
-                                           )}
-                                         </Button>
-                                       </div>
-                                      <div className="space-y-2">
-                                        <div className="p-3 bg-red-50 dark:bg-red-950 rounded border border-red-200 dark:border-red-800">
-                                          <div className="text-xs font-medium text-red-600 dark:text-red-400 mb-1">Before ({example.field_name}):</div>
-                                          <div className="text-sm text-red-800 dark:text-red-200 font-mono break-all">
-                                            {example.before_value || '(Empty)'}
-                                          </div>
-                                        </div>
-                                        <div className="p-3 bg-green-50 dark:bg-green-950 rounded border border-green-200 dark:border-green-800">
-                                          <div className="text-xs font-medium text-green-600 dark:text-green-400 mb-1">After ({example.field_name}):</div>
-                                          <div className="text-sm text-green-800 dark:text-green-200 font-mono break-all">
-                                            {example.after_value || '(Empty)'}
-                                          </div>
-                                        </div>
-                                        {example.before_value && example.after_value && (
-                                          <div className="p-2 bg-blue-50 dark:bg-blue-950 rounded border border-blue-200 dark:border-blue-800">
-                                            <div className="text-xs font-medium text-blue-600 dark:text-blue-400 mb-1">Change Summary:</div>
-                                            <div className="text-xs text-blue-800 dark:text-blue-200">
-                                              {example.before_value.length} → {example.after_value.length} characters
-                                              {example.before_value.split(' ').length !== example.after_value.split(' ').length && 
-                                                ` | ${example.before_value.split(' ').length} → ${example.after_value.split(' ').length} words`
-                                              }
-                                            </div>
-                                          </div>
+                              <div className="grid gap-3">
+                                {pattern.pattern_data.examples.map((example, idx) => (
+                                  <div 
+                                    key={idx} 
+                                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border hover:shadow-sm transition-all group"
+                                  >
+                                    <div className="flex-1">
+                                      <div className="font-mono text-sm text-gray-900 dark:text-gray-100">
+                                        {example}
+                                      </div>
+                                      <div className="flex items-center gap-2 mt-1">
+                                        <Badge variant="secondary" className="text-xs">
+                                          Example {idx + 1}
+                                        </Badge>
+                                        {pattern.pattern_data.format && (
+                                          <span className="text-xs text-muted-foreground">
+                                            Follows: {pattern.pattern_data.format}
+                                          </span>
                                         )}
                                       </div>
                                     </div>
-                                  ))
-                                ) : (
-                                  <div className="text-sm p-4 bg-yellow-50 dark:bg-yellow-950 rounded-lg border border-yellow-200 dark:border-yellow-800 text-center">
-                                    <p className="text-yellow-800 dark:text-yellow-200 mb-2">
-                                      No specific examples found for this pattern type.
-                                    </p>
-                                    <p className="text-xs text-yellow-600 dark:text-yellow-400">
-                                      AI learned this pattern from your general editing behavior across multiple fields.
-                                    </p>
+                                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                          // Remove this example from pattern_data
+                                          const newExamples = pattern.pattern_data.examples.filter((_, i) => i !== idx);
+                                          updatePatternExamples(pattern.id, newExamples);
+                                        }}
+                                        className="text-red-600 border-red-200 hover:bg-red-50 h-8 w-8 p-0"
+                                        title="Remove this example"
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                          navigator.clipboard.writeText(example);
+                                          toast({
+                                            title: "Copied!",
+                                            description: "Example copied to clipboard",
+                                          });
+                                        }}
+                                        className="h-8 w-8 p-0"
+                                        title="Copy example"
+                                      >
+                                        <Copy className="h-3 w-3" />
+                                      </Button>
+                                    </div>
                                   </div>
-                                )}
+                                ))}
                               </div>
                             </div>
+                          )}
 
-                          {pattern.pattern_data && (
-                            <div className="space-y-3">
+                          {/* Pattern Details */}
+                          {pattern.pattern_data && Object.keys(pattern.pattern_data).filter(key => key !== 'examples').length > 0 && (
+                            <div className="space-y-4">
                               <h5 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
-                                Pattern Data:
+                                Pattern Details:
                               </h5>
-                              <pre className="text-xs p-3 bg-gray-50 dark:bg-gray-900 rounded-lg overflow-auto border">
-                                {JSON.stringify(pattern.pattern_data, null, 2)}
-                              </pre>
+                              <div className="grid gap-3">
+                                {Object.entries(pattern.pattern_data)
+                                  .filter(([key]) => key !== 'examples')
+                                  .map(([key, value]) => (
+                                    <div key={key} className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                                      <div className="text-xs font-medium text-blue-600 dark:text-blue-400 mb-2 uppercase tracking-wide">
+                                        {key.replace(/_/g, ' ')}:
+                                      </div>
+                                      <div className="text-sm text-blue-800 dark:text-blue-200">
+                                        {Array.isArray(value) ? (
+                                          <div className="space-y-1">
+                                            {value.map((item, idx) => (
+                                              <div key={idx} className="flex items-center gap-2">
+                                                <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                                                <span className="font-mono">{item}</span>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        ) : (
+                                          <span className="font-mono">{String(value)}</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                              </div>
                             </div>
                           )}
+
+                          {/* Edit History Examples */}
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <h5 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+                                Your Edit History ({editExamples[pattern.pattern_type]?.length || 0} found):
+                              </h5>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => loadEditExamples(patterns, true)}
+                                disabled={isRefreshingExamples}
+                                className="text-xs h-8"
+                                title="Refresh examples from database"
+                              >
+                                {isRefreshingExamples ? (
+                                  <>
+                                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                    Refreshing...
+                                  </>
+                                ) : (
+                                  <>
+                                    <RefreshCw className="h-3 w-3 mr-1" />
+                                    Refresh
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                            <div className="space-y-3 max-h-96 overflow-y-auto">
+                              {editExamples[pattern.pattern_type]?.length > 0 ? (
+                                editExamples[pattern.pattern_type].map((example, idx) => (
+                                  <div key={example.id} className="space-y-2 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border hover:shadow-sm transition-shadow">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                          Product: {example.product_handle}
+                                        </span>
+                                        <span className="text-xs text-muted-foreground">
+                                          {new Date(example.created_at).toLocaleDateString()}
+                                        </span>
+                                        <Badge variant="secondary" className="text-xs">
+                                          #{idx + 1}
+                                        </Badge>
+                                      </div>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => deleteEditExample(example.id)}
+                                        disabled={isDeletingEdit === example.id}
+                                        className="text-red-600 border-red-200 hover:bg-red-50 h-8 w-8 p-0"
+                                        title="Remove this example"
+                                      >
+                                        {isDeletingEdit === example.id ? (
+                                          <Loader2 className="h-3 w-3 animate-spin" />
+                                        ) : (
+                                          <Trash2 className="h-3 w-3" />
+                                        )}
+                                      </Button>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <div className="p-3 bg-red-50 dark:bg-red-950 rounded border border-red-200 dark:border-red-800">
+                                        <div className="text-xs font-medium text-red-600 dark:text-red-400 mb-1">Before ({example.field_name}):</div>
+                                        <div className="text-sm text-red-800 dark:text-red-200 font-mono break-all">
+                                          {example.before_value || '(Empty)'}
+                                        </div>
+                                      </div>
+                                      <div className="p-3 bg-green-50 dark:bg-green-950 rounded border border-green-200 dark:border-green-800">
+                                        <div className="text-xs font-medium text-green-600 dark:text-green-400 mb-1">After ({example.field_name}):</div>
+                                        <div className="text-sm text-green-800 dark:text-green-200 font-mono break-all">
+                                          {example.after_value || '(Empty)'}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="text-sm p-4 bg-yellow-50 dark:bg-yellow-950 rounded-lg border border-yellow-200 dark:border-yellow-800 text-center">
+                                  <p className="text-yellow-800 dark:text-yellow-200 mb-2">
+                                    No specific examples found for this pattern type.
+                                  </p>
+                                  <p className="text-xs text-yellow-600 dark:text-yellow-400">
+                                    AI learned this pattern from your general editing behavior.
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </CardContent>
                       </Card>
-                    );
-                  })}
-                </div>
+                    </TabsContent>
+                  ))}
+                </Tabs>
               </TabsContent>
 
               <TabsContent value="insights" className="space-y-6">

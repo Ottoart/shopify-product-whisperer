@@ -56,10 +56,12 @@ export const ProductListItem = ({
           .select('domain')
           .eq('user_id', session.user.id)
           .eq('is_active', true)
-          .single();
+          .limit(1);
           
         if (error) throw error;
-        setStoreConfig(data);
+        if (data && data.length > 0) {
+          setStoreConfig(data[0]);
+        }
       } catch (error) {
         console.error('Error fetching store config:', error);
       }
