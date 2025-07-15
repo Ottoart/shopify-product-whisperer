@@ -100,25 +100,38 @@ serve(async (req) => {
 
     const tokenData = await tokenResponse.json();
 
-    // Get user info from eBay
-    const userResponse = await fetch('https://api.ebay.com/sell/account/v1/privilege', {
+    // Get user info from eBay using OAuth User API
+    const userApiEndpoint = isProduction 
+      ? 'https://api.ebay.com/commerce/identity/v1/user/'
+      : 'https://api.sandbox.ebay.com/commerce/identity/v1/user/';
+      
+    const userResponse = await fetch(userApiEndpoint, {
       headers: {
         'Authorization': `Bearer ${tokenData.access_token}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US'
       }
     });
 
     let ebayUserId = 'unknown';
+    let ebayUsername = 'eBay User';
     if (userResponse.ok) {
       const userData = await userResponse.json();
-      ebayUserId = userData.userId || 'unknown';
+      ebayUserId = userData.userId || userData.username || 'unknown';
+      ebayUsername = userData.username || userData.userId || 'eBay User';
+    } else {
+      console.log('Failed to get user info, using token info');
+      // Fallback to basic token info
+      ebayUserId = 'token_user';
+      ebayUsername = 'eBay Store';
     }
 
     // Extract user ID from state parameter
     const [userId] = state.split('_');
     
-    // Get store name from session (this would need to be passed differently in production)
-    const storeName = 'eBay Store'; // This should be retrieved from the state or passed differently
+    // Get store name from session or use eBay username
+    const sessionStoreName = 'eBay Store'; // This should be retrieved from the state or passed differently
+    const storeName = ebayUsername || sessionStoreName;
 
     // Store the credentials in Supabase
     const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
@@ -139,6 +152,7 @@ serve(async (req) => {
         token_type: tokenData.token_type,
         scope: tokenData.scope,
         ebay_user_id: ebayUserId,
+        ebay_username: ebayUsername,
         connected_at: new Date().toISOString()
       }),
       is_active: true
