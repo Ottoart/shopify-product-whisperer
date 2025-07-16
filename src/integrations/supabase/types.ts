@@ -107,6 +107,39 @@ export type Database = {
         }
         Relationships: []
       }
+      carrier_configurations: {
+        Row: {
+          api_credentials: Json
+          carrier_name: string
+          created_at: string
+          id: string
+          is_active: boolean
+          settings: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          api_credentials?: Json
+          carrier_name: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          settings?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          api_credentials?: Json
+          carrier_name?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          settings?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       marketplace_configurations: {
         Row: {
           access_token: string | null
@@ -922,6 +955,65 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      shipping_services: {
+        Row: {
+          carrier_configuration_id: string
+          created_at: string
+          estimated_days: string | null
+          id: string
+          is_available: boolean
+          last_updated: string
+          max_weight_lbs: number | null
+          service_code: string
+          service_name: string
+          service_type: string
+          supports_insurance: boolean | null
+          supports_signature: boolean | null
+          supports_tracking: boolean | null
+          user_id: string
+        }
+        Insert: {
+          carrier_configuration_id: string
+          created_at?: string
+          estimated_days?: string | null
+          id?: string
+          is_available?: boolean
+          last_updated?: string
+          max_weight_lbs?: number | null
+          service_code: string
+          service_name: string
+          service_type: string
+          supports_insurance?: boolean | null
+          supports_signature?: boolean | null
+          supports_tracking?: boolean | null
+          user_id: string
+        }
+        Update: {
+          carrier_configuration_id?: string
+          created_at?: string
+          estimated_days?: string | null
+          id?: string
+          is_available?: boolean
+          last_updated?: string
+          max_weight_lbs?: number | null
+          service_code?: string
+          service_name?: string
+          service_type?: string
+          supports_insurance?: boolean | null
+          supports_signature?: boolean | null
+          supports_tracking?: boolean | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shipping_services_carrier_configuration_id_fkey"
+            columns: ["carrier_configuration_id"]
+            isOneToOne: false
+            referencedRelation: "carrier_configurations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shopify_analytics: {
         Row: {

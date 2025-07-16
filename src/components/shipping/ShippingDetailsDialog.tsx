@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,9 +10,10 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Package, Printer, Eye, Edit, MapPin, DollarSign, User, Truck, Clock, AlertTriangle } from "lucide-react";
+import { Calendar, Package, Printer, Eye, Edit, MapPin, DollarSign, User, Truck, Clock, AlertTriangle, Settings } from "lucide-react";
 import { Order } from "@/hooks/useOrders";
-
+import { useShippingServices } from "@/hooks/useShippingServices";
+import { CarrierConfigurationDialog } from "./CarrierConfigurationDialog";
 interface ShippingDetailsDialogProps {
   isOpen: boolean;
   onClose: () => void;
@@ -23,12 +24,14 @@ interface ShippingDetailsDialogProps {
 export function ShippingDetailsDialog({ isOpen, onClose, order, onUpdateOrder }: ShippingDetailsDialogProps) {
   const [activeTab, setActiveTab] = useState("details");
   const [isEditing, setIsEditing] = useState(false);
+  const [showCarrierConfig, setShowCarrierConfig] = useState(false);
+  const { services, carriers, loading: servicesLoading, refreshServices } = useShippingServices();
   const [formData, setFormData] = useState({
     weight: order?.packageDetails?.weight || 0,
     length: order?.packageDetails?.length || 0,
     width: order?.packageDetails?.width || 0,
     height: order?.packageDetails?.height || 0,
-    serviceType: order?.shippingDetails?.serviceType || "standard",
+    serviceType: order?.shippingDetails?.serviceType || "",
     carrier: order?.shippingDetails?.carrier || "",
     packageType: "12x6x4",
     confirmation: "none",
@@ -45,7 +48,32 @@ export function ShippingDetailsDialog({ isOpen, onClose, order, onUpdateOrder }:
     deliveryNotification: "default"
   });
 
+  // Update form data when order changes
+  useEffect(() => {
+    if (order) {
+      setFormData(prev => ({
+        ...prev,
+        weight: order.packageDetails?.weight || 0,
+        length: order.packageDetails?.length || 0,
+        width: order.packageDetails?.width || 0,
+        height: order.packageDetails?.height || 0,
+        serviceType: order.shippingDetails?.serviceType || "",
+        carrier: order.shippingDetails?.carrier || ""
+      }));
+    }
+  }, [order]);
+
   if (!order) return null;
+
+  // Group services by carrier for easier display
+  const servicesByCarrier = services.reduce((acc, service) => {
+    const carrierName = service.carrier_name || 'Unknown';
+    if (!acc[carrierName]) {
+      acc[carrierName] = [];
+    }
+    acc[carrierName].push(service);
+    return acc;
+  }, {} as Record<string, typeof services>);
 
   const handleUpdateField = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -436,15 +464,48 @@ export function ShippingDetailsDialog({ isOpen, onClose, order, onUpdateOrder }:
                 </div>
 
                 <div>
-                  <Label htmlFor="service">Service</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="service">Service</Label>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setShowCarrierConfig(true)}
+                      disabled={servicesLoading}
+                    >
+                      <Settings className="h-4 w-4 mr-1" />
+                      Manage Carriers
+                    </Button>
+                  </div>
                   <Select value={formData.serviceType} onValueChange={(value) => handleUpdateField('serviceType', value)}>
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder={services.length === 0 ? "No services available - configure carriers first" : "Select a service"} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="standard">Sendle Preferred - Pickup (Carbon Neutral)</SelectItem>
-                      <SelectItem value="expedited">Express</SelectItem>
-                      <SelectItem value="overnight">Overnight</SelectItem>
+                      {services.length === 0 ? (
+                        <SelectItem value="no-services" disabled>
+                          No services available
+                        </SelectItem>
+                      ) : (
+                        Object.entries(servicesByCarrier).map(([carrierName, carrierServices]) => (
+                          <div key={carrierName}>
+                            <div className="px-2 py-1 text-xs font-medium text-muted-foreground bg-muted/50">
+                              {carrierName.toUpperCase()}
+                            </div>
+                            {carrierServices.map(service => (
+                              <SelectItem key={service.service_code} value={service.service_code}>
+                                <div className="flex items-center justify-between w-full">
+                                  <span>{service.service_name}</span>
+                                  {service.estimated_days && (
+                                    <Badge variant="outline" className="ml-2 text-xs">
+                                      {service.estimated_days}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </div>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -568,6 +629,11 @@ export function ShippingDetailsDialog({ isOpen, onClose, order, onUpdateOrder }:
             </Card>
           </div>
         </div>
+
+        <CarrierConfigurationDialog
+          isOpen={showCarrierConfig}
+          onClose={() => setShowCarrierConfig(false)}
+        />
       </DialogContent>
     </Dialog>
   );

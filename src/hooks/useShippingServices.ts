@@ -1,0 +1,190 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+
+export interface ShippingService {
+  id: string;
+  carrier_configuration_id: string;
+  service_code: string;
+  service_name: string;
+  service_type: string;
+  estimated_days?: string;
+  max_weight_lbs?: number;
+  supports_tracking: boolean;
+  supports_insurance: boolean;
+  supports_signature: boolean;
+  is_available: boolean;
+  carrier_name?: string;
+}
+
+export interface CarrierConfiguration {
+  id: string;
+  carrier_name: string;
+  is_active: boolean;
+  api_credentials: any;
+  settings: any;
+  created_at: string;
+  updated_at: string;
+}
+
+export const useShippingServices = () => {
+  const [services, setServices] = useState<ShippingService[]>([]);
+  const [carriers, setCarriers] = useState<CarrierConfiguration[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+
+  const fetchServices = async (forceRefresh = false) => {
+    if (!user) return;
+    
+    setLoading(true);
+    setError(null);
+
+    try {
+      // First, get services from database
+      const { data: dbServices, error: dbError } = await supabase
+        .from('shipping_services')
+        .select(`
+          *,
+          carrier_configurations!inner(
+            carrier_name,
+            is_active
+          )
+        `)
+        .eq('user_id', user.id)
+        .eq('is_available', true)
+        .eq('carrier_configurations.is_active', true);
+
+      if (dbError) {
+        console.error('Error fetching services from database:', dbError);
+        setError('Failed to fetch shipping services');
+        return;
+      }
+
+      // If we have recent services and not forcing refresh, use cached data
+      const now = new Date();
+      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+      
+      const hasRecentServices = dbServices?.some(service => 
+        new Date(service.last_updated) > oneHourAgo
+      );
+
+      if (hasRecentServices && !forceRefresh) {
+        const formattedServices = dbServices.map(service => ({
+          ...service,
+          carrier_name: service.carrier_configurations.carrier_name
+        }));
+        setServices(formattedServices);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch fresh services from carriers
+      console.log('Fetching fresh services from carriers...');
+      const { data: freshData, error: fetchError } = await supabase.functions.invoke(
+        'fetch-shipping-services',
+        {
+          body: { 
+            user_id: user.id, 
+            force_refresh: forceRefresh 
+          }
+        }
+      );
+
+      if (fetchError) {
+        console.error('Error fetching fresh services:', fetchError);
+        setError('Failed to fetch services from carriers');
+        return;
+      }
+
+      // Update local state with fresh data
+      if (freshData?.services) {
+        setServices(freshData.services);
+      }
+      
+      if (freshData?.carriers) {
+        setCarriers(freshData.carriers);
+      }
+
+    } catch (err) {
+      console.error('Error in fetchServices:', err);
+      setError('Failed to fetch shipping services');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getServicesByType = (type: string) => {
+    return services.filter(service => service.service_type === type);
+  };
+
+  const getServicesByCarrier = (carrierName: string) => {
+    return services.filter(service => service.carrier_name === carrierName);
+  };
+
+  const addCarrierConfiguration = async (carrierData: {
+    carrier_name: string;
+    api_credentials: any;
+    settings?: any;
+  }) => {
+    if (!user) return null;
+
+    const { data, error } = await supabase
+      .from('carrier_configurations')
+      .insert({
+        user_id: user.id,
+        ...carrierData
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error adding carrier configuration:', error);
+      throw error;
+    }
+
+    // Refresh services after adding new carrier
+    await fetchServices(true);
+    return data;
+  };
+
+  const updateCarrierConfiguration = async (carrierId: string, updates: Partial<CarrierConfiguration>) => {
+    const { error } = await supabase
+      .from('carrier_configurations')
+      .update(updates)
+      .eq('id', carrierId)
+      .eq('user_id', user?.id);
+
+    if (error) {
+      console.error('Error updating carrier configuration:', error);
+      throw error;
+    }
+
+    // Refresh services after updating carrier
+    await fetchServices(true);
+  };
+
+  const toggleCarrierStatus = async (carrierId: string, isActive: boolean) => {
+    await updateCarrierConfiguration(carrierId, { is_active: isActive });
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchServices();
+    }
+  }, [user]);
+
+  return {
+    services,
+    carriers,
+    loading,
+    error,
+    fetchServices,
+    getServicesByType,
+    getServicesByCarrier,
+    addCarrierConfiguration,
+    updateCarrierConfiguration,
+    toggleCarrierStatus,
+    refreshServices: () => fetchServices(true)
+  };
+};
