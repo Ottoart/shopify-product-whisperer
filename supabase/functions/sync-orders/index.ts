@@ -589,7 +589,9 @@ async function syncEbayOrders(storeConfig: any, user: any, supabase: any, syncRe
     throw new Error(`Invalid eBay access token format for ${storeConfig.store_name}`);
   }
 
-  const accessToken = ebayAuth.access_token;
+  let accessToken = ebayAuth.access_token;
+  const refreshToken = ebayAuth.refresh_token;
+  
   if (!accessToken) {
     throw new Error(`No eBay access token found for ${storeConfig.store_name}`);
   }
@@ -599,14 +601,84 @@ async function syncEbayOrders(storeConfig: any, user: any, supabase: any, syncRe
   
   console.log(`Fetching orders from eBay API: ${apiUrl}`);
   
-  // Fetch orders from eBay
-  const ordersResponse = await fetch(apiUrl, {
+  // Function to refresh eBay access token
+  const refreshEbayToken = async () => {
+    if (!refreshToken) {
+      throw new Error('No refresh token available for eBay authentication');
+    }
+
+    const clientId = Deno.env.get('EBAY_CLIENT_ID');
+    const clientSecret = Deno.env.get('EBAY_CLIENT_SECRET');
+    
+    if (!clientId || !clientSecret) {
+      throw new Error('eBay client credentials not configured');
+    }
+
+    const credentials = btoa(`${clientId}:${clientSecret}`);
+    
+    const tokenResponse = await fetch('https://api.ebay.com/identity/v1/oauth2/token', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${credentials}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: `grant_type=refresh_token&refresh_token=${refreshToken}`
+    });
+
+    if (!tokenResponse.ok) {
+      const errorText = await tokenResponse.text();
+      console.error('eBay token refresh failed:', errorText);
+      throw new Error('Failed to refresh eBay access token. Please reconnect your eBay store.');
+    }
+
+    const tokenData = await tokenResponse.json();
+    
+    // Update the stored access token
+    const updatedAuth = {
+      ...ebayAuth,
+      access_token: tokenData.access_token,
+      expires_in: tokenData.expires_in,
+      token_type: tokenData.token_type,
+      connected_at: new Date().toISOString()
+    };
+
+    await supabase
+      .from('store_configurations')
+      .update({ access_token: JSON.stringify(updatedAuth) })
+      .eq('id', storeConfig.id);
+
+    console.log('eBay access token refreshed successfully');
+    return tokenData.access_token;
+  };
+
+  // Try to fetch orders with current token
+  let ordersResponse = await fetch(apiUrl, {
     headers: {
       'Authorization': `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
       'Accept': 'application/json'
     }
   });
+
+  // If token expired (401), refresh it and try again
+  if (ordersResponse.status === 401) {
+    console.log('eBay access token expired, refreshing...');
+    try {
+      accessToken = await refreshEbayToken();
+      
+      // Retry with new token
+      ordersResponse = await fetch(apiUrl, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+    } catch (refreshError) {
+      console.error('Failed to refresh eBay token:', refreshError);
+      throw new Error('eBay authentication failed. Please reconnect your eBay store in settings.');
+    }
+  }
 
   if (!ordersResponse.ok) {
     const errorText = await ordersResponse.text();
