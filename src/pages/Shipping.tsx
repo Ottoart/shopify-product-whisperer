@@ -10,6 +10,7 @@ import { ReturnsManagement } from "@/components/shipping/ReturnsManagement";
 import { BatchActionQueue } from "@/components/shipping/BatchActionQueue";
 import { CarrierManagement } from "@/components/shipping/CarrierManagement";
 import { StoreConfig } from "@/components/StoreConfig";
+import { ShopifyConnectionTest } from "@/components/shipping/ShopifyConnectionTest";
 
 export default function Shipping() {
   const [activeTab, setActiveTab] = useState("orders");
@@ -67,7 +68,16 @@ export default function Shipping() {
         </TabsContent>
 
         <TabsContent value="stores">
-          <StoreConfig />
+          <div className="space-y-6">
+            <StoreConfig />
+            <div className="mt-6">
+              <h3 className="text-lg font-semibold mb-4">Connection Diagnostics</h3>
+              <ShopifyConnectionTest 
+                storeId="04964ded-c61e-40db-bf5c-fea9ff794681" 
+                storeName="Prohair" 
+              />
+            </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="rates">
