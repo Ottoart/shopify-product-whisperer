@@ -25,17 +25,63 @@ const SUPPORTED_CARRIERS = [
   { value: 'shipstation', label: 'ShipStation', description: 'Multi-carrier shipping software' }
 ];
 
+const UPS_ACCOUNT_TYPES = [
+  'Daily Pickup',
+  'Customer Counter',
+  'One Time Pickup',
+  'On Call Air',
+  'Letter Center',
+  'Air Service Center'
+];
+
+const UPS_ENDORSEMENTS = [
+  'Return Service Requested',
+  'Forwarding Service Requested',
+  'Address Service Requested',
+  'Change Service Requested'
+];
+
+const COUNTRY_CODES = [
+  { value: 'US', label: 'United States' },
+  { value: 'CA', label: 'Canada' },
+  { value: 'MX', label: 'Mexico' }
+];
+
 export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigurationDialogProps) {
   const [selectedCarrier, setSelectedCarrier] = useState('');
-  const [credentials, setCredentials] = useState({
+  const [upsConfig, setUpsConfig] = useState({
+    account_number: '',
+    client_id: '',
+    client_secret: '',
+    account_type: '',
+    mi_endorsement: '',
+    mi_cost_center: '',
+    mi_customer_id: '',
+    mi_customer_guid: '',
+    postal_code: '',
+    country_code: 'US',
+    enable_negotiated_rates: false,
+    enable_carbon_neutral: false,
+    enable_ground_freight: false,
+    enable_additional_services: false,
+    enable_user_order_number: false
+  });
+  const [canadaPostConfig, setCanadaPostConfig] = useState({
+    username: '',
+    password: '',
+    api_key: '',
+    customer_number: '',
+    contract_number: ''
+  });
+  const [sendleConfig, setSendleConfig] = useState({
     api_key: '',
     api_secret: '',
-    account_number: '',
-    access_key: '',
-    password: '',
-    username: '',
-    client_id: '',
-    client_secret: ''
+    sandbox: false
+  });
+  const [shipstationConfig, setShipstationConfig] = useState({
+    api_key: '',
+    api_secret: '',
+    store_id: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [testingCarrier, setTestingCarrier] = useState<string | null>(null);
@@ -51,6 +97,29 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
   } = useShippingServices();
   const { toast } = useToast();
 
+  const getCarrierConfig = () => {
+    switch (selectedCarrier) {
+      case 'ups': return upsConfig;
+      case 'canada_post': return canadaPostConfig;
+      case 'sendle': return sendleConfig;
+      case 'shipstation': return shipstationConfig;
+      default: return {};
+    }
+  };
+
+  const resetCarrierConfig = () => {
+    setUpsConfig({
+      account_number: '', client_id: '', client_secret: '', account_type: '',
+      mi_endorsement: '', mi_cost_center: '', mi_customer_id: '', mi_customer_guid: '',
+      postal_code: '', country_code: 'US', enable_negotiated_rates: false,
+      enable_carbon_neutral: false, enable_ground_freight: false,
+      enable_additional_services: false, enable_user_order_number: false
+    });
+    setCanadaPostConfig({ username: '', password: '', api_key: '', customer_number: '', contract_number: '' });
+    setSendleConfig({ api_key: '', api_secret: '', sandbox: false });
+    setShipstationConfig({ api_key: '', api_secret: '', store_id: '' });
+  };
+
   const handleAddCarrier = async () => {
     if (!selectedCarrier) {
       toast({
@@ -64,14 +133,10 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
     setIsSubmitting(true);
 
     try {
-      // Filter out empty credentials
-      const filteredCredentials = Object.fromEntries(
-        Object.entries(credentials).filter(([_, value]) => value.trim() !== '')
-      );
-
+      const config = getCarrierConfig();
       await addCarrierConfiguration({
         carrier_name: selectedCarrier,
-        api_credentials: filteredCredentials,
+        api_credentials: config,
         settings: {}
       });
 
@@ -80,18 +145,8 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
         description: `${selectedCarrier.toUpperCase()} carrier has been added successfully`,
       });
 
-      // Reset form
       setSelectedCarrier('');
-      setCredentials({
-        api_key: '',
-        api_secret: '',
-        account_number: '',
-        access_key: '',
-        password: '',
-        username: '',
-        client_id: '',
-        client_secret: ''
-      });
+      resetCarrierConfig();
 
     } catch (error) {
       console.error('Error adding carrier:', error);
@@ -221,38 +276,259 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
                 </Select>
               </div>
 
-              {selectedCarrier && (
-                <div className="space-y-3">
+              {selectedCarrier === 'ups' && (
+                <div className="space-y-4">
                   <Separator />
                   <div className="flex items-center gap-2">
                     <AlertCircle className="h-4 w-4 text-amber-500" />
-                    <span className="text-sm text-muted-foreground">
-                      API credentials for {selectedCarrier.toUpperCase()}
-                    </span>
+                    <span className="text-sm font-medium">UPS Account Information</span>
                   </div>
                   
-                  {getCredentialFields(selectedCarrier).map(field => (
-                    <div key={field}>
-                      <Label htmlFor={field}>{getFieldLabel(field)}</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="ups_account">UPS Account #</Label>
                       <Input
-                        id={field}
-                        type={field.includes('secret') || field.includes('password') ? 'password' : 'text'}
-                        value={credentials[field as keyof typeof credentials]}
-                        onChange={(e) => setCredentials(prev => ({
-                          ...prev,
-                          [field]: e.target.value
-                        }))}
-                        placeholder={`Enter your ${getFieldLabel(field).toLowerCase()}`}
+                        id="ups_account"
+                        value={upsConfig.account_number}
+                        onChange={(e) => setUpsConfig(prev => ({ ...prev, account_number: e.target.value }))}
+                        placeholder="A90665"
                       />
                     </div>
-                  ))}
+                    <div>
+                      <Label htmlFor="account_type">Account Type</Label>
+                      <Select value={upsConfig.account_type} onValueChange={(value) => setUpsConfig(prev => ({ ...prev, account_type: value }))}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Daily Pickup" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {UPS_ACCOUNT_TYPES.map(type => (
+                            <SelectItem key={type} value={type}>{type}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="client_id">Client ID</Label>
+                      <Input
+                        id="client_id"
+                        value={upsConfig.client_id}
+                        onChange={(e) => setUpsConfig(prev => ({ ...prev, client_id: e.target.value }))}
+                        placeholder="Your UPS Client ID"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="client_secret">Client Secret</Label>
+                      <Input
+                        id="client_secret"
+                        type="password"
+                        value={upsConfig.client_secret}
+                        onChange={(e) => setUpsConfig(prev => ({ ...prev, client_secret: e.target.value }))}
+                        placeholder="Your UPS Client Secret"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="postal_code">Account Postal Code</Label>
+                      <Input
+                        id="postal_code"
+                        value={upsConfig.postal_code}
+                        onChange={(e) => setUpsConfig(prev => ({ ...prev, postal_code: e.target.value }))}
+                        placeholder="h2n1z4"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="country_code">Account Country Code</Label>
+                      <Select value={upsConfig.country_code} onValueChange={(value) => setUpsConfig(prev => ({ ...prev, country_code: value }))}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {COUNTRY_CODES.map(country => (
+                            <SelectItem key={country.value} value={country.value}>{country.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="negotiated_rates" 
+                        checked={upsConfig.enable_negotiated_rates}
+                        onCheckedChange={(checked) => setUpsConfig(prev => ({ ...prev, enable_negotiated_rates: !!checked }))}
+                      />
+                      <Label htmlFor="negotiated_rates">Enable Negotiated Rates</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="carbon_neutral" 
+                        checked={upsConfig.enable_carbon_neutral}
+                        onCheckedChange={(checked) => setUpsConfig(prev => ({ ...prev, enable_carbon_neutral: !!checked }))}
+                      />
+                      <Label htmlFor="carbon_neutral">Use the UPS Carbon Neutral shipping program</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="ground_freight" 
+                        checked={upsConfig.enable_ground_freight}
+                        onCheckedChange={(checked) => setUpsConfig(prev => ({ ...prev, enable_ground_freight: !!checked }))}
+                      />
+                      <Label htmlFor="ground_freight">Enable Ground Freight Pricing</Label>
+                    </div>
+                  </div>
 
                   <Button 
                     onClick={handleAddCarrier} 
                     disabled={isSubmitting || loading}
                     className="w-full"
                   >
-                    {isSubmitting ? 'Adding...' : `Add ${selectedCarrier.toUpperCase()} Carrier`}
+                    {isSubmitting ? 'Adding...' : 'Add UPS Carrier'}
+                  </Button>
+                </div>
+              )}
+
+              {selectedCarrier === 'canada_post' && (
+                <div className="space-y-4">
+                  <Separator />
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-amber-500" />
+                    <span className="text-sm font-medium">Canada Post Configuration</span>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="cp_username">Username</Label>
+                    <Input
+                      id="cp_username"
+                      value={canadaPostConfig.username}
+                      onChange={(e) => setCanadaPostConfig(prev => ({ ...prev, username: e.target.value }))}
+                      placeholder="Your Canada Post username"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="cp_password">Password</Label>
+                    <Input
+                      id="cp_password"
+                      type="password"
+                      value={canadaPostConfig.password}
+                      onChange={(e) => setCanadaPostConfig(prev => ({ ...prev, password: e.target.value }))}
+                      placeholder="Your Canada Post password"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="cp_customer_number">Customer Number</Label>
+                    <Input
+                      id="cp_customer_number"
+                      value={canadaPostConfig.customer_number}
+                      onChange={(e) => setCanadaPostConfig(prev => ({ ...prev, customer_number: e.target.value }))}
+                      placeholder="Your customer number"
+                    />
+                  </div>
+
+                  <Button 
+                    onClick={handleAddCarrier} 
+                    disabled={isSubmitting || loading}
+                    className="w-full"
+                  >
+                    {isSubmitting ? 'Adding...' : 'Add Canada Post'}
+                  </Button>
+                </div>
+              )}
+
+              {selectedCarrier === 'sendle' && (
+                <div className="space-y-4">
+                  <Separator />
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-amber-500" />
+                    <span className="text-sm font-medium">Sendle Configuration</span>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="sendle_api_key">API Key</Label>
+                    <Input
+                      id="sendle_api_key"
+                      value={sendleConfig.api_key}
+                      onChange={(e) => setSendleConfig(prev => ({ ...prev, api_key: e.target.value }))}
+                      placeholder="Your Sendle API key"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="sendle_api_secret">API Secret</Label>
+                    <Input
+                      id="sendle_api_secret"
+                      type="password"
+                      value={sendleConfig.api_secret}
+                      onChange={(e) => setSendleConfig(prev => ({ ...prev, api_secret: e.target.value }))}
+                      placeholder="Your Sendle API secret"
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="sendle_sandbox" 
+                      checked={sendleConfig.sandbox}
+                      onCheckedChange={(checked) => setSendleConfig(prev => ({ ...prev, sandbox: !!checked }))}
+                    />
+                    <Label htmlFor="sendle_sandbox">Use Sandbox Environment</Label>
+                  </div>
+
+                  <Button 
+                    onClick={handleAddCarrier} 
+                    disabled={isSubmitting || loading}
+                    className="w-full"
+                  >
+                    {isSubmitting ? 'Adding...' : 'Add Sendle'}
+                  </Button>
+                </div>
+              )}
+
+              {selectedCarrier === 'shipstation' && (
+                <div className="space-y-4">
+                  <Separator />
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-amber-500" />
+                    <span className="text-sm font-medium">ShipStation Configuration</span>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="ss_api_key">API Key</Label>
+                    <Input
+                      id="ss_api_key"
+                      value={shipstationConfig.api_key}
+                      onChange={(e) => setShipstationConfig(prev => ({ ...prev, api_key: e.target.value }))}
+                      placeholder="Your ShipStation API key"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="ss_api_secret">API Secret</Label>
+                    <Input
+                      id="ss_api_secret"
+                      type="password"
+                      value={shipstationConfig.api_secret}
+                      onChange={(e) => setShipstationConfig(prev => ({ ...prev, api_secret: e.target.value }))}
+                      placeholder="Your ShipStation API secret"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="ss_store_id">Store ID (Optional)</Label>
+                    <Input
+                      id="ss_store_id"
+                      value={shipstationConfig.store_id}
+                      onChange={(e) => setShipstationConfig(prev => ({ ...prev, store_id: e.target.value }))}
+                      placeholder="Your store ID"
+                    />
+                  </div>
+
+                  <Button 
+                    onClick={handleAddCarrier} 
+                    disabled={isSubmitting || loading}
+                    className="w-full"
+                  >
+                    {isSubmitting ? 'Adding...' : 'Add ShipStation'}
                   </Button>
                 </div>
               )}
