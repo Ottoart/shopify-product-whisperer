@@ -249,10 +249,10 @@ export function AppSidebar() {
                     title={collapsed ? "View all orders from all stores" : undefined}
                     >
                       <Package className="h-4 w-4 flex-shrink-0" />
-                      <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col transition-all duration-300 overflow-hidden`}>
-                        <span className="whitespace-nowrap">All Orders</span>
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">View orders from all stores</span>
-                      </div>
+                       <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col transition-all duration-300 overflow-hidden`}>
+                         <span className="whitespace-nowrap">Awaiting Shipments</span>
+                         <span className="text-xs text-muted-foreground whitespace-nowrap">All stores awaiting shipment</span>
+                       </div>
                     </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
