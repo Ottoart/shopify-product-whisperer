@@ -59,6 +59,10 @@ export function CarrierManagement() {
   // Check if user is admin
   const isAdmin = user?.email === 'ottman1@gmail.com';
   
+  // Debug logging
+  console.log('Current user:', user?.email);
+  console.log('Is Admin:', isAdmin);
+  
   const [selectedCarrier, setSelectedCarrier] = useState<Carrier | null>(null);
   const [showMarkupSettings, setShowMarkupSettings] = useState(false);
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
