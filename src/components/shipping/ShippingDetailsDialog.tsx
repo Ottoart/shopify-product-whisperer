@@ -561,7 +561,15 @@ export function ShippingDetailsDialog({ isOpen, onClose, order, onUpdateOrder }:
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">Authority to Leave</SelectItem>
-                      <SelectItem value="signature">Signature Required</SelectItem>
+                      {(() => {
+                        // Find the selected service to check if signature is supported
+                        const selectedService = services.find(service => service.service_code === formData.serviceType);
+                        const supportsSignature = selectedService?.supports_signature !== false; // Default to true if undefined
+                        
+                        return supportsSignature ? (
+                          <SelectItem value="signature">Signature Required</SelectItem>
+                        ) : null;
+                      })()}
                     </SelectContent>
                   </Select>
                 </div>
@@ -574,8 +582,18 @@ export function ShippingDetailsDialog({ isOpen, onClose, order, onUpdateOrder }:
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">None</SelectItem>
-                      <SelectItem value="basic">Basic Coverage</SelectItem>
-                      <SelectItem value="full">Full Coverage</SelectItem>
+                      {(() => {
+                        // Find the selected service to check if insurance is supported
+                        const selectedService = services.find(service => service.service_code === formData.serviceType);
+                        const supportsInsurance = selectedService?.supports_insurance !== false; // Default to true if undefined
+                        
+                        return supportsInsurance ? (
+                          <>
+                            <SelectItem value="basic">Basic Coverage</SelectItem>
+                            <SelectItem value="full">Full Coverage</SelectItem>
+                          </>
+                        ) : null;
+                      })()}
                     </SelectContent>
                   </Select>
                 </div>
