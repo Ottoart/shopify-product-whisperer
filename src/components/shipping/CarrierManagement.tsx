@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   Building2, CheckCircle, XCircle, Settings, Plus, RefreshCw, AlertCircle, 
   CreditCard, Crown, Zap, TestTube, Shield, DollarSign, Eye, EyeOff, 
@@ -65,6 +66,70 @@ export function CarrierManagement() {
   const [isPlanComparisonOpen, setIsPlanComparisonOpen] = useState(false);
   const [isAddCarrierOpen, setIsAddCarrierOpen] = useState(false);
   const [connectedUserCarriers, setConnectedUserCarriers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch real carrier configurations from database
+  useEffect(() => {
+    const fetchCarrierConfigurations = async () => {
+      if (!user) return;
+      
+      try {
+        const { data: carrierConfigs, error } = await supabase
+          .from('carrier_configurations')
+          .select(`
+            *,
+            shipping_services(*)
+          `)
+          .eq('user_id', user.id)
+          .eq('is_active', true);
+
+        if (error) {
+          console.error('Error fetching carrier configurations:', error);
+          return;
+        }
+
+        const formattedCarriers = carrierConfigs.map(config => {
+          const getCarrierLogo = (name: string) => {
+            switch (name.toLowerCase()) {
+              case 'ups': return '📦';
+              case 'fedex': return '🚚';
+              case 'usps': return '📮';
+              case 'dhl': return '✈️';
+              default: return '🚛';
+            }
+          };
+
+          return {
+            id: config.id,
+            name: config.carrier_name,
+            logo: getCarrierLogo(config.carrier_name),
+            connected: true,
+            status: 'connected' as const,
+            services: config.shipping_services.map((service: any) => ({
+              id: service.id,
+              name: service.service_name,
+              enabled: service.is_available,
+              markup: 0
+            })),
+            lastSync: new Date(config.updated_at).toLocaleDateString(),
+            isInternal: false,
+            markup: 0,
+            adminControlled: false,
+            credentials: config.api_credentials,
+            settings: config.settings
+          };
+        });
+
+        setConnectedUserCarriers(formattedCarriers);
+      } catch (error) {
+        console.error('Error fetching carriers:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCarrierConfigurations();
+  }, [user]);
 
   // Available PrepFox carriers (admin controlled)
   const [prepfoxCarriers, setPrepfoxCarriers] = useState<Carrier[]>([
@@ -728,20 +793,20 @@ export function CarrierManagement() {
 
                     {/* Service Preview */}
                     <div className="mt-4 flex flex-wrap gap-2">
-                      {carrier.services.filter(s => s.enabled).slice(0, 4).map((service) => (
+                      {carrier.services.filter((s: any) => s.enabled).slice(0, 4).map((service: any) => (
                         <Badge key={service.id} variant="secondary" className="text-xs">
                           {service.name}
                         </Badge>
                       ))}
-                      {carrier.services.filter(s => s.enabled).length > 4 && (
+                      {carrier.services.filter((s: any) => s.enabled).length > 4 && (
                         <Badge variant="outline" className="text-xs">
-                          +{carrier.services.filter(s => s.enabled).length - 4} more
+                          +{carrier.services.filter((s: any) => s.enabled).length - 4} more
                         </Badge>
                       )}
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+               ))}
             </div>
           </TabsContent>
 
@@ -755,7 +820,14 @@ export function CarrierManagement() {
                 </Button>
               </div>
               
-              {connectedUserCarriers.length === 0 ? (
+              {loading ? (
+                <Card>
+                  <CardContent className="p-12 text-center">
+                    <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Loading your carrier accounts...</p>
+                  </CardContent>
+                </Card>
+              ) : connectedUserCarriers.length === 0 ? (
                 <Card className="border-dashed">
                   <CardContent className="p-12 text-center">
                     <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -788,13 +860,48 @@ export function CarrierManagement() {
                               </Badge>
                             </div>
                             <p className="text-sm text-muted-foreground mt-1">
-                              {carrier.services.filter(s => s.enabled).length} of {carrier.services.length} services enabled
+                              {carrier.services.filter((s: any) => s.enabled).length} of {carrier.services.length} services enabled
                               • Last sync: {carrier.lastSync}
                             </p>
+                            {carrier.credentials && (
+                              <div className="text-xs text-muted-foreground mt-1">
+                                Account: {carrier.credentials.account_number || 'API Connected'} 
+                                {carrier.credentials.access_token ? ' • OAuth Active' : ' • OAuth Needed'}
+                              </div>
+                            )}
                           </div>
                         </div>
                         
                         <div className="flex items-center gap-2">
+                          {!carrier.credentials?.access_token && carrier.name === 'UPS' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={async () => {
+                                try {
+                                  const { data, error } = await supabase.functions.invoke('ups-oauth-url');
+                                  if (error) throw error;
+                                  if (data?.authUrl) {
+                                    window.open(data.authUrl, '_blank');
+                                    toast({
+                                      title: "OAuth Authorization",
+                                      description: "Complete UPS authorization in the new window to enable real rates.",
+                                    });
+                                  }
+                                } catch (error) {
+                                  console.error('OAuth error:', error);
+                                  toast({
+                                    title: "OAuth Error",
+                                    description: "Failed to generate OAuth URL",
+                                    variant: "destructive",
+                                  });
+                                }
+                              }}
+                            >
+                              <Lock className="h-4 w-4 mr-1" />
+                              Authorize OAuth
+                            </Button>
+                          )}
                           <Button
                             variant="outline"
                             size="sm"
@@ -818,14 +925,14 @@ export function CarrierManagement() {
 
                       {/* Service Preview */}
                       <div className="mt-4 flex flex-wrap gap-2">
-                        {carrier.services.filter(s => s.enabled).slice(0, 4).map((service) => (
+                        {carrier.services.filter((s: any) => s.enabled).slice(0, 4).map((service: any) => (
                           <Badge key={service.id} variant="secondary" className="text-xs">
                             {service.name}
                           </Badge>
                         ))}
-                        {carrier.services.filter(s => s.enabled).length > 4 && (
+                        {carrier.services.filter((s: any) => s.enabled).length > 4 && (
                           <Badge variant="outline" className="text-xs">
-                            +{carrier.services.filter(s => s.enabled).length - 4} more
+                            +{carrier.services.filter((s: any) => s.enabled).length - 4} more
                           </Badge>
                         )}
                       </div>
