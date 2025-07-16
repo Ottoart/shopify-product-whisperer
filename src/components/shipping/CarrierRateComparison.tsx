@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useShippingServices } from "@/hooks/useShippingServices";
+import { useOrders } from "@/hooks/useOrders";
 import { Truck, Clock, DollarSign, Download, Printer, Shield, Zap } from "lucide-react";
 
 interface ShippingRate {
@@ -18,58 +20,59 @@ interface ShippingRate {
 
 export function CarrierRateComparison() {
   const { toast } = useToast();
-  const [selectedOrder, setSelectedOrder] = useState("ORD-001");
+  const { services, carriers, loading: servicesLoading } = useShippingServices();
+  const { orders, loading: ordersLoading } = useOrders();
+  const [selectedOrder, setSelectedOrder] = useState<string | null>(null);
   const [isLoadingRates, setIsLoadingRates] = useState(false);
   const [selectedRate, setSelectedRate] = useState<string | null>(null);
+  const [shippingRates, setShippingRates] = useState<ShippingRate[]>([]);
 
-  // Mock shipping rates
-  const shippingRates: ShippingRate[] = [
-    {
-      id: "ups-ground",
-      carrier: "UPS",
-      logo: "📦",
-      service: "UPS Ground",
-      price: 8.95,
-      deliveryTime: "3-5 business days",
-      type: "ground"
-    },
-    {
-      id: "fedex-ground",
-      carrier: "FedEx",
-      logo: "🚚",
-      service: "FedEx Ground",
-      price: 9.20,
-      deliveryTime: "3-5 business days",
-      type: "ground"
-    },
-    {
-      id: "ups-2day",
-      carrier: "UPS",
-      logo: "📦",
-      service: "UPS 2nd Day Air",
-      price: 15.50,
-      deliveryTime: "2 business days",
-      type: "2-day"
-    },
-    {
-      id: "fedex-express",
-      carrier: "FedEx",
-      logo: "🚚",
-      service: "FedEx Express Saver",
-      price: 18.75,
-      deliveryTime: "1-3 business days",
-      type: "express"
-    },
-    {
-      id: "usps-priority",
-      carrier: "USPS",
-      logo: "📮",
-      service: "Priority Mail",
-      price: 7.95,
-      deliveryTime: "1-3 business days",
-      type: "express"
+  // Convert shipping services to shipping rates format
+  useEffect(() => {
+    if (services.length > 0 && carriers.length > 0) {
+      const rates: ShippingRate[] = services.map(service => {
+        const carrier = carriers.find(c => c.id === service.carrier_configuration_id);
+        const carrierName = carrier?.carrier_name || 'Unknown';
+        
+        // Generate mock pricing for now (in real implementation, this would come from API)
+        const basePrice = Math.random() * 20 + 5;
+        const deliveryDays = service.estimated_days || '3-5 business days';
+        
+        // Determine service type based on service name
+        let serviceType: ShippingRate['type'] = 'ground';
+        if (service.service_name.toLowerCase().includes('express') || service.service_name.toLowerCase().includes('priority')) {
+          serviceType = 'express';
+        } else if (service.service_name.toLowerCase().includes('2') || service.service_name.toLowerCase().includes('two')) {
+          serviceType = '2-day';
+        } else if (service.service_name.toLowerCase().includes('overnight') || service.service_name.toLowerCase().includes('next')) {
+          serviceType = 'overnight';
+        }
+
+        // Get carrier logo
+        const getCarrierLogo = (carrier: string) => {
+          switch (carrier.toLowerCase()) {
+            case 'ups': return '📦';
+            case 'fedex': return '🚚';
+            case 'usps': return '📮';
+            case 'dhl': return '✈️';
+            default: return '🚛';
+          }
+        };
+
+        return {
+          id: service.id,
+          carrier: carrierName,
+          logo: getCarrierLogo(carrierName),
+          service: service.service_name,
+          price: Number(basePrice.toFixed(2)),
+          deliveryTime: deliveryDays,
+          type: serviceType
+        };
+      });
+      
+      setShippingRates(rates);
     }
-  ];
+  }, [services, carriers]);
 
   const getServiceBadge = (type: ShippingRate['type']) => {
     switch (type) {
@@ -86,20 +89,37 @@ export function CarrierRateComparison() {
     }
   };
 
-  const handleRefreshRates = () => {
+  const handleRefreshRates = async () => {
+    if (!selectedOrder) {
+      toast({
+        title: "Please select an order first",
+        description: "Select an order to get shipping rates",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsLoadingRates(true);
     toast({
       title: "🎯 Finding the best shipping rate for you...",
       description: "Comparing rates from all carriers",
     });
 
+    // Simulate rate fetching - in real implementation, this would call the shipping API
     setTimeout(() => {
+      // Refresh rates with new pricing
+      const updatedRates = shippingRates.map(rate => ({
+        ...rate,
+        price: Number((Math.random() * 20 + 5).toFixed(2))
+      }));
+      setShippingRates(updatedRates);
+      
       setIsLoadingRates(false);
       toast({
-        title: "📬 Just a sec... We're pulling the best shipping rates for you.",
-        description: "Updated rates are now available",
+        title: "📬 Rates updated successfully!",
+        description: `Found ${updatedRates.length} shipping options`,
       });
-    }, 3000);
+    }, 2000);
   };
 
   const handlePurchaseLabel = (rate: ShippingRate) => {
@@ -132,14 +152,22 @@ export function CarrierRateComparison() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-col md:flex-row gap-4">
-            <Select value={selectedOrder} onValueChange={setSelectedOrder}>
+            <Select value={selectedOrder || ""} onValueChange={setSelectedOrder}>
               <SelectTrigger className="w-full md:w-64">
                 <SelectValue placeholder="Select order" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ORD-001">ORD-001 - John Smith</SelectItem>
-                <SelectItem value="ORD-002">ORD-002 - Jane Doe</SelectItem>
-                <SelectItem value="ORD-003">ORD-003 - Bob Wilson</SelectItem>
+                {ordersLoading ? (
+                  <SelectItem value="loading" disabled>Loading orders...</SelectItem>
+                ) : orders.length === 0 ? (
+                  <SelectItem value="no-orders" disabled>No orders available</SelectItem>
+                ) : (
+                  orders.slice(0, 10).map((order) => (
+                    <SelectItem key={order.id} value={order.id}>
+                      {order.orderNumber} - {order.customerName}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
 
@@ -150,23 +178,28 @@ export function CarrierRateComparison() {
           </div>
 
           {/* Order Details */}
-          <div className="p-4 bg-muted/50 rounded-lg">
-            <h3 className="font-medium mb-2">Order Details</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-              <div>
-                <span className="font-medium">Package:</span>
-                <p>12" x 8" x 4" (2.5 lbs)</p>
+          {selectedOrder && (() => {
+            const order = orders.find(o => o.id === selectedOrder);
+            return order ? (
+              <div className="p-4 bg-muted/50 rounded-lg">
+                <h3 className="font-medium mb-2">Order Details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium">Package:</span>
+                    <p>{order.packageDetails.length || 12}" x {order.packageDetails.width || 8}" x {order.packageDetails.height || 4}" ({order.packageDetails.weight || 2.5} lbs)</p>
+                  </div>
+                  <div>
+                    <span className="font-medium">Destination:</span>
+                    <p>{order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zip}</p>
+                  </div>
+                  <div>
+                    <span className="font-medium">Value:</span>
+                    <p>${order.totalAmount}</p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <span className="font-medium">Destination:</span>
-                <p>New York, NY 10001</p>
-              </div>
-              <div>
-                <span className="font-medium">Value:</span>
-                <p>$129.99</p>
-              </div>
-            </div>
-          </div>
+            ) : null;
+          })()}
         </CardContent>
       </Card>
 
@@ -174,14 +207,37 @@ export function CarrierRateComparison() {
       <div className="space-y-4">
         <h2 className="text-lg font-semibold">Available Shipping Options</h2>
         
-        {isLoadingRates ? (
+        {servicesLoading || isLoadingRates ? (
           <Card>
             <CardContent className="p-8 text-center">
               <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-              <h3 className="font-medium mb-2">Finding the best rates...</h3>
+              <h3 className="font-medium mb-2">
+                {servicesLoading ? "Loading shipping services..." : "Finding the best rates..."}
+              </h3>
               <p className="text-muted-foreground text-sm">
-                Hang tight. We're still checking with all carriers... these rates take a few seconds.
+                {servicesLoading 
+                  ? "Getting your configured carriers ready..." 
+                  : "Hang tight. We're still checking with all carriers... these rates take a few seconds."
+                }
               </p>
+            </CardContent>
+          </Card>
+        ) : shippingRates.length === 0 ? (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <Truck className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <h3 className="font-medium mb-2">No shipping services available</h3>
+              <p className="text-muted-foreground text-sm mb-4">
+                {carriers.length === 0 
+                  ? "You need to configure at least one carrier first." 
+                  : "No shipping services found for your configured carriers."
+                }
+              </p>
+              {carriers.length === 0 && (
+                <Button variant="outline" onClick={() => window.location.href = '/shipping'}>
+                  Configure Carriers
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (
