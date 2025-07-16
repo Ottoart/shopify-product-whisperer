@@ -49,118 +49,117 @@ serve(async (req) => {
 
     console.log(`Starting eBay product sync for user ${user.id}`);
 
-    // eBay Trading API endpoint for getting seller's active listings
-    const ebayApiUrl = 'https://api.ebay.com/ws/api.dll';
+    // eBay Sell Marketing API to get seller's active listings
+    const ebayApiUrl = 'https://api.ebay.com/sell/marketing/v1/item';
     
-    const soapRequest = `<?xml version="1.0" encoding="utf-8"?>
-<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:urn="urn:ebay:apis:eBLBaseComponents">
-  <soap:Header>
-    <urn:RequesterCredentials>
-      <urn:eBayAuthToken>${ebayConfig.access_token}</urn:eBayAuthToken>
-    </urn:RequesterCredentials>
-  </soap:Header>
-  <soap:Body>
-    <urn:GetMyeBaySellingRequest>
-      <urn:Version>1193</urn:Version>
-      <urn:ActiveList>
-        <urn:Include>true</urn:Include>
-        <urn:ListingType>All</urn:ListingType>
-        <urn:Pagination>
-          <urn:EntriesPerPage>200</urn:EntriesPerPage>
-          <urn:PageNumber>1</urn:PageNumber>
-        </urn:Pagination>
-      </urn:ActiveList>
-    </urn:GetMyeBaySellingRequest>
-  </soap:Body>
-</soap:Envelope>`;
+    let allItems: any[] = [];
+    let offset = 0;
+    const limit = 200;
+    
+    try {
+      // First, try to get listings using the Sell API
+      const response = await fetch(`${ebayApiUrl}?limit=${limit}&offset=${offset}`, {
+        headers: {
+          'Authorization': `Bearer ${ebayConfig.access_token}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Accept-Language': 'en-US',
+          'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
+        },
+      });
 
-    const response = await fetch(ebayApiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'text/xml; charset=utf-8',
-        'SOAPAction': 'urn:GetMyeBaySellingRequest',
-        'X-EBAY-API-SITEID': '0',
-        'X-EBAY-API-COMPATIBILITY-LEVEL': '1193',
-        'X-EBAY-API-CALL-NAME': 'GetMyeBaySelling',
-      },
-      body: soapRequest,
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('eBay API error:', response.status, errorText);
-      throw new Error(`eBay API error: ${response.status} ${response.statusText}`);
+      if (!response.ok) {
+        // If that fails, try the Inventory API which should list items
+        console.log('Marketing API failed, trying Inventory API for listings...');
+        const inventoryResponse = await fetch('https://api.ebay.com/sell/inventory/v1/inventory_item?limit=200', {
+          headers: {
+            'Authorization': `Bearer ${ebayConfig.access_token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Accept-Language': 'en-US',
+            'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
+          },
+        });
+        
+        if (!inventoryResponse.ok) {
+          const errorText = await inventoryResponse.text();
+          console.error('eBay Inventory API error:', inventoryResponse.status, errorText);
+          throw new Error(`eBay API error: ${inventoryResponse.status} - ${errorText}`);
+        }
+        
+        const inventoryData = await inventoryResponse.json();
+        console.log('Inventory API response:', JSON.stringify(inventoryData, null, 2));
+        allItems = inventoryData.inventoryItems || [];
+      } else {
+        const data = await response.json();
+        console.log('Marketing API response:', JSON.stringify(data, null, 2));
+        allItems = data.items || [];
+      }
+    } catch (error) {
+      console.error('API call failed:', error);
+      throw error;
     }
 
-    const xmlText = await response.text();
-    console.log('eBay API Response:', xmlText.substring(0, 1000)); // Log first 1000 chars for debugging
-    
-    // Parse XML response (basic parsing for active listings)
-    const activeListingMatch = xmlText.match(/<ActiveList>[\s\S]*?<\/ActiveList>/);
-    if (!activeListingMatch) {
-      throw new Error('No active listings found in eBay response');
-    }
-    
-    // Extract individual items from the XML
-    const itemMatches = xmlText.match(/<Item>[\s\S]*?<\/Item>/g) || [];
-    
-    console.log(`Found ${itemMatches.length} eBay active listings`);
+    console.log(`Found ${allItems.length} eBay items`);
 
-    // Transform eBay XML items to our product format
-    const productRecords = itemMatches.map((itemXml: string) => {
-      // Extract basic fields from XML using regex
-      const extractField = (field: string) => {
-        const match = itemXml.match(new RegExp(`<${field}>([\\s\\S]*?)<\/${field}>`));
-        return match ? match[1].trim() : null;
-      };
+    // Transform eBay items to our product format
+    const productRecords = allItems.map((item: any) => {
+      // Handle different API response formats
+      let itemData: any = {};
       
-      const extractPrice = (priceXml: string) => {
-        const match = priceXml.match(/>([0-9.]+)</);
-        return match ? parseFloat(match[1]) : null;
-      };
-      
-      const itemId = extractField('ItemID');
-      const title = extractField('Title') || 'Untitled eBay Product';
-      const description = extractField('Description');
-      const galleryUrl = extractField('GalleryURL');
-      const listingType = extractField('ListingType');
-      const quantity = extractField('Quantity');
-      const startPriceXml = extractField('StartPrice');
-      const buyItNowPriceXml = extractField('BuyItNowPrice');
-      const categoryName = extractField('CategoryName');
-      const sku = extractField('SKU');
-      const condition = extractField('ConditionDisplayName');
-      
-      // Determine price
-      const startPrice = startPriceXml ? extractPrice(startPriceXml) : null;
-      const buyItNowPrice = buyItNowPriceXml ? extractPrice(buyItNowPriceXml) : null;
-      const price = buyItNowPrice || startPrice;
+      if (item.product) {
+        // Inventory API format
+        itemData = {
+          sku: item.sku,
+          title: item.product.title,
+          description: item.product.description,
+          imageUrls: item.product.imageUrls,
+          price: item.product.aspects?.Price?.[0],
+          condition: item.product.aspects?.Condition?.[0],
+          brand: item.product.brand,
+          category: item.product.aspects?.Category?.[0],
+          quantity: item.availability?.shipToLocationAvailability?.quantity,
+        };
+      } else {
+        // Marketing API or other format
+        itemData = {
+          sku: item.sku || item.itemId,
+          title: item.title || item.name,
+          description: item.description,
+          imageUrls: item.imageUrls || [item.imageUrl],
+          price: item.price?.value || item.currentPrice?.value,
+          condition: item.condition,
+          brand: item.brand,
+          category: item.categoryPath,
+          quantity: item.quantity || 1,
+        };
+      }
       
       return {
         user_id: user.id,
-        handle: (sku || `ebay-${itemId}`).toLowerCase().replace(/[^a-z0-9]/g, '-'),
-        title: title,
+        handle: (itemData.sku || `ebay-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`).toLowerCase().replace(/[^a-z0-9]/g, '-'),
+        title: itemData.title || 'Untitled eBay Product',
         vendor: 'eBay',
-        type: categoryName || null,
-        tags: `eBay, ${listingType || 'Unknown'}, ${condition || 'Used'}`.replace(/,\s*$/, ''),
+        type: itemData.brand || null,
+        tags: ['eBay', itemData.condition || 'Used', itemData.category].filter(Boolean).join(', '),
         published: true,
-        body_html: description || null,
-        category: categoryName || null,
+        body_html: itemData.description || null,
+        category: itemData.category || null,
         
         // Variant data from eBay listing
-        variant_sku: sku || itemId || null,
-        variant_price: price,
-        variant_inventory_qty: quantity ? parseInt(quantity) : 1,
-        variant_grams: null, // Not available in this API response
+        variant_sku: itemData.sku || null,
+        variant_price: itemData.price ? parseFloat(itemData.price.toString()) : null,
+        variant_inventory_qty: itemData.quantity || 1,
+        variant_grams: null, // Not available in API response
         variant_requires_shipping: true,
         variant_taxable: true,
         
         // Image data
-        image_src: galleryUrl || null,
+        image_src: Array.isArray(itemData.imageUrls) ? itemData.imageUrls[0] : itemData.imageUrls || null,
         image_position: 1,
         
         // eBay specific fields
-        google_shopping_condition: condition || 'Used',
+        google_shopping_condition: itemData.condition || 'Used',
         google_shopping_gender: null,
         google_shopping_age_group: null,
         
