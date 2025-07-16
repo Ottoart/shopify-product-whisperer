@@ -62,16 +62,38 @@ serve(async (req) => {
     }
 
     // Update UPS carrier configuration with real credentials
+    const { data: existingConfig, error: fetchError } = await supabase
+      .from('carrier_configurations')
+      .select('api_credentials')
+      .eq('user_id', user.id)
+      .eq('carrier_name', 'UPS')
+      .single();
+
+    if (fetchError) {
+      console.error('Failed to fetch UPS configuration:', fetchError);
+      return new Response(
+        JSON.stringify({ error: 'UPS configuration not found' }),
+        { 
+          status: 404, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Merge with existing credentials to preserve account info
+    const updatedCredentials = {
+      ...existingConfig.api_credentials,
+      client_id: clientId,
+      client_secret: clientSecret,
+      access_token: existingConfig.api_credentials?.access_token || null,
+      refresh_token: existingConfig.api_credentials?.refresh_token || null,
+      token_expires_at: existingConfig.api_credentials?.token_expires_at || null
+    };
+
     const { error: updateError } = await supabase
       .from('carrier_configurations')
       .update({
-        api_credentials: {
-          client_id: clientId,
-          client_secret: clientSecret,
-          access_token: null, // Will be set after OAuth
-          refresh_token: null,
-          token_expires_at: null
-        },
+        api_credentials: updatedCredentials,
         updated_at: new Date().toISOString()
       })
       .eq('user_id', user.id)
