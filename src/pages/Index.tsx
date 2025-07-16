@@ -181,8 +181,8 @@ const Index = () => {
         {/* Welcome Banner for Setup Guidance */}
         <WelcomeBanner />
 
-        {/* Welcome Section for New Users */}
-        {products.length === 0 && (
+        {/* Welcome Section for New Users - only show when not loading and no products */}
+        {!isLoading && products.length === 0 && (
           <Card className="shadow-card border-0">
             <CardHeader className="text-center">
               <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-gradient-primary flex items-center justify-center">
@@ -198,6 +198,18 @@ const Index = () => {
                 <p className="text-muted-foreground">
                   Use the sidebar to navigate to Shopify Integration and configure your store, then import products to get started.
                 </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Loading State */}
+        {isLoading && (
+          <Card className="shadow-card border-0">
+            <CardContent className="p-8">
+              <div className="text-center space-y-4">
+                <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
+                <p className="text-muted-foreground">Loading your products...</p>
               </div>
             </CardContent>
           </Card>
