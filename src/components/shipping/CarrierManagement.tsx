@@ -142,6 +142,8 @@ export function CarrierManagement() {
 
   // Available PrepFox carriers (admin controlled)
   const [prepfoxCarriers, setPrepfoxCarriers] = useState<Carrier[]>([]);
+  const [upsCarrier, setUpsCarrier] = useState<any>(null);
+  const [upsServices, setUpsServices] = useState<any[]>([]);
 
   // Update PrepFox carriers with real UPS data when available
   useEffect(() => {
@@ -229,6 +231,10 @@ export function CarrierManagement() {
         ];
 
         if (upsCarrier) {
+          // Set the UPS carrier data for display in configuration
+          setUpsCarrier(carrierConfigs[0]);
+          setUpsServices(carrierConfigs[0].shipping_services);
+          
           // Use real UPS data from database
           const upsConfig = {
             id: "ups-internal",
@@ -875,6 +881,21 @@ export function CarrierManagement() {
                             {carrier.services.filter(s => s.enabled).length} of {carrier.services.length} services enabled
                             • Last sync: {carrier.lastSync}
                           </p>
+                          
+                          {/* Show UPS configuration details if this is UPS */}
+                          {carrier.name === 'UPS' && upsCarrier && (
+                            <div className="mt-3 p-3 bg-gray-50 rounded-md border">
+                              <div className="font-medium text-gray-900 mb-2 text-sm">Account Configuration:</div>
+                              <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                                <div>Account: <span className="font-mono">{upsCarrier.api_credentials?.account_number || 'Not set'}</span></div>
+                                <div>Country: <span className="font-mono">{upsCarrier.api_credentials?.country_code || 'Not set'}</span></div>
+                                <div>Postal Code: <span className="font-mono">{upsCarrier.api_credentials?.postal_code || 'Not set'}</span></div>
+                                <div>Negotiated Rates: <span className={upsCarrier.api_credentials?.enable_negotiated_rates ? 'text-green-600' : 'text-red-600'}>{upsCarrier.api_credentials?.enable_negotiated_rates ? 'Enabled' : 'Disabled'}</span></div>
+                                <div>Services: <span className="font-semibold">{upsServices?.length || 0}</span></div>
+                                <div>Last Updated: <span className="font-mono">{upsCarrier.updated_at ? new Date(upsCarrier.updated_at).toLocaleDateString() : 'Never'}</span></div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                       
