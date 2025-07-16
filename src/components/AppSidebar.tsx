@@ -61,8 +61,11 @@ const toolItems = [
   { title: "Product Activity", url: "/activity", icon: Activity, description: "Track product changes" },
   { title: "Bulk Editor", url: "/bulk-editor", icon: FileText, description: "Edit multiple products" },
   { title: "Inventory Management", url: "/inventory", icon: Warehouse, description: "Manage duplicates and variations" },
-  { title: "Dynamic Repricing", url: "/repricing", icon: DollarSign, description: "Manage pricing strategies" },
   { title: "Store Connections", url: "/settings", icon: Store, description: "Manage connected stores" },
+];
+
+const repricingItems = [
+  { title: "Dynamic Repricing", url: "/repricing", icon: DollarSign, description: "Manage pricing strategies" },
 ];
 
 const shippingItems = [
@@ -257,6 +260,37 @@ export function AppSidebar() {
                     </SidebarMenuItem>
                   ))}
                 </div>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Repricing */}
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-primary">
+            <DollarSign className="h-4 w-4 mr-2" />
+            <span className={`${collapsed ? "group-hover:inline hidden" : "inline"} transition-all duration-300`}>
+              Repricing
+            </span>
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {repricingItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink 
+                      to={item.url}
+                      className={getNavCls}
+                      title={collapsed ? item.description : undefined}
+                    >
+                      <item.icon className="h-4 w-4 flex-shrink-0" />
+                      <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col transition-all duration-300 overflow-hidden`}>
+                        <span className="whitespace-nowrap">{item.title}</span>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">{item.description}</span>
+                      </div>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
