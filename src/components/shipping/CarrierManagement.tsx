@@ -170,16 +170,19 @@ export function CarrierManagement() {
           services: carrierConfigs[0].shipping_services.map((service: any) => ({
             id: service.id,
             name: service.service_name,
-            enabled: service.is_available,
+            enabled: service.is_available, // This should be true from DB
             markup: 0
           })),
           lastSync: new Date(carrierConfigs[0].updated_at).toLocaleDateString(),
-          isInternal: false,
-          markup: 0,
-          adminControlled: false,
+          isInternal: true, // Changed to true for PrepFox tab
+          markup: 15,
+          adminControlled: true, // Changed to true for admin control
           credentials: carrierConfigs[0].api_credentials,
           settings: carrierConfigs[0].settings
         } : null;
+
+        console.log('UPS carrier object:', upsCarrier);
+        console.log('UPS services:', upsCarrier?.services);
 
         if (error) {
           console.error('Error fetching UPS configuration:', error);
