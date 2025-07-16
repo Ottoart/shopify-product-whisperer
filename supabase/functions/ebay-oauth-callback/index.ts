@@ -270,18 +270,40 @@ serve(async (req) => {
         </div>
         <p>This window will close automatically...</p>
         <script>
+          console.log('eBay OAuth callback script executing...');
+          
           // Store success data in session storage for parent window to read
-          if (window.opener) {
-            window.opener.sessionStorage.setItem('ebay_auth_success', JSON.stringify({
-              store: ${JSON.stringify(storeConfig)},
-              marketplace: { platform: 'ebay', name: 'eBay' },
-              credentials: { ebay_user_id: '${ebayUserId}' }
-            }));
-            window.close();
-          } else {
-            setTimeout(() => {
-              window.location.href = 'https://www.ebay.com/sh/lst/active';
-            }, 3000);
+          try {
+            if (window.opener && !window.opener.closed) {
+              console.log('Found opener window, storing success data...');
+              window.opener.sessionStorage.setItem('ebay_auth_success', JSON.stringify({
+                store: ${JSON.stringify(storeConfig)},
+                marketplace: { platform: 'ebay', name: 'eBay' },
+                credentials: { ebay_user_id: '${ebayUserId}' }
+              }));
+              
+              // Try to signal the parent window
+              try {
+                window.opener.postMessage({ type: 'EBAY_AUTH_SUCCESS' }, '*');
+              } catch (e) {
+                console.log('Could not post message to parent:', e);
+              }
+              
+              // Give a moment for the data to be stored, then close
+              setTimeout(() => {
+                console.log('Closing popup window...');
+                window.close();
+              }, 500);
+            } else {
+              console.log('No opener window found, redirecting...');
+              setTimeout(() => {
+                window.location.href = 'https://www.ebay.com/sh/lst/active';
+              }, 3000);
+            }
+          } catch (error) {
+            console.error('Error in callback script:', error);
+            // Fallback: just close the window
+            setTimeout(() => window.close(), 1000);
           }
         </script>
       </body>

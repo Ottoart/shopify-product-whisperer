@@ -71,50 +71,112 @@ export function EbayOAuthForm({ marketplace, onBack, onSuccess }: EbayOAuthFormP
         throw new Error('Popup blocked. Please allow popups for this site.');
       }
 
+      // Listen for messages from the popup window
+      const handleMessage = (event: MessageEvent) => {
+        if (event.data?.type === 'EBAY_AUTH_SUCCESS') {
+          console.log('Received success message from popup');
+          // Force check for session storage data
+          setTimeout(() => {
+            const authSuccess = sessionStorage.getItem('ebay_auth_success');
+            if (authSuccess) {
+              handleAuthSuccess();
+            }
+          }, 100);
+        }
+      };
+
+      const handleAuthSuccess = () => {
+        const authSuccess = sessionStorage.getItem('ebay_auth_success');
+        if (authSuccess) {
+          const connectionData = JSON.parse(authSuccess);
+          sessionStorage.removeItem('ebay_auth_success');
+          sessionStorage.removeItem('ebay_oauth_state');
+          sessionStorage.removeItem('ebay_store_name');
+          
+          // Close popup if still open
+          if (!popup.closed) {
+            popup.close();
+          }
+          
+          setIsConnecting(false);
+          onSuccess(connectionData);
+          return true;
+        }
+        return false;
+      };
+
+      const handleAuthError = () => {
+        const authError = sessionStorage.getItem('ebay_auth_error');
+        if (authError) {
+          const error = JSON.parse(authError);
+          sessionStorage.removeItem('ebay_auth_error');
+          sessionStorage.removeItem('ebay_oauth_state');
+          sessionStorage.removeItem('ebay_store_name');
+          
+          // Close popup if still open
+          if (!popup.closed) {
+            popup.close();
+          }
+          
+          setIsConnecting(false);
+          toast({
+            title: "eBay Connection Failed",
+            description: error.message || "Failed to connect to eBay. Please try again.",
+            variant: "destructive"
+          });
+          return true;
+        }
+        return false;
+      };
+
+      // Add message listener
+      window.addEventListener('message', handleMessage);
+
       // Listen for the popup to close or for a message from the callback
       const checkClosed = setInterval(() => {
         if (popup.closed) {
           clearInterval(checkClosed);
-          setIsConnecting(false);
+          window.removeEventListener('message', handleMessage);
           
-          // Check if we have a success indicator in session storage
-          const authSuccess = sessionStorage.getItem('ebay_auth_success');
-          const authError = sessionStorage.getItem('ebay_auth_error');
-          
-          if (authSuccess) {
-            const connectionData = JSON.parse(authSuccess);
-            sessionStorage.removeItem('ebay_auth_success');
-            sessionStorage.removeItem('ebay_oauth_state');
-            sessionStorage.removeItem('ebay_store_name');
-            onSuccess(connectionData);
-          } else if (authError) {
-            const error = JSON.parse(authError);
-            sessionStorage.removeItem('ebay_auth_error');
-            sessionStorage.removeItem('ebay_oauth_state');
-            sessionStorage.removeItem('ebay_store_name');
-            toast({
-              title: "eBay Connection Failed",
-              description: error.message || "Failed to connect to eBay. Please try again.",
-              variant: "destructive"
-            });
-          } else {
-            toast({
-              title: "Connection Cancelled",
-              description: "eBay connection was cancelled or interrupted.",
-              variant: "destructive"
-            });
+          // Check if we already handled success/error
+          if (handleAuthSuccess() || handleAuthError()) {
+            return;
           }
+          
+          // If no success or error was found, it was cancelled
+          setIsConnecting(false);
+          toast({
+            title: "Connection Cancelled",
+            description: "eBay connection was cancelled or interrupted.",
+            variant: "destructive"
+          });
         }
       }, 1000);
 
-      // Cleanup if component unmounts
-      setTimeout(() => {
+      // Cleanup if component unmounts or timeout
+      const timeout = setTimeout(() => {
         if (!popup.closed) {
           popup.close();
-          clearInterval(checkClosed);
-          setIsConnecting(false);
         }
+        clearInterval(checkClosed);
+        window.removeEventListener('message', handleMessage);
+        setIsConnecting(false);
+        toast({
+          title: "Connection Timeout",
+          description: "eBay connection timed out. Please try again.",
+          variant: "destructive"
+        });
       }, 300000); // 5 minutes timeout
+
+      // Return cleanup function
+      return () => {
+        clearInterval(checkClosed);
+        clearTimeout(timeout);
+        window.removeEventListener('message', handleMessage);
+        if (!popup.closed) {
+          popup.close();
+        }
+      };
 
     } catch (error: any) {
       setIsConnecting(false);
