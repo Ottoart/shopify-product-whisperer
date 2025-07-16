@@ -176,6 +176,7 @@ serve(async (req) => {
     }
 
     const totalSynced = syncResults.reduce((sum, result) => sum + (result.synced || 0), 0);
+    const totalStatusUpdated = syncResults.reduce((sum, result) => sum + (result.statusUpdated || 0), 0);
     const totalErrors = syncResults.filter(result => result.error).length;
     const totalStores = syncResults.length;
     
@@ -183,10 +184,10 @@ serve(async (req) => {
     const isSuccess = totalErrors < totalStores; // Success if at least one store worked
     
     const message = totalErrors === 0 
-      ? `Sync completed successfully. Total orders synced: ${totalSynced}`
+      ? `Sync completed successfully. New orders: ${totalSynced}, Status updates: ${totalStatusUpdated}`
       : totalErrors === totalStores
       ? `Sync failed for all stores. No orders synced.`
-      : `Sync partially completed. ${totalSynced} orders synced from ${totalStores - totalErrors} of ${totalStores} stores.`;
+      : `Sync partially completed. New orders: ${totalSynced}, Status updates: ${totalStatusUpdated} from ${totalStores - totalErrors} of ${totalStores} stores.`;
 
     return new Response(
       JSON.stringify({ 
@@ -217,15 +218,19 @@ serve(async (req) => {
 });
 
 async function syncShopifyOrders(storeConfig: any, user: any, supabase: any, syncResults: any[]) {
-  // Fetch orders from Shopify
+  // Step 1: Update existing order statuses first
+  console.log(`Updating existing order statuses for ${storeConfig.store_name}...`);
+  const statusUpdateResult = await updateExistingOrderStatuses(storeConfig, user, supabase);
+  
+  // Step 2: Fetch new orders from Shopify
   // Use the domain as-is, or construct proper URL
   let apiUrl;
   if (storeConfig.domain.includes('.myshopify.com') || storeConfig.domain.includes('.myshopifystore.com')) {
     // Domain already includes the full shopify domain
-    apiUrl = `https://${storeConfig.domain}/admin/api/2023-10/orders.json?status=any&limit=250`;
+    apiUrl = `https://${storeConfig.domain}/admin/api/2024-01/orders.json?status=any&limit=250&fulfillment_status=any`;
   } else {
     // Domain is just the shop name, add .myshopify.com
-    apiUrl = `https://${storeConfig.domain}.myshopify.com/admin/api/2023-10/orders.json?status=any&limit=250`;
+    apiUrl = `https://${storeConfig.domain}.myshopify.com/admin/api/2024-01/orders.json?status=any&limit=250&fulfillment_status=any`;
   }
   
   console.log(`Fetching orders from: ${apiUrl}`);
@@ -382,17 +387,179 @@ async function syncShopifyOrders(storeConfig: any, user: any, supabase: any, syn
 
     syncResults.push({
       store: storeConfig.store_name,
-      synced: ordersToInsert.length
+      synced: ordersToInsert.length,
+      statusUpdated: statusUpdateResult.updated,
+      details: `New orders: ${ordersToInsert.length}, Status updates: ${statusUpdateResult.updated}`
     });
 
-    console.log(`Successfully synced ${ordersToInsert.length} orders from ${storeConfig.store_name}`);
+    console.log(`Successfully synced ${ordersToInsert.length} new orders and updated ${statusUpdateResult.updated} existing orders from ${storeConfig.store_name}`);
   } else {
-    console.log(`No new orders to sync from ${storeConfig.store_name}`);
+    console.log(`No new orders to sync from ${storeConfig.store_name}, but updated ${statusUpdateResult.updated} existing orders`);
     syncResults.push({
       store: storeConfig.store_name,
-      synced: 0
+      synced: 0,
+      statusUpdated: statusUpdateResult.updated,
+      details: `New orders: 0, Status updates: ${statusUpdateResult.updated}`
     });
   }
+}
+
+async function updateExistingOrderStatuses(storeConfig: any, user: any, supabase: any) {
+  try {
+    // Get orders that might need status updates (awaiting, processing, shipped)
+    const { data: existingOrders, error: ordersError } = await supabase
+      .from('orders')
+      .select('id, order_number, status, updated_at')
+      .eq('user_id', user.id)
+      .eq('store_name', storeConfig.store_name)
+      .eq('store_platform', 'shopify')
+      .in('status', ['awaiting', 'processing', 'shipped']);
+
+    if (ordersError || !existingOrders || existingOrders.length === 0) {
+      console.log(`No existing orders to update for ${storeConfig.store_name}`);
+      return { updated: 0 };
+    }
+
+    console.log(`Checking ${existingOrders.length} existing orders for status updates`);
+
+    // Build API URL
+    let baseUrl;
+    if (storeConfig.domain.includes('.myshopify.com')) {
+      baseUrl = `https://${storeConfig.domain}/admin/api/2024-01`;
+    } else {
+      baseUrl = `https://${storeConfig.domain}.myshopify.com/admin/api/2024-01`;
+    }
+
+    let updatedCount = 0;
+
+    // Process in batches of 10 to avoid overwhelming the API
+    const batchSize = 10;
+    for (let i = 0; i < existingOrders.length; i += batchSize) {
+      const batch = existingOrders.slice(i, i + batchSize);
+      
+      for (const dbOrder of batch) {
+        try {
+          // Fetch current order status from Shopify
+          const orderUrl = `${baseUrl}/orders.json?name=${encodeURIComponent(dbOrder.order_number)}&status=any&fields=id,name,financial_status,fulfillment_status,cancelled_at,fulfillments`;
+          
+          const response = await fetch(orderUrl, {
+            headers: {
+              'X-Shopify-Access-Token': storeConfig.access_token,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (!response.ok) {
+            console.warn(`Failed to fetch order ${dbOrder.order_number}: ${response.status}`);
+            continue;
+          }
+
+          const data = await response.json();
+          const shopifyOrders = data.orders || [];
+
+          if (shopifyOrders.length === 0) {
+            continue;
+          }
+
+          const shopifyOrder = shopifyOrders[0];
+          
+          // Determine new status
+          const newStatus = determineShopifyOrderStatus(shopifyOrder);
+          const shippedDate = getShopifyShippedDate(shopifyOrder);
+          const deliveredDate = getShopifyDeliveredDate(shopifyOrder);
+
+          // Check if status needs updating
+          if (dbOrder.status !== newStatus) {
+            console.log(`Updating order ${dbOrder.order_number}: ${dbOrder.status} -> ${newStatus}`);
+            
+            const updateData: any = {
+              status: newStatus,
+              updated_at: new Date().toISOString()
+            };
+
+            if (shippedDate) updateData.shipped_date = shippedDate;
+            if (deliveredDate) updateData.delivered_date = deliveredDate;
+
+            // Get tracking info if available
+            const trackingInfo = getShopifyTrackingInfo(shopifyOrder);
+            if (trackingInfo.tracking_number) {
+              updateData.tracking_number = trackingInfo.tracking_number;
+              updateData.carrier = trackingInfo.carrier;
+            }
+
+            const { error: updateError } = await supabase
+              .from('orders')
+              .update(updateData)
+              .eq('id', dbOrder.id);
+
+            if (!updateError) {
+              updatedCount++;
+            }
+          }
+
+          // Rate limiting
+          await new Promise(resolve => setTimeout(resolve, 200));
+
+        } catch (error) {
+          console.error(`Error processing order ${dbOrder.order_number}:`, error);
+        }
+      }
+    }
+
+    console.log(`Updated ${updatedCount} order statuses for ${storeConfig.store_name}`);
+    return { updated: updatedCount };
+
+  } catch (error) {
+    console.error(`Error updating order statuses for ${storeConfig.store_name}:`, error);
+    return { updated: 0 };
+  }
+}
+
+function determineShopifyOrderStatus(shopifyOrder: any): string {
+  if (shopifyOrder.cancelled_at) return 'cancelled';
+  if (shopifyOrder.fulfillment_status === 'fulfilled') return 'delivered';
+  if (shopifyOrder.fulfillment_status === 'partial') return 'shipped';
+  
+  if (shopifyOrder.fulfillments && shopifyOrder.fulfillments.length > 0) {
+    const latestFulfillment = shopifyOrder.fulfillments
+      .sort((a: any, b: any) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())[0];
+    
+    if (latestFulfillment.status === 'success') return 'shipped';
+  }
+  
+  if (shopifyOrder.fulfillment_status === null && shopifyOrder.financial_status === 'paid') return 'awaiting';
+  if (shopifyOrder.financial_status === 'pending') return 'processing';
+  
+  return 'awaiting';
+}
+
+function getShopifyShippedDate(shopifyOrder: any): string | null {
+  if (shopifyOrder.fulfillments && shopifyOrder.fulfillments.length > 0) {
+    const fulfillment = shopifyOrder.fulfillments.find((f: any) => f.status === 'success');
+    return fulfillment ? fulfillment.created_at : null;
+  }
+  return null;
+}
+
+function getShopifyDeliveredDate(shopifyOrder: any): string | null {
+  if (shopifyOrder.fulfillment_status === 'fulfilled' && shopifyOrder.fulfillments) {
+    const fulfillment = shopifyOrder.fulfillments.find((f: any) => f.status === 'success');
+    return fulfillment ? fulfillment.updated_at : null;
+  }
+  return null;
+}
+
+function getShopifyTrackingInfo(shopifyOrder: any): { tracking_number: string | null, carrier: string | null } {
+  if (shopifyOrder.fulfillments && shopifyOrder.fulfillments.length > 0) {
+    const fulfillmentWithTracking = shopifyOrder.fulfillments.find((f: any) => f.tracking_number);
+    if (fulfillmentWithTracking) {
+      return {
+        tracking_number: fulfillmentWithTracking.tracking_number,
+        carrier: fulfillmentWithTracking.tracking_company
+      };
+    }
+  }
+  return { tracking_number: null, carrier: null };
 }
 
 async function syncWalmartOrders(storeConfig: any, user: any, supabase: any, syncResults: any[]) {
