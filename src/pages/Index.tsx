@@ -14,9 +14,10 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Package, LogOut, Store, Zap, BarChart3, AlertTriangle } from 'lucide-react';
+import { Package, LogOut, Store, Zap, BarChart3, AlertTriangle, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 
 export interface Product {
   id: string;
@@ -93,6 +94,8 @@ const Index = () => {
   const [bulkMode, setBulkMode] = useState(false);
   const [stores, setStores] = useState<StoreConfig[]>([]);
   const [activeTab, setActiveTab] = useState<string>('');
+  const [syncingStores, setSyncingStores] = useState<Set<string>>(new Set());
+  const { toast } = useToast();
 
   const { trackProductUpdate } = useEditTracking({ 
     onProductUpdate: (productId: string, updatedData: UpdatedProduct) => {
@@ -189,6 +192,66 @@ const Index = () => {
       }
       return false;
     });
+  };
+
+  // Handle manual sync for a specific store
+  const handleStoreSync = async (store: StoreConfig, event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    setSyncingStores(prev => new Set(prev).add(store.store_name));
+    
+    try {
+      let syncFunction = '';
+      let message = '';
+      
+      if (store.platform === 'shopify') {
+        syncFunction = 'sync-shopify-products';
+        message = `Syncing products from ${store.store_name}...`;
+      } else if (store.platform === 'ebay') {
+        syncFunction = 'sync-ebay-products';
+        message = `Syncing products from eBay store...`;
+      } else {
+        throw new Error(`Sync not supported for ${store.platform}`);
+      }
+      
+      toast({
+        title: "Sync Started",
+        description: message,
+      });
+      
+      const { data, error } = await supabase.functions.invoke(syncFunction);
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      toast({
+        title: "Sync Successful",
+        description: data.message || `Successfully synced products from ${store.store_name}`,
+      });
+      
+      // Refresh products
+      handleProductsUpdated();
+      
+    } catch (error: any) {
+      console.error('Store sync error:', error);
+      toast({
+        title: "Sync Failed",
+        description: error.message || `Failed to sync products from ${store.store_name}`,
+        variant: "destructive",
+      });
+    } finally {
+      setSyncingStores(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(store.store_name);
+        return newSet;
+      });
+    }
   };
 
   return (
@@ -289,13 +352,25 @@ const Index = () => {
                     <TabsTrigger 
                       key={store.store_name} 
                       value={store.store_name}
-                      className="flex items-center gap-2 px-4 py-2"
+                      className="flex items-center justify-between gap-2 px-4 py-2 relative group"
                     >
-                      <Store className="h-4 w-4" />
-                      <span className="truncate">{store.store_name}</span>
-                      <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
-                        {getFilteredProducts(store.store_name).length}
-                      </span>
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <Store className="h-4 w-4 flex-shrink-0" />
+                        <span className="truncate">{store.store_name}</span>
+                        <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full flex-shrink-0">
+                          {getFilteredProducts(store.store_name).length}
+                        </span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => handleStoreSync(store, e)}
+                        disabled={syncingStores.has(store.store_name)}
+                        className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary/20 flex-shrink-0"
+                        title={`Sync ${store.store_name} products`}
+                      >
+                        <RefreshCw className={`h-3 w-3 ${syncingStores.has(store.store_name) ? 'animate-spin' : ''}`} />
+                      </Button>
                     </TabsTrigger>
                   ))}
                 </TabsList>
