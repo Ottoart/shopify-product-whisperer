@@ -20,7 +20,11 @@ import {
   DollarSign,
   Warehouse,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  CreditCard,
+  Clock,
+  XCircle,
+  CheckCircle
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 
@@ -272,6 +276,322 @@ export function AppSidebar() {
                           <span className="text-xs text-muted-foreground whitespace-nowrap">{store.platform} orders</span>
                         </div>
                       </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+
+              {/* Shipping Status Categories */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <NavLink 
+                    to="/shipping?status=awaiting_payment" 
+                    className={getNavCls}
+                    title={collapsed ? "Orders awaiting payment" : undefined}
+                    onClick={() => !collapsed && toggleCatalogueItem("awaiting_payment")}
+                    >
+                      <CreditCard className="h-4 w-4 flex-shrink-0" />
+                      <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col flex-1 transition-all duration-300 overflow-hidden`}>
+                        <span className="whitespace-nowrap">Awaiting Payment</span>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">Orders pending payment</span>
+                      </div>
+                      {!collapsed && stores.length > 0 && (
+                        <div className="ml-auto">
+                          {expandedCatalogueItems.has("awaiting_payment") ? (
+                            <ChevronDown className="h-3 w-3 animate-fade-in" />
+                          ) : (
+                            <ChevronRight className="h-3 w-3 animate-fade-in" />
+                          )}
+                        </div>
+                      )}
+                    </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {/* Expandable Store Subcategories for Awaiting Payment */}
+              {!collapsed && expandedCatalogueItems.has("awaiting_payment") && stores.map((store) => (
+                <SidebarMenuItem key={`awaiting_payment-${store.id}`} className="animate-accordion-down">
+                  <SidebarMenuButton asChild>
+                    <NavLink 
+                      to={`/shipping?status=awaiting_payment&store=${encodeURIComponent(store.store_name)}`}
+                      className={getNavCls}
+                      title={`Awaiting payment orders from ${store.store_name}`}
+                    >
+                      <Store className="h-4 w-4 flex-shrink-0 ml-8" />
+                      <div className="flex flex-col transition-all duration-300 overflow-hidden">
+                        <span className="whitespace-nowrap">{store.store_name}</span>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">Payment pending</span>
+                      </div>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <NavLink 
+                    to="/shipping?status=on_hold" 
+                    className={getNavCls}
+                    title={collapsed ? "Orders on hold" : undefined}
+                    onClick={() => !collapsed && toggleCatalogueItem("on_hold")}
+                    >
+                      <Clock className="h-4 w-4 flex-shrink-0" />
+                      <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col flex-1 transition-all duration-300 overflow-hidden`}>
+                        <span className="whitespace-nowrap">On Hold</span>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">Orders temporarily held</span>
+                      </div>
+                      {!collapsed && stores.length > 0 && (
+                        <div className="ml-auto">
+                          {expandedCatalogueItems.has("on_hold") ? (
+                            <ChevronDown className="h-3 w-3 animate-fade-in" />
+                          ) : (
+                            <ChevronRight className="h-3 w-3 animate-fade-in" />
+                          )}
+                        </div>
+                      )}
+                    </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {/* Expandable Store Subcategories for On Hold */}
+              {!collapsed && expandedCatalogueItems.has("on_hold") && stores.map((store) => (
+                <SidebarMenuItem key={`on_hold-${store.id}`} className="animate-accordion-down">
+                  <SidebarMenuButton asChild>
+                    <NavLink 
+                      to={`/shipping?status=on_hold&store=${encodeURIComponent(store.store_name)}`}
+                      className={getNavCls}
+                      title={`On hold orders from ${store.store_name}`}
+                    >
+                      <Store className="h-4 w-4 flex-shrink-0 ml-8" />
+                      <div className="flex flex-col transition-all duration-300 overflow-hidden">
+                        <span className="whitespace-nowrap">{store.store_name}</span>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">Orders on hold</span>
+                      </div>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <NavLink 
+                    to="/shipping?status=manual" 
+                    className={getNavCls}
+                    title={collapsed ? "Manual orders" : undefined}
+                    onClick={() => !collapsed && toggleCatalogueItem("manual")}
+                    >
+                      <Users className="h-4 w-4 flex-shrink-0" />
+                      <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col flex-1 transition-all duration-300 overflow-hidden`}>
+                        <span className="whitespace-nowrap">Manual Orders</span>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">Manually created orders</span>
+                      </div>
+                      {!collapsed && stores.length > 0 && (
+                        <div className="ml-auto">
+                          {expandedCatalogueItems.has("manual") ? (
+                            <ChevronDown className="h-3 w-3 animate-fade-in" />
+                          ) : (
+                            <ChevronRight className="h-3 w-3 animate-fade-in" />
+                          )}
+                        </div>
+                      )}
+                    </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {/* Expandable Store Subcategories for Manual Orders */}
+              {!collapsed && expandedCatalogueItems.has("manual") && stores.map((store) => (
+                <SidebarMenuItem key={`manual-${store.id}`} className="animate-accordion-down">
+                  <SidebarMenuButton asChild>
+                    <NavLink 
+                      to={`/shipping?status=manual&store=${encodeURIComponent(store.store_name)}`}
+                      className={getNavCls}
+                      title={`Manual orders from ${store.store_name}`}
+                    >
+                      <Store className="h-4 w-4 flex-shrink-0 ml-8" />
+                      <div className="flex flex-col transition-all duration-300 overflow-hidden">
+                        <span className="whitespace-nowrap">{store.store_name}</span>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">Manual orders</span>
+                      </div>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <NavLink 
+                    to="/shipping?status=rejected" 
+                    className={getNavCls}
+                    title={collapsed ? "Rejected fulfillment orders" : undefined}
+                    onClick={() => !collapsed && toggleCatalogueItem("rejected")}
+                    >
+                      <XCircle className="h-4 w-4 flex-shrink-0" />
+                      <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col flex-1 transition-all duration-300 overflow-hidden`}>
+                        <span className="whitespace-nowrap">Rejected Fulfillment</span>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">Orders with fulfillment issues</span>
+                      </div>
+                      {!collapsed && stores.length > 0 && (
+                        <div className="ml-auto">
+                          {expandedCatalogueItems.has("rejected") ? (
+                            <ChevronDown className="h-3 w-3 animate-fade-in" />
+                          ) : (
+                            <ChevronRight className="h-3 w-3 animate-fade-in" />
+                          )}
+                        </div>
+                      )}
+                    </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {/* Expandable Store Subcategories for Rejected Fulfillment */}
+              {!collapsed && expandedCatalogueItems.has("rejected") && stores.map((store) => (
+                <SidebarMenuItem key={`rejected-${store.id}`} className="animate-accordion-down">
+                  <SidebarMenuButton asChild>
+                    <NavLink 
+                      to={`/shipping?status=rejected&store=${encodeURIComponent(store.store_name)}`}
+                      className={getNavCls}
+                      title={`Rejected fulfillment orders from ${store.store_name}`}
+                    >
+                      <Store className="h-4 w-4 flex-shrink-0 ml-8" />
+                      <div className="flex flex-col transition-all duration-300 overflow-hidden">
+                        <span className="whitespace-nowrap">{store.store_name}</span>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">Rejected orders</span>
+                      </div>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <NavLink 
+                    to="/shipping?status=shipped" 
+                    className={getNavCls}
+                    title={collapsed ? "Shipped orders" : undefined}
+                    onClick={() => !collapsed && toggleCatalogueItem("shipped")}
+                    >
+                      <Truck className="h-4 w-4 flex-shrink-0" />
+                      <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col flex-1 transition-all duration-300 overflow-hidden`}>
+                        <span className="whitespace-nowrap">Shipped</span>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">Orders in transit</span>
+                      </div>
+                      {!collapsed && stores.length > 0 && (
+                        <div className="ml-auto">
+                          {expandedCatalogueItems.has("shipped") ? (
+                            <ChevronDown className="h-3 w-3 animate-fade-in" />
+                          ) : (
+                            <ChevronRight className="h-3 w-3 animate-fade-in" />
+                          )}
+                        </div>
+                      )}
+                    </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {/* Expandable Store Subcategories for Shipped */}
+              {!collapsed && expandedCatalogueItems.has("shipped") && stores.map((store) => (
+                <SidebarMenuItem key={`shipped-${store.id}`} className="animate-accordion-down">
+                  <SidebarMenuButton asChild>
+                    <NavLink 
+                      to={`/shipping?status=shipped&store=${encodeURIComponent(store.store_name)}`}
+                      className={getNavCls}
+                      title={`Shipped orders from ${store.store_name}`}
+                    >
+                      <Store className="h-4 w-4 flex-shrink-0 ml-8" />
+                      <div className="flex flex-col transition-all duration-300 overflow-hidden">
+                        <span className="whitespace-nowrap">{store.store_name}</span>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">Shipped orders</span>
+                      </div>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <NavLink 
+                    to="/shipping?status=delivered" 
+                    className={getNavCls}
+                    title={collapsed ? "Delivered orders" : undefined}
+                    onClick={() => !collapsed && toggleCatalogueItem("delivered")}
+                    >
+                      <CheckCircle className="h-4 w-4 flex-shrink-0" />
+                      <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col flex-1 transition-all duration-300 overflow-hidden`}>
+                        <span className="whitespace-nowrap">Delivered</span>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">Successfully delivered</span>
+                      </div>
+                      {!collapsed && stores.length > 0 && (
+                        <div className="ml-auto">
+                          {expandedCatalogueItems.has("delivered") ? (
+                            <ChevronDown className="h-3 w-3 animate-fade-in" />
+                          ) : (
+                            <ChevronRight className="h-3 w-3 animate-fade-in" />
+                          )}
+                        </div>
+                      )}
+                    </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {/* Expandable Store Subcategories for Delivered */}
+              {!collapsed && expandedCatalogueItems.has("delivered") && stores.map((store) => (
+                <SidebarMenuItem key={`delivered-${store.id}`} className="animate-accordion-down">
+                  <SidebarMenuButton asChild>
+                    <NavLink 
+                      to={`/shipping?status=delivered&store=${encodeURIComponent(store.store_name)}`}
+                      className={getNavCls}
+                      title={`Delivered orders from ${store.store_name}`}
+                    >
+                      <Store className="h-4 w-4 flex-shrink-0 ml-8" />
+                      <div className="flex flex-col transition-all duration-300 overflow-hidden">
+                        <span className="whitespace-nowrap">{store.store_name}</span>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">Delivered orders</span>
+                      </div>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <NavLink 
+                    to="/shipping?status=cancelled" 
+                    className={getNavCls}
+                    title={collapsed ? "Cancelled orders" : undefined}
+                    onClick={() => !collapsed && toggleCatalogueItem("cancelled")}
+                    >
+                      <XCircle className="h-4 w-4 flex-shrink-0" />
+                      <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col flex-1 transition-all duration-300 overflow-hidden`}>
+                        <span className="whitespace-nowrap">Cancelled</span>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">Cancelled orders</span>
+                      </div>
+                      {!collapsed && stores.length > 0 && (
+                        <div className="ml-auto">
+                          {expandedCatalogueItems.has("cancelled") ? (
+                            <ChevronDown className="h-3 w-3 animate-fade-in" />
+                          ) : (
+                            <ChevronRight className="h-3 w-3 animate-fade-in" />
+                          )}
+                        </div>
+                      )}
+                    </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {/* Expandable Store Subcategories for Cancelled */}
+              {!collapsed && expandedCatalogueItems.has("cancelled") && stores.map((store) => (
+                <SidebarMenuItem key={`cancelled-${store.id}`} className="animate-accordion-down">
+                  <SidebarMenuButton asChild>
+                    <NavLink 
+                      to={`/shipping?status=cancelled&store=${encodeURIComponent(store.store_name)}`}
+                      className={getNavCls}
+                      title={`Cancelled orders from ${store.store_name}`}
+                    >
+                      <Store className="h-4 w-4 flex-shrink-0 ml-8" />
+                      <div className="flex flex-col transition-all duration-300 overflow-hidden">
+                        <span className="whitespace-nowrap">{store.store_name}</span>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">Cancelled orders</span>
+                      </div>
+                    </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
