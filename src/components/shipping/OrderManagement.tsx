@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useOrders, type Order } from "@/hooks/useOrders";
 import { supabase } from "@/integrations/supabase/client";
 import { ProductDetailsDialog } from './ProductDetailsDialog';
+import { ShippingDetailsDialog } from './ShippingDetailsDialog';
 import { useAuth } from "@/hooks/useAuth";
 
 import { 
@@ -92,6 +93,8 @@ export function OrderManagement() {
   const [showProductDialog, setShowProductDialog] = useState(false);
   const [selectedProductHandle, setSelectedProductHandle] = useState('');
   const [selectedProductTitle, setSelectedProductTitle] = useState('');
+  const [showShippingDialog, setShowShippingDialog] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { user } = useAuth();
@@ -343,7 +346,8 @@ export function OrderManagement() {
   };
 
   const handleOrderClick = (order: Order) => {
-    setEditableOrder(order);
+    setSelectedOrder(order);
+    setShowShippingDialog(true);
   };
 
   const handleContinueBackground = () => {
@@ -622,33 +626,33 @@ export function OrderManagement() {
                 {filteredOrders.map((order) => {
                   const age = getAge(order.orderDate);
                   return (
-                    <TableRow key={order.id} className="hover:bg-muted/30">
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedOrders.includes(order.id)}
-                          onCheckedChange={() => handleSelectOrder(order.id)}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="link"
-                            size="sm"
-                            className="font-mono text-blue-600 p-0 h-auto"
-                            onClick={() => handleOrderClick(order)}
-                          >
-                            {order.orderNumber}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="p-1 h-6 w-6"
-                            title="View in store"
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </TableCell>
+                     <TableRow 
+                       key={order.id} 
+                       className="hover:bg-muted/30 cursor-pointer"
+                       onClick={() => handleOrderClick(order)}
+                     >
+                       <TableCell onClick={(e) => e.stopPropagation()}>
+                         <Checkbox
+                           checked={selectedOrders.includes(order.id)}
+                           onCheckedChange={() => handleSelectOrder(order.id)}
+                         />
+                       </TableCell>
+                       <TableCell>
+                         <div className="flex items-center gap-2">
+                           <span className="font-mono text-blue-600 font-medium">
+                             {order.orderNumber}
+                           </span>
+                           <Button
+                             variant="ghost"
+                             size="sm"
+                             className="p-1 h-6 w-6"
+                             title="View in store"
+                             onClick={(e) => e.stopPropagation()}
+                           >
+                             <ExternalLink className="h-3 w-3" />
+                           </Button>
+                         </div>
+                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
                           {order.items.length === 1 
@@ -679,19 +683,20 @@ export function OrderManagement() {
                               </div>
                             )}
                           </div>
-                          <div 
-                            className={`text-sm ${
-                              order.items.length === 1 && order.items[0].productHandle 
-                                ? 'cursor-pointer hover:text-primary hover:underline text-blue-600' 
-                                : ''
-                            }`}
-                            onClick={() => {
-                              if (order.items.length === 1 && order.items[0].productHandle) {
-                                console.log('Clicking product:', order.items[0].productHandle, order.items[0].productTitle);
-                                handleProductClick(order.items[0].productHandle, order.items[0].productTitle);
-                              }
-                            }}
-                          >
+                           <div 
+                             className={`text-sm ${
+                               order.items.length === 1 && order.items[0].productHandle 
+                                 ? 'cursor-pointer hover:text-primary hover:underline text-blue-600' 
+                                 : ''
+                             }`}
+                             onClick={(e) => {
+                               e.stopPropagation();
+                               if (order.items.length === 1 && order.items[0].productHandle) {
+                                 console.log('Clicking product:', order.items[0].productHandle, order.items[0].productTitle);
+                                 handleProductClick(order.items[0].productHandle, order.items[0].productTitle);
+                               }
+                             }}
+                           >
                             {getItemSummary(order.items)}
                           </div>
                         </div>
@@ -790,6 +795,20 @@ export function OrderManagement() {
         onClose={() => setShowProductDialog(false)}
         productHandle={selectedProductHandle}
         productTitle={selectedProductTitle}
+      />
+
+      <ShippingDetailsDialog
+        isOpen={showShippingDialog}
+        onClose={() => setShowShippingDialog(false)}
+        order={selectedOrder}
+        onUpdateOrder={(orderId, updates) => {
+          // Update the order in the orders list
+          setOrders(prevOrders => 
+            prevOrders.map(order => 
+              order.id === orderId ? { ...order, ...updates } : order
+            )
+          );
+        }}
       />
     </div>
   );
