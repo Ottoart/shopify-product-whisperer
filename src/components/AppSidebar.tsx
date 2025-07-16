@@ -66,6 +66,7 @@ const toolItems = [
 
 const repricingItems = [
   { title: "Dynamic Repricing", url: "/repricing", icon: DollarSign, description: "Manage pricing strategies" },
+  { title: "Listings", url: "/repricing?tab=listings", icon: FileText, description: "Manage product listings and prices" },
 ];
 
 const shippingItems = [
