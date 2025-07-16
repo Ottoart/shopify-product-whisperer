@@ -6,16 +6,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useShippingServices } from "@/hooks/useShippingServices";
 import { useOrders } from "@/hooks/useOrders";
+import { supabase } from "@/integrations/supabase/client";
 import { Truck, Clock, DollarSign, Download, Printer, Shield, Zap } from "lucide-react";
 
 interface ShippingRate {
-  id: string;
+  service_code: string;
+  service_name: string;
+  service_type: string;
+  cost: number;
+  currency: string;
+  estimated_days: string;
   carrier: string;
-  logo: string;
-  service: string;
-  price: number;
-  deliveryTime: string;
-  type: 'ground' | 'express' | '2-day' | 'overnight';
 }
 
 export function CarrierRateComparison() {
@@ -27,65 +28,113 @@ export function CarrierRateComparison() {
   const [selectedRate, setSelectedRate] = useState<string | null>(null);
   const [shippingRates, setShippingRates] = useState<ShippingRate[]>([]);
 
-  // Convert shipping services to shipping rates format
+  // Automatically fetch rates when order is selected
   useEffect(() => {
-    if (services.length > 0 && carriers.length > 0) {
-      const rates: ShippingRate[] = services.map(service => {
-        const carrier = carriers.find(c => c.id === service.carrier_configuration_id);
-        const carrierName = carrier?.carrier_name || 'Unknown';
-        
-        // Generate mock pricing for now (in real implementation, this would come from API)
-        const basePrice = Math.random() * 20 + 5;
-        const deliveryDays = service.estimated_days || '3-5 business days';
-        
-        // Determine service type based on service name
-        let serviceType: ShippingRate['type'] = 'ground';
-        if (service.service_name.toLowerCase().includes('express') || service.service_name.toLowerCase().includes('priority')) {
-          serviceType = 'express';
-        } else if (service.service_name.toLowerCase().includes('2') || service.service_name.toLowerCase().includes('two')) {
-          serviceType = '2-day';
-        } else if (service.service_name.toLowerCase().includes('overnight') || service.service_name.toLowerCase().includes('next')) {
-          serviceType = 'overnight';
-        }
-
-        // Get carrier logo
-        const getCarrierLogo = (carrier: string) => {
-          switch (carrier.toLowerCase()) {
-            case 'ups': return '📦';
-            case 'fedex': return '🚚';
-            case 'usps': return '📮';
-            case 'dhl': return '✈️';
-            default: return '🚛';
-          }
-        };
-
-        return {
-          id: service.id,
-          carrier: carrierName,
-          logo: getCarrierLogo(carrierName),
-          service: service.service_name,
-          price: Number(basePrice.toFixed(2)),
-          deliveryTime: deliveryDays,
-          type: serviceType
-        };
-      });
-      
-      setShippingRates(rates);
+    if (selectedOrder) {
+      fetchRates();
+    } else {
+      setShippingRates([]);
     }
-  }, [services, carriers]);
+  }, [selectedOrder]);
 
-  const getServiceBadge = (type: ShippingRate['type']) => {
+  const fetchRates = async () => {
+    if (!selectedOrder) return;
+    
+    setIsLoadingRates(true);
+    try {
+      const order = orders.find(o => o.id === selectedOrder);
+      if (!order) {
+        toast({
+          title: "Error",
+          description: "Selected order not found",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Get real UPS rates
+      const { data, error } = await supabase.functions.invoke('ups-rating', {
+        body: {
+          shipFrom: {
+            address: "123 Main St", // You may want to get this from store settings
+            city: "Your City",
+            state: "Your State", 
+            zip: "12345",
+            country: "US"
+          },
+          shipTo: {
+            address: order.shippingAddress.line1,
+            city: order.shippingAddress.city,
+            state: order.shippingAddress.state,
+            zip: order.shippingAddress.zip,
+            country: order.shippingAddress.country
+          },
+          package: {
+            weight: order.packageDetails.weight || 1,
+            length: order.packageDetails.length || 12,
+            width: order.packageDetails.width || 12,
+            height: order.packageDetails.height || 6
+          }
+        }
+      });
+
+      if (error) {
+        console.error('UPS API error:', error);
+        toast({
+          title: "UPS API Error",
+          description: error.message || "Failed to fetch UPS rates",
+          variant: "destructive",
+        });
+        setShippingRates([]);
+        return;
+      }
+
+      if (data?.rates) {
+        setShippingRates(data.rates);
+        toast({
+          title: "Success",
+          description: `Found ${data.rates.length} shipping rates`,
+        });
+      } else {
+        setShippingRates([]);
+        toast({
+          title: "No Rates",
+          description: "No shipping rates available for this destination",
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching rates:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch shipping rates",
+        variant: "destructive",
+      });
+      setShippingRates([]);
+    } finally {
+      setIsLoadingRates(false);
+    }
+  };
+
+  const getServiceBadge = (type: string) => {
     switch (type) {
-      case 'ground':
-        return <Badge variant="secondary">Ground</Badge>;
-      case 'express':
-        return <Badge variant="default">Express</Badge>;
-      case '2-day':
-        return <Badge variant="outline">2-Day</Badge>;
+      case 'standard':
+        return <Badge variant="secondary">Standard</Badge>;
+      case 'expedited':
+        return <Badge variant="default">Expedited</Badge>;
       case 'overnight':
         return <Badge className="bg-red-100 text-red-800">Overnight</Badge>;
       default:
         return <Badge variant="outline">Standard</Badge>;
+    }
+  };
+
+  const getCarrierLogo = (carrier: string) => {
+    switch (carrier.toLowerCase()) {
+      case 'ups': return '📦';
+      case 'fedex': return '🚚';
+      case 'usps': return '📮';
+      case 'dhl': return '✈️';
+      default: return '🚛';
     }
   };
 
@@ -99,31 +148,16 @@ export function CarrierRateComparison() {
       return;
     }
 
-    setIsLoadingRates(true);
     toast({
       title: "🎯 Finding the best shipping rate for you...",
       description: "Comparing rates from all carriers",
     });
 
-    // Simulate rate fetching - in real implementation, this would call the shipping API
-    setTimeout(() => {
-      // Refresh rates with new pricing
-      const updatedRates = shippingRates.map(rate => ({
-        ...rate,
-        price: Number((Math.random() * 20 + 5).toFixed(2))
-      }));
-      setShippingRates(updatedRates);
-      
-      setIsLoadingRates(false);
-      toast({
-        title: "📬 Rates updated successfully!",
-        description: `Found ${updatedRates.length} shipping options`,
-      });
-    }, 2000);
+    await fetchRates();
   };
 
   const handlePurchaseLabel = (rate: ShippingRate) => {
-    setSelectedRate(rate.id);
+    setSelectedRate(rate.service_code);
     toast({
       title: "🎯 Processing your label...",
       description: "This might take a moment",
@@ -159,15 +193,15 @@ export function CarrierRateComparison() {
               <SelectContent>
                 {ordersLoading ? (
                   <SelectItem value="loading" disabled>Loading orders...</SelectItem>
-                ) : orders.length === 0 ? (
-                  <SelectItem value="no-orders" disabled>No orders available</SelectItem>
-                ) : (
-                  orders.slice(0, 10).map((order) => (
-                    <SelectItem key={order.id} value={order.id}>
-                      {order.orderNumber} - {order.customerName}
-                    </SelectItem>
-                  ))
-                )}
+                 ) : orders.length === 0 ? (
+                   <SelectItem value="no-orders" disabled>No orders available</SelectItem>
+                 ) : (
+                   orders.slice(0, 10).map((order) => (
+                     <SelectItem key={order.id} value={order.id}>
+                       {order.orderNumber} - {order.customerName}
+                     </SelectItem>
+                   ))
+                 )}
               </SelectContent>
             </Select>
 
@@ -243,24 +277,24 @@ export function CarrierRateComparison() {
         ) : (
           <div className="grid gap-4">
             {shippingRates.map((rate) => (
-              <Card key={rate.id} className="hover:shadow-md transition-shadow">
+              <Card key={rate.service_code} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="text-3xl">{rate.logo}</div>
+                      <div className="text-3xl">{getCarrierLogo(rate.carrier)}</div>
                       <div>
                         <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold">{rate.service}</h3>
-                          {getServiceBadge(rate.type)}
+                          <h3 className="font-semibold">{rate.service_name}</h3>
+                          {getServiceBadge(rate.service_type)}
                         </div>
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
                           <div className="flex items-center gap-1">
                             <Clock className="h-4 w-4" />
-                            {rate.deliveryTime}
+                            {rate.estimated_days} days
                           </div>
                           <div className="flex items-center gap-1">
                             <DollarSign className="h-4 w-4" />
-                            ${rate.price.toFixed(2)}
+                            {rate.currency} ${rate.cost.toFixed(2)}
                           </div>
                         </div>
                       </div>
@@ -268,16 +302,16 @@ export function CarrierRateComparison() {
 
                     <div className="flex items-center gap-2">
                       <div className="text-right mr-4">
-                        <div className="text-2xl font-bold">${rate.price.toFixed(2)}</div>
-                        <div className="text-sm text-muted-foreground">{rate.deliveryTime}</div>
+                        <div className="text-2xl font-bold">${rate.cost.toFixed(2)}</div>
+                        <div className="text-sm text-muted-foreground">{rate.estimated_days} days</div>
                       </div>
                       
                       <Button 
                         onClick={() => handlePurchaseLabel(rate)}
-                        disabled={selectedRate === rate.id}
+                        disabled={selectedRate === rate.service_code}
                         className="min-w-[120px]"
                       >
-                        {selectedRate === rate.id ? (
+                        {selectedRate === rate.service_code ? (
                           <>
                             <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
                             Processing...
