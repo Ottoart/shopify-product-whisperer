@@ -156,6 +156,14 @@ serve(async (req) => {
           await syncShopifyOrders(storeConfig, user, supabase, syncResults);
         } else if (storeConfig.platform === 'walmart') {
           await syncWalmartOrders(storeConfig, user, supabase, syncResults);
+        } else if (storeConfig.platform === 'ebay') {
+          await syncEbayOrders(storeConfig, user, supabase, syncResults);
+        } else {
+          console.log(`Unsupported platform: ${storeConfig.platform} for store ${storeConfig.store_name}`);
+          syncResults.push({
+            store: storeConfig.store_name,
+            error: `Platform ${storeConfig.platform} is not supported yet`
+          });
         }
         
       } catch (storeError: any) {
@@ -537,6 +545,211 @@ async function syncWalmartOrders(storeConfig: any, user: any, supabase: any, syn
 
     console.log(`Mapped ${mappedItems.length} items for insertion`);
     console.log('Sample mapped item:', mappedItems[0]);
+
+    if (mappedItems.length > 0) {
+      console.log(`Inserting ${mappedItems.length} order items from ${storeConfig.store_name}...`);
+      const { data: insertedItems, error: itemsError } = await supabase
+        .from('order_items')
+        .insert(mappedItems)
+        .select('id');
+
+      if (itemsError) {
+        console.error(`Failed to insert order items from ${storeConfig.store_name}:`, itemsError.message);
+        console.error('Error details:', itemsError);
+        // Don't throw error, just log it - orders are already inserted
+        console.warn(`Orders synced but ${mappedItems.length} items failed to sync from ${storeConfig.store_name}`);
+      } else {
+        console.log(`Successfully inserted ${insertedItems?.length || mappedItems.length} order items from ${storeConfig.store_name}`);
+      }
+    }
+
+    syncResults.push({
+      store: storeConfig.store_name,
+      synced: ordersToInsert.length
+    });
+
+    console.log(`Successfully synced ${ordersToInsert.length} orders from ${storeConfig.store_name}`);
+  } else {
+    console.log(`No new orders to sync from ${storeConfig.store_name}`);
+    syncResults.push({
+      store: storeConfig.store_name,
+      synced: 0
+    });
+  }
+}
+
+async function syncEbayOrders(storeConfig: any, user: any, supabase: any, syncResults: any[]) {
+  console.log(`Fetching orders from eBay Store (${storeConfig.platform})...`);
+  
+  // Parse the eBay access token from the stored JSON
+  let ebayAuth;
+  try {
+    ebayAuth = JSON.parse(storeConfig.access_token);
+  } catch (error) {
+    throw new Error(`Invalid eBay access token format for ${storeConfig.store_name}`);
+  }
+
+  const accessToken = ebayAuth.access_token;
+  if (!accessToken) {
+    throw new Error(`No eBay access token found for ${storeConfig.store_name}`);
+  }
+
+  // eBay API endpoint for orders (Sell Fulfillment API)
+  const apiUrl = 'https://api.ebay.com/sell/fulfillment/v1/order';
+  
+  console.log(`Fetching orders from eBay API: ${apiUrl}`);
+  
+  // Fetch orders from eBay
+  const ordersResponse = await fetch(apiUrl, {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    }
+  });
+
+  if (!ordersResponse.ok) {
+    const errorText = await ordersResponse.text();
+    console.error(`eBay orders API error: ${ordersResponse.status} ${ordersResponse.statusText}`, errorText);
+    throw new Error(`eBay orders API error: ${ordersResponse.status} ${ordersResponse.statusText}`);
+  }
+
+  const responseText = await ordersResponse.text();
+  console.log(`eBay response for ${storeConfig.store_name}:`, responseText.substring(0, 500));
+  
+  let ebayData;
+  try {
+    ebayData = JSON.parse(responseText);
+  } catch (parseError) {
+    console.error(`Failed to parse JSON response from eBay ${storeConfig.store_name}:`, parseError);
+    throw new Error(`Invalid JSON response from eBay for ${storeConfig.store_name}. Check if credentials are correct.`);
+  }
+
+  const ebayOrders = ebayData.orders || [];
+  console.log(`Found ${ebayOrders.length} orders from ${storeConfig.store_name}`);
+
+  const ordersToInsert = [];
+  const itemsToInsert = [];
+
+  for (const ebayOrder of ebayOrders) {
+    // Check if order already exists
+    const { data: existingOrder } = await supabase
+      .from('orders')
+      .select('id')
+      .eq('order_number', ebayOrder.orderId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (existingOrder) {
+      console.log(`Order #${ebayOrder.orderId} already exists, skipping...`);
+      continue;
+    }
+
+    // Calculate total amount from line items
+    let totalAmount = 0;
+    const currency = ebayOrder.pricingSummary?.total?.currency || 'USD';
+    totalAmount = parseFloat(ebayOrder.pricingSummary?.total?.value || '0');
+
+    // Map eBay order status to our status
+    let orderStatus = 'awaiting';
+    switch (ebayOrder.orderFulfillmentStatus) {
+      case 'FULFILLED':
+        orderStatus = 'shipped';
+        break;
+      case 'IN_PROGRESS':
+        orderStatus = 'processing';
+        break;
+      case 'NOT_STARTED':
+        orderStatus = 'awaiting';
+        break;
+      default:
+        orderStatus = 'awaiting';
+    }
+
+    // Get buyer info
+    const buyer = ebayOrder.buyer || {};
+    const customerName = buyer.username || 'eBay Customer';
+    const customerEmail = buyer.email || `${buyer.username}@ebay.marketplace`;
+
+    // Get shipping address
+    const fulfillmentStartInstructions = ebayOrder.fulfillmentStartInstructions || [];
+    const shippingStep = fulfillmentStartInstructions.find(step => step.destinationTimeZone);
+    const shippingAddress = shippingStep?.shippingStep?.shipTo || {};
+
+    const orderData = {
+      user_id: user.id,
+      order_number: ebayOrder.orderId,
+      customer_name: customerName,
+      customer_email: customerEmail,
+      order_date: ebayOrder.creationDate || new Date().toISOString(),
+      total_amount: totalAmount,
+      currency: currency,
+      status: orderStatus,
+      store_name: storeConfig.store_name,
+      store_platform: 'ebay',
+      shipping_address_line1: shippingAddress.contactAddress?.addressLine1 || '',
+      shipping_address_line2: shippingAddress.contactAddress?.addressLine2 || null,
+      shipping_city: shippingAddress.contactAddress?.city || '',
+      shipping_state: shippingAddress.contactAddress?.stateOrProvince || '',
+      shipping_zip: shippingAddress.contactAddress?.postalCode || '',
+      shipping_country: shippingAddress.contactAddress?.countryCode || 'US',
+      shipped_date: orderStatus === 'shipped' ? ebayOrder.lastModifiedDate : null,
+      tags: ['ebay', 'marketplace'],
+      notes: `eBay Order ID: ${ebayOrder.orderId}`
+    };
+
+    ordersToInsert.push(orderData);
+
+    // Process line items
+    const lineItems = ebayOrder.lineItems || [];
+    for (const item of lineItems) {
+      const itemPrice = parseFloat(item.total?.value || '0');
+      
+      itemsToInsert.push({
+        order_number: ebayOrder.orderId,
+        product_handle: item.sku || item.lineItemId,
+        product_title: item.title || 'eBay Item',
+        variant_title: item.variationAspects ? Object.values(item.variationAspects).join(', ') : null,
+        sku: item.sku || null,
+        quantity: parseInt(item.quantity) || 1,
+        price: itemPrice,
+        weight_lbs: 0 // eBay doesn't always provide weight
+      });
+    }
+  }
+
+  if (ordersToInsert.length > 0) {
+    console.log(`Inserting ${ordersToInsert.length} new orders from ${storeConfig.store_name}...`);
+
+    // Insert orders
+    const { data: insertedOrders, error: ordersError } = await supabase
+      .from('orders')
+      .insert(ordersToInsert)
+      .select('id, order_number');
+
+    if (ordersError) {
+      throw new Error(`Failed to insert orders from ${storeConfig.store_name}: ${ordersError.message}`);
+    }
+
+    // Create order_id mapping for items
+    const orderMapping = new Map();
+    insertedOrders.forEach(order => {
+      orderMapping.set(order.order_number, order.id);
+    });
+
+    // Map items to order IDs and insert
+    const mappedItems = itemsToInsert.map(item => ({
+      order_id: orderMapping.get(item.order_number),
+      product_handle: item.product_handle,
+      product_title: item.product_title,
+      variant_title: item.variant_title,
+      sku: item.sku,
+      quantity: item.quantity,
+      price: item.price,
+      weight_lbs: item.weight_lbs
+    })).filter(item => item.order_id); // Only include items with valid order_id
+
+    console.log(`Mapped ${mappedItems.length} items for insertion`);
 
     if (mappedItems.length > 0) {
       console.log(`Inserting ${mappedItems.length} order items from ${storeConfig.store_name}...`);
