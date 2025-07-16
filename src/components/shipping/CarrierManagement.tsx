@@ -158,7 +158,7 @@ export function CarrierManagement() {
             *,
             shipping_services(*)
           `)
-          .eq('carrier_name', 'ups')
+          .eq('carrier_name', 'UPS')
           .eq('is_active', true)
           .order('created_at', { ascending: false })
           .limit(1);
