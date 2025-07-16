@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { DashboardTab } from "./tabs/DashboardTab";
+import { ListingsTab } from "./tabs/ListingsTab";
 import { CalendarDays } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-export function RepricingOverviewDashboard() {
+export function RepricingListings() {
   const [searchParams] = useSearchParams();
   const storeFilter = searchParams.get('store');
   
@@ -29,12 +29,12 @@ export function RepricingOverviewDashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">
-            {storeFilter ? `${storeFilter} Repricing Dashboard` : 'Repricing Dashboard'}
+            {storeFilter ? `${storeFilter} Product Listings` : 'Product Listings'}
           </h1>
           <p className="text-muted-foreground">
             {storeFilter 
-              ? `Cross-marketplace pricing insights for ${storeFilter} store` 
-              : 'AI-powered pricing optimization and Buy Box analytics'
+              ? `Manage product listings and prices for ${storeFilter} store` 
+              : 'Manage product listings and pricing strategies'
             }
           </p>
         </div>
@@ -56,8 +56,8 @@ export function RepricingOverviewDashboard() {
         </div>
       </div>
 
-      {/* Dashboard Content */}
-      <DashboardTab 
+      {/* Listings Content */}
+      <ListingsTab 
         storeFilter={storeFilter} 
         dateRange={dateRange} 
         dateRangeLabel={getDateRangeLabel()} 
