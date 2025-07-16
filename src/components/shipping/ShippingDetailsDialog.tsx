@@ -194,6 +194,94 @@ export function ShippingDetailsDialog({ isOpen, onClose, order, onUpdateOrder }:
     }
   };
 
+  const createShippingLabel = async () => {
+    if (!selectedRate || !order) {
+      toast({
+        title: "No rate selected",
+        description: "Please select a shipping rate first",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke('ups-shipment', {
+        body: {
+          orderId: order.id,
+          serviceCode: selectedRate.service_code,
+          shipFrom: {
+            name: "Default Store",
+            address: "123 Store Street",
+            city: "Your City",
+            state: "Your State",
+            zip: "12345",
+            country: "US"
+          },
+          shipTo: {
+            name: order.customerName,
+            address: order.shippingAddress.line1,
+            city: order.shippingAddress.city,
+            state: order.shippingAddress.state,
+            zip: order.shippingAddress.zip,
+            country: order.shippingAddress.country
+          },
+          package: {
+            weight: formData.weight || 1,
+            length: formData.length || 12,
+            width: formData.width || 8,
+            height: formData.height || 4,
+            packageType: "02" // Customer Supplied Package
+          },
+          paymentInfo: {
+            shipperAccountNumber: "YOUR_UPS_ACCOUNT", // This should come from carrier config
+            paymentType: "prepaid"
+          },
+          additionalServices: {
+            signatureRequired: formData.confirmation === "signature",
+            insuranceValue: formData.insurance !== "none" ? order.totalAmount : undefined
+          }
+        }
+      });
+
+      if (error) {
+        console.error('Label creation error:', error);
+        toast({
+          title: "Label creation failed",
+          description: error.message || "Failed to create shipping label",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (data?.success) {
+        toast({
+          title: "Label created successfully",
+          description: `Tracking number: ${data.trackingNumber}`,
+        });
+
+        // Update order with tracking info
+        if (onUpdateOrder) {
+          onUpdateOrder(order.id, {
+            shippingDetails: {
+              ...order.shippingDetails,
+              carrier: selectedRate.carrier,
+              serviceType: selectedRate.service_name,
+              trackingNumber: data.trackingNumber
+            },
+            status: 'shipped'
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Label creation error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create shipping label",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
@@ -208,7 +296,13 @@ export function ShippingDetailsDialog({ isOpen, onClose, order, onUpdateOrder }:
                 <Eye className="h-4 w-4 mr-2" />
                 Preview
               </Button>
-              <Button variant="default" size="sm" className="bg-green-600 hover:bg-green-700">
+              <Button 
+                variant="default" 
+                size="sm" 
+                className="bg-green-600 hover:bg-green-700"
+                onClick={createShippingLabel}
+                disabled={!selectedRate}
+              >
                 <Printer className="h-4 w-4 mr-2" />
                 Create + Print Label
               </Button>

@@ -112,8 +112,10 @@ export type Database = {
           api_credentials: Json
           carrier_name: string
           created_at: string
+          default_package_type: string | null
           id: string
           is_active: boolean
+          pickup_type_code: string | null
           settings: Json
           updated_at: string
           user_id: string
@@ -122,8 +124,10 @@ export type Database = {
           api_credentials?: Json
           carrier_name: string
           created_at?: string
+          default_package_type?: string | null
           id?: string
           is_active?: boolean
+          pickup_type_code?: string | null
           settings?: Json
           updated_at?: string
           user_id: string
@@ -132,8 +136,10 @@ export type Database = {
           api_credentials?: Json
           carrier_name?: string
           created_at?: string
+          default_package_type?: string | null
           id?: string
           is_active?: boolean
+          pickup_type_code?: string | null
           settings?: Json
           updated_at?: string
           user_id?: string
@@ -916,6 +922,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      shipping_labels: {
+        Row: {
+          carrier: string
+          created_at: string
+          currency: string | null
+          id: string
+          label_format: string | null
+          label_image_data: string | null
+          order_id: string
+          service_code: string
+          service_name: string
+          shipment_identification_number: string | null
+          shipping_cost: number | null
+          status: string | null
+          tracking_number: string
+          updated_at: string
+          user_id: string
+          void_reason: string | null
+          voided_at: string | null
+        }
+        Insert: {
+          carrier: string
+          created_at?: string
+          currency?: string | null
+          id?: string
+          label_format?: string | null
+          label_image_data?: string | null
+          order_id: string
+          service_code: string
+          service_name: string
+          shipment_identification_number?: string | null
+          shipping_cost?: number | null
+          status?: string | null
+          tracking_number: string
+          updated_at?: string
+          user_id: string
+          void_reason?: string | null
+          voided_at?: string | null
+        }
+        Update: {
+          carrier?: string
+          created_at?: string
+          currency?: string | null
+          id?: string
+          label_format?: string | null
+          label_image_data?: string | null
+          order_id?: string
+          service_code?: string
+          service_name?: string
+          shipment_identification_number?: string | null
+          shipping_cost?: number | null
+          status?: string | null
+          tracking_number?: string
+          updated_at?: string
+          user_id?: string
+          void_reason?: string | null
+          voided_at?: string | null
+        }
+        Relationships: []
       }
       shipping_rules: {
         Row: {
