@@ -10,10 +10,12 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Package, Printer, Eye, Edit, MapPin, DollarSign, User, Truck, Clock, AlertTriangle, Settings } from "lucide-react";
+import { Calendar, Package, Printer, Eye, Edit, MapPin, DollarSign, User, Truck, Clock, AlertTriangle, Settings, Loader2, RefreshCw } from "lucide-react";
 import { Order } from "@/hooks/useOrders";
 import { useShippingServices } from "@/hooks/useShippingServices";
 import { CarrierConfigurationDialog } from "./CarrierConfigurationDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 interface ShippingDetailsDialogProps {
   isOpen: boolean;
   onClose: () => void;
@@ -21,11 +23,30 @@ interface ShippingDetailsDialogProps {
   onUpdateOrder?: (orderId: string, updates: Partial<Order>) => void;
 }
 
+interface ShippingRate {
+  carrier: string;
+  service_code: string;
+  service_name: string;
+  service_type: string;
+  cost: number;
+  currency: string;
+  estimated_days: string;
+  delivery_date?: string;
+  supports_tracking: boolean;
+  supports_insurance: boolean;
+  supports_signature: boolean;
+}
+
 export function ShippingDetailsDialog({ isOpen, onClose, order, onUpdateOrder }: ShippingDetailsDialogProps) {
   const [activeTab, setActiveTab] = useState("details");
   const [isEditing, setIsEditing] = useState(false);
   const [showCarrierConfig, setShowCarrierConfig] = useState(false);
+  const [rates, setRates] = useState<ShippingRate[]>([]);
+  const [loadingRates, setLoadingRates] = useState(false);
+  const [selectedRate, setSelectedRate] = useState<ShippingRate | null>(null);
   const { services, carriers, loading: servicesLoading, refreshServices } = useShippingServices();
+  const { toast } = useToast();
+  
   const [formData, setFormData] = useState({
     weight: order?.packageDetails?.weight || 0,
     length: order?.packageDetails?.length || 0,
@@ -104,6 +125,73 @@ export function ShippingDetailsDialog({ isOpen, onClose, order, onUpdateOrder }:
       style: 'currency',
       currency: currency
     }).format(amount);
+  };
+
+  const fetchShippingRates = async () => {
+    if (!order) return;
+    
+    setLoadingRates(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('calculate-shipping-rates', {
+        body: {
+          order_id: order.id,
+          ship_from: {
+            name: "Default Store",
+            address: "123 Store Street",
+            city: "Your City", 
+            state: "Your State",
+            zip: "12345",
+            country: "US"
+          },
+          service_preferences: ["standard", "expedited", "overnight"],
+          additional_services: {
+            signature_required: formData.confirmation === "signature",
+            insurance_value: formData.insurance !== "none" ? order.totalAmount : undefined
+          }
+        }
+      });
+
+      if (error) {
+        console.error('Error fetching rates:', error);
+        toast({
+          title: "Error fetching rates",
+          description: "Failed to get shipping rates. Please try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (data?.rates) {
+        setRates(data.rates);
+        toast({
+          title: "Rates updated",
+          description: `Found ${data.rates.length} shipping options`,
+        });
+      }
+    } catch (error) {
+      console.error('Rate fetch error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch shipping rates",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingRates(false);
+    }
+  };
+
+  const handleSelectRate = (rate: ShippingRate) => {
+    setSelectedRate(rate);
+    if (onUpdateOrder) {
+      onUpdateOrder(order.id, {
+        shippingDetails: {
+          ...order.shippingDetails,
+          cost: rate.cost,
+          carrier: rate.carrier,
+          serviceType: rate.service_name
+        }
+      });
+    }
   };
 
   return (
@@ -635,14 +723,98 @@ export function ShippingDetailsDialog({ isOpen, onClose, order, onUpdateOrder }:
               </CardContent>
             </Card>
 
-            {/* Estimated Arrival */}
-            <Card className="bg-gray-900 text-white">
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <div className="text-lg font-medium">$—C</div>
-                  <div className="text-sm opacity-80">Cost Review</div>
-                  <div className="text-lg font-medium mt-2">Estimated Arrival</div>
-                </div>
+            {/* Shipping Rates */}
+            <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-indigo-200">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center justify-between text-lg text-indigo-900">
+                  <span className="flex items-center gap-2">
+                    <Truck className="h-5 w-5" />
+                    Shipping Rates
+                  </span>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={fetchShippingRates}
+                    disabled={loadingRates}
+                    className="border-indigo-200 text-indigo-700 hover:bg-indigo-100"
+                  >
+                    {loadingRates ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4" />
+                    )}
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                {loadingRates ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-indigo-600" />
+                    <span className="ml-2 text-indigo-700">Getting rates...</span>
+                  </div>
+                ) : rates.length > 0 ? (
+                  <div className="space-y-3 max-h-64 overflow-y-auto">
+                    {rates.map((rate, index) => (
+                      <div
+                        key={index}
+                        className={`p-3 rounded-lg border cursor-pointer transition-all duration-200 hover:shadow-md ${
+                          selectedRate?.service_code === rate.service_code
+                            ? 'border-indigo-400 bg-indigo-100 shadow-sm'
+                            : 'border-gray-200 bg-white hover:border-indigo-300'
+                        }`}
+                        onClick={() => handleSelectRate(rate)}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-900">{rate.service_name}</div>
+                            <div className="text-sm text-gray-600">{rate.carrier}</div>
+                            <div className="flex items-center gap-4 mt-1">
+                              <Badge variant="outline" className="text-xs">
+                                {rate.estimated_days} days
+                              </Badge>
+                              {rate.delivery_date && (
+                                <span className="text-xs text-gray-500">
+                                  Delivery: {new Date(rate.delivery_date).toLocaleDateString()}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-bold text-lg text-indigo-700">
+                              {formatCurrency(rate.cost, rate.currency)}
+                            </div>
+                            <div className="text-xs text-gray-500 capitalize">
+                              {rate.service_type}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="text-lg font-medium text-indigo-900">No rates available</div>
+                    <div className="text-sm text-indigo-700 mt-1">
+                      Click refresh to get shipping rates
+                    </div>
+                  </div>
+                )}
+                
+                {selectedRate && (
+                  <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center gap-2 text-green-800">
+                      <Clock className="h-4 w-4" />
+                      <span className="font-medium">Selected Service</span>
+                    </div>
+                    <div className="mt-2 text-sm">
+                      <div className="font-medium">{selectedRate.service_name}</div>
+                      <div className="text-green-700">
+                        Cost: {formatCurrency(selectedRate.cost, selectedRate.currency)} • 
+                        Delivery: {selectedRate.estimated_days} days
+                      </div>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
