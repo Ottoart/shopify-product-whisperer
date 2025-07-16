@@ -1,7 +1,7 @@
-import { EnhancedRepricingDashboard } from '@/components/repricing/EnhancedRepricingDashboard';
+import { RepricingOverviewDashboard } from '@/components/repricing/RepricingOverviewDashboard';
 
 const Repricing = () => {
-  return <EnhancedRepricingDashboard />;
+  return <RepricingOverviewDashboard />;
 };
 
 export default Repricing;
