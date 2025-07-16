@@ -8,7 +8,8 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Truck, Plus, Settings, AlertCircle } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Truck, Plus, Settings, AlertCircle, TestTube, Eye, EyeOff, CheckCircle } from "lucide-react";
 import { useShippingServices, CarrierConfiguration } from "@/hooks/useShippingServices";
 import { useToast } from "@/hooks/use-toast";
 
@@ -19,10 +20,9 @@ interface CarrierConfigurationDialogProps {
 
 const SUPPORTED_CARRIERS = [
   { value: 'ups', label: 'UPS', description: 'United Parcel Service' },
-  { value: 'fedex', label: 'FedEx', description: 'Federal Express' },
-  { value: 'usps', label: 'USPS', description: 'United States Postal Service' },
+  { value: 'canada_post', label: 'Canada Post', description: 'Canada Post Corporation' },
   { value: 'sendle', label: 'Sendle', description: 'Carbon-neutral shipping' },
-  { value: 'dhl', label: 'DHL', description: 'DHL Express' }
+  { value: 'shipstation', label: 'ShipStation', description: 'Multi-carrier shipping software' }
 ];
 
 export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigurationDialogProps) {
@@ -32,9 +32,15 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
     api_secret: '',
     account_number: '',
     access_key: '',
-    password: ''
+    password: '',
+    username: '',
+    client_id: '',
+    client_secret: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [testingCarrier, setTestingCarrier] = useState<string | null>(null);
+  const [showCredentials, setShowCredentials] = useState<Record<string, boolean>>({});
+  const [expandedCarrier, setExpandedCarrier] = useState<string | null>(null);
   
   const { 
     carriers, 
@@ -81,7 +87,10 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
         api_secret: '',
         account_number: '',
         access_key: '',
-        password: ''
+        password: '',
+        username: '',
+        client_id: '',
+        client_secret: ''
       });
 
     } catch (error) {
@@ -116,15 +125,13 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
   const getCredentialFields = (carrier: string) => {
     switch (carrier) {
       case 'ups':
-        return ['api_key', 'api_secret', 'account_number'];
-      case 'fedex':
-        return ['api_key', 'api_secret', 'account_number'];
-      case 'usps':
-        return ['api_key', 'account_number'];
+        return ['client_id', 'client_secret', 'account_number'];
+      case 'canada_post':
+        return ['username', 'password', 'api_key'];
       case 'sendle':
         return ['api_key', 'api_secret'];
-      case 'dhl':
-        return ['api_key', 'api_secret', 'account_number'];
+      case 'shipstation':
+        return ['api_key', 'api_secret'];
       default:
         return [];
     }
@@ -137,8 +144,42 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
       case 'account_number': return 'Account Number';
       case 'access_key': return 'Access Key';
       case 'password': return 'Password';
+      case 'username': return 'Username';
+      case 'client_id': return 'Client ID';
+      case 'client_secret': return 'Client Secret';
       default: return field.replace('_', ' ').toUpperCase();
     }
+  };
+
+  const handleTestConnection = async (carrierId: string) => {
+    setTestingCarrier(carrierId);
+    try {
+      // Here you would call your test connection API
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API call
+      toast({
+        title: "Success",
+        description: "Connection test successful",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Connection test failed",
+        variant: "destructive"
+      });
+    } finally {
+      setTestingCarrier(null);
+    }
+  };
+
+  const toggleCredentialVisibility = (carrierId: string) => {
+    setShowCredentials(prev => ({
+      ...prev,
+      [carrierId]: !prev[carrierId]
+    }));
+  };
+
+  const toggleCarrierExpansion = (carrierId: string) => {
+    setExpandedCarrier(prev => prev === carrierId ? null : carrierId);
   };
 
   return (
@@ -241,29 +282,121 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
                   <p>No carriers configured yet</p>
                   <p className="text-sm">Add a carrier to get started with shipping services</p>
                 </div>
-              ) : (
+               ) : (
                 carriers.map(carrier => (
-                  <div key={carrier.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Truck className="h-4 w-4 text-primary" />
-                      </div>
-                      <div>
-                        <div className="font-medium">{carrier.carrier_name.toUpperCase()}</div>
-                        <div className="text-sm text-muted-foreground">
-                          Added {new Date(carrier.created_at).toLocaleDateString()}
+                  <div key={carrier.id} className="border rounded-lg p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                          <Truck className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                          <div className="font-medium">{carrier.carrier_name.toUpperCase()}</div>
+                          <div className="text-sm text-muted-foreground">
+                            Added {new Date(carrier.created_at).toLocaleDateString()}
+                          </div>
                         </div>
                       </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={carrier.is_active ? "default" : "secondary"}>
+                          {carrier.is_active ? "Active" : "Inactive"}
+                        </Badge>
+                        <Switch
+                          checked={carrier.is_active}
+                          onCheckedChange={(checked) => handleToggleCarrier(carrier.id, checked)}
+                        />
+                      </div>
                     </div>
+
+                    {/* Action buttons */}
                     <div className="flex items-center gap-2">
-                      <Badge variant={carrier.is_active ? "default" : "secondary"}>
-                        {carrier.is_active ? "Active" : "Inactive"}
-                      </Badge>
-                      <Switch
-                        checked={carrier.is_active}
-                        onCheckedChange={(checked) => handleToggleCarrier(carrier.id, checked)}
-                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toggleCredentialVisibility(carrier.id)}
+                      >
+                        {showCredentials[carrier.id] ? (
+                          <>
+                            <EyeOff className="h-3 w-3 mr-1" />
+                            Hide Credentials
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="h-3 w-3 mr-1" />
+                            View Credentials
+                          </>
+                        )}
+                      </Button>
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleTestConnection(carrier.id)}
+                        disabled={testingCarrier === carrier.id}
+                      >
+                        {testingCarrier === carrier.id ? (
+                          <>Testing...</>
+                        ) : (
+                          <>
+                            <TestTube className="h-3 w-3 mr-1" />
+                            Test
+                          </>
+                        )}
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toggleCarrierExpansion(carrier.id)}
+                      >
+                        <Settings className="h-3 w-3 mr-1" />
+                        {expandedCarrier === carrier.id ? 'Hide Services' : 'Manage Services'}
+                      </Button>
                     </div>
+
+                    {/* Credentials display */}
+                    {showCredentials[carrier.id] && (
+                      <div className="bg-muted/50 p-3 rounded space-y-2">
+                        <h4 className="text-sm font-medium">API Credentials</h4>
+                        {Object.entries(carrier.api_credentials as Record<string, any>).map(([key, value]) => (
+                          <div key={key} className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">{getFieldLabel(key)}:</span>
+                            <span className="font-mono">
+                              {key.includes('secret') || key.includes('password') ? '••••••••' : value}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Service management */}
+                    {expandedCarrier === carrier.id && (
+                      <div className="bg-muted/50 p-3 rounded space-y-3">
+                        <h4 className="text-sm font-medium flex items-center gap-2">
+                          <CheckCircle className="h-4 w-4" />
+                          Available Services
+                        </h4>
+                        <div className="space-y-2">
+                          {/* Mock services - replace with actual services from the API */}
+                          {['Ground', 'Express', 'Overnight'].map(service => (
+                            <div key={service} className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Checkbox 
+                                  id={`${carrier.id}-${service}`}
+                                  defaultChecked={true}
+                                />
+                                <Label htmlFor={`${carrier.id}-${service}`} className="text-sm">
+                                  {service}
+                                </Label>
+                              </div>
+                              <Badge variant="outline" className="text-xs">
+                                1-3 days
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))
               )}
