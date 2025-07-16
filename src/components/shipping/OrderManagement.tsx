@@ -43,14 +43,17 @@ import {
   ExternalLink,
   StickyNote,
   Weight,
-  CreditCard
+  CreditCard,
+  Grid3X3
 } from "lucide-react";
+import { ShippedProductsView } from './ShippedProductsView';
 
 export function OrderManagement() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [filterStatus, setFilterStatus] = useState("awaiting"); // Default to awaiting
+  const [viewMode, setViewMode] = useState<'orders' | 'products'>('orders');
   const [filterStore, setFilterStore] = useState("all");
   const [filterDateRange, setFilterDateRange] = useState("all");
   const [searchParams, setSearchParams] = useSearchParams();
@@ -65,6 +68,12 @@ export function OrderManagement() {
     }
     if (statusParam) {
       setFilterStatus(statusParam);
+      // Auto-switch to products view for shipped orders
+      if (statusParam === 'shipped') {
+        setViewMode('products');
+      } else {
+        setViewMode('orders');
+      }
     }
   }, [searchParams]);
   const { orders: ordersData, loading, error, fetchOrders } = useOrders();
@@ -364,10 +373,37 @@ export function OrderManagement() {
           {/* Store Update Controls */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
-              <h2 className="text-lg font-semibold">Awaiting Shipment Orders</h2>
+              <h2 className="text-lg font-semibold">
+                {filterStatus === 'shipped' && viewMode === 'products' 
+                  ? 'Shipped & In-Transit Products' 
+                  : 'Awaiting Shipment Orders'
+                }
+              </h2>
               <Badge variant="secondary" className="text-sm">
                 Last updated: {lastRefresh.toLocaleTimeString()}
               </Badge>
+              {filterStatus === 'shipped' && (
+                <div className="flex items-center gap-1 border rounded-md">
+                  <Button
+                    variant={viewMode === 'orders' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('orders')}
+                    className="h-8 px-3"
+                  >
+                    <Package className="h-4 w-4 mr-1" />
+                    Orders
+                  </Button>
+                  <Button
+                    variant={viewMode === 'products' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('products')}
+                    className="h-8 px-3"
+                  >
+                    <Grid3X3 className="h-4 w-4 mr-1" />
+                    Products
+                  </Button>
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -475,261 +511,269 @@ export function OrderManagement() {
           </div>
         </div>
 
-      {/* Orders Table */}
+      {/* Content Area */}
       <div className="flex-1 overflow-auto">
-          <Table className="orders-table">
-            <TableHeader className="sticky top-0 bg-background">
-              <TableRow className="bg-muted/50">
-                <TableHead className="w-12">
-                  <Checkbox 
-                    checked={selectedOrders.length === filteredOrders.length && filteredOrders.length > 0}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        setSelectedOrders(filteredOrders.map(o => o.id));
-                      } else {
-                        setSelectedOrders([]);
-                      }
-                    }}
-                  />
-                </TableHead>
-                 <TableHead className="min-w-32">
-                   <button 
-                     className="flex items-center gap-1 hover:text-foreground/80" 
-                     onClick={() => handleSort('orderNumber')}
-                   >
-                     Order # {getSortIcon('orderNumber')}
-                   </button>
-                 </TableHead>
-                  <TableHead className="w-24">
-                    <button 
-                      className="flex items-center gap-1 hover:text-foreground/80" 
-                      onClick={() => handleSort('itemSku')}
-                    >
-                      Item SKU {getSortIcon('itemSku')}
-                    </button>
-                  </TableHead>
-                  <TableHead className="min-w-48">
-                    <button 
-                      className="flex items-center gap-1 hover:text-foreground/80" 
-                      onClick={() => handleSort('itemName')}
-                    >
-                      Item Name {getSortIcon('itemName')}
-                    </button>
-                  </TableHead>
-                  <TableHead className="w-20">
-                    <button 
-                      className="flex items-center gap-1 hover:text-foreground/80" 
-                      onClick={() => handleSort('quantity')}
-                    >
-                      Quantity {getSortIcon('quantity')}
-                    </button>
-                  </TableHead>
-                 <TableHead className="min-w-40">
-                   <button 
-                     className="flex items-center gap-1 hover:text-foreground/80" 
-                     onClick={() => handleSort('recipient')}
-                   >
-                     Recipient {getSortIcon('recipient')}
-                   </button>
-                 </TableHead>
-                 <TableHead className="w-20">Age</TableHead>
-                 <TableHead className="w-24">
-                   <button 
-                     className="flex items-center gap-1 hover:text-foreground/80" 
-                     onClick={() => handleSort('totalAmount')}
-                   >
-                     Order Total {getSortIcon('totalAmount')}
-                   </button>
-                 </TableHead>
-                 <TableHead className="w-24">
-                   <button 
-                     className="flex items-center gap-1 hover:text-foreground/80" 
-                     onClick={() => handleSort('weight')}
-                   >
-                     Weight {getSortIcon('weight')}
-                   </button>
-                 </TableHead>
-                 <TableHead className="w-16">Notes</TableHead>
-                 <TableHead className="w-24">
-                   <button 
-                     className="flex items-center gap-1 hover:text-foreground/80" 
-                     onClick={() => handleSort('orderDate')}
-                   >
-                     Order Date {getSortIcon('orderDate')}
-                   </button>
-                 </TableHead>
-                 <TableHead className="w-16">
-                   <button 
-                     className="flex items-center gap-1 hover:text-foreground/80" 
-                     onClick={() => handleSort('state')}
-                   >
-                     State {getSortIcon('state')}
-                   </button>
-                 </TableHead>
-                  <TableHead className="w-32">
-                    <button 
-                      className="flex items-center gap-1 hover:text-foreground/80" 
-                      onClick={() => handleSort('requestedService')}
-                    >
-                      Requested Service {getSortIcon('requestedService')}
-                    </button>
-                  </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredOrders.map((order) => {
-                const age = getAge(order.orderDate);
-                return (
-                  <TableRow key={order.id} className="hover:bg-muted/30">
-                    <TableCell>
-                      <Checkbox
-                        checked={selectedOrders.includes(order.id)}
-                        onCheckedChange={() => handleSelectOrder(order.id)}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="link"
-                          size="sm"
-                          className="font-mono text-blue-600 p-0 h-auto"
-                          onClick={() => handleOrderClick(order)}
-                        >
-                          {order.orderNumber}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="p-1 h-6 w-6"
-                          title="View in store"
-                        >
-                          <ExternalLink className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        {order.items.length === 1 
-                          ? order.items[0].sku || "No SKU"
-                          : (
-                            <div title={order.items.map(i => i.sku || "No SKU").join(", ")}>
-                              ({order.items.length} Items)
-                            </div>
-                          )
+        {filterStatus === 'shipped' && viewMode === 'products' ? (
+          <div className="p-6">
+            <ShippedProductsView />
+          </div>
+        ) : (
+          <>
+            <Table className="orders-table">
+              <TableHeader className="sticky top-0 bg-background">
+                <TableRow className="bg-muted/50">
+                  <TableHead className="w-12">
+                    <Checkbox 
+                      checked={selectedOrders.length === filteredOrders.length && filteredOrders.length > 0}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedOrders(filteredOrders.map(o => o.id));
+                        } else {
+                          setSelectedOrders([]);
                         }
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-gray-200 rounded border flex-shrink-0 overflow-hidden">
-                          {order.items[0]?.imageSrc ? (
-                            <img 
-                              src={order.items[0].imageSrc} 
-                              alt={order.items[0].productTitle}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).style.display = 'none';
-                              }}
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                              <span className="text-xs text-gray-400">No Image</span>
-                            </div>
-                          )}
+                      }}
+                    />
+                  </TableHead>
+                   <TableHead className="min-w-32">
+                     <button 
+                       className="flex items-center gap-1 hover:text-foreground/80" 
+                       onClick={() => handleSort('orderNumber')}
+                     >
+                       Order # {getSortIcon('orderNumber')}
+                     </button>
+                   </TableHead>
+                    <TableHead className="w-24">
+                      <button 
+                        className="flex items-center gap-1 hover:text-foreground/80" 
+                        onClick={() => handleSort('itemSku')}
+                      >
+                        Item SKU {getSortIcon('itemSku')}
+                      </button>
+                    </TableHead>
+                    <TableHead className="min-w-48">
+                      <button 
+                        className="flex items-center gap-1 hover:text-foreground/80" 
+                        onClick={() => handleSort('itemName')}
+                      >
+                        Item Name {getSortIcon('itemName')}
+                      </button>
+                    </TableHead>
+                    <TableHead className="w-20">
+                      <button 
+                        className="flex items-center gap-1 hover:text-foreground/80" 
+                        onClick={() => handleSort('quantity')}
+                      >
+                        Quantity {getSortIcon('quantity')}
+                      </button>
+                    </TableHead>
+                   <TableHead className="min-w-40">
+                     <button 
+                       className="flex items-center gap-1 hover:text-foreground/80" 
+                       onClick={() => handleSort('recipient')}
+                     >
+                       Recipient {getSortIcon('recipient')}
+                     </button>
+                   </TableHead>
+                   <TableHead className="w-20">Age</TableHead>
+                   <TableHead className="w-24">
+                     <button 
+                       className="flex items-center gap-1 hover:text-foreground/80" 
+                       onClick={() => handleSort('totalAmount')}
+                     >
+                       Order Total {getSortIcon('totalAmount')}
+                     </button>
+                   </TableHead>
+                   <TableHead className="w-24">
+                     <button 
+                       className="flex items-center gap-1 hover:text-foreground/80" 
+                       onClick={() => handleSort('weight')}
+                     >
+                       Weight {getSortIcon('weight')}
+                     </button>
+                   </TableHead>
+                   <TableHead className="w-16">Notes</TableHead>
+                   <TableHead className="w-24">
+                     <button 
+                       className="flex items-center gap-1 hover:text-foreground/80" 
+                       onClick={() => handleSort('orderDate')}
+                     >
+                       Order Date {getSortIcon('orderDate')}
+                     </button>
+                   </TableHead>
+                   <TableHead className="w-16">
+                     <button 
+                       className="flex items-center gap-1 hover:text-foreground/80" 
+                       onClick={() => handleSort('state')}
+                     >
+                       State {getSortIcon('state')}
+                     </button>
+                   </TableHead>
+                    <TableHead className="w-32">
+                      <button 
+                        className="flex items-center gap-1 hover:text-foreground/80" 
+                        onClick={() => handleSort('requestedService')}
+                      >
+                        Requested Service {getSortIcon('requestedService')}
+                      </button>
+                    </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredOrders.map((order) => {
+                  const age = getAge(order.orderDate);
+                  return (
+                    <TableRow key={order.id} className="hover:bg-muted/30">
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedOrders.includes(order.id)}
+                          onCheckedChange={() => handleSelectOrder(order.id)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="link"
+                            size="sm"
+                            className="font-mono text-blue-600 p-0 h-auto"
+                            onClick={() => handleOrderClick(order)}
+                          >
+                            {order.orderNumber}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="p-1 h-6 w-6"
+                            title="View in store"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                          </Button>
                         </div>
-                        <div 
-                          className={`text-sm ${
-                            order.items.length === 1 && order.items[0].productHandle 
-                              ? 'cursor-pointer hover:text-primary hover:underline text-blue-600' 
-                              : ''
-                          }`}
-                          onClick={() => {
-                            if (order.items.length === 1 && order.items[0].productHandle) {
-                              console.log('Clicking product:', order.items[0].productHandle, order.items[0].productTitle);
-                              handleProductClick(order.items[0].productHandle, order.items[0].productTitle);
-                            }
-                          }}
-                        >
-                          {getItemSummary(order.items)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          {order.items.length === 1 
+                            ? order.items[0].sku || "No SKU"
+                            : (
+                              <div title={order.items.map(i => i.sku || "No SKU").join(", ")}>
+                                ({order.items.length} Items)
+                              </div>
+                            )
+                          }
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm text-center">
-                        {getTotalQuantity(order.items)}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        <div className="font-medium">{order.customerName}</div>
-                        <div className="text-xs text-muted-foreground">{order.customerEmail}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">{age.text}</div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="text-sm font-medium">
-                        {formatCurrency(order.totalAmount, order.currency)}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        {formatWeight(order.packageDetails?.weight || 0)}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {order.notes && (
-                        <div className="flex items-center justify-center">
-                          <div title={order.notes}>
-                            <StickyNote className="h-4 w-4 text-blue-500" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 bg-gray-200 rounded border flex-shrink-0 overflow-hidden">
+                            {order.items[0]?.imageSrc ? (
+                              <img 
+                                src={order.items[0].imageSrc} 
+                                alt={order.items[0].productTitle}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                }}
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                                <span className="text-xs text-gray-400">No Image</span>
+                              </div>
+                            )}
+                          </div>
+                          <div 
+                            className={`text-sm ${
+                              order.items.length === 1 && order.items[0].productHandle 
+                                ? 'cursor-pointer hover:text-primary hover:underline text-blue-600' 
+                                : ''
+                            }`}
+                            onClick={() => {
+                              if (order.items.length === 1 && order.items[0].productHandle) {
+                                console.log('Clicking product:', order.items[0].productHandle, order.items[0].productTitle);
+                                handleProductClick(order.items[0].productHandle, order.items[0].productTitle);
+                              }
+                            }}
+                          >
+                            {getItemSummary(order.items)}
                           </div>
                         </div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        {new Date(order.orderDate).toLocaleDateString('en-US', { 
-                          month: '2-digit', 
-                          day: '2-digit', 
-                          year: 'numeric' 
-                        })}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        {order.shippingAddress.state}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        {order.shippingDetails?.serviceType || "Standard"}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm text-center">
+                          {getTotalQuantity(order.items)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          <div className="font-medium">{order.customerName}</div>
+                          <div className="text-xs text-muted-foreground">{order.customerEmail}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">{age.text}</div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="text-sm font-medium">
+                          {formatCurrency(order.totalAmount, order.currency)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          {formatWeight(order.packageDetails?.weight || 0)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {order.notes && (
+                          <div className="flex items-center justify-center">
+                            <div title={order.notes}>
+                              <StickyNote className="h-4 w-4 text-blue-500" />
+                            </div>
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          {new Date(order.orderDate).toLocaleDateString('en-US', { 
+                            month: '2-digit', 
+                            day: '2-digit', 
+                            year: 'numeric' 
+                          })}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          {order.shippingAddress.state}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          {order.shippingDetails?.serviceType || "Standard"}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
 
-          {filteredOrders.length === 0 && (
-            <div className="p-12 text-center">
-              <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">No orders found</h3>
-              <p className="text-muted-foreground mb-4">
-                {searchTerm || filterStore !== "all" || filterStatus !== "all" 
-                  ? "Try adjusting your filters or search terms."
-                  : "No orders available. Sync with your connected stores to see orders."
-                }
-              </p>
-              {orders.length === 0 && (
-                <Button onClick={fetchOrders}>
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Refresh Orders
-                </Button>
-              )}
-            </div>
-          )}
+            {filteredOrders.length === 0 && (
+              <div className="p-12 text-center">
+                <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">No orders found</h3>
+                <p className="text-muted-foreground mb-4">
+                  {searchTerm || filterStore !== "all" || filterStatus !== "all" 
+                    ? "Try adjusting your filters or search terms."
+                    : "No orders available. Sync with your connected stores to see orders."
+                  }
+                </p>
+                {orders.length === 0 && (
+                  <Button onClick={fetchOrders}>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Refresh Orders
+                  </Button>
+                )}
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       <SyncProgressDialog 
