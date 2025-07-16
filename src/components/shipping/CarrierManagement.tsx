@@ -63,6 +63,9 @@ export function CarrierManagement() {
   console.log('Current user:', user?.email);
   console.log('Is Admin:', isAdmin);
   
+  // Show admin status in UI for debugging
+  const [showAdminInfo, setShowAdminInfo] = useState(true);
+  
   const [selectedCarrier, setSelectedCarrier] = useState<Carrier | null>(null);
   const [showMarkupSettings, setShowMarkupSettings] = useState(false);
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
@@ -758,17 +761,36 @@ export function CarrierManagement() {
         </div>
 
         {/* Admin Controls Banner */}
-        {isAdmin && (
+        {isAdmin && showAdminInfo && (
           <Card className="border-red-200 bg-red-50">
             <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <Shield className="h-5 w-5 text-red-600" />
-                <div>
-                  <h3 className="font-medium text-red-900">Administrator Access</h3>
-                  <p className="text-sm text-red-800">
-                    You can manage carrier accounts, adjust surcharges (default 15%), and control feature availability.
-                  </p>
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-3">
+                  <Shield className="h-5 w-5 text-red-600 mt-0.5" />
+                  <div>
+                    <h3 className="font-medium text-red-900">🔐 Administrator Access Active</h3>
+                    <div className="text-sm text-red-800 space-y-1 mt-2">
+                      <p><strong>✅ What you can see/do as admin:</strong></p>
+                      <ul className="list-disc ml-4 space-y-1">
+                        <li>Manage carrier accounts & adjust hidden markup (default 15%)</li>
+                        <li>Enable/disable shipping services for users</li>
+                        <li>View real UPS configuration with OAuth status</li>
+                        <li>Access rate markup controls (click eye icon in service modals)</li>
+                        <li>Connect new carriers to the system</li>
+                        <li>View admin badges and controls throughout the interface</li>
+                      </ul>
+                      <p className="mt-2"><strong>🎯 Try this:</strong> Click "Manage Services" on UPS (Native) to see admin markup controls!</p>
+                    </div>
+                  </div>
                 </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setShowAdminInfo(false)}
+                  className="text-red-700 hover:bg-red-100"
+                >
+                  ✕
+                </Button>
               </div>
             </CardContent>
           </Card>
