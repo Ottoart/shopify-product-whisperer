@@ -185,6 +185,10 @@ export function CarrierManagement() {
           console.error('Error fetching UPS configuration:', error);
         }
 
+        console.log('UPS carrier configs found:', carrierConfigs);
+        console.log('Number of UPS configs:', carrierConfigs?.length || 0);
+        console.log('UPS carrier object:', upsCarrier);
+
         const defaultCarriers = [
           {
             id: "canada-post-internal",
@@ -238,6 +242,7 @@ export function CarrierManagement() {
             settings: upsCarrier.settings
           };
           setPrepfoxCarriers([upsConfig, ...defaultCarriers]);
+          console.log('Set PrepFox carriers with UPS config:', [upsConfig, ...defaultCarriers]);
         } else {
           // Show default UPS placeholder
           const defaultUps = {
