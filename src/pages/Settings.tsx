@@ -27,7 +27,7 @@ const Settings = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Store className="h-5 w-5" />
-                  Shopify Store Configuration
+                  The stores configuration page where all stores configurations a saved
                 </CardTitle>
                 <CardDescription>
                   Connect your Shopify store to sync products
