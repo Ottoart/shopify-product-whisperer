@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,9 +39,20 @@ interface Listing {
 }
 
 export function ListingsTab({ storeFilter, dateRange, dateRangeLabel }: ListingsTabProps) {
+  const [searchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
+  const [activeStoreFilter, setActiveStoreFilter] = useState<string>('');
+  
+  useEffect(() => {
+    const storeParam = searchParams.get('store');
+    if (storeParam) {
+      setActiveStoreFilter(decodeURIComponent(storeParam));
+    } else {
+      setActiveStoreFilter(storeFilter || '');
+    }
+  }, [searchParams, storeFilter]);
 
   // Mock data - in real implementation, this would come from Supabase
   const listings: Listing[] = [
@@ -101,7 +113,8 @@ export function ListingsTab({ storeFilter, dateRange, dateRangeLabel }: Listings
     const matchesSearch = listing.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          listing.sku.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || listing.status.toLowerCase() === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesStore = !activeStoreFilter || listing.title.toLowerCase().includes(activeStoreFilter.toLowerCase());
+    return matchesSearch && matchesStatus && matchesStore;
   });
 
   const getBuyBoxBadgeColor = (status: string) => {

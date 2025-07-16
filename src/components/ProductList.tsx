@@ -44,12 +44,15 @@ export const ProductList = ({
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
 
   // Handle URL parameters for store filtering
+  const [storeFilter, setStoreFilter] = useState<string>('');
+  
   useEffect(() => {
     const storeParam = searchParams.get('store');
     if (storeParam) {
       const decodedStore = decodeURIComponent(storeParam);
-      // Apply store-specific filtering here if needed
-      console.log('Filtering products for store:', decodedStore);
+      setStoreFilter(decodedStore);
+    } else {
+      setStoreFilter('');
     }
   }, [searchParams]);
   
@@ -83,12 +86,13 @@ export const ProductList = ({
                          product.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.tags.toLowerCase().includes(searchTerm.toLowerCase());
     
+    const matchesStore = !storeFilter || product.vendor?.toLowerCase().includes(storeFilter.toLowerCase());
     const matchesType = selectedTypes.size === 0 || selectedTypes.has(product.type);
     const matchesVendor = selectedVendors.size === 0 || selectedVendors.has(product.vendor);
     const matchesCategory = selectedCategories.size === 0 || selectedCategories.has(product.category || '');
     const matchesTag = selectedTags.size === 0 || product.tags?.split(',').some(tag => selectedTags.has(tag.trim()));
     
-    return matchesSearch && matchesType && matchesVendor && matchesCategory && matchesTag;
+    return matchesSearch && matchesStore && matchesType && matchesVendor && matchesCategory && matchesTag;
   });
 
   const paginatedProducts = filteredProducts.slice(

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +15,17 @@ interface DashboardTabProps {
 }
 
 export function DashboardTab({ storeFilter, dateRange, dateRangeLabel }: DashboardTabProps) {
+  const [searchParams] = useSearchParams();
+  const [activeStoreFilter, setActiveStoreFilter] = useState<string>('');
+  
+  useEffect(() => {
+    const storeParam = searchParams.get('store');
+    if (storeParam) {
+      setActiveStoreFilter(decodeURIComponent(storeParam));
+    } else {
+      setActiveStoreFilter(storeFilter || '');
+    }
+  }, [searchParams, storeFilter]);
   // Mock data - in real implementation, this would come from Supabase
   const buyBoxData = [
     { day: 'Mon', percentage: 85 },
