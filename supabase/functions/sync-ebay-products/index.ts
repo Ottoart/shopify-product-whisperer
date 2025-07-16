@@ -57,6 +57,8 @@ serve(async (req) => {
         'Authorization': `Bearer ${ebayConfig.access_token}`,
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'Accept-Language': 'en-US',
+        'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
       },
     });
 
