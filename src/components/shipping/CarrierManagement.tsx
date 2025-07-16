@@ -146,16 +146,17 @@ export function CarrierManagement() {
     const fetchUpsData = async () => {
       if (!user) return;
       
-      try {
+        try {
         const { data: carrierConfigs, error } = await supabase
           .from('carrier_configurations')
           .select(`
             *,
             shipping_services(*)
           `)
-          .eq('user_id', user.id)
+          .eq('carrier_name', 'ups')
           .eq('is_active', true)
-          .eq('carrier_name', 'ups');
+          .order('created_at', { ascending: false })
+          .limit(1);
 
         const upsCarrier = carrierConfigs?.[0] ? {
           id: carrierConfigs[0].id,
