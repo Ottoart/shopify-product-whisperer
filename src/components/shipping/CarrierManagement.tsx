@@ -230,10 +230,23 @@ export function CarrierManagement() {
           }
         ];
 
-        if (upsCarrier) {
+        console.log('UPS carrier configs found:', carrierConfigs);
+        console.log('Number of UPS configs:', carrierConfigs.length);
+        
+        if (carrierConfigs.length > 0) {
+          const realUpsCarrier = carrierConfigs[0];
+          console.log('Using UPS carrier:', realUpsCarrier);
+          
           // Set the UPS carrier data for display in configuration
-          setUpsCarrier(carrierConfigs[0]);
-          setUpsServices(carrierConfigs[0].shipping_services);
+          setUpsCarrier(realUpsCarrier);
+          setUpsServices(realUpsCarrier.shipping_services || []);
+          
+          // Create services array in the expected format
+          const upsServices = (realUpsCarrier.shipping_services || []).map((service: any) => ({
+            id: service.service_code,
+            name: service.service_name,
+            enabled: service.is_available
+          }));
           
           // Use real UPS data from database
           const upsConfig = {
@@ -242,16 +255,14 @@ export function CarrierManagement() {
             logo: "🤎",
             connected: true,
             status: 'connected' as const,
-            services: upsCarrier.services,
-            lastSync: upsCarrier.lastSync,
+            services: upsServices,
+            lastSync: realUpsCarrier.updated_at ? new Date(realUpsCarrier.updated_at).toLocaleDateString() : 'Never',
             isInternal: true,
             markup: 15,
-            adminControlled: true,
-            credentials: upsCarrier.credentials,
-            settings: upsCarrier.settings
+            adminControlled: true
           };
           setPrepfoxCarriers([upsConfig, ...defaultCarriers]);
-          console.log('Set PrepFox carriers with UPS config:', [upsConfig, ...defaultCarriers]);
+          console.log('Set PrepFox carriers with real UPS config:', [upsConfig, ...defaultCarriers]);
         } else {
           // Show default UPS placeholder
           const defaultUps = {
