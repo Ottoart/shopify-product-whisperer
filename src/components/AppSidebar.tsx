@@ -110,14 +110,15 @@ export function AppSidebar() {
       try {
         const { data, error } = await supabase
           .from('orders')
-          .select('status, store_name, shipped_date')
+          .select('status, store_name, shipped_date, delivered_date')
           .eq('status', 'awaiting')
           .is('shipped_date', null)
+          .is('delivered_date', null)
           .order('status');
         
         if (error) throw error;
         
-        // Count orders by status (only open/unshipped awaiting orders)
+        // Count orders by status (only active unshipped/undelivered awaiting orders)
         const counts: Record<string, number> = {};
         data?.forEach(order => {
           counts[order.status] = (counts[order.status] || 0) + 1;
