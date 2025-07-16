@@ -177,9 +177,19 @@ export const useShippingServices = () => {
   };
 
   const fetchCarriers = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('🔍 fetchCarriers - No user found');
+      return;
+    }
     
     console.log('🔍 fetchCarriers - User ID:', user.id);
+    console.log('🔍 fetchCarriers - User email:', user.email);
+    
+    // Check current auth state
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    console.log('🔍 fetchCarriers - Current session:', session);
+    console.log('🔍 fetchCarriers - Session error:', sessionError);
+    console.log('🔍 fetchCarriers - Auth UID:', session?.user?.id);
     
     try {
       const { data, error } = await supabase
