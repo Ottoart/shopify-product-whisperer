@@ -262,6 +262,25 @@ async function syncShopifyOrders(storeConfig: any, user: any, supabase: any, syn
   const shopifyOrders = shopifyData.orders || [];
 
   console.log(`Found ${shopifyOrders.length} orders from ${storeConfig.store_name}`);
+  
+  // Check how many existing orders we have in the database for this store
+  const { data: existingOrdersCount } = await supabase
+    .from('orders')
+    .select('order_number', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .eq('store_name', storeConfig.store_name);
+    
+  console.log(`Existing orders in database for ${storeConfig.store_name}: ${existingOrdersCount}`);
+  
+  // Log some order details for debugging
+  if (shopifyOrders.length > 0) {
+    console.log(`Sample order from Shopify:`, {
+      name: shopifyOrders[0].name,
+      created_at: shopifyOrders[0].created_at,
+      financial_status: shopifyOrders[0].financial_status,
+      fulfillment_status: shopifyOrders[0].fulfillment_status
+    });
+  }
 
   // Transform and insert orders
   const ordersToInsert = [];
