@@ -40,6 +40,9 @@ verify_jwt = true
 [functions.sync-shopify-products]
 verify_jwt = true
 
+[functions.sync-ebay-products]
+verify_jwt = true
+
 [functions.update-performance-metrics]
 verify_jwt = true
 

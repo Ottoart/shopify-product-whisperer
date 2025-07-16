@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Zap, Store, Settings, Activity, CheckCircle } from "lucide-react";
 import { ShopifySync } from "@/components/ShopifySync";
+import { EbaySync } from "@/components/EbaySync";
 
 export default function ShopifyIntegration() {
   const handleProductsUpdated = () => {
@@ -15,16 +16,26 @@ export default function ShopifyIntegration() {
       <div className="flex items-center gap-3">
         <Zap className="h-8 w-8 text-primary" />
         <div>
-          <h1 className="text-3xl font-bold">Shopify Integration</h1>
-          <p className="text-muted-foreground">Connect and manage your Shopify store</p>
+          <h1 className="text-3xl font-bold">Marketplace Integration</h1>
+          <p className="text-muted-foreground">Connect and manage your marketplace stores</p>
+        </div>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Shopify Sync Component */}
+        <div>
+          <ShopifySync onProductsUpdated={handleProductsUpdated} />
+        </div>
+
+        {/* eBay Sync Component */}
+        <div>
+          <EbaySync onProductsUpdated={handleProductsUpdated} />
         </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Shopify Sync Component */}
-        <div className="lg:col-span-2">
-          <ShopifySync onProductsUpdated={handleProductsUpdated} />
-        </div>
+        {/* Placeholder for future sync components */}
+        <div className="lg:col-span-2"></div>
 
         {/* Connection Status */}
         <div className="space-y-6">
@@ -35,7 +46,7 @@ export default function ShopifyIntegration() {
                 Connection Status
               </CardTitle>
               <CardDescription>
-                Your Shopify store connection details
+                Your marketplace connection details
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -68,7 +79,7 @@ export default function ShopifyIntegration() {
                 Quick Actions
               </CardTitle>
               <CardDescription>
-                Common Shopify integration tasks
+                Common marketplace integration tasks
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -92,9 +103,9 @@ export default function ShopifyIntegration() {
       {/* Store Information */}
       <Card>
         <CardHeader>
-          <CardTitle>Store Information</CardTitle>
+          <CardTitle>Connected Stores</CardTitle>
           <CardDescription>
-            Details about your connected Shopify store
+            Details about your connected marketplace stores
           </CardDescription>
         </CardHeader>
         <CardContent>
