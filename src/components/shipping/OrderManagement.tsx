@@ -45,6 +45,13 @@ import {
   CreditCard
 } from "lucide-react";
 
+type OrderCategory = {
+  id: string;
+  name: string;
+  count: number;
+  isExpanded: boolean;
+};
+
 export function OrderManagement() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -61,6 +68,7 @@ export function OrderManagement() {
   const [syncError, setSyncError] = useState(false);
   const [backgroundSync, setBackgroundSync] = useState(false);
   const [storeConfigs, setStoreConfigs] = useState<any[]>([]);
+  const [activeCategory, setActiveCategory] = useState("awaiting");
   const [showLabelModal, setShowLabelModal] = useState(false);
   const [selectedOrderForLabel, setSelectedOrderForLabel] = useState<Order | null>(null);
   const [editableOrder, setEditableOrder] = useState<Order | null>(null);
@@ -69,6 +77,17 @@ export function OrderManagement() {
   const [showProductDialog, setShowProductDialog] = useState(false);
   const [selectedProductHandle, setSelectedProductHandle] = useState('');
   const [selectedProductTitle, setSelectedProductTitle] = useState('');
+  
+  const [categories, setCategories] = useState<OrderCategory[]>([
+    { id: "awaiting_payment", name: "Awaiting Payment", count: 1, isExpanded: false },
+    { id: "on_hold", name: "On Hold", count: 0, isExpanded: false },
+    { id: "awaiting", name: "Awaiting Shipment", count: 15, isExpanded: true },
+    { id: "manual", name: "Manual Orders", count: 0, isExpanded: false },
+    { id: "rejected", name: "Rejected Fulfillment", count: 0, isExpanded: false },
+    { id: "shipped", name: "Shipped", count: 8, isExpanded: false },
+    { id: "delivered", name: "Delivered", count: 25, isExpanded: false },
+    { id: "cancelled", name: "Cancelled", count: 2, isExpanded: false },
+  ]);
 
   useEffect(() => {
     setOrders(ordersData);
@@ -238,9 +257,69 @@ export function OrderManagement() {
   };
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header Actions */}
-      <div className="border-b p-4">
+    <div className="flex h-screen">
+      {/* Sidebar */}
+      <div className="w-64 bg-muted/30 border-r p-4 overflow-y-auto">
+        <div className="space-y-2">
+          <h2 className="font-semibold text-lg mb-4">Orders</h2>
+          <div className="space-y-1">
+            {categories.map((category) => (
+              <div key={category.id}>
+                <button
+                  onClick={() => {
+                    setActiveCategory(category.id);
+                    setCategories(prev => prev.map(cat => 
+                      cat.id === category.id 
+                        ? { ...cat, isExpanded: !cat.isExpanded }
+                        : cat
+                    ));
+                  }}
+                  className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${
+                    activeCategory === category.id 
+                      ? "bg-primary text-primary-foreground" 
+                      : "hover:bg-muted"
+                  }`}
+                >
+                  <span>{category.name}</span>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="text-xs">
+                      {category.count}
+                    </Badge>
+                    {category.isExpanded ? (
+                      <ChevronDown className="h-3 w-3" />
+                    ) : (
+                      <ChevronRight className="h-3 w-3" />
+                    )}
+                  </div>
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-8 pt-4 border-t">
+          <h3 className="font-medium text-sm mb-3">Quick Actions</h3>
+          <div className="space-y-2">
+            <Button variant="outline" size="sm" className="w-full justify-start">
+              <Printer className="h-4 w-4 mr-2" />
+              Print Labels
+            </Button>
+            <Button variant="outline" size="sm" className="w-full justify-start">
+              <Download className="h-4 w-4 mr-2" />
+              Export Orders
+            </Button>
+            <Button variant="outline" size="sm" className="w-full justify-start">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Sync Orders
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header Actions */}
+        <div className="border-b p-4">
           <div className="flex items-center gap-4 mb-4">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -309,6 +388,7 @@ export function OrderManagement() {
           </div>
         </div>
 
+        {/* Orders Table */}
         <div className="flex-1 overflow-auto">
           <Table className="orders-table">
             <TableHeader className="sticky top-0 bg-background">
@@ -566,7 +646,7 @@ export function OrderManagement() {
         </div>
       </div>
 
-      <SyncProgressDialog
+      <SyncProgressDialog 
         open={showSyncDialog}
         onOpenChange={setShowSyncDialog}
         onContinueBackground={handleContinueBackground}
