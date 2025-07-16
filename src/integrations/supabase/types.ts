@@ -1111,6 +1111,96 @@ export type Database = {
         }
         Relationships: []
       }
+      store_shipping_configs: {
+        Row: {
+          auto_select_cheapest: boolean | null
+          business_hours: Json | null
+          created_at: string
+          cutoff_time: string | null
+          default_height_inches: number | null
+          default_length_inches: number | null
+          default_package_type: string | null
+          default_service_types: string[] | null
+          default_weight_lbs: number | null
+          default_width_inches: number | null
+          from_address_line1: string
+          from_address_line2: string | null
+          from_city: string
+          from_company: string | null
+          from_country: string
+          from_name: string
+          from_phone: string | null
+          from_state: string
+          from_zip: string
+          id: string
+          insurance_threshold_amount: number | null
+          is_default: boolean
+          preferred_carriers: string[] | null
+          require_signature_over_amount: number | null
+          store_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_select_cheapest?: boolean | null
+          business_hours?: Json | null
+          created_at?: string
+          cutoff_time?: string | null
+          default_height_inches?: number | null
+          default_length_inches?: number | null
+          default_package_type?: string | null
+          default_service_types?: string[] | null
+          default_weight_lbs?: number | null
+          default_width_inches?: number | null
+          from_address_line1: string
+          from_address_line2?: string | null
+          from_city: string
+          from_company?: string | null
+          from_country?: string
+          from_name: string
+          from_phone?: string | null
+          from_state: string
+          from_zip: string
+          id?: string
+          insurance_threshold_amount?: number | null
+          is_default?: boolean
+          preferred_carriers?: string[] | null
+          require_signature_over_amount?: number | null
+          store_name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_select_cheapest?: boolean | null
+          business_hours?: Json | null
+          created_at?: string
+          cutoff_time?: string | null
+          default_height_inches?: number | null
+          default_length_inches?: number | null
+          default_package_type?: string | null
+          default_service_types?: string[] | null
+          default_weight_lbs?: number | null
+          default_width_inches?: number | null
+          from_address_line1?: string
+          from_address_line2?: string | null
+          from_city?: string
+          from_company?: string | null
+          from_country?: string
+          from_name?: string
+          from_phone?: string | null
+          from_state?: string
+          from_zip?: string
+          id?: string
+          insurance_threshold_amount?: number | null
+          is_default?: boolean
+          preferred_carriers?: string[] | null
+          require_signature_over_amount?: number | null
+          store_name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       tracking_events: {
         Row: {
           carrier: string

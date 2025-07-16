@@ -42,88 +42,57 @@ export function CarrierRateComparison() {
     
     setIsLoadingRates(true);
     try {
-      const order = orders.find(o => o.id === selectedOrder);
-      if (!order) {
-        toast({
-          title: "Error",
-          description: "Selected order not found",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // First, ensure UPS credentials are set up
-      console.log('Setting up UPS credentials...');
-      const { data: setupData, error: setupError } = await supabase.functions.invoke('setup-ups-credentials');
+      console.log('Calculating shipping rates for order:', selectedOrder);
       
-      if (setupError) {
-        console.error('UPS setup error:', setupError);
-        toast({
-          title: "UPS Setup Error",
-          description: setupError.message || "Failed to configure UPS",
-          variant: "destructive",
-        });
-        setShippingRates([]);
-        return;
-      }
-
-      console.log('UPS setup result:', setupData);
-
-      // Now try to get UPS rates
-      console.log('Fetching UPS rates...');
-      const { data, error } = await supabase.functions.invoke('ups-rating', {
+      // Use the new comprehensive rate calculation system
+      const { data, error } = await supabase.functions.invoke('calculate-shipping-rates', {
         body: {
-          shipFrom: {
-            address: "123 Main St", // You may want to get this from store settings
-            city: "Your City",
-            state: "Your State", 
-            zip: "12345",
-            country: "US"
+          order_id: selectedOrder,
+          // Optional: Override ship from address
+          ship_from: {
+            name: "Prohair Store",
+            address: "123 Store Street",
+            city: "Toronto", 
+            state: "ON",
+            zip: "M5V 3A8",
+            country: "CA"
           },
-          shipTo: {
-            address: order.shippingAddress.line1,
-            city: order.shippingAddress.city,
-            state: order.shippingAddress.state,
-            zip: order.shippingAddress.zip,
-            country: order.shippingAddress.country
-          },
-          package: {
-            weight: order.packageDetails.weight || 1,
-            length: order.packageDetails.length || 12,
-            width: order.packageDetails.width || 12,
-            height: order.packageDetails.height || 6
+          // Optional: Service preferences (ground, expedited, overnight)
+          service_preferences: [], // Empty = show all services
+          // Optional: Additional services
+          additional_services: {
+            signature_required: false,
+            insurance_value: 0
           }
         }
       });
 
       if (error) {
-        console.error('UPS API error:', error);
+        console.error('Rate calculation error:', error);
         toast({
-          title: "UPS API Error",
-          description: error.message || "Failed to fetch UPS rates. You may need to complete OAuth authorization first.",
+          title: "Rate Calculation Error",
+          description: error.message || "Failed to calculate shipping rates",
           variant: "destructive",
-        });
-        
-        // Show fallback message about OAuth
-        toast({
-          title: "Next Step",
-          description: "You need to complete UPS OAuth authorization to get real rates. Check the Carriers tab.",
         });
         setShippingRates([]);
         return;
       }
 
-      if (data?.rates) {
+      if (data?.rates && data.rates.length > 0) {
         setShippingRates(data.rates);
         toast({
-          title: "Success",
-          description: `Found ${data.rates.length} shipping rates from UPS`,
+          title: "Rates Found",
+          description: `Found ${data.rates.length} shipping rates from ${new Set(data.rates.map(r => r.carrier)).size} carriers`,
         });
+        
+        console.log('Order details:', data.order_details);
+        console.log('Available rates:', data.rates);
       } else {
         setShippingRates([]);
         toast({
-          title: "No Rates",
-          description: "No shipping rates available for this destination",
+          title: "No Rates Available",
+          description: "No shipping rates found. Please check your carrier configurations.",
+          variant: "destructive",
         });
       }
     } catch (error) {
