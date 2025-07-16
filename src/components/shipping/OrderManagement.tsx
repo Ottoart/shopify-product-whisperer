@@ -104,13 +104,15 @@ export function OrderManagement() {
   }, [user]);
 
   useEffect(() => {
-    // Filter to only show unshipped orders from active stores
-    const filteredData = ordersData.filter(order => 
-      // Only orders that are not shipped/delivered
-      !['shipped', 'delivered', 'cancelled'].includes(order.status) &&
+    // Filter to only show orders that are awaiting shipment from active stores
+    const filteredData = ordersData.filter(order => {
+      // Only orders that are pending shipment (exclude shipped, delivered, cancelled, refunded)
+      const isAwaitingShipment = ['awaiting', 'awaiting_payment', 'pending', 'processing', 'ready_to_ship'].includes(order.status);
       // Only from active stores
-      storeConfigs.some(store => store.store_name === order.storeName && store.is_active)
-    );
+      const isFromActiveStore = storeConfigs.some(store => store.store_name === order.storeName && store.is_active);
+      
+      return isAwaitingShipment && isFromActiveStore;
+    });
     setOrders(filteredData);
   }, [ordersData, storeConfigs]);
 
@@ -315,7 +317,9 @@ export function OrderManagement() {
         (item.sku && item.sku.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     
-    const matchesStatus = filterStatus === "all" || order.status === filterStatus;
+    // For status filtering, only allow pending shipment statuses
+    const allowedStatuses = ['awaiting', 'awaiting_payment', 'pending', 'processing', 'ready_to_ship'];
+    const matchesStatus = filterStatus === "all" || (allowedStatuses.includes(order.status) && order.status === filterStatus);
     const matchesStore = filterStore === "all" || order.storeName === filterStore;
     
     return matchesSearch && matchesStatus && matchesStore;
