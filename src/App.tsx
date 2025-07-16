@@ -23,6 +23,7 @@ import ShopifyIntegration from "./pages/ShopifyIntegration";
 import Settings from "./pages/Settings";
 import SyncStatus from "./pages/SyncStatus";
 import Repricing from "./pages/Repricing";
+import Strategies from "./pages/Strategies";
 import Inventory from "./pages/Inventory";
 import Auth from "./pages/Auth";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -78,6 +79,7 @@ const AppContent = () => {
                 <Route path="/shopify-integration" element={<ProtectedRoute><ShopifyIntegration /></ProtectedRoute>} />
                 <Route path="/repricing" element={<ProtectedRoute><Repricing /></ProtectedRoute>} />
                 <Route path="/repricing-dashboard" element={<ProtectedRoute><Repricing /></ProtectedRoute>} />
+                <Route path="/strategies" element={<ProtectedRoute><Strategies /></ProtectedRoute>} />
                 <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                 <Route path="/sync-status" element={<ProtectedRoute><SyncStatus /></ProtectedRoute>} />

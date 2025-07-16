@@ -26,7 +26,8 @@ import {
   FileX,
   XCircle,
   CheckCircle,
-  AlertTriangle
+  AlertTriangle,
+  Target
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
@@ -57,7 +58,6 @@ const shopifyItems = [
 ];
 
 const toolItems = [
-  { title: "Analytics", url: "/analytics", icon: TrendingUp, description: "View performance metrics" },
   { title: "Product Activity", url: "/activity", icon: Activity, description: "Track product changes" },
   { title: "Bulk Editor", url: "/bulk-editor", icon: FileText, description: "Edit multiple products" },
   { title: "Inventory Management", url: "/inventory", icon: Warehouse, description: "Manage duplicates and variations" },
@@ -67,6 +67,8 @@ const toolItems = [
 const repricingItems = [
   { title: "Dynamic Repricing", url: "/repricing", icon: DollarSign, description: "Manage pricing strategies" },
   { title: "Listings", url: "/repricing?tab=listings", icon: FileText, description: "Manage product listings and prices" },
+  { title: "Analytics", url: "/analytics", icon: TrendingUp, description: "View performance metrics" },
+  { title: "Strategies", url: "/strategies", icon: Target, description: "Create and manage repricing strategies" },
 ];
 
 const shippingItems = [
