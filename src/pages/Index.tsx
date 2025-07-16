@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Package, LogOut, Store, Zap, BarChart3, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
@@ -76,6 +77,13 @@ export interface UpdatedProduct {
   googleShoppingAgeGroup?: string;
 }
 
+interface StoreConfig {
+  platform: string;
+  store_name: string;
+  domain: string;
+  is_active: boolean;
+}
+
 const Index = () => {
   const { session } = useSessionContext();
   const { products, saveProducts, updateProduct, isSaving, isLoading } = useProducts();
@@ -83,6 +91,8 @@ const Index = () => {
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [queueItems, setQueueItems] = useState<Array<{ productId: string; status: 'pending' | 'processing' | 'completed' | 'error'; error?: string }>>([]);
   const [bulkMode, setBulkMode] = useState(false);
+  const [stores, setStores] = useState<StoreConfig[]>([]);
+  const [activeTab, setActiveTab] = useState<string>('');
 
   const { trackProductUpdate } = useEditTracking({ 
     onProductUpdate: (productId: string, updatedData: UpdatedProduct) => {
@@ -90,6 +100,28 @@ const Index = () => {
     }
   });
 
+  // Fetch active stores
+  useEffect(() => {
+    const fetchStores = async () => {
+      if (!session?.user?.id) return;
+      
+      const { data, error } = await supabase
+        .from('store_configurations')
+        .select('platform, store_name, domain, is_active')
+        .eq('user_id', session.user.id)
+        .eq('is_active', true)
+        .order('store_name');
+      
+      if (!error && data) {
+        setStores(data);
+        if (data.length > 0 && !activeTab) {
+          setActiveTab(data[0].store_name);
+        }
+      }
+    };
+    
+    fetchStores();
+  }, [session?.user?.id, activeTab]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -138,6 +170,27 @@ const Index = () => {
     queryClient.invalidateQueries({ queryKey: ['products'] });
   };
 
+  // Filter products by active store
+  const getFilteredProducts = (storeName: string) => {
+    return products.filter(product => {
+      const store = stores.find(s => s.store_name === storeName);
+      if (!store) return false;
+      
+      // Filter based on store platform/domain
+      if (store.platform === 'shopify') {
+        return product.vendor?.toLowerCase().includes(store.store_name.toLowerCase()) ||
+               product.tags?.toLowerCase().includes(store.store_name.toLowerCase());
+      } else if (store.platform === 'walmart') {
+        return product.vendor?.toLowerCase().includes('walmart') ||
+               product.tags?.toLowerCase().includes('walmart');
+      } else if (store.platform === 'ebay') {
+        return product.vendor?.toLowerCase().includes('ebay') ||
+               product.tags?.toLowerCase().includes('ebay');
+      }
+      return false;
+    });
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -181,8 +234,8 @@ const Index = () => {
         {/* Welcome Banner for Setup Guidance */}
         <WelcomeBanner />
 
-        {/* Welcome Section for New Users - only show when not loading and no products */}
-        {!isLoading && products.length === 0 && (
+        {/* Welcome Section for New Users - only show when not loading and no products and no stores */}
+        {!isLoading && products.length === 0 && stores.length === 0 && (
           <Card className="shadow-card border-0">
             <CardHeader className="text-center">
               <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-gradient-primary flex items-center justify-center">
@@ -215,91 +268,153 @@ const Index = () => {
           </Card>
         )}
 
-        {/* Main Content */}
-        {products.length > 0 && (
-          <div className="space-y-6">
-            {/* Products List */}
-            <Card className="shadow-card border-0">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-gradient-primary flex items-center justify-center">
-                      <Package className="h-5 w-5 text-primary-foreground" />
-                    </div>
-                    <div>
-                      <CardTitle>Products ({products.length})</CardTitle>
-                      <CardDescription>
-                        Select products to optimize with AI
-                      </CardDescription>
-                    </div>
-                  </div>
+        {/* Store Tabs - only show when we have stores */}
+        {!isLoading && stores.length > 0 && (
+          <Card className="shadow-card border-0">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-gradient-primary flex items-center justify-center">
+                  <Package className="h-5 w-5 text-primary-foreground" />
                 </div>
-              </CardHeader>
-                <CardContent className="p-0">
-                  <ProductList
-                    products={products}
-                    selectedProducts={selectedProducts}
-                    onSelectionChange={setSelectedProducts}
-                    onAddToQueue={addToQueue}
-                    onProductsUpdated={handleProductsUpdated}
-                    onProductUpdated={handleUpdateProduct}
-                    storeUrl={localStorage.getItem('shopify_domain') || ''}
-                  />
-                </CardContent>
-            </Card>
+                Product Management by Store
+              </CardTitle>
+              <CardDescription>
+                Manage products across all your connected stores
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+                <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2" style={{ gridTemplateColumns: `repeat(${Math.min(stores.length, 4)}, 1fr)` }}>
+                  {stores.map((store) => (
+                    <TabsTrigger 
+                      key={store.store_name} 
+                      value={store.store_name}
+                      className="flex items-center gap-2 px-4 py-2"
+                    >
+                      <Store className="h-4 w-4" />
+                      <span className="truncate">{store.store_name}</span>
+                      <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+                        {getFilteredProducts(store.store_name).length}
+                      </span>
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
 
-            {/* Product Type Generator */}
-            <ProductTypeGenerator
-              products={products}
-              selectedProducts={selectedProducts}
-              onProductsUpdated={handleProductsUpdated}
-            />
+                {stores.map((store) => {
+                  const storeProducts = getFilteredProducts(store.store_name);
+                  return (
+                    <TabsContent key={store.store_name} value={store.store_name} className="space-y-6">
+                      {/* Store Header */}
+                      <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="h-8 w-8 rounded-lg bg-gradient-primary flex items-center justify-center">
+                            <Store className="h-4 w-4 text-primary-foreground" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold">{store.store_name}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              {store.platform.charAt(0).toUpperCase() + store.platform.slice(1)} • {store.domain}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold">{storeProducts.length} Products</p>
+                          <p className="text-sm text-muted-foreground">Active products</p>
+                        </div>
+                      </div>
 
-            {/* Processing Queue */}
-            <Card className="shadow-card border-0">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-gradient-success flex items-center justify-center">
-                      <Zap className="h-5 w-5 text-accent-foreground" />
-                    </div>
-                    <div>
-                      <CardTitle>Processing Queue</CardTitle>
-                      <CardDescription>
-                        Track AI optimization progress
-                      </CardDescription>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2">
-                      <Label htmlFor="bulk-mode" className="text-sm font-medium">
-                        Bulk Mode
-                      </Label>
-                      <Switch
-                        id="bulk-mode"
-                        checked={bulkMode}
-                        onCheckedChange={setBulkMode}
-                      />
-                      {bulkMode && (
-                        <AlertTriangle className="h-4 w-4 text-destructive" />
+                      {storeProducts.length > 0 ? (
+                        <div className="space-y-6">
+                          {/* Products List */}
+                          <Card className="border-0">
+                            <CardContent className="p-0">
+                              <ProductList
+                                products={storeProducts}
+                                selectedProducts={selectedProducts}
+                                onSelectionChange={setSelectedProducts}
+                                onAddToQueue={addToQueue}
+                                onProductsUpdated={handleProductsUpdated}
+                                onProductUpdated={handleUpdateProduct}
+                                storeUrl={store.domain}
+                              />
+                            </CardContent>
+                          </Card>
+
+                          {/* Product Type Generator */}
+                          <ProductTypeGenerator
+                            products={storeProducts}
+                            selectedProducts={selectedProducts}
+                            onProductsUpdated={handleProductsUpdated}
+                          />
+
+                          {/* Processing Queue */}
+                          <Card className="shadow-card border-0">
+                            <CardHeader>
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <div className="h-10 w-10 rounded-lg bg-gradient-success flex items-center justify-center">
+                                    <Zap className="h-5 w-5 text-accent-foreground" />
+                                  </div>
+                                  <div>
+                                    <CardTitle>Processing Queue</CardTitle>
+                                    <CardDescription>
+                                      Track AI optimization progress for {store.store_name}
+                                    </CardDescription>
+                                  </div>
+                                </div>
+                                
+                                <div className="flex items-center gap-3">
+                                  <div className="flex items-center gap-2">
+                                    <Label htmlFor="bulk-mode" className="text-sm font-medium">
+                                      Bulk Mode
+                                    </Label>
+                                    <Switch
+                                      id="bulk-mode"
+                                      checked={bulkMode}
+                                      onCheckedChange={setBulkMode}
+                                    />
+                                    {bulkMode && (
+                                      <AlertTriangle className="h-4 w-4 text-destructive" />
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </CardHeader>
+                            <CardContent className="p-0">
+                              <QueueManager
+                                queueItems={queueItems}
+                                products={storeProducts}
+                                onUpdateStatus={updateQueueItemStatus}
+                                onUpdateProduct={handleUpdateProduct}
+                                onRemoveFromQueue={removeFromQueue}
+                                bulkMode={bulkMode}
+                              />
+                            </CardContent>
+                          </Card>
+                        </div>
+                      ) : (
+                        <Card className="border-0">
+                          <CardContent className="p-8">
+                            <div className="text-center space-y-4">
+                              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mx-auto">
+                                <Package className="h-6 w-6 text-muted-foreground" />
+                              </div>
+                              <div>
+                                <h3 className="font-semibold">No products found</h3>
+                                <p className="text-sm text-muted-foreground">
+                                  No products found for {store.store_name}. Import products from your store to get started.
+                                </p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
                       )}
-                    </div>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="p-0">
-                <QueueManager
-                  queueItems={queueItems}
-                  products={products}
-                  onUpdateStatus={updateQueueItemStatus}
-                  onUpdateProduct={handleUpdateProduct}
-                  onRemoveFromQueue={removeFromQueue}
-                  bulkMode={bulkMode}
-                />
-              </CardContent>
-            </Card>
-          </div>
+                    </TabsContent>
+                  );
+                })}
+              </Tabs>
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>
