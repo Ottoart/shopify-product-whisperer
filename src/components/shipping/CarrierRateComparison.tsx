@@ -52,7 +52,25 @@ export function CarrierRateComparison() {
         return;
       }
 
-      // Get real UPS rates
+      // First, ensure UPS credentials are set up
+      console.log('Setting up UPS credentials...');
+      const { data: setupData, error: setupError } = await supabase.functions.invoke('setup-ups-credentials');
+      
+      if (setupError) {
+        console.error('UPS setup error:', setupError);
+        toast({
+          title: "UPS Setup Error",
+          description: setupError.message || "Failed to configure UPS",
+          variant: "destructive",
+        });
+        setShippingRates([]);
+        return;
+      }
+
+      console.log('UPS setup result:', setupData);
+
+      // Now try to get UPS rates
+      console.log('Fetching UPS rates...');
       const { data, error } = await supabase.functions.invoke('ups-rating', {
         body: {
           shipFrom: {
@@ -82,8 +100,14 @@ export function CarrierRateComparison() {
         console.error('UPS API error:', error);
         toast({
           title: "UPS API Error",
-          description: error.message || "Failed to fetch UPS rates",
+          description: error.message || "Failed to fetch UPS rates. You may need to complete OAuth authorization first.",
           variant: "destructive",
+        });
+        
+        // Show fallback message about OAuth
+        toast({
+          title: "Next Step",
+          description: "You need to complete UPS OAuth authorization to get real rates. Check the Carriers tab.",
         });
         setShippingRates([]);
         return;
@@ -93,7 +117,7 @@ export function CarrierRateComparison() {
         setShippingRates(data.rates);
         toast({
           title: "Success",
-          description: `Found ${data.rates.length} shipping rates`,
+          description: `Found ${data.rates.length} shipping rates from UPS`,
         });
       } else {
         setShippingRates([]);
