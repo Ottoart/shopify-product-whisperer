@@ -102,6 +102,22 @@ serve(async (req) => {
       );
     }
 
+    // Validate required fields before API call
+    if (!requestData.shipFrom?.zip || !requestData.shipFrom?.country ||
+        !requestData.shipTo?.zip || !requestData.shipTo?.country ||
+        !requestData.package?.weight) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Missing required fields', 
+          required: ['shipFrom.zip', 'shipFrom.country', 'shipTo.zip', 'shipTo.country', 'package.weight']
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
     // Prepare UPS Rating API request
     const ratingRequest = {
       RateRequest: {
@@ -113,7 +129,7 @@ serve(async (req) => {
         },
         Shipment: {
           Shipper: {
-            ShipperNumber: credentials.shipper_number || "",
+            ShipperNumber: credentials.account_number || "",
             Address: {
               AddressLine: [requestData.shipFrom.address],
               City: requestData.shipFrom.city,
@@ -175,14 +191,14 @@ serve(async (req) => {
 
     console.log('Sending UPS rating request:', JSON.stringify(ratingRequest, null, 2));
 
-    // Call UPS Rating API
+    // Call UPS Rating API with proper error handling
     const upsResponse = await fetch('https://onlinetools.ups.com/api/rating/v1/rate', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${credentials.access_token}`,
         'transId': crypto.randomUUID(),
-        'transactionSrc': 'testing'
+        'transactionSrc': 'rating'
       },
       body: JSON.stringify(ratingRequest)
     });
@@ -228,14 +244,21 @@ serve(async (req) => {
         : [upsData.RateResponse.RatedShipment];
 
       for (const shipment of ratedShipments) {
+        const serviceCode = shipment.Service?.Code || 'UNK';
         rates.push({
-          service_code: shipment.Service?.Code || 'UNK',
-          service_name: getUPSServiceName(shipment.Service?.Code || 'UNK'),
-          service_type: getUPSServiceType(shipment.Service?.Code || 'UNK'),
+          service_code: serviceCode,
+          service_name: getUPSServiceName(serviceCode),
+          service_type: getUPSServiceType(serviceCode),
           cost: parseFloat(shipment.TotalCharges?.MonetaryValue || '0'),
           currency: shipment.TotalCharges?.CurrencyCode || 'USD',
-          estimated_days: getUPSEstimatedDays(shipment.Service?.Code || 'UNK'),
-          carrier: 'UPS'
+          estimated_days: getUPSEstimatedDays(serviceCode),
+          delivery_date: shipment.GuaranteedDaysToDelivery ? 
+            new Date(Date.now() + parseInt(shipment.GuaranteedDaysToDelivery) * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : 
+            undefined,
+          carrier: 'UPS',
+          supports_tracking: true,
+          supports_insurance: true,
+          supports_signature: true
         });
       }
     }
