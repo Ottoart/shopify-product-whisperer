@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -31,6 +32,7 @@ export const ProductList = ({
   onProductUpdated,
   storeUrl 
 }: ProductListProps) => {
+  const [searchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -40,6 +42,16 @@ export const ProductList = ({
   const [selectedVendors, setSelectedVendors] = useState<Set<string>>(new Set());
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
+
+  // Handle URL parameters for store filtering
+  useEffect(() => {
+    const storeParam = searchParams.get('store');
+    if (storeParam) {
+      const decodedStore = decodeURIComponent(storeParam);
+      // Apply store-specific filtering here if needed
+      console.log('Filtering products for store:', decodedStore);
+    }
+  }, [searchParams]);
   
   // Collapsible states
   const [typesOpen, setTypesOpen] = useState(false);

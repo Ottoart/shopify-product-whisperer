@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useSessionContext } from '@supabase/auth-helpers-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Auth } from '@/components/Auth';
