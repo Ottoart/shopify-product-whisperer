@@ -120,7 +120,9 @@ export function CarrierManagement() {
           };
         });
 
-        setConnectedUserCarriers(formattedCarriers);
+        // Filter out UPS from user carriers since it goes in PrepFox tab
+        const nonUpsCarriers = formattedCarriers.filter(carrier => carrier.name.toLowerCase() !== 'ups');
+        setConnectedUserCarriers(nonUpsCarriers);
       } catch (error) {
         console.error('Error fetching carriers:', error);
       } finally {
@@ -132,58 +134,130 @@ export function CarrierManagement() {
   }, [user]);
 
   // Available PrepFox carriers (admin controlled)
-  const [prepfoxCarriers, setPrepfoxCarriers] = useState<Carrier[]>([
-    {
-      id: "ups-internal",
-      name: "UPS",
-      logo: "🤎",
-      connected: true,
-      status: 'connected',
-      services: [
-        { id: "ups-ground", name: "UPS Ground", enabled: true },
-        { id: "ups-2day", name: "UPS 2nd Day Air", enabled: true },
-        { id: "ups-next", name: "UPS Next Day Air", enabled: false },
-        { id: "ups-worldwide", name: "UPS Worldwide Express", enabled: true }
-      ],
-      lastSync: "2 hours ago",
-      isInternal: true,
-      markup: 15,
-      adminControlled: true
-    },
-    {
-      id: "canada-post-internal",
-      name: "Canada Post",
-      logo: "🇨🇦",
-      connected: true,
-      status: 'connected',
-      services: [
-        { id: "cp-regular", name: "Regular Parcel", enabled: true },
-        { id: "cp-expedited", name: "Expedited Parcel", enabled: true },
-        { id: "cp-xpress", name: "Xpresspost", enabled: false },
-        { id: "cp-priority", name: "Priority", enabled: true }
-      ],
-      lastSync: "1 hour ago",
-      isInternal: true,
-      markup: 15,
-      adminControlled: true
-    },
-    {
-      id: "shipstation-internal",
-      name: "PrepFox Express",
-      logo: "🚚",
-      connected: true,
-      status: 'connected',
-      services: [
-        { id: "ss-standard", name: "Standard Delivery", enabled: true },
-        { id: "ss-express", name: "Express Delivery", enabled: true },
-        { id: "ss-overnight", name: "Overnight", enabled: false }
-      ],
-      lastSync: "30 minutes ago",
-      isInternal: true,
-      markup: 12,
-      adminControlled: true
-    }
-  ]);
+  const [prepfoxCarriers, setPrepfoxCarriers] = useState<Carrier[]>([]);
+
+  // Update PrepFox carriers with real UPS data when available
+  useEffect(() => {
+    // Get UPS data from the full carrier list before filtering
+    const fetchUpsData = async () => {
+      if (!user) return;
+      
+      try {
+        const { data: carrierConfigs, error } = await supabase
+          .from('carrier_configurations')
+          .select(`
+            *,
+            shipping_services(*)
+          `)
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .eq('carrier_name', 'ups');
+
+        const upsCarrier = carrierConfigs?.[0] ? {
+          id: carrierConfigs[0].id,
+          name: carrierConfigs[0].carrier_name,
+          logo: '📦',
+          connected: true,
+          status: 'connected' as const,
+          services: carrierConfigs[0].shipping_services.map((service: any) => ({
+            id: service.id,
+            name: service.service_name,
+            enabled: service.is_available,
+            markup: 0
+          })),
+          lastSync: new Date(carrierConfigs[0].updated_at).toLocaleDateString(),
+          isInternal: false,
+          markup: 0,
+          adminControlled: false,
+          credentials: carrierConfigs[0].api_credentials,
+          settings: carrierConfigs[0].settings
+        } : null;
+
+        if (error) {
+          console.error('Error fetching UPS configuration:', error);
+        }
+
+        const defaultCarriers = [
+          {
+            id: "canada-post-internal",
+            name: "Canada Post",
+            logo: "🇨🇦",
+            connected: true,
+            status: 'connected' as const,
+            services: [
+              { id: "cp-regular", name: "Regular Parcel", enabled: true },
+              { id: "cp-expedited", name: "Expedited Parcel", enabled: true },
+              { id: "cp-xpress", name: "Xpresspost", enabled: false },
+              { id: "cp-priority", name: "Priority", enabled: true }
+            ],
+            lastSync: "1 hour ago",
+            isInternal: true,
+            markup: 15,
+            adminControlled: true
+          },
+          {
+            id: "shipstation-internal",
+            name: "PrepFox Express",
+            logo: "🚚",
+            connected: true,
+            status: 'connected' as const,
+            services: [
+              { id: "ss-standard", name: "Standard Delivery", enabled: true },
+              { id: "ss-express", name: "Express Delivery", enabled: true },
+              { id: "ss-overnight", name: "Overnight", enabled: false }
+            ],
+            lastSync: "30 minutes ago",
+            isInternal: true,
+            markup: 12,
+            adminControlled: true
+          }
+        ];
+
+        if (upsCarrier) {
+          // Use real UPS data from database
+          const upsConfig = {
+            id: "ups-internal",
+            name: "UPS (Native)",
+            logo: "🤎",
+            connected: true,
+            status: 'connected' as const,
+            services: upsCarrier.services,
+            lastSync: upsCarrier.lastSync,
+            isInternal: true,
+            markup: 15,
+            adminControlled: true,
+            credentials: upsCarrier.credentials,
+            settings: upsCarrier.settings
+          };
+          setPrepfoxCarriers([upsConfig, ...defaultCarriers]);
+        } else {
+          // Show default UPS placeholder
+          const defaultUps = {
+            id: "ups-internal",
+            name: "UPS (Native)",
+            logo: "🤎",
+            connected: false,
+            status: 'disconnected' as const,
+            services: [
+              { id: "ups-ground", name: "UPS Ground", enabled: false },
+              { id: "ups-2day", name: "UPS 2nd Day Air", enabled: false },
+              { id: "ups-next", name: "UPS Next Day Air", enabled: false },
+              { id: "ups-worldwide", name: "UPS Worldwide Express", enabled: false }
+            ],
+            lastSync: "Never",
+            isInternal: true,
+            markup: 15,
+            adminControlled: true
+          };
+          setPrepfoxCarriers([defaultUps, ...defaultCarriers]);
+        }
+      } catch (error) {
+        console.error('Error fetching UPS configuration:', error);
+      }
+    };
+
+    fetchUpsData();
+  }, [user]);
 
   // Subscription plans
   const subscriptionPlans: SubscriptionPlan[] = [
