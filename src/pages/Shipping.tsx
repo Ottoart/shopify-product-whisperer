@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Truck, Package, RotateCcw, Settings, Zap, Building2, Store } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Truck, Package, RotateCcw, Settings, Zap, Building2, Store, Plus } from "lucide-react";
 import { OrderManagement } from "@/components/shipping/OrderManagement";
 import { CarrierRateComparison } from "@/components/shipping/CarrierRateComparison";
 import { ShippingRules } from "@/components/shipping/ShippingRules";
@@ -9,11 +10,13 @@ import { TrackingPage } from "@/components/shipping/TrackingPage";
 import { ReturnsManagement } from "@/components/shipping/ReturnsManagement";
 import { BatchActionQueue } from "@/components/shipping/BatchActionQueue";
 import { CarrierManagement } from "@/components/shipping/CarrierManagement";
+import { CarrierConfigurationDialog } from "@/components/shipping/CarrierConfigurationDialog";
 import { StoreConfig } from "@/components/StoreConfig";
 import { ShopifyConnectionTest } from "@/components/shipping/ShopifyConnectionTest";
 
 export default function Shipping() {
   const [activeTab, setActiveTab] = useState("orders");
+  const [isCarrierDialogOpen, setIsCarrierDialogOpen] = useState(false);
 
   return (
     <div className="p-6 space-y-6">
@@ -101,7 +104,29 @@ export default function Shipping() {
         </TabsContent>
 
         <TabsContent value="carriers">
-          <CarrierManagement />
+          <div className="space-y-6">
+            {/* Quick Add Carrier Button */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Carrier Configuration</CardTitle>
+                <CardDescription>
+                  Configure shipping carriers and manage their services
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button onClick={() => setIsCarrierDialogOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Configure Carriers
+                </Button>
+              </CardContent>
+            </Card>
+            
+            <CarrierConfigurationDialog 
+              isOpen={isCarrierDialogOpen} 
+              onClose={() => setIsCarrierDialogOpen(false)} 
+            />
+            <CarrierManagement />
+          </div>
         </TabsContent>
       </Tabs>
     </div>
