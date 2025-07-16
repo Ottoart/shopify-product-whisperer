@@ -54,6 +54,19 @@ export function OrderManagement() {
   const [filterStore, setFilterStore] = useState("all");
   const [filterDateRange, setFilterDateRange] = useState("all");
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // Initialize filters from URL parameters
+  useEffect(() => {
+    const storeParam = searchParams.get('store');
+    const statusParam = searchParams.get('status');
+    
+    if (storeParam) {
+      setFilterStore(decodeURIComponent(storeParam));
+    }
+    if (statusParam) {
+      setFilterStatus(statusParam);
+    }
+  }, [searchParams]);
   const { orders: ordersData, loading, error, fetchOrders } = useOrders();
   const { toast } = useToast();
   const [showSyncDialog, setShowSyncDialog] = useState(false);
