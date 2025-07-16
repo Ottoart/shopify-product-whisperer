@@ -27,10 +27,10 @@ const Settings = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Store className="h-5 w-5" />
-                  Store Configurations
+                  Store Configuration Hub
                 </CardTitle>
                 <CardDescription>
-                  Manage all your connected stores and marketplaces
+                  Add and modify your store configurations in one place
                 </CardDescription>
               </CardHeader>
               <CardContent>
