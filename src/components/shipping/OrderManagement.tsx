@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { SyncProgressDialog } from './SyncProgressDialog';
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useOrders, type Order } from "@/hooks/useOrders";
 import { supabase } from "@/integrations/supabase/client";
 import { ProductDetailsDialog } from './ProductDetailsDialog';
+import { useAuth } from "@/hooks/useAuth";
 
 import { 
   Search, 
@@ -49,7 +50,7 @@ export function OrderManagement() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
-  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("awaiting"); // Default to awaiting
   const [filterStore, setFilterStore] = useState("all");
   const [filterDateRange, setFilterDateRange] = useState("all");
   const [searchParams, setSearchParams] = useSearchParams();
@@ -69,14 +70,116 @@ export function OrderManagement() {
   const [showProductDialog, setShowProductDialog] = useState(false);
   const [selectedProductHandle, setSelectedProductHandle] = useState('');
   const [selectedProductTitle, setSelectedProductTitle] = useState('');
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { user } = useAuth();
+
+  // Auto-refresh every 30 minutes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      handleRefreshOrders();
+    }, 30 * 60 * 1000); // 30 minutes
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Refresh on user login
+  useEffect(() => {
+    if (user) {
+      handleRefreshOrders();
+    }
+  }, [user]);
 
   useEffect(() => {
-    setOrders(ordersData);
-  }, [ordersData]);
+    // Filter to only show unshipped orders from active stores
+    const filteredData = ordersData.filter(order => 
+      // Only orders that are not shipped/delivered
+      !['shipped', 'delivered', 'cancelled'].includes(order.status) &&
+      // Only from active stores
+      storeConfigs.some(store => store.store_name === order.storeName && store.is_active)
+    );
+    setOrders(filteredData);
+  }, [ordersData, storeConfigs]);
 
   useEffect(() => {
     fetchStoreConfigs();
   }, []);
+
+  const handleRefreshOrders = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      await fetchOrders();
+      setLastRefresh(new Date());
+      toast({
+        title: "Orders refreshed",
+        description: "Order data has been updated successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Refresh failed",
+        description: "Failed to refresh order data",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [fetchOrders, toast]);
+
+  const handleStoreUpdate = async (storeId: string) => {
+    setIsRefreshing(true);
+    try {
+      // Call store-specific sync function
+      const { data, error } = await supabase.functions.invoke('sync-orders', {
+        body: { storeId }
+      });
+      
+      if (error) throw error;
+      
+      // Refresh orders after sync
+      await fetchOrders();
+      
+      toast({
+        title: "Store updated",
+        description: `Successfully synced orders for store`,
+      });
+    } catch (error) {
+      toast({
+        title: "Update failed",
+        description: "Failed to update store orders",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const handleUpdateAllStores = async () => {
+    setIsRefreshing(true);
+    try {
+      // Call sync for all stores
+      const { data, error } = await supabase.functions.invoke('sync-orders', {
+        body: { syncAll: true }
+      });
+      
+      if (error) throw error;
+      
+      // Refresh orders after sync
+      await fetchOrders();
+      
+      toast({
+        title: "All stores updated",
+        description: "Successfully synced orders for all stores",
+      });
+    } catch (error) {
+      toast({
+        title: "Update failed",
+        description: "Failed to update all stores",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const fetchStoreConfigs = async () => {
     try {
@@ -241,6 +344,54 @@ export function OrderManagement() {
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Header Actions */}
         <div className="border-b p-4">
+          {/* Store Update Controls */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-4">
+              <h2 className="text-lg font-semibold">Awaiting Shipment Orders</h2>
+              <Badge variant="secondary" className="text-sm">
+                Last updated: {lastRefresh.toLocaleTimeString()}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefreshOrders}
+                disabled={isRefreshing}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                Refresh All
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="default" size="sm" className="flex items-center gap-2">
+                    <Store className="h-4 w-4" />
+                    Update Store Orders
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem onClick={handleUpdateAllStores} disabled={isRefreshing}>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Update All Stores
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  {storeConfigs.map((store) => (
+                    <DropdownMenuItem 
+                      key={store.id} 
+                      onClick={() => handleStoreUpdate(store.id)}
+                      disabled={isRefreshing}
+                    >
+                      <Store className="h-4 w-4 mr-2" />
+                      Update {store.store_name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+          
           <div className="flex items-center gap-4 mb-4">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -260,9 +411,7 @@ export function OrderManagement() {
                 <SelectItem value="all">All Statuses</SelectItem>
                 <SelectItem value="awaiting">Awaiting</SelectItem>
                 <SelectItem value="processing">Processing</SelectItem>
-                <SelectItem value="shipped">Shipped</SelectItem>
-                <SelectItem value="delivered">Delivered</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
+                <SelectItem value="awaiting_payment">Awaiting Payment</SelectItem>
               </SelectContent>
             </Select>
 
@@ -271,8 +420,8 @@ export function OrderManagement() {
                 <SelectValue placeholder="All Stores" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Stores</SelectItem>
-                {storeConfigs.map((store) => (
+                <SelectItem value="all">All Active Stores</SelectItem>
+                {storeConfigs.filter(store => store.is_active).map((store) => (
                   <SelectItem key={store.id} value={store.store_name}>
                     {store.store_name}
                   </SelectItem>
