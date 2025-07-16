@@ -29,6 +29,7 @@ import {
   AlertTriangle
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
 
 import {
   Sidebar,
@@ -83,6 +84,7 @@ export function AppSidebar() {
   const [stores, setStores] = useState<Array<{id: string, store_name: string, platform: string}>>([]);
   const [expandedCatalogueItems, setExpandedCatalogueItems] = useState<Set<string>>(new Set());
   const [expandedShippingItems, setExpandedShippingItems] = useState<Set<string>>(new Set());
+  const [orderCounts, setOrderCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const fetchStores = async () => {
@@ -100,7 +102,32 @@ export function AppSidebar() {
       }
     };
 
+    const fetchOrderCounts = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('status, store_name')
+          .order('status');
+        
+        if (error) throw error;
+        
+        // Count orders by status
+        const counts: Record<string, number> = {};
+        data?.forEach(order => {
+          counts[order.status] = (counts[order.status] || 0) + 1;
+          // Also count by store and status combination
+          const storeStatusKey = `${order.store_name}-${order.status}`;
+          counts[storeStatusKey] = (counts[storeStatusKey] || 0) + 1;
+        });
+        
+        setOrderCounts(counts);
+      } catch (error) {
+        console.error('Error fetching order counts:', error);
+      }
+    };
+
     fetchStores();
+    fetchOrderCounts();
   }, []);
 
   const isActive = (path: string) => currentPath === path;
@@ -125,6 +152,13 @@ export function AppSidebar() {
       newExpanded.add(itemTitle);
     }
     setExpandedShippingItems(newExpanded);
+  };
+
+  const getOrderCount = (status: string, storeName?: string) => {
+    if (storeName) {
+      return orderCounts[`${storeName}-${status}`] || 0;
+    }
+    return orderCounts[status] || 0;
   };
 
   return (
@@ -272,6 +306,11 @@ export function AppSidebar() {
                            <span className="whitespace-nowrap">Awaiting Shipments</span>
                            <span className="text-xs text-muted-foreground whitespace-nowrap">All stores awaiting shipment</span>
                          </div>
+                         {!collapsed && getOrderCount('awaiting') > 0 && (
+                           <Badge variant="secondary" className="text-xs ml-auto mr-1">
+                             {getOrderCount('awaiting')}
+                           </Badge>
+                         )}
                          {!collapsed && stores.length > 0 && (
                            <div className="ml-auto">
                              {expandedShippingItems.has("Awaiting Shipments") ? (
@@ -299,6 +338,11 @@ export function AppSidebar() {
                             <span className="whitespace-nowrap">{store.store_name}</span>
                             <span className="text-xs text-muted-foreground whitespace-nowrap">{store.platform} store</span>
                           </div>
+                          {getOrderCount('awaiting', store.store_name) > 0 && (
+                            <Badge variant="secondary" className="text-xs ml-auto">
+                              {getOrderCount('awaiting', store.store_name)}
+                            </Badge>
+                          )}
                         </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -320,6 +364,11 @@ export function AppSidebar() {
                            <span className="whitespace-nowrap">Awaiting Payment</span>
                            <span className="text-xs text-muted-foreground whitespace-nowrap">Payment pending orders</span>
                          </div>
+                         {!collapsed && getOrderCount('awaiting_payment') > 0 && (
+                           <Badge variant="secondary" className="text-xs ml-auto mr-1">
+                             {getOrderCount('awaiting_payment')}
+                           </Badge>
+                         )}
                          {!collapsed && stores.length > 0 && (
                            <div className="ml-auto">
                              {expandedShippingItems.has("Awaiting Payment") ? (
@@ -347,6 +396,11 @@ export function AppSidebar() {
                             <span className="whitespace-nowrap">{store.store_name}</span>
                             <span className="text-xs text-muted-foreground whitespace-nowrap">{store.platform} store</span>
                           </div>
+                          {getOrderCount('awaiting_payment', store.store_name) > 0 && (
+                            <Badge variant="secondary" className="text-xs ml-auto">
+                              {getOrderCount('awaiting_payment', store.store_name)}
+                            </Badge>
+                          )}
                         </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -368,6 +422,11 @@ export function AppSidebar() {
                            <span className="whitespace-nowrap">On Hold</span>
                            <span className="text-xs text-muted-foreground whitespace-nowrap">Orders temporarily paused</span>
                          </div>
+                         {!collapsed && getOrderCount('on_hold') > 0 && (
+                           <Badge variant="secondary" className="text-xs ml-auto mr-1">
+                             {getOrderCount('on_hold')}
+                           </Badge>
+                         )}
                          {!collapsed && stores.length > 0 && (
                            <div className="ml-auto">
                              {expandedShippingItems.has("On Hold") ? (
@@ -395,6 +454,11 @@ export function AppSidebar() {
                             <span className="whitespace-nowrap">{store.store_name}</span>
                             <span className="text-xs text-muted-foreground whitespace-nowrap">{store.platform} store</span>
                           </div>
+                          {getOrderCount('on_hold', store.store_name) > 0 && (
+                            <Badge variant="secondary" className="text-xs ml-auto">
+                              {getOrderCount('on_hold', store.store_name)}
+                            </Badge>
+                          )}
                         </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -416,6 +480,11 @@ export function AppSidebar() {
                            <span className="whitespace-nowrap">Manual Orders</span>
                            <span className="text-xs text-muted-foreground whitespace-nowrap">Manually created orders</span>
                          </div>
+                         {!collapsed && getOrderCount('manual') > 0 && (
+                           <Badge variant="secondary" className="text-xs ml-auto mr-1">
+                             {getOrderCount('manual')}
+                           </Badge>
+                         )}
                          {!collapsed && stores.length > 0 && (
                            <div className="ml-auto">
                              {expandedShippingItems.has("Manual Orders") ? (
@@ -443,6 +512,11 @@ export function AppSidebar() {
                             <span className="whitespace-nowrap">{store.store_name}</span>
                             <span className="text-xs text-muted-foreground whitespace-nowrap">{store.platform} store</span>
                           </div>
+                          {getOrderCount('manual', store.store_name) > 0 && (
+                            <Badge variant="secondary" className="text-xs ml-auto">
+                              {getOrderCount('manual', store.store_name)}
+                            </Badge>
+                          )}
                         </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -464,6 +538,11 @@ export function AppSidebar() {
                            <span className="whitespace-nowrap">Rejected Fulfillment</span>
                            <span className="text-xs text-muted-foreground whitespace-nowrap">Fulfillment rejected orders</span>
                          </div>
+                         {!collapsed && getOrderCount('rejected') > 0 && (
+                           <Badge variant="secondary" className="text-xs ml-auto mr-1">
+                             {getOrderCount('rejected')}
+                           </Badge>
+                         )}
                          {!collapsed && stores.length > 0 && (
                            <div className="ml-auto">
                              {expandedShippingItems.has("Rejected Fulfillment") ? (
@@ -491,6 +570,11 @@ export function AppSidebar() {
                             <span className="whitespace-nowrap">{store.store_name}</span>
                             <span className="text-xs text-muted-foreground whitespace-nowrap">{store.platform} store</span>
                           </div>
+                          {getOrderCount('rejected', store.store_name) > 0 && (
+                            <Badge variant="secondary" className="text-xs ml-auto">
+                              {getOrderCount('rejected', store.store_name)}
+                            </Badge>
+                          )}
                         </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -512,6 +596,11 @@ export function AppSidebar() {
                            <span className="whitespace-nowrap">Shipped</span>
                            <span className="text-xs text-muted-foreground whitespace-nowrap">Orders in transit</span>
                          </div>
+                         {!collapsed && getOrderCount('shipped') > 0 && (
+                           <Badge variant="secondary" className="text-xs ml-auto mr-1">
+                             {getOrderCount('shipped')}
+                           </Badge>
+                         )}
                          {!collapsed && stores.length > 0 && (
                            <div className="ml-auto">
                              {expandedShippingItems.has("Shipped") ? (
@@ -539,6 +628,11 @@ export function AppSidebar() {
                             <span className="whitespace-nowrap">{store.store_name}</span>
                             <span className="text-xs text-muted-foreground whitespace-nowrap">{store.platform} store</span>
                           </div>
+                          {getOrderCount('shipped', store.store_name) > 0 && (
+                            <Badge variant="secondary" className="text-xs ml-auto">
+                              {getOrderCount('shipped', store.store_name)}
+                            </Badge>
+                          )}
                         </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -560,6 +654,11 @@ export function AppSidebar() {
                            <span className="whitespace-nowrap">Delivered</span>
                            <span className="text-xs text-muted-foreground whitespace-nowrap">Successfully delivered orders</span>
                          </div>
+                         {!collapsed && getOrderCount('delivered') > 0 && (
+                           <Badge variant="secondary" className="text-xs ml-auto mr-1">
+                             {getOrderCount('delivered')}
+                           </Badge>
+                         )}
                          {!collapsed && stores.length > 0 && (
                            <div className="ml-auto">
                              {expandedShippingItems.has("Delivered") ? (
@@ -587,6 +686,11 @@ export function AppSidebar() {
                             <span className="whitespace-nowrap">{store.store_name}</span>
                             <span className="text-xs text-muted-foreground whitespace-nowrap">{store.platform} store</span>
                           </div>
+                          {getOrderCount('delivered', store.store_name) > 0 && (
+                            <Badge variant="secondary" className="text-xs ml-auto">
+                              {getOrderCount('delivered', store.store_name)}
+                            </Badge>
+                          )}
                         </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -608,6 +712,11 @@ export function AppSidebar() {
                            <span className="whitespace-nowrap">Cancelled</span>
                            <span className="text-xs text-muted-foreground whitespace-nowrap">Cancelled orders</span>
                          </div>
+                         {!collapsed && getOrderCount('cancelled') > 0 && (
+                           <Badge variant="secondary" className="text-xs ml-auto mr-1">
+                             {getOrderCount('cancelled')}
+                           </Badge>
+                         )}
                          {!collapsed && stores.length > 0 && (
                            <div className="ml-auto">
                              {expandedShippingItems.has("Cancelled") ? (
@@ -635,6 +744,11 @@ export function AppSidebar() {
                             <span className="whitespace-nowrap">{store.store_name}</span>
                             <span className="text-xs text-muted-foreground whitespace-nowrap">{store.platform} store</span>
                           </div>
+                          {getOrderCount('cancelled', store.store_name) > 0 && (
+                            <Badge variant="secondary" className="text-xs ml-auto">
+                              {getOrderCount('cancelled', store.store_name)}
+                            </Badge>
+                          )}
                         </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
