@@ -179,12 +179,26 @@ export const useShippingServices = () => {
   const fetchCarriers = async () => {
     if (!user) return;
     
+    console.log('🔍 fetchCarriers - User ID:', user.id);
+    console.log('🔍 fetchCarriers - User object:', user);
+    
     try {
+      // First, let's check what's in the carrier_configurations table
+      const { data: allCarriers, error: allError } = await supabase
+        .from('carrier_configurations')
+        .select('*');
+      
+      console.log('🔍 fetchCarriers - ALL carriers in DB:', allCarriers);
+      console.log('🔍 fetchCarriers - Query error for all carriers:', allError);
+      
       const { data, error } = await supabase
         .from('carrier_configurations')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
+
+      console.log('🔍 fetchCarriers - User-specific carriers:', data);
+      console.log('🔍 fetchCarriers - Query error:', error);
 
       if (error) {
         console.error('Error fetching carriers:', error);
