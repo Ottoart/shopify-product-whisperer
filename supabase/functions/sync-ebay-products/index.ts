@@ -49,17 +49,41 @@ serve(async (req) => {
 
     console.log(`Starting eBay product sync for user ${user.id}`);
 
-    // eBay Inventory API endpoint
-    const ebayApiUrl = 'https://api.ebay.com/sell/inventory/v1/inventory_item';
+    // eBay Trading API endpoint for getting seller's active listings
+    const ebayApiUrl = 'https://api.ebay.com/ws/api.dll';
     
-    const response = await fetch(`${ebayApiUrl}?limit=100`, {
+    const soapRequest = `<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:urn="urn:ebay:apis:eBLBaseComponents">
+  <soap:Header>
+    <urn:RequesterCredentials>
+      <urn:eBayAuthToken>${ebayConfig.access_token}</urn:eBayAuthToken>
+    </urn:RequesterCredentials>
+  </soap:Header>
+  <soap:Body>
+    <urn:GetMyeBaySellingRequest>
+      <urn:Version>1193</urn:Version>
+      <urn:ActiveList>
+        <urn:Include>true</urn:Include>
+        <urn:ListingType>All</urn:ListingType>
+        <urn:Pagination>
+          <urn:EntriesPerPage>200</urn:EntriesPerPage>
+          <urn:PageNumber>1</urn:PageNumber>
+        </urn:Pagination>
+      </urn:ActiveList>
+    </urn:GetMyeBaySellingRequest>
+  </soap:Body>
+</soap:Envelope>`;
+
+    const response = await fetch(ebayApiUrl, {
+      method: 'POST',
       headers: {
-        'Authorization': `Bearer ${ebayConfig.access_token}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Accept-Language': 'en-US',
-        'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
+        'Content-Type': 'text/xml; charset=utf-8',
+        'SOAPAction': 'urn:GetMyeBaySellingRequest',
+        'X-EBAY-API-SITEID': '0',
+        'X-EBAY-API-COMPATIBILITY-LEVEL': '1193',
+        'X-EBAY-API-CALL-NAME': 'GetMyeBaySelling',
       },
+      body: soapRequest,
     });
 
     if (!response.ok) {
@@ -68,47 +92,77 @@ serve(async (req) => {
       throw new Error(`eBay API error: ${response.status} ${response.statusText}`);
     }
 
-    const data = await response.json();
-    const inventoryItems = data.inventoryItems || [];
+    const xmlText = await response.text();
+    console.log('eBay API Response:', xmlText.substring(0, 1000)); // Log first 1000 chars for debugging
+    
+    // Parse XML response (basic parsing for active listings)
+    const activeListingMatch = xmlText.match(/<ActiveList>[\s\S]*?<\/ActiveList>/);
+    if (!activeListingMatch) {
+      throw new Error('No active listings found in eBay response');
+    }
+    
+    // Extract individual items from the XML
+    const itemMatches = xmlText.match(/<Item>[\s\S]*?<\/Item>/g) || [];
+    
+    console.log(`Found ${itemMatches.length} eBay active listings`);
 
-    console.log(`Fetched ${inventoryItems.length} eBay inventory items`);
-
-    // Transform eBay inventory items to our product format
-    const productRecords = inventoryItems.map((item: any) => {
-      const product = item.product || {};
-      const availability = item.availability || {};
-      const packageWeightAndSize = item.packageWeightAndSize || {};
+    // Transform eBay XML items to our product format
+    const productRecords = itemMatches.map((itemXml: string) => {
+      // Extract basic fields from XML using regex
+      const extractField = (field: string) => {
+        const match = itemXml.match(new RegExp(`<${field}>([\\s\\S]*?)<\/${field}>`));
+        return match ? match[1].trim() : null;
+      };
+      
+      const extractPrice = (priceXml: string) => {
+        const match = priceXml.match(/>([0-9.]+)</);
+        return match ? parseFloat(match[1]) : null;
+      };
+      
+      const itemId = extractField('ItemID');
+      const title = extractField('Title') || 'Untitled eBay Product';
+      const description = extractField('Description');
+      const galleryUrl = extractField('GalleryURL');
+      const listingType = extractField('ListingType');
+      const quantity = extractField('Quantity');
+      const startPriceXml = extractField('StartPrice');
+      const buyItNowPriceXml = extractField('BuyItNowPrice');
+      const categoryName = extractField('CategoryName');
+      const sku = extractField('SKU');
+      const condition = extractField('ConditionDisplayName');
+      
+      // Determine price
+      const startPrice = startPriceXml ? extractPrice(startPriceXml) : null;
+      const buyItNowPrice = buyItNowPriceXml ? extractPrice(buyItNowPriceXml) : null;
+      const price = buyItNowPrice || startPrice;
       
       return {
         user_id: user.id,
-        handle: item.sku?.toLowerCase().replace(/[^a-z0-9]/g, '-') || `ebay-${item.sku}`,
-        title: product.title || 'Untitled eBay Product',
+        handle: (sku || `ebay-${itemId}`).toLowerCase().replace(/[^a-z0-9]/g, '-'),
+        title: title,
         vendor: 'eBay',
-        type: product.brand || null,
-        tags: product.aspects ? Object.entries(product.aspects).map(([key, values]: [string, any]) => 
-          `${key}: ${Array.isArray(values) ? values.join(', ') : values}`
-        ).join('; ') : null,
+        type: categoryName || null,
+        tags: `eBay, ${listingType || 'Unknown'}, ${condition || 'Used'}`.replace(/,\s*$/, ''),
         published: true,
-        body_html: product.description || null,
-        category: product.aspects?.Category?.[0] || null,
+        body_html: description || null,
+        category: categoryName || null,
         
-        // Variant data from eBay inventory
-        variant_sku: item.sku || null,
-        variant_price: product.aspects?.Price?.[0] ? parseFloat(product.aspects.Price[0]) : null,
-        variant_inventory_qty: availability.shipToLocationAvailability?.quantity || 0,
-        variant_grams: packageWeightAndSize.weight?.value ? 
-          Math.round(parseFloat(packageWeightAndSize.weight.value) * 453.592) : null, // Convert lbs to grams
+        // Variant data from eBay listing
+        variant_sku: sku || itemId || null,
+        variant_price: price,
+        variant_inventory_qty: quantity ? parseInt(quantity) : 1,
+        variant_grams: null, // Not available in this API response
         variant_requires_shipping: true,
         variant_taxable: true,
         
         // Image data
-        image_src: product.imageUrls?.[0] || null,
+        image_src: galleryUrl || null,
         image_position: 1,
         
         // eBay specific fields
-        google_shopping_condition: product.aspects?.Condition?.[0] || 'Used',
-        google_shopping_gender: product.aspects?.Gender?.[0] || null,
-        google_shopping_age_group: product.aspects?.['Age Group']?.[0] || null,
+        google_shopping_condition: condition || 'Used',
+        google_shopping_gender: null,
+        google_shopping_age_group: null,
         
         // Sync status
         shopify_sync_status: null, // This is an eBay product, not Shopify
