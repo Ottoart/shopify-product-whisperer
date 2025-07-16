@@ -143,8 +143,16 @@ export const useShippingServices = () => {
       throw error;
     }
 
-    // Refresh services after adding new carrier
-    await fetchServices(true);
+    // Refresh carriers list immediately
+    await fetchCarriers();
+    
+    // Try to refresh services, but don't fail if edge function has issues
+    try {
+      await fetchServices(true);
+    } catch (serviceError) {
+      console.log('Could not refresh services immediately, but carrier was added successfully:', serviceError);
+    }
+    
     return data;
   };
 
@@ -168,8 +176,30 @@ export const useShippingServices = () => {
     await updateCarrierConfiguration(carrierId, { is_active: isActive });
   };
 
+  const fetchCarriers = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('carrier_configurations')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching carriers:', error);
+        return;
+      }
+
+      setCarriers(data || []);
+    } catch (err) {
+      console.error('Error in fetchCarriers:', err);
+    }
+  };
+
   useEffect(() => {
     if (user) {
+      fetchCarriers();
       fetchServices();
     }
   }, [user]);
