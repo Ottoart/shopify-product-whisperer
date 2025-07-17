@@ -110,42 +110,8 @@ serve(async (req) => {
     const requestData: ShipmentRequest = await req.json();
     console.log('📦 Received shipment request:', JSON.stringify(requestData, null, 2));
 
-    // Force token refresh for shipment API (more strict than rating API)
-    console.log('🔐 Forcing UPS token refresh for shipment...');
-    
-    // Get current carrier config
-    const { data: carrierConfig, error: configError } = await supabase
-      .from('carrier_configurations')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('carrier_name', 'UPS')
-      .eq('is_active', true)
-      .single();
-
-    if (configError || !carrierConfig) {
-      return new Response(
-        JSON.stringify({ error: 'UPS not configured for this user' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Force fresh token by clearing the current one
-    const credentials = carrierConfig.api_credentials as any;
-    const { error: clearError } = await supabase
-      .from('carrier_configurations')
-      .update({ 
-        api_credentials: {
-          ...credentials,
-          access_token: null,
-          token_expires_at: null
-        }
-      })
-      .eq('id', carrierConfig.id);
-
-    if (clearError) {
-      console.error('Failed to clear token:', clearError);
-    }
-
+    // Ensure we have a valid UPS token
+    console.log('🔐 Checking UPS authentication...');
     const authResult = await ensureValidUPSToken(supabase, user.id);
     if (!authResult.success) {
       console.error('❌ UPS authentication failed:', authResult.error);

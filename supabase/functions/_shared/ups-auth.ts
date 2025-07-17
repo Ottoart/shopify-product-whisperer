@@ -34,8 +34,8 @@ export async function ensureValidUPSToken(supabase: any, userId: string): Promis
       };
     }
     
-    // Check if token needs refresh (if it expires within the next 5 minutes)
-    // Or if there's no access token at all
+    // Always refresh the token for shipment API calls (UPS shipment API is more strict)
+    // Check if token needs refresh (if it expires within the next 30 minutes or doesn't exist)
     let needsRefresh = false;
     
     if (!credentials.access_token) {
@@ -44,14 +44,20 @@ export async function ensureValidUPSToken(supabase: any, userId: string): Promis
     } else if (credentials.token_expires_at) {
       const expiresAt = new Date(credentials.token_expires_at);
       const now = new Date();
-      const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60 * 1000);
+      const thirtyMinutesFromNow = new Date(now.getTime() + 30 * 60 * 1000); // 30 minutes buffer
       
-      if (expiresAt <= fiveMinutesFromNow) {
-        console.log('🔄 Token expires soon, refreshing');
+      if (expiresAt <= thirtyMinutesFromNow) {
+        console.log('🔄 Token expires within 30 minutes, refreshing for shipment API');
         needsRefresh = true;
       }
     } else {
       console.log('🔄 No expiration time set, refreshing token');
+      needsRefresh = true;
+    }
+    
+    // For shipment API calls, always get a fresh token to ensure it works
+    if (!needsRefresh) {
+      console.log('🔄 Forcing fresh token for shipment API (more strict than rating)');
       needsRefresh = true;
     }
 
