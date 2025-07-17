@@ -1,0 +1,385 @@
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Progress } from "@/components/ui/progress";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+import { 
+  CheckCircle, 
+  XCircle, 
+  Clock, 
+  AlertTriangle, 
+  Shield,
+  RefreshCw,
+  TestTube,
+  Key,
+  Truck,
+  WifiOff,
+  Wifi
+} from "lucide-react";
+
+interface CarrierConfig {
+  id: string;
+  carrier_name: string;
+  account_number: string | null;
+  api_credentials: any;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+interface ValidationResult {
+  carrier: string;
+  status: 'validating' | 'valid' | 'invalid' | 'error';
+  message: string;
+  details?: any;
+  lastChecked?: string;
+}
+
+export const CarrierCredentialValidator = () => {
+  const [carriers, setCarriers] = useState<CarrierConfig[]>([]);
+  const [validationResults, setValidationResults] = useState<{ [key: string]: ValidationResult }>({});
+  const [loading, setLoading] = useState(false);
+  const [validating, setValidating] = useState<{ [key: string]: boolean }>({});
+
+  const fetchCarriers = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('carrier_configurations')
+        .select('*')
+        .eq('is_active', true)
+        .order('carrier_name');
+
+      if (error) throw error;
+      setCarriers(data || []);
+    } catch (error) {
+      console.error('Error fetching carriers:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch carrier configurations",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const validateUPSCredentials = async (config: CarrierConfig): Promise<ValidationResult> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('test-ups-auth');
+      
+      if (error) {
+        return {
+          carrier: 'UPS',
+          status: 'error',
+          message: `API Error: ${error.message}`,
+          lastChecked: new Date().toISOString()
+        };
+      }
+
+      if (data?.success) {
+        return {
+          carrier: 'UPS',
+          status: 'valid',
+          message: `Valid credentials. Account: ${data.accountNumber}. Token expires: ${new Date(data.tokenExpiresAt).toLocaleDateString()}`,
+          details: data,
+          lastChecked: new Date().toISOString()
+        };
+      } else {
+        return {
+          carrier: 'UPS',
+          status: 'invalid',
+          message: data?.response?.error || 'Authentication failed',
+          details: data,
+          lastChecked: new Date().toISOString()
+        };
+      }
+    } catch (error) {
+      return {
+        carrier: 'UPS',
+        status: 'error',
+        message: `Validation failed: ${(error as Error).message}`,
+        lastChecked: new Date().toISOString()
+      };
+    }
+  };
+
+  const validateFedExCredentials = async (config: CarrierConfig): Promise<ValidationResult> => {
+    // Placeholder for FedEx validation
+    return {
+      carrier: 'FedEx',
+      status: 'error',
+      message: 'FedEx validation not implemented yet',
+      lastChecked: new Date().toISOString()
+    };
+  };
+
+  const validateUSPSCredentials = async (config: CarrierConfig): Promise<ValidationResult> => {
+    // Placeholder for USPS validation
+    return {
+      carrier: 'USPS',
+      status: 'error',
+      message: 'USPS validation not implemented yet',
+      lastChecked: new Date().toISOString()
+    };
+  };
+
+  const validateCredentials = async (config: CarrierConfig) => {
+    const carrierId = config.id;
+    setValidating(prev => ({ ...prev, [carrierId]: true }));
+    
+    // Set initial validating state
+    setValidationResults(prev => ({
+      ...prev,
+      [carrierId]: {
+        carrier: config.carrier_name,
+        status: 'validating',
+        message: 'Validating credentials...'
+      }
+    }));
+
+    let result: ValidationResult;
+
+    switch (config.carrier_name.toUpperCase()) {
+      case 'UPS':
+        result = await validateUPSCredentials(config);
+        break;
+      case 'FEDEX':
+        result = await validateFedExCredentials(config);
+        break;
+      case 'USPS':
+        result = await validateUSPSCredentials(config);
+        break;
+      default:
+        result = {
+          carrier: config.carrier_name,
+          status: 'error',
+          message: 'Unsupported carrier for validation',
+          lastChecked: new Date().toISOString()
+        };
+    }
+
+    setValidationResults(prev => ({ ...prev, [carrierId]: result }));
+    setValidating(prev => ({ ...prev, [carrierId]: false }));
+
+    // Show toast notification
+    toast({
+      title: `${config.carrier_name} Validation`,
+      description: result.message,
+      variant: result.status === 'valid' ? 'default' : 'destructive',
+    });
+  };
+
+  const validateAllCredentials = async () => {
+    for (const carrier of carriers) {
+      await validateCredentials(carrier);
+      // Small delay between validations to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  };
+
+  const getStatusIcon = (result?: ValidationResult, isValidating?: boolean) => {
+    if (isValidating) {
+      return <Clock className="h-4 w-4 text-yellow-500 animate-spin" />;
+    }
+    
+    if (!result) {
+      return <Shield className="h-4 w-4 text-gray-400" />;
+    }
+
+    switch (result.status) {
+      case 'valid':
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'invalid':
+        return <XCircle className="h-4 w-4 text-red-500" />;
+      case 'error':
+        return <AlertTriangle className="h-4 w-4 text-orange-500" />;
+      case 'validating':
+        return <Clock className="h-4 w-4 text-yellow-500 animate-spin" />;
+      default:
+        return <Shield className="h-4 w-4 text-gray-400" />;
+    }
+  };
+
+  const getStatusBadge = (result?: ValidationResult, isValidating?: boolean) => {
+    if (isValidating) {
+      return <Badge variant="secondary">Validating...</Badge>;
+    }
+    
+    if (!result) {
+      return <Badge variant="outline">Not Tested</Badge>;
+    }
+
+    switch (result.status) {
+      case 'valid':
+        return <Badge variant="default" className="bg-green-500">Valid</Badge>;
+      case 'invalid':
+        return <Badge variant="destructive">Invalid</Badge>;
+      case 'error':
+        return <Badge variant="secondary" className="bg-orange-500">Error</Badge>;
+      case 'validating':
+        return <Badge variant="secondary">Validating...</Badge>;
+      default:
+        return <Badge variant="outline">Unknown</Badge>;
+    }
+  };
+
+  const hasCredentials = (config: CarrierConfig) => {
+    const creds = config.api_credentials;
+    if (!creds) return false;
+    
+    switch (config.carrier_name.toUpperCase()) {
+      case 'UPS':
+        return !!(creds.client_id && creds.client_secret && creds.access_token);
+      case 'FEDEX':
+        return !!(creds.client_id && creds.client_secret);
+      case 'USPS':
+        return !!(creds.user_id && creds.password);
+      default:
+        return false;
+    }
+  };
+
+  const getOverallProgress = () => {
+    const totalCarriers = carriers.length;
+    const validatedCarriers = Object.values(validationResults).filter(r => r.status !== 'validating').length;
+    return totalCarriers > 0 ? (validatedCarriers / totalCarriers) * 100 : 0;
+  };
+
+  useEffect(() => {
+    fetchCarriers();
+  }, []);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Carrier Credential Validation</h2>
+          <p className="text-muted-foreground">
+            Test and verify carrier API credentials and configuration
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button onClick={fetchCarriers} disabled={loading} variant="outline">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+          <Button 
+            onClick={validateAllCredentials} 
+            disabled={carriers.length === 0 || Object.values(validating).some(v => v)}
+          >
+            <TestTube className="h-4 w-4 mr-2" />
+            Test All
+          </Button>
+        </div>
+      </div>
+
+      {/* Progress Overview */}
+      {Object.keys(validationResults).length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Validation Progress</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Overall Progress</span>
+                <span>{Math.round(getOverallProgress())}%</span>
+              </div>
+              <Progress value={getOverallProgress()} className="h-2" />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Carrier Cards */}
+      <div className="grid gap-4">
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <RefreshCw className="h-6 w-6 animate-spin" />
+          </div>
+        ) : carriers.length === 0 ? (
+          <Card>
+            <CardContent className="text-center py-8">
+              <WifiOff className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">No carrier configurations found</p>
+            </CardContent>
+          </Card>
+        ) : (
+          carriers.map((carrier) => {
+            const result = validationResults[carrier.id];
+            const isValidating = validating[carrier.id];
+            const credentialsPresent = hasCredentials(carrier);
+            
+            return (
+              <Card key={carrier.id}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Truck className="h-6 w-6" />
+                      <div>
+                        <CardTitle className="text-lg">{carrier.carrier_name}</CardTitle>
+                        <CardDescription>
+                          Account: {carrier.account_number || 'Not configured'}
+                        </CardDescription>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {getStatusIcon(result, isValidating)}
+                      {getStatusBadge(result, isValidating)}
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Credential Status */}
+                  <div className="flex items-center gap-2 text-sm">
+                    {credentialsPresent ? (
+                      <>
+                        <Wifi className="h-4 w-4 text-green-500" />
+                        <span className="text-green-700">Credentials configured</span>
+                      </>
+                    ) : (
+                      <>
+                        <Key className="h-4 w-4 text-red-500" />
+                        <span className="text-red-700">Missing credentials</span>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Validation Result */}
+                  {result && (
+                    <Alert>
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription>
+                        <strong>Status:</strong> {result.message}
+                        {result.lastChecked && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            Last checked: {new Date(result.lastChecked).toLocaleString()}
+                          </div>
+                        )}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {/* Action Button */}
+                  <Button
+                    onClick={() => validateCredentials(carrier)}
+                    disabled={isValidating || !credentialsPresent}
+                    size="sm"
+                    className="w-full"
+                  >
+                    <TestTube className="h-4 w-4 mr-2" />
+                    {isValidating ? 'Validating...' : 'Test Credentials'}
+                  </Button>
+                </CardContent>
+              </Card>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+};

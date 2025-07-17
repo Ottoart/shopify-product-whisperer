@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3'
+import { ensureValidUPSToken } from '../_shared/ups-auth.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -88,19 +89,12 @@ serve(async (req) => {
 
     const requestData: ShipmentRequest = await req.json();
 
-    // Get UPS carrier configuration for the user
-    const { data: carrierConfig, error: configError } = await supabase
-      .from('carrier_configurations')
-      .select('api_credentials, account_number')
-      .eq('user_id', user.id)
-      .eq('carrier_name', 'UPS')
-      .eq('is_active', true)
-      .single();
-
-    if (configError || !carrierConfig) {
-      console.error('UPS carrier configuration not found:', configError);
+    // Ensure we have a valid UPS token
+    const authResult = await ensureValidUPSToken(supabase, user.id);
+    if (!authResult.success) {
+      console.error('UPS authentication failed:', authResult.error);
       return new Response(
-        JSON.stringify({ error: 'UPS not configured for this user' }),
+        JSON.stringify({ error: authResult.error }),
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -108,19 +102,9 @@ serve(async (req) => {
       );
     }
 
-    const credentials = carrierConfig.api_credentials as any;
-    if (!credentials?.access_token) {
-      return new Response(
-        JSON.stringify({ error: 'UPS not properly authorized. Please re-authorize UPS.' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
+    const credentials = authResult.credentials;
+    const upsAccountNumber = credentials.account_number;
 
-    // Use the stored account number from carrier configuration
-    const upsAccountNumber = carrierConfig.account_number;
     if (!upsAccountNumber) {
       return new Response(
         JSON.stringify({ error: 'UPS account number not configured. Please contact support.' }),

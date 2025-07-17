@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Truck, Package, RotateCcw, Settings, Zap, Building2, Store, Plus, Webhook } from "lucide-react";
+import { Truck, Package, RotateCcw, Settings, Zap, Building2, Store, Plus, Webhook, TestTube } from "lucide-react";
 import { OrderManagement } from "@/components/shipping/OrderManagement";
 import { CarrierRateComparison } from "@/components/shipping/CarrierRateComparison";
 import { ShippingRules } from "@/components/shipping/ShippingRules";
@@ -14,6 +14,7 @@ import { CarrierConfigurationDialog } from "@/components/shipping/CarrierConfigu
 import { StoreConfig } from "@/components/StoreConfig";
 import { ShopifyConnectionTest } from "@/components/shipping/ShopifyConnectionTest";
 import { WebhookTester } from "@/components/shipping/WebhookTester";
+import { CarrierCredentialValidator } from "@/components/shipping/CarrierCredentialValidator";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 export default function Shipping() {
@@ -34,7 +35,7 @@ export default function Shipping() {
 
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-8 h-auto gap-1 p-1">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-9 h-auto gap-1 p-1">
             <TabsTrigger value="orders" className="flex items-center gap-2">
               <Package className="h-4 w-4" />
               Orders
@@ -70,6 +71,10 @@ export default function Shipping() {
             <TabsTrigger value="webhooks" className="flex items-center gap-2">
               <Webhook className="h-4 w-4" />
               Webhooks
+            </TabsTrigger>
+            <TabsTrigger value="validation" className="flex items-center gap-2">
+              <TestTube className="h-4 w-4" />
+              Validation
             </TabsTrigger>
           </TabsList>
 
@@ -138,6 +143,10 @@ export default function Shipping() {
 
           <TabsContent value="webhooks">
             <WebhookTester />
+          </TabsContent>
+
+          <TabsContent value="validation">
+            <CarrierCredentialValidator />
           </TabsContent>
         </Tabs>
       </div>
