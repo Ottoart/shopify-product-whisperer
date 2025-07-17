@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { 
   BarChart, 
   Bar, 
@@ -26,7 +27,8 @@ import {
   Truck,
   MapPin,
   Calendar,
-  Info
+  Info,
+  MoreHorizontal
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -257,39 +259,38 @@ export function OperationsTab({ storeFilter, dateRange, dateRangeLabel }: Operat
   }
 
   const MetricCard = ({ icon: Icon, value, label, color, tooltip, trend }: any) => (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Card className="text-center cursor-help transition-smooth hover:shadow-elegant">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-center mb-4">
-                <Icon className={`h-8 w-8 ${color}`} />
-                <Info className="h-3 w-3 ml-2 text-muted-foreground" />
-              </div>
-              <div className={`text-4xl font-bold mb-2 ${color}`}>
-                {value}
-                {trend && (
-                  <span className="text-sm ml-2 text-green-600">
-                    ↗ {trend}
-                  </span>
-                )}
-              </div>
-              <div className="text-sm text-muted-foreground font-medium">{label}</div>
-            </CardContent>
-          </Card>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p className="max-w-xs">{tooltip}</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <Card>
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Icon className={`h-5 w-5 ${color}`} />
+            <span className="text-sm font-medium text-muted-foreground">{label}</span>
+            {tooltip && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{tooltip}</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+          {trend && (
+            <Badge variant={trend > 0 ? 'default' : 'destructive'} className="text-xs">
+              {trend > 0 ? '+' : ''}{trend}%
+            </Badge>
+          )}
+        </div>
+        <div className="mt-2">
+          <div className="text-2xl font-bold">{value}</div>
+        </div>
+      </CardContent>
+    </Card>
   );
 
   return (
     <div className="space-y-6">
-      {/* AI Recommendations for Operations */}
-      <AIRecommendations orders={orders} carriers={carrierPerformance} />
-
       {/* Key Operations Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
@@ -297,87 +298,76 @@ export function OperationsTab({ storeFilter, dateRange, dateRangeLabel }: Operat
           value={`$${totalRevenue.toLocaleString()}`}
           label="Total Revenue"
           color="text-green-600"
-          tooltip="Total revenue from all orders in the selected period."
+          tooltip="Revenue from all processed orders"
+          trend={5.2}
         />
-        
         <MetricCard
-          icon={TrendingUp}
-          value={`$${netShippingRevenue.toLocaleString()}`}
-          label="Net Shipping Revenue"
+          icon={Truck}
+          value={`$${totalShippingCost.toFixed(2)}`}
+          label="Shipping Costs"
           color="text-blue-600"
-          tooltip="Revenue minus shipping costs - assess profit margins."
+          tooltip="Total shipping costs paid to carriers"
+          trend={-2.1}
         />
-        
-        <MetricCard
-          icon={Package}
-          value={`$${avgCostPerLabel.toFixed(2)}`}
-          label="Avg Cost per Label"
-          color="text-orange-600"
-          tooltip="Average cost to generate each shipping label."
-        />
-        
         <MetricCard
           icon={Clock}
-          value={`${avgPaymentToFulfillment.toFixed(1)} days`}
-          label="Payment to Fulfillment"
+          value={`${avgPaymentToFulfillment.toFixed(1)}d`}
+          label="Avg Fulfillment Time"
+          color="text-orange-600"
+          tooltip="Average days from payment to shipment"
+          trend={-0.8}
+        />
+        <MetricCard
+          icon={Package}
+          value={`${weekendShippingRatio.toFixed(1)}%`}
+          label="Weekend Shipping"
           color="text-purple-600"
-          tooltip="Average time from payment to fulfillment - measure processing speed."
+          tooltip="Percentage of orders shipped on weekends"
+          trend={1.4}
         />
       </div>
 
-      {/* Second Row of Operations Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard
-          icon={Calendar}
-          value={`${weekendShippingRatio.toFixed(1)}%`}
-          label="Weekend Shipping"
-          color="text-indigo-600"
-          tooltip="Percentage of shipments processed on weekends."
-        />
-        
-        <MetricCard
-          icon={AlertTriangle}
-          value="3.2%"
-          label="Label Error Rate"
-          color="text-red-600"
-          tooltip="Percentage of shipping labels requiring correction."
-        />
-        
-        <MetricCard
-          icon={Truck}
-          value="96.8%"
-          label="Pickup Success Rate"
-          color="text-green-500"
-          tooltip="Percentage of successful carrier pickups."
-        />
-        
-        <MetricCard
-          icon={MapPin}
-          value="0.4%"
-          label="Lost Shipments"
-          color="text-red-500"
-          tooltip="Percentage of shipments lost in transit."
-        />
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-card p-4 rounded-lg border">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">Quick Actions</h3>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Button variant="outline" size="sm" className="h-auto p-3 text-left">
+              <div>
+                <div className="font-medium">Bulk Print</div>
+                <div className="text-sm text-muted-foreground">Print multiple labels</div>
+              </div>
+            </Button>
+            <Button variant="outline" size="sm" className="h-auto p-3 text-left">
+              <div>
+                <div className="font-medium">Batch Ship</div>
+                <div className="text-sm text-muted-foreground">Process multiple orders</div>
+              </div>
+            </Button>
+            <Button variant="outline" size="sm" className="h-auto p-3 text-left">
+              <div>
+                <div className="font-medium">Import Orders</div>
+                <div className="text-sm text-muted-foreground">Upload CSV file</div>
+              </div>
+            </Button>
+            <Button variant="outline" size="sm" className="h-auto p-3 text-left">
+              <div>
+                <div className="font-medium">Export Data</div>
+                <div className="text-sm text-muted-foreground">Download reports</div>
+              </div>
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Shipments per Day */}
+        {/* Shipments Per Day Chart */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              Shipments per Day by Service Class
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Info className="h-4 w-4 text-muted-foreground" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Track service type preferences and workflow volume.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </CardTitle>
+            <CardTitle className="text-lg">Daily Shipments by Service Type</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-80 w-full">
@@ -415,19 +405,7 @@ export function OperationsTab({ storeFilter, dateRange, dateRangeLabel }: Operat
         {/* Carrier SLA Performance */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              SLA Breach Rate by Carrier
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Info className="h-4 w-4 text-muted-foreground" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Identify underperforming carriers for SLA compliance.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </CardTitle>
+            <CardTitle className="text-lg">SLA Breach Rate by Carrier</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -458,19 +436,7 @@ export function OperationsTab({ storeFilter, dateRange, dateRangeLabel }: Operat
       {/* User Productivity Analysis */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            Shipments by Fulfillment User
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger>
-                  <Info className="h-4 w-4 text-muted-foreground" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Monitor employee throughput and processing efficiency.</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </CardTitle>
+          <CardTitle className="text-lg">Shipments by Fulfillment User</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -496,108 +462,7 @@ export function OperationsTab({ storeFilter, dateRange, dateRangeLabel }: Operat
         </CardContent>
       </Card>
 
-      {/* Additional Operations Insights */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Warehouse Processing Time */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              Warehouse Processing Times
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Info className="h-4 w-4 text-muted-foreground" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Benchmark processing performance by location.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {['Main Warehouse', 'East Coast', 'West Coast'].map((warehouse, index) => (
-                <div key={warehouse} className="flex items-center justify-between p-3 bg-muted rounded">
-                  <span className="font-medium">{warehouse}</span>
-                  <div className="text-right">
-                    <div className="font-bold">{(2.1 + index * 0.3).toFixed(1)}h</div>
-                    <div className="text-xs text-muted-foreground">avg processing</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Carrier Margin Analysis */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              Carrier Margin Analysis
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Info className="h-4 w-4 text-muted-foreground" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Compare carrier profitability and cost efficiency.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {carrierPerformance.map((carrier) => (
-                <div key={carrier.carrier} className="flex items-center justify-between p-3 bg-muted rounded">
-                  <span className="font-medium">{carrier.carrier}</span>
-                  <div className="text-right">
-                    <div className="font-bold text-green-600">{carrier.margin}%</div>
-                    <div className="text-xs text-muted-foreground">margin</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Label Error Summary */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              Label Error Tracking
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Info className="h-4 w-4 text-muted-foreground" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Monitor and flag system issues or configuration problems.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {[
-                { type: 'Address Invalid', count: 12, color: 'text-red-600' },
-                { type: 'Weight Mismatch', count: 8, color: 'text-orange-600' },
-                { type: 'Service Type Error', count: 5, color: 'text-yellow-600' },
-                { type: 'API Timeout', count: 3, color: 'text-blue-600' }
-              ].map((error) => (
-                <div key={error.type} className="flex items-center justify-between p-3 bg-muted rounded">
-                  <span className="font-medium">{error.type}</span>
-                  <Badge variant="outline" className={error.color}>
-                    {error.count}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <AIRecommendations orders={orders} carriers={carrierPerformance.map(c => c.carrier)} />
     </div>
   );
 }

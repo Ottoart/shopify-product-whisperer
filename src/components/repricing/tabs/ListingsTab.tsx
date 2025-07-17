@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -135,7 +135,7 @@ export function ListingsTab({ storeFilter, dateRange, dateRangeLabel }: Listings
   };
 
   return (
-    <TooltipProvider>
+    <div>
       <div className="space-y-6">
         {/* Header with Search and Filters */}
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
@@ -479,6 +479,6 @@ export function ListingsTab({ storeFilter, dateRange, dateRangeLabel }: Listings
           </CardContent>
         </Card>
       </div>
-    </TooltipProvider>
+    </div>
   );
 }

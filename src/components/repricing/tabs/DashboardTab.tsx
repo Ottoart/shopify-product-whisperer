@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Info, TrendingUp, TrendingDown, Target, DollarSign, Package, AlertTriangle } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { RepricingAIRecommendations } from "../components/RepricingAIRecommendations";
@@ -112,7 +112,7 @@ export function DashboardTab({ storeFilter, dateRange, dateRangeLabel }: Dashboa
   ];
 
   return (
-    <TooltipProvider>
+    <div>
       <div className="space-y-6">
         {/* KPI Cards Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -313,6 +313,6 @@ export function DashboardTab({ storeFilter, dateRange, dateRangeLabel }: Dashboa
           <RepricingAIRecommendations />
         </div>
       </div>
-    </TooltipProvider>
+    </div>
   );
 }

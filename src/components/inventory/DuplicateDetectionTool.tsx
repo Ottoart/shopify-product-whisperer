@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { AlertTriangle, Copy, Trash2, Edit3, Eye, ExternalLink, RefreshCw, Info, HelpCircle } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface Product {
   id: string;
@@ -430,7 +430,7 @@ export function DuplicateDetectionTool() {
               </div>
               
               {duplicateGroups.map((group) => (
-                <TooltipProvider key={group.id}>
+                <div key={group.id}>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Card className="border-warning/20 cursor-help hover:border-warning/40 transition-colors">
@@ -592,7 +592,7 @@ export function DuplicateDetectionTool() {
                  </div>
                </TooltipContent>
              </Tooltip>
-           </TooltipProvider>
+           </div>
          ))}
        </div>
      )}
