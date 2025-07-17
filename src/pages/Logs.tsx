@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { AlertCircle, CheckCircle, XCircle, Info, RefreshCw, Network, Monitor } from "lucide-react";
+import { AlertCircle, CheckCircle, XCircle, Info, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 
 interface LogEntry {
@@ -14,46 +15,24 @@ interface LogEntry {
   category: string;
   message: string;
   details?: any;
+  user_id: string;
 }
 
 export default function Logs() {
+  const { user } = useAuth();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'info' | 'warning' | 'error' | 'success'>('all');
 
   const fetchLogs = async () => {
+    if (!user) return;
+    
     setLoading(true);
     try {
-      // For now, create some sample log entries to demonstrate the UI
-      // In a real implementation, these would come from your logging system
-      const sampleLogs: LogEntry[] = [
-        {
-          id: '1',
-          timestamp: new Date().toISOString(),
-          level: 'error',
-          category: 'UPS Shipping',
-          message: 'Failed to create shipping label - authentication error',
-          details: { error: 'Token expired', orderId: 'order-123' }
-        },
-        {
-          id: '2',
-          timestamp: new Date(Date.now() - 300000).toISOString(),
-          level: 'info',
-          category: 'Shopify Sync',
-          message: 'Successfully synced 25 products',
-          details: { productCount: 25 }
-        },
-        {
-          id: '3',
-          timestamp: new Date(Date.now() - 600000).toISOString(),
-          level: 'warning',
-          category: 'Price Update',
-          message: 'Price update failed for some products',
-          details: { failedCount: 3 }
-        }
-      ];
-      
-      setLogs(sampleLogs);
+      // For now, get logs from localStorage since types aren't updated yet
+      const storedLogs = localStorage.getItem(`logs_${user.id}`);
+      const parsedLogs = storedLogs ? JSON.parse(storedLogs) : [];
+      setLogs(parsedLogs);
     } catch (error) {
       console.error('Error fetching logs:', error);
     } finally {
@@ -63,7 +42,7 @@ export default function Logs() {
 
   useEffect(() => {
     fetchLogs();
-  }, []);
+  }, [user]);
 
   const filteredLogs = logs.filter(log => filter === 'all' || log.level === filter);
 
@@ -87,8 +66,11 @@ export default function Logs() {
     }
   };
 
-  const clearLogs = async () => {
+  const clearLogs = () => {
+    if (!user) return;
+    
     try {
+      localStorage.removeItem(`logs_${user.id}`);
       setLogs([]);
     } catch (error) {
       console.error('Error clearing logs:', error);
@@ -144,7 +126,7 @@ export default function Logs() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         {getLogIcon(log.level)}
-                        <Badge variant={getLogBadgeVariant(log.level)}>
+                        <Badge variant={getLogBadgeVariant(log.level) as any}>
                           {log.level.toUpperCase()}
                         </Badge>
                         <Badge variant="outline">{log.category}</Badge>

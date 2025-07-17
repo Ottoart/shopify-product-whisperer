@@ -313,7 +313,7 @@ serve(async (req) => {
           details: responseText
         }),
         { 
-          status: upsResponse.status === 401 ? 401 : 400, 
+          status: 400, // Always return 400 so the client gets the response data
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );

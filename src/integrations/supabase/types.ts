@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_logs: {
+        Row: {
+          category: string
+          created_at: string
+          details: Json | null
+          id: string
+          level: string
+          message: string
+          timestamp: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          level: string
+          message: string
+          timestamp?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          level?: string
+          message?: string
+          timestamp?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_insights: {
         Row: {
           action_items: string[] | null

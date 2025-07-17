@@ -30,6 +30,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import { AboutUs } from "./pages/AboutUs";
 import NotFound from "./pages/NotFound";
 import { LearningDashboard } from "./components/LearningDashboard";
+import Logs from "./pages/Logs";
 
 const queryClient = new QueryClient();
 
@@ -83,6 +84,7 @@ const AppContent = () => {
                 <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                 <Route path="/sync-status" element={<ProtectedRoute><SyncStatus /></ProtectedRoute>} />
+                <Route path="/logs" element={<ProtectedRoute><Logs /></ProtectedRoute>} />
                 
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />
