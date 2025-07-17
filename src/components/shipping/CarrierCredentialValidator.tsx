@@ -385,23 +385,144 @@ export const CarrierCredentialValidator = () => {
       // Find UPS configuration if it exists
       let upsConfig = carriers.find(c => c.carrier_name === 'UPS');
       
-      // Prompt for client ID
-      const clientId = window.prompt('Enter your UPS Client ID:');
-      if (!clientId) return;
+      // Create a form instead of using window.prompt for better UX
+      const form = document.createElement('form');
+      form.innerHTML = `
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; margin-bottom: 8px; font-weight: bold;">UPS Client ID</label>
+          <input type="text" id="upsClientId" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" required>
+        </div>
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; margin-bottom: 8px; font-weight: bold;">UPS Client Secret</label>
+          <input type="password" id="upsClientSecret" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" required>
+        </div>
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; margin-bottom: 8px; font-weight: bold;">UPS Account Number</label>
+          <input type="text" id="upsAccountNumber" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" required>
+        </div>
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; margin-bottom: 8px;">
+            <input type="checkbox" id="upsProduction" style="margin-right: 8px;"> 
+            Use Production Environment (unchecked = sandbox)
+          </label>
+        </div>
+      `;
       
-      // Prompt for client secret
-      const clientSecret = window.prompt('Enter your UPS Client Secret:');
-      if (!clientSecret) return;
+      // Pre-fill with existing values if available
+      if (upsConfig) {
+        const creds = upsConfig.api_credentials;
+        const clientIdInput = form.querySelector('#upsClientId') as HTMLInputElement;
+        const clientSecretInput = form.querySelector('#upsClientSecret') as HTMLInputElement;
+        const accountNumberInput = form.querySelector('#upsAccountNumber') as HTMLInputElement;
+        const productionCheckbox = form.querySelector('#upsProduction') as HTMLInputElement;
+        
+        if (clientIdInput && creds.client_id) clientIdInput.value = creds.client_id;
+        if (accountNumberInput && upsConfig.account_number) accountNumberInput.value = upsConfig.account_number;
+        if (productionCheckbox && creds.environment) productionCheckbox.checked = creds.environment === 'production';
+      }
       
-      // Prompt for account number
-      const accountNumber = window.prompt('Enter your UPS Account Number:');
-      if (!accountNumber) return;
+      // Use a dialog or custom modal solution
+      const result = await new Promise<{
+        clientId: string; 
+        clientSecret: string; 
+        accountNumber: string;
+        isProduction: boolean;
+      } | null>((resolve) => {
+        // Create custom modal
+        const modal = document.createElement('div');
+        modal.style.position = 'fixed';
+        modal.style.top = '0';
+        modal.style.left = '0';
+        modal.style.width = '100%';
+        modal.style.height = '100%';
+        modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+        modal.style.display = 'flex';
+        modal.style.justifyContent = 'center';
+        modal.style.alignItems = 'center';
+        modal.style.zIndex = '9999';
+        
+        const modalContent = document.createElement('div');
+        modalContent.style.backgroundColor = 'white';
+        modalContent.style.padding = '24px';
+        modalContent.style.borderRadius = '8px';
+        modalContent.style.width = '400px';
+        modalContent.style.maxWidth = '90%';
+        
+        const title = document.createElement('h3');
+        title.textContent = 'UPS Credentials';
+        title.style.marginTop = '0';
+        title.style.marginBottom = '16px';
+        
+        const buttonContainer = document.createElement('div');
+        buttonContainer.style.display = 'flex';
+        buttonContainer.style.justifyContent = 'flex-end';
+        buttonContainer.style.gap = '8px';
+        buttonContainer.style.marginTop = '16px';
+        
+        const cancelButton = document.createElement('button');
+        cancelButton.textContent = 'Cancel';
+        cancelButton.style.padding = '8px 16px';
+        cancelButton.style.border = '1px solid #ccc';
+        cancelButton.style.borderRadius = '4px';
+        cancelButton.style.backgroundColor = '#f1f1f1';
+        
+        const saveButton = document.createElement('button');
+        saveButton.textContent = 'Save Credentials';
+        saveButton.style.padding = '8px 16px';
+        saveButton.style.border = 'none';
+        saveButton.style.borderRadius = '4px';
+        saveButton.style.backgroundColor = '#0284c7';
+        saveButton.style.color = 'white';
+        
+        buttonContainer.appendChild(cancelButton);
+        buttonContainer.appendChild(saveButton);
+        
+        modalContent.appendChild(title);
+        modalContent.appendChild(form);
+        modalContent.appendChild(buttonContainer);
+        
+        modal.appendChild(modalContent);
+        document.body.appendChild(modal);
+        
+        // Handle button clicks
+        cancelButton.addEventListener('click', () => {
+          document.body.removeChild(modal);
+          resolve(null);
+        });
+        
+        saveButton.addEventListener('click', () => {
+          const clientIdInput = form.querySelector('#upsClientId') as HTMLInputElement;
+          const clientSecretInput = form.querySelector('#upsClientSecret') as HTMLInputElement;
+          const accountNumberInput = form.querySelector('#upsAccountNumber') as HTMLInputElement;
+          const productionCheckbox = form.querySelector('#upsProduction') as HTMLInputElement;
+          
+          const clientId = clientIdInput?.value;
+          const clientSecret = clientSecretInput?.value;
+          const accountNumber = accountNumberInput?.value;
+          const isProduction = productionCheckbox?.checked || false;
+          
+          if (!clientId || !clientSecret || !accountNumber) {
+            alert('All fields are required');
+            return;
+          }
+          
+          document.body.removeChild(modal);
+          resolve({
+            clientId,
+            clientSecret,
+            accountNumber,
+            isProduction
+          });
+        });
+      });
+      
+      if (!result) return; // User cancelled
       
       // Prepare credentials object
       const credentials = {
-        client_id: clientId,
-        client_secret: clientSecret,
-        environment: 'sandbox', // Default to sandbox
+        client_id: result.clientId,
+        client_secret: result.clientSecret,
+        environment: result.isProduction ? 'production' : 'sandbox',
         access_token: null,
         token_expires_at: '2024-01-01T00:00:00.000Z' // Expired to force refresh
       };
@@ -412,7 +533,7 @@ export const CarrierCredentialValidator = () => {
           .from('carrier_configurations')
           .update({ 
             api_credentials: credentials,
-            account_number: accountNumber,
+            account_number: result.accountNumber,
             updated_at: new Date().toISOString()
           })
           .eq('id', upsConfig.id);
@@ -430,7 +551,7 @@ export const CarrierCredentialValidator = () => {
           .insert({
             carrier_name: 'UPS',
             api_credentials: credentials,
-            account_number: accountNumber,
+            account_number: result.accountNumber,
             is_active: true,
             settings: {},
             pickup_type_code: '01',

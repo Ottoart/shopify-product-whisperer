@@ -133,7 +133,7 @@ serve(async (req) => {
     console.log('🔍 Using environment:', environment);
     console.log('🔍 Base URL:', baseUrl);
     
-    const upsResponse = await fetch(`${baseUrl}/api/rating/v2409/rate`, {
+    const upsResponse = await fetch(`${baseUrl}/api/rating/v1/rate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
