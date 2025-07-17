@@ -45,18 +45,20 @@ serve(async (req) => {
       );
     }
 
-    // Get UPS carrier configuration
-    const { data: carrierConfig, error: configError } = await supabase
-      .from('carrier_configurations')
-      .select('api_credentials, account_number')
-      .eq('user_id', user.id)
-      .eq('carrier_name', 'UPS')
-      .eq('is_active', true)
-      .single();
-
-    if (configError || !carrierConfig) {
+    // Import and use the UPS auth helper to ensure we have a valid token
+    const { ensureValidUPSToken } = await import('../_shared/ups-auth.ts');
+    
+    console.log('🔍 Ensuring valid UPS token before testing...');
+    const tokenResult = await ensureValidUPSToken(supabase, user.id);
+    
+    if (!tokenResult.success) {
+      console.error('🔍 Failed to get valid UPS token:', tokenResult.error);
       return new Response(
-        JSON.stringify({ error: 'UPS not configured', details: configError }),
+        JSON.stringify({ 
+          success: false,
+          error: 'Failed to authenticate with UPS',
+          details: tokenResult.error 
+        }),
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -64,8 +66,8 @@ serve(async (req) => {
       );
     }
 
-    const credentials = carrierConfig.api_credentials as any;
-    const accountNumber = carrierConfig.account_number;
+    const credentials = tokenResult.credentials;
+    const accountNumber = credentials.account_number;
 
     console.log('🔍 Testing UPS authentication...');
     console.log('🔍 Account number:', accountNumber);
