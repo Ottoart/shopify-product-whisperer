@@ -194,6 +194,37 @@ export function ShippingDetailsDialog({ isOpen, onClose, order, onUpdateOrder }:
     }
   };
 
+  const testUPSAuth = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('test-ups-auth');
+      
+      if (error) {
+        console.error('UPS Auth Test Error:', error);
+        toast({
+          title: "UPS Test Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      console.log('UPS Auth Test Result:', data);
+      toast({
+        title: "UPS Test Complete",
+        description: `Status: ${data.status}, Success: ${data.success}`,
+        variant: data.success ? "default" : "destructive",
+      });
+    } catch (error) {
+      console.error('UPS Auth Test Error:', error);
+      toast({
+        title: "UPS Test Failed",
+        description: "Failed to test UPS authentication",
+        variant: "destructive",
+      });
+    }
+  };
+
+
   const createShippingLabel = async () => {
     if (!selectedRate || !order) {
       toast({
@@ -309,6 +340,13 @@ export function ShippingDetailsDialog({ isOpen, onClose, order, onUpdateOrder }:
               <Button variant="outline" size="sm">
                 <Eye className="h-4 w-4 mr-2" />
                 Preview
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={testUPSAuth}
+              >
+                Test UPS
               </Button>
               <Button 
                 variant="default" 

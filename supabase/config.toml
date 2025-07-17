@@ -63,3 +63,12 @@ verify_jwt = true
 
 [functions.ups-oauth-callback]
 verify_jwt = false
+
+[functions.ups-rating]
+verify_jwt = true
+
+[functions.ups-shipment]
+verify_jwt = true
+
+[functions.test-ups-auth]
+verify_jwt = true
