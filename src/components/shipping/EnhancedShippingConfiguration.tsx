@@ -274,23 +274,82 @@ export function EnhancedShippingConfiguration({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
-      const { data, error } = await supabase
+      // Check if a config with this store name already exists
+      const { data: existingConfig, error: checkError } = await supabase
         .from('store_shipping_configs')
-        .insert({
-          user_id: user.id,
-          store_name: newAddress.label,
-          from_name: newAddress.name,
-          from_company: newAddress.company,
-          from_address_line1: newAddress.address_line1,
-          from_address_line2: newAddress.address_line2,
-          from_city: newAddress.city,
-          from_state: newAddress.state,
-          from_zip: newAddress.zip,
-          from_country: newAddress.country,
-          from_phone: newAddress.phone
-        })
-        .select()
-        .single();
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('store_name', newAddress.label)
+        .maybeSingle();
+
+      if (checkError) {
+        console.error('Error checking existing config:', checkError);
+        throw new Error('Failed to check existing configuration');
+      }
+
+      let data;
+      let error;
+
+      if (existingConfig) {
+        // Update existing configuration
+        const { data: updateData, error: updateError } = await supabase
+          .from('store_shipping_configs')
+          .update({
+            from_name: newAddress.name,
+            from_company: newAddress.company,
+            from_address_line1: newAddress.address_line1,
+            from_address_line2: newAddress.address_line2,
+            from_city: newAddress.city,
+            from_state: newAddress.state,
+            from_zip: newAddress.zip,
+            from_country: newAddress.country,
+            from_phone: newAddress.phone,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingConfig.id)
+          .select()
+          .single();
+        
+        data = updateData;
+        error = updateError;
+        
+        if (!error) {
+          toast({
+            title: "Address Updated",
+            description: "Ship from address has been updated successfully",
+          });
+        }
+      } else {
+        // Create new configuration
+        const { data: insertData, error: insertError } = await supabase
+          .from('store_shipping_configs')
+          .insert({
+            user_id: user.id,
+            store_name: newAddress.label,
+            from_name: newAddress.name,
+            from_company: newAddress.company,
+            from_address_line1: newAddress.address_line1,
+            from_address_line2: newAddress.address_line2,
+            from_city: newAddress.city,
+            from_state: newAddress.state,
+            from_zip: newAddress.zip,
+            from_country: newAddress.country,
+            from_phone: newAddress.phone,
+            is_default: shipFromAddresses.length === 0 // Make first address default
+          })
+          .select()
+          .single();
+        
+        data = insertData;
+        error = insertError;
+        
+        if (!error) {
+          toast({
+            title: "Address Added",
+            description: "New ship from address has been added successfully",
+          });
+        }
+      }
 
       if (error) throw error;
 
@@ -308,14 +367,17 @@ export function EnhancedShippingConfiguration({
         phone: newAddress.phone
       };
 
-      setShipFromAddresses(prev => [...prev, address]);
+      // Update or add to the addresses list
+      if (existingConfig) {
+        setShipFromAddresses(prev => 
+          prev.map(addr => addr.id === data.id ? address : addr)
+        );
+      } else {
+        setShipFromAddresses(prev => [...prev, address]);
+      }
+      
       setSelectedShipFrom(address.id!);
       setShowAddressDialog(false);
-      
-      toast({
-        title: "Address Added",
-        description: "Ship from address has been saved successfully"
-      });
 
       // Reset form
       setNewAddress({
@@ -335,7 +397,7 @@ export function EnhancedShippingConfiguration({
       console.error('Error adding address:', error);
       toast({
         title: "Error",
-        description: "Failed to add ship from address",
+        description: error.message || "Failed to add ship from address",
         variant: "destructive"
       });
     }
