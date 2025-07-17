@@ -82,12 +82,13 @@ export async function ensureValidUPSToken(supabase: any, userId: string): Promis
     console.log('🔄 Using grant type:', grantType);
     console.log('🔄 Client ID:', credentials.client_id);
 
+    // Use proper UPS OAuth 2.0 endpoint with correct headers
     const refreshResponse = await fetch('https://wwwcie.ups.com/security/v1/oauth/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         'Authorization': `Basic ${btoa(`${credentials.client_id}:${credentials.client_secret}`)}`,
-        'x-merchant-id': credentials.client_id
+        'Accept': 'application/json'
       },
       body: tokenBody
     });
