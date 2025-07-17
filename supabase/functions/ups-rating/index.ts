@@ -74,7 +74,7 @@ serve(async (req) => {
     // Get UPS carrier configuration for the user
     const { data: carrierConfig, error: configError } = await supabase
       .from('carrier_configurations')
-      .select('api_credentials')
+      .select('api_credentials, account_number')
       .eq('user_id', user.id)
       .eq('carrier_name', 'UPS')
       .eq('is_active', true)
@@ -129,7 +129,7 @@ serve(async (req) => {
         },
         Shipment: {
           Shipper: {
-            ShipperNumber: credentials.account_number || "",
+            ShipperNumber: carrierConfig.account_number || "",
             Address: {
               AddressLine: [requestData.shipFrom.address],
               City: requestData.shipFrom.city,

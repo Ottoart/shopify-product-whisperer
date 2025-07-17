@@ -91,7 +91,7 @@ serve(async (req) => {
     // Get UPS carrier configuration for the user
     const { data: carrierConfig, error: configError } = await supabase
       .from('carrier_configurations')
-      .select('api_credentials')
+      .select('api_credentials, account_number')
       .eq('user_id', user.id)
       .eq('carrier_name', 'UPS')
       .eq('is_active', true)
@@ -112,6 +112,18 @@ serve(async (req) => {
     if (!credentials?.access_token) {
       return new Response(
         JSON.stringify({ error: 'UPS not properly authorized. Please re-authorize UPS.' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Use the stored account number from carrier configuration
+    const upsAccountNumber = carrierConfig.account_number;
+    if (!upsAccountNumber) {
+      return new Response(
+        JSON.stringify({ error: 'UPS account number not configured. Please contact support.' }),
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -165,7 +177,7 @@ serve(async (req) => {
             Name: requestData.shipFrom.name,
             AttentionName: requestData.shipFrom.name,
             CompanyDisplayableName: requestData.shipFrom.company || requestData.shipFrom.name,
-            ShipperNumber: requestData.paymentInfo.shipperAccountNumber,
+            ShipperNumber: upsAccountNumber,
             Address: {
               AddressLine: [requestData.shipFrom.address],
               City: requestData.shipFrom.city,
@@ -209,7 +221,7 @@ serve(async (req) => {
             ShipmentCharge: {
               Type: requestData.paymentInfo.paymentType === "prepaid" ? "01" : "02",
               BillShipper: {
-                AccountNumber: requestData.paymentInfo.shipperAccountNumber
+                AccountNumber: upsAccountNumber
               }
             }
           },

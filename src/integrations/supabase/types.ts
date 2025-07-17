@@ -109,6 +109,7 @@ export type Database = {
       }
       carrier_configurations: {
         Row: {
+          account_number: string | null
           api_credentials: Json
           carrier_name: string
           created_at: string
@@ -121,6 +122,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          account_number?: string | null
           api_credentials?: Json
           carrier_name: string
           created_at?: string
@@ -133,6 +135,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          account_number?: string | null
           api_credentials?: Json
           carrier_name?: string
           created_at?: string
