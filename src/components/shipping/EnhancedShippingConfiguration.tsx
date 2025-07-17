@@ -476,7 +476,12 @@ export function EnhancedShippingConfiguration({
   };
 
   return (
-    <div className="space-y-6">
+    <Card>
+      <CardHeader>
+        <CardTitle>Configure Shipment</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-6">
       {/* Ship From Address Selection */}
       <Card>
         <CardHeader>
@@ -897,9 +902,11 @@ export function EnhancedShippingConfiguration({
                 </Select>
               </div>
             )}
-          </CardContent>
+           </CardContent>
         </Card>
       )}
-    </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
