@@ -55,7 +55,7 @@ serve(async (req) => {
     }
 
     // UPS OAuth URL for production
-    const baseUrl = 'https://onlinetools.ups.com/security/v1/oauth/authorize';
+    const baseUrl = 'https://wwwcie.ups.com/security/v1/oauth/authorize';
     const redirectUri = 'https://rtaomiqsnctigleqjojt.supabase.co/functions/v1/ups-oauth-callback';
     
     const authUrl = new URL(baseUrl);

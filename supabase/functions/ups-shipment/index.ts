@@ -266,13 +266,13 @@ serve(async (req) => {
     console.log('📡 Sending UPS request:', JSON.stringify(upsShipmentRequest, null, 2));
 
     // Call UPS Shipment API
-    const upsResponse = await fetch('https://onlinetools.ups.com/api/shipments/v1/ship', {
+    const upsResponse = await fetch('https://wwwcie.ups.com/api/shipments/v2409/ship', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${credentials.access_token}`,
-        'transId': 'string',
-        'transactionSrc': 'testing'
+        'transId': crypto.randomUUID(),
+        'transactionSrc': 'shipment'
       },
       body: JSON.stringify(upsShipmentRequest)
     });

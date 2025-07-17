@@ -44,7 +44,7 @@ export async function ensureValidUPSToken(supabase: any, userId: string): Promis
       refresh_token: credentials.refresh_token
     });
 
-    const refreshResponse = await fetch('https://onlinetools.ups.com/security/v1/oauth/refresh', {
+    const refreshResponse = await fetch('https://wwwcie.ups.com/security/v1/oauth/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',

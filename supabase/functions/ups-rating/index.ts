@@ -178,7 +178,7 @@ serve(async (req) => {
     console.log('Sending UPS rating request:', JSON.stringify(ratingRequest, null, 2));
 
     // Call UPS Rating API with proper error handling
-    const upsResponse = await fetch('https://onlinetools.ups.com/api/rating/v1/rate', {
+    const upsResponse = await fetch('https://wwwcie.ups.com/api/rating/v2409/rate', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
