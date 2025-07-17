@@ -17,6 +17,7 @@ import { CarrierConfigurationDialog } from "./CarrierConfigurationDialog";
 import { EnhancedShippingConfiguration } from "./EnhancedShippingConfiguration";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { logger } from "@/lib/logger";
 interface ShippingDetailsDialogProps {
   isOpen: boolean;
   onClose: () => void;
@@ -380,6 +381,13 @@ export function ShippingDetailsDialog({ isOpen, onClose, order, onUpdateOrder }:
           }
         }
         
+        logger.error('Shipping', 'Label creation failed', { 
+          error: errorMessage,
+          orderId: order.id,
+          serviceCode: selectedRate?.service_code,
+          retryCount 
+        });
+        
         toast({
           title: "Label creation failed",
           description: errorMessage,
@@ -389,6 +397,11 @@ export function ShippingDetailsDialog({ isOpen, onClose, order, onUpdateOrder }:
       }
 
       if (data?.success) {
+        logger.success('Shipping', 'Label created successfully', { 
+          trackingNumber: data.trackingNumber,
+          orderId: order.id,
+          serviceCode: selectedRate?.service_code 
+        });
         toast({
           title: "Label created successfully",
           description: `Tracking number: ${data.trackingNumber}`,

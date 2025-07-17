@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/lib/logger";
 import { 
   Package, 
   MapPin, 
@@ -677,6 +678,11 @@ export function EnhancedShippingConfiguration({
       });
 
       if (error) {
+        logger.error('Shipping', 'Label creation failed', { 
+          error: error.message || error, 
+          orderId: selectedOrder.id,
+          serviceCode: selectedService 
+        });
         console.error('Label creation error:', error);
         toast({
           title: "Label creation failed",
@@ -687,6 +693,11 @@ export function EnhancedShippingConfiguration({
       }
 
       if (data?.success) {
+        logger.success('Shipping', 'Label created successfully', { 
+          trackingNumber: data.trackingNumber,
+          orderId: selectedOrder.id,
+          serviceCode: selectedService 
+        });
         toast({
           title: "Label created successfully",
           description: `Tracking number: ${data.trackingNumber}`,
@@ -707,6 +718,11 @@ export function EnhancedShippingConfiguration({
         }
       }
     } catch (error) {
+      logger.error('Shipping', 'Label creation exception', { 
+        error: error instanceof Error ? error.message : String(error),
+        orderId: selectedOrder.id,
+        serviceCode: selectedService 
+      });
       console.error('Label creation error:', error);
       toast({
         title: "Error",
