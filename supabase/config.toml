@@ -72,3 +72,6 @@ verify_jwt = true
 
 [functions.test-ups-auth]
 verify_jwt = true
+
+[functions.refresh-ups-token]
+verify_jwt = true
