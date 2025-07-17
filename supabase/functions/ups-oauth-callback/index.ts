@@ -120,8 +120,13 @@ serve(async (req) => {
 
     console.log('UPS carrier configuration updated successfully');
 
+    // Redirect back to the original location
+    const redirectUrl = state ? decodeURIComponent(state) : '/shipping';
+    
     return new Response(
-      '<html><body><h1>Success!</h1><p>UPS integration has been authorized successfully. You can now close this window and return to the shipping dashboard.</p></body></html>',
+      `<html><body><script>
+        window.location.href = '${redirectUrl}';
+      </script><h1>Success!</h1><p>UPS integration authorized successfully. Redirecting...</p></body></html>`,
       { 
         status: 200,
         headers: { 'Content-Type': 'text/html' }
