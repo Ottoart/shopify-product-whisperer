@@ -69,7 +69,7 @@ export const CarrierCredentialValidator = () => {
 
   const validateUPSCredentials = async (config: CarrierConfig): Promise<ValidationResult> => {
     try {
-      const { data, error } = await supabase.functions.invoke('test-ups-auth');
+      const { data, error } = await supabase.functions.invoke('validate-ups-credentials');
       
       if (error) {
         return {
@@ -84,26 +84,41 @@ export const CarrierCredentialValidator = () => {
         return {
           carrier: 'UPS',
           status: 'valid',
-          message: `Valid credentials. Account: ${data.accountNumber}. Token expires: ${new Date(data.tokenExpiresAt).toLocaleDateString()}`,
+          message: `Valid credentials confirmed. Account: ${data.accountNumber}. Environment: ${data.environment}`,
           details: data,
           lastChecked: new Date().toISOString()
         };
       } else {
         // Handle specific UPS error codes
-        const errorMessage = data?.response?.errors?.[0]?.message || 
-                           data?.response?.error || 
-                           'Authentication failed';
-        const errorCode = data?.response?.errors?.[0]?.code;
+        let errorMessage = 'Authentication failed';
+        let errorDetails = '';
         
-        let detailedMessage = errorMessage;
-        if (errorCode === '250002') {
-          detailedMessage = 'Invalid Authentication Information - Check your Client ID, Client Secret, and ensure you\'re using the correct environment (Sandbox vs Production)';
+        // Check OAuth errors
+        if (data?.oauth?.success === false) {
+          errorMessage = 'OAuth authentication failed';
+          errorDetails = data?.oauth?.details?.error_description || data?.oauth?.details?.error || '';
         }
+        // Check API errors
+        else if (data?.api?.success === false) {
+          errorMessage = 'API validation failed';
+          const apiErrors = data?.api?.response?.response?.errors;
+          if (apiErrors && apiErrors.length > 0) {
+            const firstError = apiErrors[0];
+            errorDetails = `${firstError.code}: ${firstError.message}`;
+          }
+        }
+        // Generic error
+        else {
+          errorMessage = data?.error || 'UPS validation failed';
+          errorDetails = data?.details || '';
+        }
+        
+        const fullMessage = errorDetails ? `${errorMessage} - ${errorDetails}` : errorMessage;
         
         return {
           carrier: 'UPS',
           status: 'invalid',
-          message: detailedMessage,
+          message: fullMessage,
           details: data,
           lastChecked: new Date().toISOString()
         };
