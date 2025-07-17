@@ -63,12 +63,52 @@ interface PackageOption {
   carrier?: string;
 }
 
+interface Order {
+  id: string;
+  orderNumber: string;
+  customerName: string;
+  customerEmail: string;
+  totalAmount: number;
+  currency: string;
+  shippingAddress: {
+    line1: string;
+    line2?: string;
+    city: string;
+    state: string;
+    zip: string;
+    country: string;
+  };
+  packageDetails?: {
+    weight?: number;
+    length?: number;
+    width?: number;
+    height?: number;
+  };
+  shippingDetails?: {
+    cost?: number;
+    carrier?: string;
+    serviceType?: string;
+    trackingNumber?: string;
+  };
+}
+
 interface EnhancedShippingConfigurationProps {
+  selectedOrder?: Order;
+  onUpdateOrder?: (orderId: string, updates: any) => void;
+  onRateSelected?: (rate: any) => void;
+  selectedRate?: any;
   orderId?: string;
   onShippingSelected?: (data: any) => void;
 }
 
-export function EnhancedShippingConfiguration({ orderId, onShippingSelected }: EnhancedShippingConfigurationProps) {
+export function EnhancedShippingConfiguration({ 
+  selectedOrder, 
+  onUpdateOrder, 
+  onRateSelected, 
+  selectedRate,
+  orderId, 
+  onShippingSelected 
+}: EnhancedShippingConfigurationProps) {
   const [shipFromAddresses, setShipFromAddresses] = useState<ShipFromAddress[]>([]);
   const [packages, setPackages] = useState<PackageOption[]>([]);
   const [selectedShipFrom, setSelectedShipFrom] = useState<string>("");
@@ -116,6 +156,23 @@ export function EnhancedShippingConfiguration({ orderId, onShippingSelected }: E
     fetchShipFromAddresses();
     fetchPackages();
   }, []);
+
+  // Initialize form data from selected order
+  useEffect(() => {
+    if (selectedOrder) {
+      if (selectedOrder.packageDetails?.weight) {
+        setWeight(selectedOrder.packageDetails.weight);
+      }
+      if (selectedOrder.packageDetails?.length) {
+        setCustomDimensions(prev => ({
+          ...prev,
+          length: selectedOrder.packageDetails?.length || prev.length,
+          width: selectedOrder.packageDetails?.width || prev.width,
+          height: selectedOrder.packageDetails?.height || prev.height
+        }));
+      }
+    }
+  }, [selectedOrder]);
 
   const fetchShipFromAddresses = async () => {
     try {
@@ -281,7 +338,9 @@ export function EnhancedShippingConfiguration({ orderId, onShippingSelected }: E
   };
 
   const fetchShippingRates = async () => {
-    if (!orderId || !selectedShipFrom) {
+    const currentOrderId = selectedOrder?.id || orderId;
+    
+    if (!currentOrderId || !selectedShipFrom) {
       toast({
         title: "Missing Information",
         description: "Please select an order and ship from address",
@@ -295,7 +354,7 @@ export function EnhancedShippingConfiguration({ orderId, onShippingSelected }: E
       const shipFromAddress = shipFromAddresses.find(addr => addr.id === selectedShipFrom);
       
       const requestData = {
-        order_id: orderId,
+        order_id: currentOrderId,
         ship_from: {
           name: shipFromAddress?.name,
           company: shipFromAddress?.company,
@@ -306,6 +365,15 @@ export function EnhancedShippingConfiguration({ orderId, onShippingSelected }: E
           zip: shipFromAddress?.zip,
           country: shipFromAddress?.country
         },
+        ship_to: selectedOrder ? {
+          name: selectedOrder.customerName,
+          address: selectedOrder.shippingAddress.line1,
+          address2: selectedOrder.shippingAddress.line2,
+          city: selectedOrder.shippingAddress.city,
+          state: selectedOrder.shippingAddress.state,
+          zip: selectedOrder.shippingAddress.zip,
+          country: selectedOrder.shippingAddress.country
+        } : undefined,
         package: {
           weight: weightUnit === 'kg' ? weight * 2.20462 : weight,
           weight_unit: 'lbs',
@@ -374,30 +442,41 @@ export function EnhancedShippingConfiguration({ orderId, onShippingSelected }: E
   const handleServiceSelection = (serviceCode: string) => {
     setSelectedService(serviceCode);
     const rate = shippingRates.find(r => r.service_code === serviceCode);
-    if (rate && onShippingSelected) {
+    if (rate) {
       const confirmationFee = rate.confirmation_options?.find(opt => opt.type === confirmationType)?.fee || 0;
-      onShippingSelected({
-        requestedService: rate.service_name,
-        serviceCode: serviceCode,
-        carrier: rate.carrier,
-        cost: rate.cost + confirmationFee,
-        confirmationType: confirmationType,
-        estimatedDays: rate.estimated_days
-      });
+      
+      // Call the dialog's rate selected callback
+      if (onRateSelected) {
+        onRateSelected({
+          service_code: serviceCode,
+          service_name: rate.service_name,
+          service_type: rate.service_type,
+          cost: rate.cost + confirmationFee,
+          currency: rate.currency,
+          estimated_days: rate.estimated_days,
+          carrier: rate.carrier,
+          supports_tracking: true,
+          supports_insurance: true,
+          supports_signature: confirmationType === 'signature' || confirmationType === 'adult_signature'
+        });
+      }
+
+      // Also call the legacy callback if it exists
+      if (onShippingSelected) {
+        onShippingSelected({
+          requestedService: rate.service_name,
+          serviceCode: serviceCode,
+          carrier: rate.carrier,
+          cost: rate.cost + confirmationFee,
+          confirmationType: confirmationType,
+          estimatedDays: rate.estimated_days
+        });
+      }
     }
   };
 
   return (
     <div className="space-y-6">
-      {/* Test Card to verify component is rendering */}
-      <Card>
-        <CardHeader>
-          <CardTitle>🚀 Enhanced Shipping Configuration</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p>Component is now loading! This is the new enhanced shipping system.</p>
-        </CardContent>
-      </Card>
       {/* Ship From Address Selection */}
       <Card>
         <CardHeader>
