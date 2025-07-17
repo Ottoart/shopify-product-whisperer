@@ -73,13 +73,13 @@ serve(async (req) => {
     console.log('🔍 Token expires at:', credentials.token_expires_at);
     console.log('🔍 Current time:', new Date().toISOString());
 
-    // Test UPS API with a simple rating request
+    // Test UPS API with a simple rating request using current v2409 format
     const testRequest = {
       RateRequest: {
         Request: {
           RequestOption: "Rate",
           TransactionReference: {
-            CustomerContext: "Auth Test"
+            CustomerContext: "prepfox-auth-test"
           }
         },
         Shipment: {
@@ -112,20 +112,32 @@ serve(async (req) => {
               },
               Weight: "1"
             }
-          }]
+          }],
+          Service: {
+            Code: "03"
+          }
         }
       }
     };
 
     console.log('🔍 Testing with simple rating request...');
     
-    const upsResponse = await fetch('https://onlinetools.ups.com/api/rating/v1/rate', {
+    // Determine environment based on credentials or default to sandbox
+    const environment = credentials.environment || 'sandbox';
+    const baseUrl = environment === 'production' 
+      ? 'https://onlinetools.ups.com' 
+      : 'https://wwwcie.ups.com';
+    
+    console.log('🔍 Using environment:', environment);
+    console.log('🔍 Base URL:', baseUrl);
+    
+    const upsResponse = await fetch(`${baseUrl}/api/rating/v2409/rate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${credentials.access_token}`,
         'transId': crypto.randomUUID(),
-        'transactionSrc': 'test'
+        'transactionSrc': 'prepfox-auth-test'
       },
       body: JSON.stringify(testRequest)
     });

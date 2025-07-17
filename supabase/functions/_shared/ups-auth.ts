@@ -88,21 +88,30 @@ export async function ensureValidUPSToken(supabase: any, userId: string): Promis
       
     console.log(`🔄 Using ${isProduction ? 'PRODUCTION' : 'SANDBOX'} UPS OAuth endpoint: ${tokenUrl}`);
 
+    // Create proper Basic Auth header
+    const authString = btoa(`${credentials.client_id}:${credentials.client_secret}`);
+    console.log('🔄 Authorization header created (first 20 chars):', `Basic ${authString}`.substring(0, 20));
+
     // Use proper UPS OAuth 2.0 endpoint with correct headers
     const refreshResponse = await fetch(tokenUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': `Basic ${btoa(`${credentials.client_id}:${credentials.client_secret}`)}`,
+        'Authorization': `Basic ${authString}`,
         'Accept': 'application/json'
       },
       body: tokenBody
     });
 
+    console.log('🔄 Token response status:', refreshResponse.status);
+    console.log('🔄 Token response headers:', Object.fromEntries(refreshResponse.headers.entries()));
+    
     const refreshData = await refreshResponse.text();
+    console.log('🔄 Token response body:', refreshData);
     
     if (!refreshResponse.ok) {
-      console.error('🔄 Failed to refresh UPS token:', refreshData);
+      console.error('🔄 Failed to refresh UPS token. Status:', refreshResponse.status);
+      console.error('🔄 Response:', refreshData);
       return {
         success: false,
         error: `Failed to refresh UPS token: ${refreshData}`
