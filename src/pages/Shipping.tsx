@@ -15,6 +15,8 @@ import { StoreConfig } from "@/components/StoreConfig";
 import { ShopifyConnectionTest } from "@/components/shipping/ShopifyConnectionTest";
 import { WebhookTester } from "@/components/shipping/WebhookTester";
 import { CarrierCredentialValidator } from "@/components/shipping/CarrierCredentialValidator";
+import { EnhancedTrackingDashboard } from "@/components/shipping/EnhancedTrackingDashboard";
+import { ComprehensiveReturnsManagement } from "@/components/shipping/ComprehensiveReturnsManagement";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 export default function Shipping() {
@@ -104,11 +106,11 @@ export default function Shipping() {
           </TabsContent>
 
           <TabsContent value="tracking">
-            <TrackingPage />
+            <EnhancedTrackingDashboard />
           </TabsContent>
 
           <TabsContent value="returns">
-            <ReturnsManagement />
+            <ComprehensiveReturnsManagement />
           </TabsContent>
 
           <TabsContent value="batch">
