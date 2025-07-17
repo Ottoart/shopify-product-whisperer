@@ -310,7 +310,9 @@ export function ShippingDetailsDialog({ isOpen, onClose, order, onUpdateOrder }:
             city: order.shippingAddress.city,
             state: order.shippingAddress.state,
             zip: order.shippingAddress.zip,
-            country: order.shippingAddress.country
+            country: order.shippingAddress.country === 'Canada' ? 'CA' : 
+                    order.shippingAddress.country === 'United States' ? 'US' : 
+                    order.shippingAddress.country
           },
           package: {
             weight: formData.weight || 1,

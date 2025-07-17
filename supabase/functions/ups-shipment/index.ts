@@ -94,7 +94,7 @@ serve(async (req) => {
     console.log('🔐 Checking UPS authentication...');
     const authResult = await ensureValidUPSToken(supabase, user.id);
     if (!authResult.success) {
-      console.error('UPS authentication failed:', authResult.error);
+      console.error('❌ UPS authentication failed:', authResult.error);
       return new Response(
         JSON.stringify({ error: authResult.error }),
         { 
@@ -104,8 +104,10 @@ serve(async (req) => {
       );
     }
 
+    console.log('✅ UPS authentication successful');
     const credentials = authResult.credentials;
     const upsAccountNumber = credentials.account_number;
+    console.log('🔑 Using UPS account number:', upsAccountNumber);
 
     if (!upsAccountNumber) {
       return new Response(
@@ -147,6 +149,10 @@ serve(async (req) => {
         }
       );
     }
+
+    // Map service code if needed
+    const mappedServiceCode = mapServiceCodeToUPS(requestData.serviceCode);
+    console.log('🔍 Service code mapping:', requestData.serviceCode, '->', mappedServiceCode);
 
     // Prepare UPS Shipment API request
     const shipmentRequest = {
@@ -212,8 +218,8 @@ serve(async (req) => {
             }
           },
           Service: {
-            Code: requestData.serviceCode,
-            Description: getUPSServiceName(requestData.serviceCode)
+            Code: mappedServiceCode,
+            Description: getUPSServiceName(mappedServiceCode)
           },
           Package: [
             {
@@ -286,7 +292,7 @@ serve(async (req) => {
     }
 
     console.log('🔍 Sending UPS shipment request with account:', upsAccountNumber);
-    console.log('🔍 Service code being used:', requestData.serviceCode);
+    console.log('🔍 Service code being used:', mappedServiceCode);
     console.log('🔍 Full shipment request:', JSON.stringify(shipmentRequest, null, 2));
 
     // Call UPS Shipment API
@@ -417,6 +423,26 @@ serve(async (req) => {
     );
   }
 });
+
+function mapServiceCodeToUPS(code: string): string {
+  const serviceCodeMap: { [key: string]: string } = {
+    'UPS_NEXT_DAY_AIR': '01',
+    'UPS_2ND_DAY_AIR': '02', 
+    'UPS_GROUND': '03',
+    'UPS_3_DAY_SELECT': '12',
+    'UPS_NEXT_DAY_AIR_SAVER': '13',
+    'UPS_NEXT_DAY_AIR_EARLY': '14',
+    'UPS_WORLDWIDE_EXPRESS': '07',
+    'UPS_WORLDWIDE_EXPEDITED': '08',
+    'UPS_2ND_DAY_AIR_AM': '59',
+    'UPS_SAVER': '65',
+    // Handle numeric codes as-is
+    '01': '01', '02': '02', '03': '03', '07': '07', '08': '08',
+    '11': '11', '12': '12', '13': '13', '14': '14', '54': '54',
+    '59': '59', '65': '65'
+  };
+  return serviceCodeMap[code] || code;
+}
 
 function getUPSServiceName(code: string): string {
   const serviceNames: { [key: string]: string } = {
