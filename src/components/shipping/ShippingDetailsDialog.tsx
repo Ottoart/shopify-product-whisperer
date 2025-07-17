@@ -216,8 +216,8 @@ export function ShippingDetailsDialog({ isOpen, onClose, order, onUpdateOrder }:
         return;
       }
 
-      // For now, use a placeholder account number until the actual one is configured
-      const upsAccountNumber = "YOUR_UPS_ACCOUNT_NUMBER"; // This needs to be replaced with actual UPS account number
+      // UPS account number for label creation
+      const upsAccountNumber = "A906G5";
 
       const { data, error } = await supabase.functions.invoke('ups-shipment', {
         body: {
