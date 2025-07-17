@@ -118,6 +118,87 @@ export const CarrierCredentialValidator = () => {
     }
   };
 
+  const testOAuthFlow = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('test-ups-oauth-flow');
+      
+      if (error) {
+        toast({
+          title: "OAuth Test Failed",
+          description: `Error: ${error.message}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('OAuth Flow Test Results:', data);
+      
+      // Check which environment worked
+      const workingEnvironment = data.results?.find((result: any) => result.success);
+      const failedEnvironments = data.results?.filter((result: any) => !result.success);
+      
+      if (workingEnvironment) {
+        toast({
+          title: "OAuth Test Results",
+          description: `✅ ${workingEnvironment.environment} environment works! Failed: ${failedEnvironments.map((e: any) => e.environment).join(', ')}`,
+        });
+        
+        // Auto-update the carrier configuration with the working environment
+        await updateCarrierEnvironment(workingEnvironment.environment);
+      } else {
+        toast({
+          title: "OAuth Test Failed",
+          description: "Neither sandbox nor production environments worked. Check your credentials.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('OAuth test error:', error);
+      toast({
+        title: "Test Failed",
+        description: `OAuth test failed: ${(error as Error).message}`,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateCarrierEnvironment = async (environment: string) => {
+    try {
+      const upsCarrier = carriers.find(c => c.carrier_name === 'UPS');
+      if (!upsCarrier) return;
+
+      const updatedCredentials = {
+        ...upsCarrier.api_credentials,
+        environment: environment
+      };
+
+      const { error } = await supabase
+        .from('carrier_configurations')
+        .update({ 
+          api_credentials: updatedCredentials,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', upsCarrier.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Environment Updated",
+        description: `UPS carrier configuration updated to use ${environment} environment`,
+      });
+
+      // Refresh carriers list
+      await fetchCarriers();
+    } catch (error) {
+      console.error('Failed to update environment:', error);
+      toast({
+        title: "Update Failed",
+        description: "Failed to update carrier environment setting",
+        variant: "destructive",
+      });
+    }
+  };
+
   const validateFedExCredentials = async (config: CarrierConfig): Promise<ValidationResult> => {
     // Placeholder for FedEx validation
     return {
@@ -274,6 +355,15 @@ export const CarrierCredentialValidator = () => {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button
+            onClick={testOAuthFlow}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <TestTube className="h-4 w-4" />
+            Test OAuth Flow
+          </Button>
           <Button onClick={fetchCarriers} disabled={loading} variant="outline">
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
