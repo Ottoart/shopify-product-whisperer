@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Truck, Package, RotateCcw, Settings, Zap, Building2, Store, Plus, Webhook, TestTube } from "lucide-react";
+import { Truck, Package, RotateCcw, Settings, Zap, Building2, Store, Plus, Webhook, TestTube, Brain } from "lucide-react";
 import { OrderManagement } from "@/components/shipping/OrderManagement";
 import { CarrierRateComparison } from "@/components/shipping/CarrierRateComparison";
 import { ShippingRules } from "@/components/shipping/ShippingRules";
@@ -17,6 +17,7 @@ import { WebhookTester } from "@/components/shipping/WebhookTester";
 import { CarrierCredentialValidator } from "@/components/shipping/CarrierCredentialValidator";
 import { EnhancedTrackingDashboard } from "@/components/shipping/EnhancedTrackingDashboard";
 import { ComprehensiveReturnsManagement } from "@/components/shipping/ComprehensiveReturnsManagement";
+import { AIShippingRecommendations } from "@/components/shipping/AIShippingRecommendations";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 export default function Shipping() {
@@ -37,7 +38,7 @@ export default function Shipping() {
 
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-9 h-auto gap-1 p-1">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-11 h-auto gap-1 p-1">
             <TabsTrigger value="orders" className="flex items-center gap-2">
               <Package className="h-4 w-4" />
               Orders
@@ -77,6 +78,10 @@ export default function Shipping() {
             <TabsTrigger value="validation" className="flex items-center gap-2">
               <TestTube className="h-4 w-4" />
               Validation
+            </TabsTrigger>
+            <TabsTrigger value="ai" className="flex items-center gap-2">
+              <Brain className="h-4 w-4" />
+              AI Intelligence
             </TabsTrigger>
           </TabsList>
 
@@ -149,6 +154,10 @@ export default function Shipping() {
 
           <TabsContent value="validation">
             <CarrierCredentialValidator />
+          </TabsContent>
+
+          <TabsContent value="ai">
+            <AIShippingRecommendations />
           </TabsContent>
         </Tabs>
       </div>
