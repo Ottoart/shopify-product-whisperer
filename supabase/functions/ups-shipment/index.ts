@@ -299,7 +299,9 @@ serve(async (req) => {
       }
     }
 
-    console.log('Sending UPS shipment request:', JSON.stringify(shipmentRequest, null, 2));
+    console.log('🔍 Sending UPS shipment request with account:', upsAccountNumber);
+    console.log('🔍 Service code being used:', requestData.serviceCode);
+    console.log('🔍 Full shipment request:', JSON.stringify(shipmentRequest, null, 2));
 
     // Call UPS Shipment API
     const upsResponse = await fetch('https://onlinetools.ups.com/api/shipments/v1/ship', {
@@ -314,8 +316,9 @@ serve(async (req) => {
     });
 
     const responseText = await upsResponse.text();
-    console.log('UPS Shipment API response status:', upsResponse.status);
-    console.log('UPS Shipment API response:', responseText);
+    console.log('🔍 UPS Shipment API response status:', upsResponse.status);
+    console.log('🔍 UPS Shipment API response headers:', Object.fromEntries(upsResponse.headers.entries()));
+    console.log('🔍 UPS Shipment API response body:', responseText);
 
     if (!upsResponse.ok) {
       return new Response(
