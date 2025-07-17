@@ -57,10 +57,27 @@ serve(async (req) => {
   }
 
   try {
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!supabaseUrl || !supabaseKey) {
+      return new Response(
+        JSON.stringify({ error: 'Missing Supabase configuration' }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Get authenticated user
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
-        JSON.stringify({ error: 'Authorization required' }),
+        JSON.stringify({ error: 'No authorization header' }),
         { 
           status: 401, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -68,17 +85,7 @@ serve(async (req) => {
       );
     }
 
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: { Authorization: authHeader }
-      }
-    });
-
-    // Get user from auth header
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
     if (authError || !user) {
       return new Response(
         JSON.stringify({ error: 'Invalid authentication' }),
@@ -140,6 +147,7 @@ serve(async (req) => {
     });
 
     if (missingFields.length > 0) {
+      console.error('❌ Missing required fields:', missingFields);
       return new Response(
         JSON.stringify({ 
           error: 'Missing required fields', 
@@ -156,21 +164,12 @@ serve(async (req) => {
     const mappedServiceCode = mapServiceCodeToUPS(requestData.serviceCode);
     console.log('🔍 Service code mapping:', requestData.serviceCode, '->', mappedServiceCode);
 
-    // Prepare UPS Shipment API request
-    const shipmentRequest = {
+    // Construct UPS Shipment API request according to UPS API specification
+    const upsShipmentRequest = {
       ShipmentRequest: {
-        Request: {
-          RequestOption: "nonvalidate",
-          TransactionReference: {
-            CustomerContext: "Shipment Creation"
-          }
-        },
         Shipment: {
-          Description: `Order ${requestData.orderId}`,
           Shipper: {
             Name: requestData.shipFrom.name,
-            AttentionName: requestData.shipFrom.name,
-            CompanyDisplayableName: requestData.shipFrom.company || requestData.shipFrom.name,
             ShipperNumber: upsAccountNumber,
             Address: {
               AddressLine: requestData.shipFrom.address2 
@@ -180,15 +179,10 @@ serve(async (req) => {
               StateProvinceCode: requestData.shipFrom.state,
               PostalCode: requestData.shipFrom.zip,
               CountryCode: requestData.shipFrom.country
-            },
-            Phone: requestData.shipFrom.phone ? {
-              Number: requestData.shipFrom.phone
-            } : undefined
+            }
           },
           ShipTo: {
             Name: requestData.shipTo.name,
-            AttentionName: requestData.shipTo.name,
-            CompanyDisplayableName: requestData.shipTo.company || requestData.shipTo.name,
             Address: {
               AddressLine: requestData.shipTo.address2 
                 ? [requestData.shipTo.address, requestData.shipTo.address2]
@@ -196,112 +190,49 @@ serve(async (req) => {
               City: requestData.shipTo.city,
               StateProvinceCode: requestData.shipTo.state,
               PostalCode: requestData.shipTo.zip,
-              CountryCode: requestData.shipTo.country,
-              ResidentialAddressIndicator: "1"
-            },
-            Phone: requestData.shipTo.phone ? {
-              Number: requestData.shipTo.phone
-            } : undefined
-          },
-          ShipFrom: {
-            Name: requestData.shipFrom.name,
-            AttentionName: requestData.shipFrom.name,
-            CompanyDisplayableName: requestData.shipFrom.company || requestData.shipFrom.name,
-            Address: {
-              AddressLine: requestData.shipFrom.address2 
-                ? [requestData.shipFrom.address, requestData.shipFrom.address2]
-                : [requestData.shipFrom.address],
-              City: requestData.shipFrom.city,
-              StateProvinceCode: requestData.shipFrom.state,
-              PostalCode: requestData.shipFrom.zip,
-              CountryCode: requestData.shipFrom.country
+              CountryCode: requestData.shipTo.country
             }
+          },
+          Package: [{
+            PackagingType: {
+              Code: requestData.package.packageType || "02"
+            },
+            Dimensions: {
+              UnitOfMeasurement: {
+                Code: "IN"
+              },
+              Length: requestData.package.length.toString(),
+              Width: requestData.package.width.toString(),
+              Height: requestData.package.height.toString()
+            },
+            PackageWeight: {
+              UnitOfMeasurement: {
+                Code: "LBS"
+              },
+              Weight: requestData.package.weight.toString()
+            }
+          }],
+          Service: {
+            Code: mappedServiceCode
           },
           PaymentInformation: {
             ShipmentCharge: {
-              Type: requestData.paymentInfo.paymentType === "prepaid" ? "01" : "02",
+              Type: "01",
               BillShipper: {
                 AccountNumber: upsAccountNumber
               }
             }
-          },
-          Service: {
-            Code: mappedServiceCode,
-            Description: getUPSServiceName(mappedServiceCode)
-          },
-          Package: [
-            {
-              Description: "Package",
-              Packaging: {
-                Code: requestData.package.packageType,
-                Description: getUPSPackageTypeName(requestData.package.packageType)
-              },
-              Dimensions: {
-                UnitOfMeasurement: {
-                  Code: "IN"
-                },
-                Length: requestData.package.length.toString(),
-                Width: requestData.package.width.toString(),
-                Height: requestData.package.height.toString()
-              },
-              PackageWeight: {
-                UnitOfMeasurement: {
-                  Code: "LBS"
-                },
-                Weight: requestData.package.weight.toString()
-              },
-              ReferenceNumber: [
-                {
-                  Code: "02",
-                  Value: requestData.orderId
-                }
-              ]
-            }
-          ]
+          }
         },
         LabelSpecification: {
           LabelImageFormat: {
             Code: "GIF"
-          },
-          HTTPUserAgent: "Mozilla/4.5"
+          }
         }
       }
     };
 
-    // Add additional services if specified
-    if (requestData.additionalServices) {
-      const services = [];
-      
-      if (requestData.additionalServices.signatureRequired) {
-        services.push({
-          Code: "01", // Delivery Confirmation Signature Required
-          Description: "Delivery Confirmation Signature Required"
-        });
-      }
-      
-      if (requestData.additionalServices.insuranceValue && requestData.additionalServices.insuranceValue > 0) {
-        services.push({
-          Code: "09", // Declared Value
-          Description: "Declared Value",
-          MonetaryValue: requestData.additionalServices.insuranceValue.toString()
-        });
-      }
-      
-      if (requestData.additionalServices.saturdayDelivery) {
-        services.push({
-          Code: "16", // Saturday Delivery
-          Description: "Saturday Delivery"
-        });
-      }
-      
-      if (services.length > 0) {
-        shipmentRequest.ShipmentRequest.Shipment.ShipmentServiceOptions = services;
-      }
-    }
-
-    console.log('🔍 Sending UPS shipment request with account:', upsAccountNumber);
-    console.log('🔍 Service code being used:', mappedServiceCode);
-    console.log('🔍 Full shipment request:', JSON.stringify(shipmentRequest, null, 2));
+    console.log('📡 Sending UPS request:', JSON.stringify(upsShipmentRequest, null, 2));
 
     // Call UPS Shipment API
     const upsResponse = await fetch('https://onlinetools.ups.com/api/shipments/v1/ship', {
@@ -309,26 +240,26 @@ serve(async (req) => {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${credentials.access_token}`,
-        'transId': crypto.randomUUID(),
-        'transactionSrc': 'shipment'
+        'transId': 'string',
+        'transactionSrc': 'testing'
       },
-      body: JSON.stringify(shipmentRequest)
+      body: JSON.stringify(upsShipmentRequest)
     });
 
     const responseText = await upsResponse.text();
-    console.log('🔍 UPS Shipment API response status:', upsResponse.status);
-    console.log('🔍 UPS Shipment API response headers:', Object.fromEntries(upsResponse.headers.entries()));
-    console.log('🔍 UPS Shipment API response body:', responseText);
+    console.log('📋 UPS Raw Response:', responseText);
+    console.log('📊 UPS Response Status:', upsResponse.status);
 
     if (!upsResponse.ok) {
+      console.error('❌ UPS API Error:', upsResponse.status, responseText);
       return new Response(
         JSON.stringify({ 
-          error: 'UPS Shipment API error', 
-          details: responseText,
-          status: upsResponse.status 
+          error: 'UPS API Error',
+          status: upsResponse.status,
+          details: responseText
         }),
         { 
-          status: upsResponse.status, 
+          status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
@@ -337,10 +268,10 @@ serve(async (req) => {
     let upsData;
     try {
       upsData = JSON.parse(responseText);
-    } catch (e) {
-      console.error('Failed to parse UPS response:', e);
+    } catch (parseError) {
+      console.error('❌ Failed to parse UPS response:', parseError);
       return new Response(
-        JSON.stringify({ error: 'Invalid response from UPS API' }),
+        JSON.stringify({ error: 'Invalid UPS response format' }),
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -348,11 +279,14 @@ serve(async (req) => {
       );
     }
 
-    // Extract shipment details from response
-    const shipmentResponse = upsData.ShipmentResponse;
-    if (!shipmentResponse) {
+    console.log('✅ UPS Response parsed:', JSON.stringify(upsData, null, 2));
+
+    // Extract shipping label data
+    const shipmentResults = upsData.ShipmentResponse?.ShipmentResults;
+    if (!shipmentResults) {
+      console.error('❌ No shipment results in UPS response');
       return new Response(
-        JSON.stringify({ error: 'Invalid shipment response format' }),
+        JSON.stringify({ error: 'Invalid UPS response: no shipment results' }),
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -360,70 +294,91 @@ serve(async (req) => {
       );
     }
 
-    const trackingNumber = shipmentResponse.ShipmentResults?.PackageResults?.[0]?.TrackingNumber;
-    const labelImageData = shipmentResponse.ShipmentResults?.PackageResults?.[0]?.ShippingLabel?.GraphicImage;
-    const shipmentCost = shipmentResponse.ShipmentResults?.ShipmentCharges?.TotalCharges?.MonetaryValue;
-    const shipmentIdentificationNumber = shipmentResponse.ShipmentResults?.ShipmentIdentificationNumber;
+    const trackingNumber = shipmentResults.ShipmentIdentificationNumber;
+    const labelImage = shipmentResults.PackageResults?.[0]?.ShippingLabel?.GraphicImage;
+    const totalCost = shipmentResults.ShipmentCharges?.TotalCharges?.MonetaryValue;
 
-    // Store the label and shipment info in database
-    const { error: insertError } = await supabase
+    if (!trackingNumber || !labelImage) {
+      console.error('❌ Missing tracking number or label image');
+      return new Response(
+        JSON.stringify({ error: 'Incomplete UPS response: missing tracking or label' }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Store shipping label in database
+    const { data: labelData, error: labelError } = await supabase
       .from('shipping_labels')
       .insert({
         user_id: user.id,
         order_id: requestData.orderId,
-        tracking_number: trackingNumber,
         carrier: 'UPS',
-        service_code: requestData.serviceCode,
-        service_name: getUPSServiceName(requestData.serviceCode),
-        shipment_identification_number: shipmentIdentificationNumber,
-        label_image_data: labelImageData,
-        shipping_cost: parseFloat(shipmentCost || '0'),
-        currency: 'USD',
-        created_at: new Date().toISOString()
-      });
+        service_code: mappedServiceCode,
+        service_name: getUPSServiceName(mappedServiceCode),
+        tracking_number: trackingNumber,
+        label_image_data: labelImage,
+        shipping_cost: totalCost ? parseFloat(totalCost) : null,
+        label_format: 'GIF'
+      })
+      .select()
+      .single();
 
-    if (insertError) {
-      console.error('Failed to store shipping label:', insertError);
+    if (labelError) {
+      console.error('❌ Error storing label:', labelError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to store label in database' }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
 
     // Update order with tracking information
-    const { error: updateError } = await supabase
+    const { error: orderError } = await supabase
       .from('orders')
       .update({
         tracking_number: trackingNumber,
         carrier: 'UPS',
-        service_type: getUPSServiceName(requestData.serviceCode),
-        shipping_cost: parseFloat(shipmentCost || '0'),
+        service_type: getUPSServiceName(mappedServiceCode),
+        shipping_cost: totalCost ? parseFloat(totalCost) : null,
         status: 'shipped',
         shipped_date: new Date().toISOString()
       })
       .eq('id', requestData.orderId)
       .eq('user_id', user.id);
 
-    if (updateError) {
-      console.error('Failed to update order:', updateError);
+    if (orderError) {
+      console.error('⚠️ Error updating order:', orderError);
+      // Don't fail the request since label was created successfully
     }
+
+    console.log('✅ Label created successfully:', trackingNumber);
 
     return new Response(
       JSON.stringify({
         success: true,
         trackingNumber,
-        shipmentIdentificationNumber,
-        labelImageData,
-        shippingCost: parseFloat(shipmentCost || '0'),
-        currency: 'USD',
-        estimatedDeliveryDate: calculateEstimatedDelivery(requestData.serviceCode)
+        labelUrl: `data:image/gif;base64,${labelImage}`,
+        cost: totalCost ? parseFloat(totalCost) : null,
+        estimatedDelivery: calculateEstimatedDelivery(mappedServiceCode)
       }),
       { 
-        status: 200,
+        status: 200, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     );
 
   } catch (error) {
-    console.error('UPS shipment error:', error);
+    console.error('💥 Unexpected error:', error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error', details: error.message }),
+      JSON.stringify({ 
+        error: 'Internal server error',
+        details: error.message
+      }),
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -432,79 +387,69 @@ serve(async (req) => {
   }
 });
 
+// Helper function to map service codes to UPS codes
 function mapServiceCodeToUPS(code: string): string {
-  const serviceCodeMap: { [key: string]: string } = {
-    'UPS_NEXT_DAY_AIR': '01',
-    'UPS_2ND_DAY_AIR': '02', 
-    'UPS_GROUND': '03',
-    'UPS_3_DAY_SELECT': '12',
-    'UPS_NEXT_DAY_AIR_SAVER': '13',
-    'UPS_NEXT_DAY_AIR_EARLY': '14',
-    'UPS_WORLDWIDE_EXPRESS': '07',
-    'UPS_WORLDWIDE_EXPEDITED': '08',
-    'UPS_2ND_DAY_AIR_AM': '59',
-    'UPS_SAVER': '65',
-    // Handle numeric codes as-is
-    '01': '01', '02': '02', '03': '03', '07': '07', '08': '08',
-    '11': '11', '12': '12', '13': '13', '14': '14', '54': '54',
-    '59': '59', '65': '65'
-  };
-  return serviceCodeMap[code] || code;
-}
-
-function getUPSServiceName(code: string): string {
-  const serviceNames: { [key: string]: string } = {
-    '01': 'UPS Next Day Air',
-    '02': 'UPS 2nd Day Air',
-    '03': 'UPS Ground',
-    '07': 'UPS Worldwide Express',
-    '08': 'UPS Worldwide Expedited',
-    '11': 'UPS Standard',
-    '12': 'UPS 3 Day Select',
-    '13': 'UPS Next Day Air Saver',
-    '14': 'UPS Next Day Air Early',
-    '54': 'UPS Worldwide Express Plus',
-    '59': 'UPS 2nd Day Air A.M.',
-    '65': 'UPS Saver'
-  };
-  return serviceNames[code] || `UPS Service ${code}`;
-}
-
-function getUPSPackageTypeName(code: string): string {
-  const packageTypes: { [key: string]: string } = {
-    '01': 'UPS Letter',
-    '02': 'Customer Supplied Package',
-    '03': 'Tube',
-    '04': 'PAK',
-    '21': 'UPS Express Box',
-    '24': 'UPS 25KG Box',
-    '25': 'UPS 10KG Box',
-    '30': 'Pallet',
-    '2a': 'Small Express Box',
-    '2b': 'Medium Express Box',
-    '2c': 'Large Express Box'
-  };
-  return packageTypes[code] || 'Customer Supplied Package';
-}
-
-function calculateEstimatedDelivery(serviceCode: string): string {
-  const estimatedDays: { [key: string]: number } = {
-    '01': 1, // Next Day Air
-    '02': 2, // 2nd Day Air
-    '03': 5, // Ground
-    '07': 2, // Worldwide Express
-    '08': 3, // Worldwide Expedited
-    '11': 5, // Standard
-    '12': 3, // 3 Day Select
-    '13': 1, // Next Day Air Saver
-    '14': 1, // Next Day Air Early
-    '54': 1, // Worldwide Express Plus
-    '59': 2, // 2nd Day Air A.M.
-    '65': 5  // Saver
+  const mapping: { [key: string]: string } = {
+    "UPS_GROUND": "03",
+    "UPS_3_DAY_SELECT": "12",
+    "UPS_2ND_DAY_AIR": "02",
+    "UPS_NEXT_DAY_AIR": "01",
+    "01": "01", // UPS Next Day Air
+    "02": "02", // UPS 2nd Day Air
+    "03": "03", // UPS Ground
+    "12": "12"  // UPS 3 Day Select
   };
   
-  const days = estimatedDays[serviceCode] || 5;
-  const deliveryDate = new Date();
-  deliveryDate.setDate(deliveryDate.getDate() + days);
+  return mapping[code] || code;
+}
+
+// Helper function to get UPS service name
+function getUPSServiceName(code: string): string {
+  const names: { [key: string]: string } = {
+    "01": "UPS Next Day Air",
+    "02": "UPS 2nd Day Air",
+    "03": "UPS Ground",
+    "12": "UPS 3 Day Select"
+  };
+  
+  return names[code] || `UPS Service ${code}`;
+}
+
+// Helper function to get UPS package type name
+function getUPSPackageTypeName(code: string): string {
+  const types: { [key: string]: string } = {
+    "01": "UPS Letter",
+    "02": "Customer Supplied Package",
+    "03": "Tube",
+    "04": "PAK",
+    "21": "UPS Express Box",
+    "24": "UPS 25KG Box",
+    "25": "UPS 10KG Box"
+  };
+  
+  return types[code] || "Package";
+}
+
+// Helper function to calculate estimated delivery
+function calculateEstimatedDelivery(serviceCode: string): string {
+  const today = new Date();
+  let deliveryDate = new Date(today);
+  
+  switch (serviceCode) {
+    case "01": // Next Day Air
+      deliveryDate.setDate(today.getDate() + 1);
+      break;
+    case "02": // 2nd Day Air
+      deliveryDate.setDate(today.getDate() + 2);
+      break;
+    case "12": // 3 Day Select
+      deliveryDate.setDate(today.getDate() + 3);
+      break;
+    case "03": // Ground
+    default:
+      deliveryDate.setDate(today.getDate() + 5);
+      break;
+  }
+  
   return deliveryDate.toISOString().split('T')[0];
 }
