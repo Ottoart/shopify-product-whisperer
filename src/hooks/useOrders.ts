@@ -32,6 +32,8 @@ export interface Order {
     cost?: number;
     carrier?: string;
     serviceType?: string;
+    requestedService?: string;
+    confirmationType?: string;
     trackingNumber?: string;
     labelUrl?: string;
   };
@@ -160,6 +162,8 @@ export const useOrders = () => {
           cost: order.shipping_cost,
           carrier: order.carrier,
           serviceType: order.service_type,
+          requestedService: order.requested_service,
+          confirmationType: order.confirmation_type,
           trackingNumber: order.tracking_number,
           labelUrl: order.label_url
         },
@@ -243,6 +247,8 @@ export const useOrders = () => {
           shipping_cost: shippingDetails.cost,
           carrier: shippingDetails.carrier,
           service_type: shippingDetails.serviceType,
+          requested_service: shippingDetails.requestedService,
+          confirmation_type: shippingDetails.confirmationType,
           tracking_number: shippingDetails.trackingNumber,
           label_url: shippingDetails.labelUrl,
           updated_at: new Date().toISOString()
