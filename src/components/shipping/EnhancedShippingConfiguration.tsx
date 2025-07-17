@@ -159,6 +159,13 @@ export function EnhancedShippingConfiguration({
     fetchAvailableServices();
   }, []);
 
+  // Auto-fetch rates when shipment details change
+  useEffect(() => {
+    if (selectedOrder && selectedShipFrom && customDimensions.length > 0 && weight > 0) {
+      fetchShippingRates();
+    }
+  }, [selectedOrder?.id, selectedShipFrom, weight, customDimensions.length, customDimensions.width, customDimensions.height, selectedOrder?.shippingAddress]);
+
   // Initialize form data from selected order
   useEffect(() => {
     if (selectedOrder) {
@@ -489,6 +496,109 @@ export function EnhancedShippingConfiguration({
           estimatedDays: rate.estimated_days
         });
       }
+    }
+  };
+
+  const createShippingLabel = async () => {
+    if (!selectedService || !selectedOrder) {
+      toast({
+        title: "Missing Information",
+        description: "Please select a service and ensure order is loaded",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const rate = shippingRates.find(r => r.service_code === selectedService);
+    if (!rate) {
+      toast({
+        title: "Service Not Found",
+        description: "Selected service rate not available",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const shipFromAddress = shipFromAddresses.find(addr => addr.id === selectedShipFrom);
+      const confirmationFee = rate.confirmation_options?.find(opt => opt.type === confirmationType)?.fee || 0;
+
+      const { data, error } = await supabase.functions.invoke('ups-shipment', {
+        body: {
+          orderId: selectedOrder.id,
+          serviceCode: selectedService,
+          shipFrom: {
+            name: shipFromAddress?.name,
+            company: shipFromAddress?.company,
+            address: shipFromAddress?.address_line1,
+            city: shipFromAddress?.city,
+            state: shipFromAddress?.state,
+            zip: shipFromAddress?.zip,
+            country: shipFromAddress?.country
+          },
+          shipTo: {
+            name: selectedOrder.customerName,
+            address: selectedOrder.shippingAddress.line1,
+            city: selectedOrder.shippingAddress.city,
+            state: selectedOrder.shippingAddress.state,
+            zip: selectedOrder.shippingAddress.zip,
+            country: selectedOrder.shippingAddress.country
+          },
+          package: {
+            weight: weightUnit === 'kg' ? weight * 2.20462 : weight,
+            length: customDimensions.unit === 'cm' ? customDimensions.length / 2.54 : customDimensions.length,
+            width: customDimensions.unit === 'cm' ? customDimensions.width / 2.54 : customDimensions.width,
+            height: customDimensions.unit === 'cm' ? customDimensions.height / 2.54 : customDimensions.height,
+            packageType: "02"
+          },
+          paymentInfo: {
+            shipperAccountNumber: "A906G5",
+            paymentType: "prepaid"
+          },
+          additionalServices: {
+            signatureRequired: confirmationType === 'signature' || confirmationType === 'adult_signature',
+            insuranceValue: selectedOrder.totalAmount
+          }
+        }
+      });
+
+      if (error) {
+        console.error('Label creation error:', error);
+        toast({
+          title: "Label creation failed",
+          description: error.message || "Failed to create shipping label",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (data?.success) {
+        toast({
+          title: "Label created successfully",
+          description: `Tracking number: ${data.trackingNumber}`,
+        });
+
+        // Update order with tracking info
+        if (onUpdateOrder) {
+          onUpdateOrder(selectedOrder.id, {
+            shippingDetails: {
+              ...selectedOrder.shippingDetails,
+              carrier: rate.carrier,
+              serviceType: rate.service_name,
+              trackingNumber: data.trackingNumber,
+              cost: rate.cost + confirmationFee
+            },
+            status: 'shipped'
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Label creation error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create shipping label",
+        variant: "destructive"
+      });
     }
   };
 
@@ -841,12 +951,27 @@ export function EnhancedShippingConfiguration({
         </CardContent>
       </Card>
 
-      {/* Get Rates Button */}
-      <Button onClick={fetchShippingRates} disabled={isLoadingRates} className="w-full" size="lg">
+      {/* Smart Rate/Label Button */}
+      <Button 
+        onClick={selectedService && shippingRates.length > 0 ? createShippingLabel : fetchShippingRates} 
+        disabled={isLoadingRates} 
+        className="w-full" 
+        size="lg"
+        variant={selectedService && shippingRates.length > 0 ? "default" : "outline"}
+      >
         {isLoadingRates ? (
           <>
             <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
             Finding Rates...
+          </>
+        ) : selectedService && shippingRates.length > 0 ? (
+          <>
+            <Package className="h-4 w-4 mr-2" />
+            Create Label - ${(() => {
+              const rate = shippingRates.find(r => r.service_code === selectedService);
+              const confirmationFee = rate?.confirmation_options?.find(opt => opt.type === confirmationType)?.fee || 0;
+              return (rate ? rate.cost + confirmationFee : 0).toFixed(2);
+            })()}
           </>
         ) : (
           <>
