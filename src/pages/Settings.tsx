@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Settings as SettingsIcon, Store, Key, Database, Bell, Printer } from 'lucide-react';
+import { Settings as SettingsIcon, Store, Key, Database, Bell, Printer, FileText } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StoreConfig } from '@/components/StoreConfig';
 import { PrintingSettings } from '@/components/shipping/PrintingSettings';
+import Logs from '@/pages/Logs';
 
 const Settings = () => {
 
@@ -16,12 +17,13 @@ const Settings = () => {
         </div>
 
         <Tabs defaultValue="store" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="store">Store</TabsTrigger>
             <TabsTrigger value="printing">Printing</TabsTrigger>
             <TabsTrigger value="api">API Keys</TabsTrigger>
             <TabsTrigger value="sync">Sync</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
+            <TabsTrigger value="logs">Logs</TabsTrigger>
           </TabsList>
 
           <TabsContent value="store" className="space-y-6">
@@ -172,6 +174,23 @@ const Settings = () => {
                     <span className="text-sm text-muted-foreground">Coming Soon</span>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="logs" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  System Logs
+                </CardTitle>
+                <CardDescription>
+                  View application logs, activities, and error reports
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Logs />
               </CardContent>
             </Card>
           </TabsContent>
