@@ -205,6 +205,20 @@ export function ShippingDetailsDialog({ isOpen, onClose, order, onUpdateOrder }:
     }
 
     try {
+      // Get UPS carrier configuration
+      const upsCarrier = carriers.find(c => c.carrier_name === 'UPS');
+      if (!upsCarrier || !upsCarrier.is_active) {
+        toast({
+          title: "Configuration Error",
+          description: "UPS is not configured or not active. Please contact support.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // For now, use a placeholder account number until the actual one is configured
+      const upsAccountNumber = "YOUR_UPS_ACCOUNT_NUMBER"; // This needs to be replaced with actual UPS account number
+
       const { data, error } = await supabase.functions.invoke('ups-shipment', {
         body: {
           orderId: order.id,
@@ -233,7 +247,7 @@ export function ShippingDetailsDialog({ isOpen, onClose, order, onUpdateOrder }:
             packageType: "02" // Customer Supplied Package
           },
           paymentInfo: {
-            shipperAccountNumber: "YOUR_UPS_ACCOUNT", // This should come from carrier config
+            shipperAccountNumber: upsAccountNumber,
             paymentType: "prepaid"
           },
           additionalServices: {

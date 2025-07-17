@@ -165,8 +165,7 @@ serve(async (req) => {
             Name: requestData.shipFrom.name,
             AttentionName: requestData.shipFrom.name,
             CompanyDisplayableName: requestData.shipFrom.company || requestData.shipFrom.name,
-            TaxIdentificationNumber: credentials.account_number,
-            ShipperNumber: credentials.account_number,
+            ShipperNumber: requestData.paymentInfo.shipperAccountNumber,
             Address: {
               AddressLine: [requestData.shipFrom.address],
               City: requestData.shipFrom.city,
