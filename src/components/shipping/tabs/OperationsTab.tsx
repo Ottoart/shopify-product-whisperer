@@ -34,6 +34,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format, subDays, parseISO, differenceInDays } from 'date-fns';
 import { AIRecommendations } from "../components/AIRecommendations";
+import { UpsApiDocs } from "../UpsApiDocs";
 
 interface OperationsTabProps {
   storeFilter: string | null;
@@ -463,6 +464,9 @@ export function OperationsTab({ storeFilter, dateRange, dateRangeLabel }: Operat
       </Card>
 
       <AIRecommendations orders={orders} carriers={carrierPerformance.map(c => c.carrier)} />
+
+      {/* UPS API Documentation Integration */}
+      <UpsApiDocs />
     </div>
   );
 }
