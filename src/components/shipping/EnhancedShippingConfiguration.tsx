@@ -189,11 +189,23 @@ export function EnhancedShippingConfiguration({
         .from('store_shipping_configs')
         .select('*')
         .eq('is_default', true)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 
       if (data) {
+        // Fix country code if Montreal is set to US
+        let correctedCountry = data.from_country;
+        if (data.from_city?.toLowerCase().includes('montreal') && data.from_country === 'US') {
+          correctedCountry = 'CA';
+          
+          // Update in database
+          await supabase
+            .from('store_shipping_configs')
+            .update({ from_country: 'CA' })
+            .eq('id', data.id);
+        }
+
         const address: ShipFromAddress = {
           id: data.id,
           label: data.store_name,
@@ -204,14 +216,26 @@ export function EnhancedShippingConfiguration({
           city: data.from_city,
           state: data.from_state,
           zip: data.from_zip,
-          country: data.from_country,
+          country: correctedCountry,
           phone: data.from_phone
         };
         setShipFromAddresses([address]);
         setSelectedShipFrom(address.id!);
+      } else {
+        // No default address found, show message
+        toast({
+          title: "No Ship From Address",
+          description: "Please add a default shipping address first",
+          variant: "destructive"
+        });
       }
     } catch (error) {
       console.error('Error fetching ship from addresses:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load shipping addresses",
+        variant: "destructive"
+      });
     }
   };
 
