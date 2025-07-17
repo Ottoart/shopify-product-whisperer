@@ -226,7 +226,7 @@ export function ShippingDetailsDialog({ isOpen, onClose, order, onUpdateOrder }:
   };
 
 
-  const createShippingLabel = async () => {
+  const createShippingLabel = async (retryCount = 0) => {
     console.log('🏷️ Starting label creation...');
     
     if (!selectedRate || !order) {
@@ -337,9 +337,40 @@ export function ShippingDetailsDialog({ isOpen, onClose, order, onUpdateOrder }:
 
       if (error) {
         console.error('❌ Label creation error:', error);
+        
+        // Check if it's a token expiration error that we can retry
+        if ((error.message?.includes('token expired') || 
+             error.message?.includes('Invalid Authentication Information') ||
+             data?.code === 'UPS_TOKEN_EXPIRED') && retryCount < 1) {
+          
+          console.log('🔄 Token expired, attempting to refresh and retry...');
+          toast({
+            title: "Refreshing authentication",
+            description: "UPS token expired, refreshing and retrying...",
+          });
+          
+          // Try to refresh the token
+          try {
+            const { data: refreshData, error: refreshError } = await supabase.functions.invoke('refresh-ups-token');
+            if (!refreshError && refreshData?.success) {
+              console.log('✅ Token refreshed, retrying label creation...');
+              // Retry the label creation
+              return createShippingLabel(retryCount + 1);
+            }
+          } catch (refreshError) {
+            console.error('Failed to refresh token:', refreshError);
+          }
+        }
+        
+        // Handle specific error messages
+        let errorMessage = error.message || "Failed to create shipping label";
+        if (data?.code === 'UPS_AUTH_FAILED' || data?.code === 'UPS_TOKEN_EXPIRED') {
+          errorMessage = data.error || "UPS authentication failed. Please re-connect UPS.";
+        }
+        
         toast({
           title: "Label creation failed",
-          description: error.message || "Failed to create shipping label",
+          description: errorMessage,
           variant: "destructive"
         });
         console.log('🔄 Error response data:', data);
@@ -400,7 +431,7 @@ export function ShippingDetailsDialog({ isOpen, onClose, order, onUpdateOrder }:
                 variant="default" 
                 size="sm" 
                 className="bg-green-600 hover:bg-green-700"
-                onClick={createShippingLabel}
+                onClick={() => createShippingLabel()}
                 disabled={!selectedRate}
               >
                 <Printer className="h-4 w-4 mr-2" />

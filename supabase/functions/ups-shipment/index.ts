@@ -104,10 +104,30 @@ serve(async (req) => {
     const authResult = await ensureValidUPSToken(supabase, user.id);
     if (!authResult.success) {
       console.error('❌ UPS authentication failed:', authResult.error);
+      
+      // Return specific error messages for better debugging
+      let errorMessage = authResult.error;
+      let statusCode = 400;
+      
+      if (authResult.error?.includes('Invalid Authentication Information')) {
+        errorMessage = 'UPS authentication expired. Please re-connect your UPS account.';
+        statusCode = 401;
+      } else if (authResult.error?.includes('refresh')) {
+        errorMessage = 'UPS token refresh failed. Please re-connect your UPS account.';
+        statusCode = 401;
+      } else if (authResult.error?.includes('not configured')) {
+        errorMessage = 'UPS is not configured for your account. Please connect UPS first.';
+        statusCode = 400;
+      }
+      
       return new Response(
-        JSON.stringify({ error: authResult.error }),
+        JSON.stringify({ 
+          error: errorMessage,
+          code: 'UPS_AUTH_FAILED',
+          details: authResult.error 
+        }),
         { 
-          status: 400, 
+          status: statusCode, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
@@ -252,14 +272,37 @@ serve(async (req) => {
 
     if (!upsResponse.ok) {
       console.error('❌ UPS API Error:', upsResponse.status, responseText);
+      
+      // Parse UPS error response for better error handling
+      let upsError = 'UPS API Error';
+      let errorCode = 'UPS_API_ERROR';
+      
+      try {
+        const errorData = JSON.parse(responseText);
+        if (errorData.response?.errors?.[0]) {
+          const error = errorData.response.errors[0];
+          upsError = error.message || upsError;
+          errorCode = error.code || errorCode;
+          
+          // Handle specific UPS errors
+          if (error.code === '250002') {
+            upsError = 'UPS authentication token expired. Please try again or re-connect UPS.';
+            errorCode = 'UPS_TOKEN_EXPIRED';
+          }
+        }
+      } catch (parseError) {
+        console.error('Failed to parse UPS error response:', parseError);
+      }
+      
       return new Response(
         JSON.stringify({ 
-          error: 'UPS API Error',
+          error: upsError,
+          code: errorCode,
           status: upsResponse.status,
           details: responseText
         }),
         { 
-          status: 400, 
+          status: upsResponse.status === 401 ? 401 : 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
