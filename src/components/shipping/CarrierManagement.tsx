@@ -864,10 +864,25 @@ export function CarrierManagement() {
                         <div>
                           <div className="flex items-center gap-2">
                             <h3 className="font-semibold text-lg">{carrier.name}</h3>
-                            <Badge variant="default" className="bg-green-100 text-green-800">
-                              <CheckCircle className="h-3 w-3 mr-1" />
-                              Connected
-                            </Badge>
+                            {/* Check if carrier is actually active in database */}
+                            {carrier.name === 'UPS' && upsCarrier ? (
+                              upsCarrier.is_active ? (
+                                <Badge variant="default" className="bg-green-100 text-green-800">
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  Active
+                                </Badge>
+                              ) : (
+                                <Badge variant="destructive" className="bg-orange-100 text-orange-800">
+                                  <AlertCircle className="h-3 w-3 mr-1" />
+                                  Inactive
+                                </Badge>
+                              )
+                            ) : (
+                              <Badge variant="default" className="bg-green-100 text-green-800">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Connected
+                              </Badge>
+                            )}
                             {carrier.isInternal && (
                               <Badge variant="secondary">
                                 PrepFox {carrier.name.includes("PrepFox") ? "" : "Partner"}
@@ -910,6 +925,46 @@ export function CarrierManagement() {
                       </div>
                       
                       <div className="flex items-center gap-2">
+                        {/* Add activation button for inactive UPS */}
+                        {carrier.name === 'UPS' && upsCarrier && !upsCarrier.is_active && (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={async () => {
+                              try {
+                                const { data, error } = await supabase.functions.invoke('activate-carrier', {
+                                  body: { 
+                                    user_id: user?.id, 
+                                    carrier_id: upsCarrier.id 
+                                  }
+                                });
+                                
+                                if (error) throw error;
+                                
+                                // Update local state
+                                setUpsCarrier(prev => ({ ...prev, is_active: true }));
+                                
+                                toast({
+                                  title: "UPS Activated",
+                                  description: "UPS carrier is now active and ready to use.",
+                                });
+                                
+                                // Refresh the page to reflect changes
+                                window.location.reload();
+                              } catch (error) {
+                                console.error('Activation error:', error);
+                                toast({
+                                  title: "Activation Failed",
+                                  description: "Failed to activate UPS carrier.",
+                                  variant: "destructive",
+                                });
+                              }
+                            }}
+                          >
+                            <Zap className="h-4 w-4 mr-1" />
+                            Activate UPS
+                          </Button>
+                        )}
                         <Button
                           variant="outline"
                           size="sm"

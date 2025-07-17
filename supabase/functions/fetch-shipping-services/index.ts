@@ -200,12 +200,11 @@ Deno.serve(async (req) => {
 
     console.log(`Fetching shipping services for user: ${user_id}`);
 
-    // Get active carrier configurations
+    // Get carrier configurations (including inactive ones)
     const { data: carriers, error: carriersError } = await supabase
       .from('carrier_configurations')
       .select('*')
-      .eq('user_id', user_id)
-      .eq('is_active', true);
+      .eq('user_id', user_id);
 
     if (carriersError) {
       console.error('Error fetching carriers:', carriersError);
