@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Truck, Package, RotateCcw, Settings, Zap, Building2, Store, Plus, Webhook, TestTube, Brain } from "lucide-react";
 import { OrderManagement } from "@/components/shipping/OrderManagement";
-import { CarrierRateComparison } from "@/components/shipping/CarrierRateComparison";
+import { EnhancedShippingConfiguration } from "@/components/shipping/EnhancedShippingConfiguration";
 import { ShippingRules } from "@/components/shipping/ShippingRules";
 import { TrackingPage } from "@/components/shipping/TrackingPage";
 import { ReturnsManagement } from "@/components/shipping/ReturnsManagement";
@@ -103,7 +103,7 @@ export default function Shipping() {
           </TabsContent>
 
           <TabsContent value="rates">
-            <CarrierRateComparison />
+            <EnhancedShippingConfiguration />
           </TabsContent>
 
           <TabsContent value="rules">
