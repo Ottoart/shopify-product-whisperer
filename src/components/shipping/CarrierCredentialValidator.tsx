@@ -81,10 +81,14 @@ export const CarrierCredentialValidator = () => {
       }
 
       if (data?.success) {
+        const message = data?.api?.success 
+          ? `✅ Full validation successful. Account: ${data.accountNumber}. Environment: ${data.environment}`
+          : `✅ OAuth validation successful. Account: ${data.accountNumber}. Environment: ${data.environment}. ${data?.api?.note || ''}`;
+        
         return {
           carrier: 'UPS',
           status: 'valid',
-          message: `Valid credentials confirmed. Account: ${data.accountNumber}. Environment: ${data.environment}`,
+          message,
           details: data,
           lastChecked: new Date().toISOString()
         };
