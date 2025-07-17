@@ -32,7 +32,41 @@ export default function Logs() {
       // For now, get logs from localStorage since types aren't updated yet
       const storedLogs = localStorage.getItem(`logs_${user.id}`);
       const parsedLogs = storedLogs ? JSON.parse(storedLogs) : [];
-      setLogs(parsedLogs);
+      
+      // If no logs exist, add some sample logs to demonstrate the feature
+      if (parsedLogs.length === 0) {
+        const sampleLogs = [
+          {
+            id: crypto.randomUUID(),
+            timestamp: new Date().toISOString(),
+            level: 'info' as const,
+            category: 'System',
+            message: 'Application started successfully',
+            user_id: user.id
+          },
+          {
+            id: crypto.randomUUID(),
+            timestamp: new Date(Date.now() - 5000).toISOString(),
+            level: 'success' as const,
+            category: 'Authentication',
+            message: 'User logged in successfully',
+            user_id: user.id
+          },
+          {
+            id: crypto.randomUUID(),
+            timestamp: new Date(Date.now() - 10000).toISOString(),
+            level: 'warning' as const,
+            category: 'API',
+            message: 'Slow response time detected for UPS API',
+            details: { responseTime: '2.5s', endpoint: '/api/rating' },
+            user_id: user.id
+          }
+        ];
+        localStorage.setItem(`logs_${user.id}`, JSON.stringify(sampleLogs));
+        setLogs(sampleLogs);
+      } else {
+        setLogs(parsedLogs);
+      }
     } catch (error) {
       console.error('Error fetching logs:', error);
     } finally {
