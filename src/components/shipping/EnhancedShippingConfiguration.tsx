@@ -373,9 +373,35 @@ export function EnhancedShippingConfiguration({
       return;
     }
 
+    // Check for active carriers first
+    try {
+      const { data: carriers, error: carriersError } = await supabase
+        .from('carrier_configurations')
+        .select('*')
+        .eq('is_active', true);
+
+      if (carriersError || !carriers || carriers.length === 0) {
+        toast({
+          title: "No Active Carriers",
+          description: "Please activate a carrier in your shipping settings first",
+          variant: "destructive"
+        });
+        return;
+      }
+    } catch (error) {
+      console.error('Error checking carriers:', error);
+      return;
+    }
+
     setIsLoadingRates(true);
     try {
       const shipFromAddress = shipFromAddresses.find(addr => addr.id === selectedShipFrom);
+      
+      // Fix country code for Montreal (should be CA, not US)
+      let shipFromCountry = shipFromAddress?.country || 'US';
+      if (shipFromAddress?.city?.toLowerCase() === 'montreal' && shipFromCountry === 'US') {
+        shipFromCountry = 'CA';
+      }
       
       const requestData = {
         order_id: currentOrderId,
@@ -387,7 +413,7 @@ export function EnhancedShippingConfiguration({
           city: shipFromAddress?.city,
           state: shipFromAddress?.state,
           zip: shipFromAddress?.zip,
-          country: shipFromAddress?.country
+          country: shipFromCountry
         },
         ship_to: selectedOrder ? {
           name: selectedOrder.customerName,
@@ -407,6 +433,8 @@ export function EnhancedShippingConfiguration({
           dimension_unit: 'in'
         }
       };
+
+      console.log('📦 Fetching shipping rates with corrected data:', requestData);
 
       const { data, error } = await supabase.functions.invoke('calculate-shipping-rates', {
         body: requestData
@@ -433,8 +461,8 @@ export function EnhancedShippingConfiguration({
       } else {
         setShippingRates([]);
         toast({
-          title: "No Rates Available",
-          description: "No shipping rates found for this configuration",
+          title: "No Rates Available", 
+          description: "No shipping rates found. Check that your carrier is active and addresses are valid.",
           variant: "destructive"
         });
       }
@@ -442,7 +470,7 @@ export function EnhancedShippingConfiguration({
       console.error('Error fetching rates:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch shipping rates",
+        description: "Failed to fetch shipping rates. Check your carrier configuration.",
         variant: "destructive"
       });
     } finally {
