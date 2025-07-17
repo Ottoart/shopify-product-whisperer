@@ -310,45 +310,57 @@ export function ShippingDetailsDialog({ isOpen, onClose, order, onUpdateOrder }:
           </div>
         </DialogHeader>
 
-        {/* UPS OAuth Authorization Alert */}
-        <div className="mb-4 p-3 border border-amber-200 bg-amber-50 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-amber-600" />
-              <span className="text-sm font-medium text-amber-800">UPS Authorization Required</span>
+        {/* UPS OAuth Authorization Alert - Only show if UPS is not authorized */}
+        {(() => {
+          const upsCarrier = carriers.find(c => c.carrier_name === 'UPS');
+          const isUpsAuthorized = upsCarrier?.is_active && 
+                                 upsCarrier?.api_credentials?.access_token &&
+                                 (!upsCarrier?.api_credentials?.token_expires_at || 
+                                  new Date(upsCarrier.api_credentials.token_expires_at) > new Date());
+          
+          if (isUpsAuthorized) return null;
+          
+          return (
+            <div className="mb-4 p-3 border border-amber-200 bg-amber-50 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-amber-600" />
+                  <span className="text-sm font-medium text-amber-800">UPS Authorization Required</span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    try {
+                      const { data, error } = await supabase.functions.invoke('ups-oauth-url');
+                      if (error) throw error;
+                      if (data?.authUrl) {
+                        window.open(data.authUrl, '_blank');
+                        toast({
+                          title: "OAuth Authorization",
+                          description: "Complete UPS authorization in the new window to enable label creation.",
+                        });
+                      }
+                    } catch (error) {
+                      console.error('OAuth error:', error);
+                      toast({
+                        title: "OAuth Error",
+                        description: "Failed to generate OAuth URL",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                >
+                  <Lock className="h-4 w-4 mr-1" />
+                  Authorize UPS OAuth
+                </Button>
+              </div>
+              <p className="text-xs text-amber-700 mt-2">
+                You need to complete UPS OAuth authorization before creating shipping labels.
+              </p>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={async () => {
-                try {
-                  const { data, error } = await supabase.functions.invoke('ups-oauth-url');
-                  if (error) throw error;
-                  if (data?.authUrl) {
-                    window.open(data.authUrl, '_blank');
-                    toast({
-                      title: "OAuth Authorization",
-                      description: "Complete UPS authorization in the new window to enable label creation.",
-                    });
-                  }
-                } catch (error) {
-                  console.error('OAuth error:', error);
-                  toast({
-                    title: "OAuth Error",
-                    description: "Failed to generate OAuth URL",
-                    variant: "destructive",
-                  });
-                }
-              }}
-            >
-              <Lock className="h-4 w-4 mr-1" />
-              Authorize UPS OAuth
-            </Button>
-          </div>
-          <p className="text-xs text-amber-700 mt-2">
-            You need to complete UPS OAuth authorization before creating shipping labels.
-          </p>
-        </div>
+          );
+        })()}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Shipment Details */}
