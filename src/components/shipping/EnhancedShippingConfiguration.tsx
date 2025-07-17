@@ -389,6 +389,15 @@ export function EnhancedShippingConfiguration({ orderId, onShippingSelected }: E
 
   return (
     <div className="space-y-6">
+      {/* Test Card to verify component is rendering */}
+      <Card>
+        <CardHeader>
+          <CardTitle>🚀 Enhanced Shipping Configuration</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p>Component is now loading! This is the new enhanced shipping system.</p>
+        </CardContent>
+      </Card>
       {/* Ship From Address Selection */}
       <Card>
         <CardHeader>
