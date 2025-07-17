@@ -18,13 +18,46 @@ export async function ensureValidUPSToken(supabase: any, userId: string): Promis
 
     const credentials = carrierConfig.api_credentials as any;
     
+    console.log('🔍 Checking UPS credentials:', {
+      hasAccessToken: !!credentials.access_token,
+      hasClientId: !!credentials.client_id,
+      hasClientSecret: !!credentials.client_secret,
+      hasRefreshToken: !!credentials.refresh_token,
+      expiresAt: credentials.token_expires_at
+    });
+    
+    // Check if we have basic credentials
+    if (!credentials.client_id || !credentials.client_secret) {
+      return {
+        success: false,
+        error: 'UPS client credentials not configured properly'
+      };
+    }
+    
     // Check if token needs refresh (if it expires within the next 5 minutes)
-    const expiresAt = new Date(credentials.token_expires_at);
-    const now = new Date();
-    const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60 * 1000);
+    // Or if there's no access token at all
+    let needsRefresh = false;
+    
+    if (!credentials.access_token) {
+      console.log('🔄 No access token available, getting new one');
+      needsRefresh = true;
+    } else if (credentials.token_expires_at) {
+      const expiresAt = new Date(credentials.token_expires_at);
+      const now = new Date();
+      const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60 * 1000);
+      
+      if (expiresAt <= fiveMinutesFromNow) {
+        console.log('🔄 Token expires soon, refreshing');
+        needsRefresh = true;
+      }
+    } else {
+      console.log('🔄 No expiration time set, refreshing token');
+      needsRefresh = true;
+    }
 
-    if (expiresAt > fiveMinutesFromNow) {
+    if (!needsRefresh) {
       // Token is still valid
+      console.log('✅ Using existing valid token');
       return {
         success: true,
         credentials: {
@@ -34,15 +67,20 @@ export async function ensureValidUPSToken(supabase: any, userId: string): Promis
       };
     }
 
-    console.log('🔄 UPS token expired, refreshing...');
+    console.log('🔄 UPS token needs refresh...');
     console.log('🔄 Token expires at:', credentials.token_expires_at);
-    console.log('🔄 Current time:', now.toISOString());
+    console.log('🔄 Current time:', new Date().toISOString());
 
-    // Refresh the token using the refresh token
-    const refreshBody = new URLSearchParams({
-      grant_type: 'refresh_token',
-      refresh_token: credentials.refresh_token
-    });
+    // If no refresh token available, use client_credentials to get a new token
+    const grantType = credentials.refresh_token ? 'refresh_token' : 'client_credentials';
+    const tokenBody = new URLSearchParams({ grant_type: grantType });
+    
+    if (grantType === 'refresh_token') {
+      tokenBody.append('refresh_token', credentials.refresh_token);
+    }
+
+    console.log('🔄 Using grant type:', grantType);
+    console.log('🔄 Client ID:', credentials.client_id);
 
     const refreshResponse = await fetch('https://wwwcie.ups.com/security/v1/oauth/token', {
       method: 'POST',
@@ -51,7 +89,7 @@ export async function ensureValidUPSToken(supabase: any, userId: string): Promis
         'Authorization': `Basic ${btoa(`${credentials.client_id}:${credentials.client_secret}`)}`,
         'x-merchant-id': credentials.client_id
       },
-      body: refreshBody
+      body: tokenBody
     });
 
     const refreshData = await refreshResponse.text();
@@ -67,6 +105,7 @@ export async function ensureValidUPSToken(supabase: any, userId: string): Promis
     const tokenData = JSON.parse(refreshData);
     
     // Calculate new expiration time
+    const now = new Date();
     const newExpiresAt = new Date(now.getTime() + (tokenData.expires_in * 1000));
 
     // Update the credentials with new token
