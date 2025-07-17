@@ -227,7 +227,10 @@ export function ShippingDetailsDialog({ isOpen, onClose, order, onUpdateOrder }:
 
 
   const createShippingLabel = async () => {
+    console.log('🏷️ Starting label creation...');
+    
     if (!selectedRate || !order) {
+      console.error('❌ Missing requirements:', { selectedRate: !!selectedRate, order: !!order });
       toast({
         title: "No rate selected",
         description: "Please select a shipping rate first",
@@ -235,6 +238,9 @@ export function ShippingDetailsDialog({ isOpen, onClose, order, onUpdateOrder }:
       });
       return;
     }
+
+    console.log('✅ Selected rate:', selectedRate);
+    console.log('✅ Order:', order);
 
     try {
       // Get UPS carrier configuration
@@ -266,6 +272,22 @@ export function ShippingDetailsDialog({ isOpen, onClose, order, onUpdateOrder }:
 
       // UPS account number for label creation
       const upsAccountNumber = "A906G5";
+
+      console.log('📞 Calling UPS shipment function with data:', {
+        orderId: order.id,
+        serviceCode: selectedRate.service_code,
+        shipFrom: {
+          name: storeConfig.from_name,
+          company: storeConfig.from_company,
+          address: storeConfig.from_address_line1,
+          address2: storeConfig.from_address_line2,
+          city: storeConfig.from_city,
+          state: storeConfig.from_state,
+          zip: storeConfig.from_zip,
+          country: storeConfig.from_country,
+          phone: storeConfig.from_phone
+        }
+      });
 
       const { data, error } = await supabase.functions.invoke('ups-shipment', {
         body: {
@@ -308,13 +330,16 @@ export function ShippingDetailsDialog({ isOpen, onClose, order, onUpdateOrder }:
         }
       });
 
+      console.log('📡 UPS shipment function response:', { data, error });
+
       if (error) {
-        console.error('Label creation error:', error);
+        console.error('❌ Label creation error:', error);
         toast({
           title: "Label creation failed",
           description: error.message || "Failed to create shipping label",
           variant: "destructive"
         });
+        console.log('🔄 Error response data:', data);
         return;
       }
 

@@ -88,8 +88,10 @@ serve(async (req) => {
     }
 
     const requestData: ShipmentRequest = await req.json();
+    console.log('📦 Received shipment request:', JSON.stringify(requestData, null, 2));
 
     // Ensure we have a valid UPS token
+    console.log('🔐 Checking UPS authentication...');
     const authResult = await ensureValidUPSToken(supabase, user.id);
     if (!authResult.success) {
       console.error('UPS authentication failed:', authResult.error);

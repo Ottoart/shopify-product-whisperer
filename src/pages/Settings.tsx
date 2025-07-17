@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Settings as SettingsIcon, Store, Key, Database, Bell } from 'lucide-react';
+import { Settings as SettingsIcon, Store, Key, Database, Bell, Printer } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StoreConfig } from '@/components/StoreConfig';
+import { PrintingSettings } from '@/components/shipping/PrintingSettings';
 
 const Settings = () => {
 
@@ -15,8 +16,9 @@ const Settings = () => {
         </div>
 
         <Tabs defaultValue="store" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="store">Store</TabsTrigger>
+            <TabsTrigger value="printing">Printing</TabsTrigger>
             <TabsTrigger value="api">API Keys</TabsTrigger>
             <TabsTrigger value="sync">Sync</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
@@ -35,6 +37,23 @@ const Settings = () => {
               </CardHeader>
               <CardContent>
                 <StoreConfig />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="printing" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Printer className="h-5 w-5" />
+                  Printing Configuration
+                </CardTitle>
+                <CardDescription>
+                  Configure label formats, printers, and document routing like ShipStation
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <PrintingSettings />
               </CardContent>
             </Card>
           </TabsContent>
