@@ -79,9 +79,17 @@ export async function ensureValidUPSToken(supabase: any, userId: string): Promis
 
     console.log('🔄 Using grant type: client_credentials (UPS requirement)');
     console.log('🔄 Client ID:', credentials.client_id);
+    
+    // Determine if we're using production or sandbox based on the credentials
+    const isProduction = credentials.environment === 'production';
+    const tokenUrl = isProduction 
+      ? 'https://onlinetools.ups.com/security/v1/oauth/token'  // Production
+      : 'https://wwwcie.ups.com/security/v1/oauth/token';      // Sandbox
+      
+    console.log(`🔄 Using ${isProduction ? 'PRODUCTION' : 'SANDBOX'} UPS OAuth endpoint: ${tokenUrl}`);
 
     // Use proper UPS OAuth 2.0 endpoint with correct headers
-    const refreshResponse = await fetch('https://wwwcie.ups.com/security/v1/oauth/token', {
+    const refreshResponse = await fetch(tokenUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',

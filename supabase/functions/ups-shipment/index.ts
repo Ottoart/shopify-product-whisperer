@@ -265,8 +265,16 @@ serve(async (req) => {
 
     console.log('📡 Sending UPS request:', JSON.stringify(upsShipmentRequest, null, 2));
 
+    // Determine if we're using production or sandbox based on the credentials
+    const isProduction = credentials.environment === 'production';
+    const shipmentApiUrl = isProduction 
+      ? 'https://onlinetools.ups.com/api/shipments/v2409/ship'  // Production
+      : 'https://wwwcie.ups.com/api/shipments/v2409/ship';      // Sandbox
+      
+    console.log(`Using ${isProduction ? 'PRODUCTION' : 'SANDBOX'} UPS Shipping endpoint: ${shipmentApiUrl}`);
+    
     // Call UPS Shipment API
-    const upsResponse = await fetch('https://wwwcie.ups.com/api/shipments/v2409/ship', {
+    const upsResponse = await fetch(shipmentApiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

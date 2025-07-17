@@ -54,6 +54,7 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
     client_id: '',
     client_secret: '',
     account_type: '',
+    environment: 'sandbox', // default to sandbox for safety
     mi_endorsement: '',
     mi_cost_center: '',
     mi_customer_id: '',
@@ -110,6 +111,7 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
   const resetCarrierConfig = () => {
     setUpsConfig({
       account_number: '', client_id: '', client_secret: '', account_type: '',
+      environment: 'sandbox', // Always reset to sandbox for safety
       mi_endorsement: '', mi_cost_center: '', mi_customer_id: '', mi_customer_guid: '',
       postal_code: '', country_code: 'US', enable_negotiated_rates: false,
       enable_carbon_neutral: false, enable_ground_freight: false,
@@ -307,6 +309,37 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
                         </SelectContent>
                       </Select>
                     </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="environment">Environment</Label>
+                    <Select 
+                      value={upsConfig.environment} 
+                      onValueChange={(value) => setUpsConfig(prev => ({ ...prev, environment: value }))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="sandbox">
+                          <div className="flex items-center gap-2">
+                            <TestTube className="h-4 w-4" />
+                            <div>
+                              <div>Sandbox (Test) Mode</div>
+                              <div className="text-xs text-muted-foreground">Use for testing with fake data</div>
+                            </div>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="production">
+                          <div className="flex items-center gap-2">
+                            <Truck className="h-4 w-4" />
+                            <div>
+                              <div>Production Mode</div>
+                              <div className="text-xs text-muted-foreground">Use for live shipping labels</div>
+                            </div>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">

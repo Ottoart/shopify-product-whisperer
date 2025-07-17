@@ -175,10 +175,16 @@ serve(async (req) => {
       };
     }
 
-    console.log('Sending UPS rating request:', JSON.stringify(ratingRequest, null, 2));
-
+    // Determine if we're using production or sandbox based on the credentials
+    const isProduction = credentials.environment === 'production';
+    const ratingApiUrl = isProduction 
+      ? 'https://onlinetools.ups.com/api/rating/v2409/rate'  // Production
+      : 'https://wwwcie.ups.com/api/rating/v2409/rate';      // Sandbox
+      
+    console.log(`Using ${isProduction ? 'PRODUCTION' : 'SANDBOX'} UPS Rating endpoint: ${ratingApiUrl}`);
+    
     // Call UPS Rating API with proper error handling
-    const upsResponse = await fetch('https://wwwcie.ups.com/api/rating/v2409/rate', {
+    const upsResponse = await fetch(ratingApiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
