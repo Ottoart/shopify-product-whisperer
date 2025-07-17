@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Truck, Package, RotateCcw, Settings, Zap, Building2, Store, Plus } from "lucide-react";
+import { Truck, Package, RotateCcw, Settings, Zap, Building2, Store, Plus, Webhook } from "lucide-react";
 import { OrderManagement } from "@/components/shipping/OrderManagement";
 import { CarrierRateComparison } from "@/components/shipping/CarrierRateComparison";
 import { ShippingRules } from "@/components/shipping/ShippingRules";
@@ -13,6 +13,7 @@ import { CarrierManagement } from "@/components/shipping/CarrierManagement";
 import { CarrierConfigurationDialog } from "@/components/shipping/CarrierConfigurationDialog";
 import { StoreConfig } from "@/components/StoreConfig";
 import { ShopifyConnectionTest } from "@/components/shipping/ShopifyConnectionTest";
+import { WebhookTester } from "@/components/shipping/WebhookTester";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 export default function Shipping() {
@@ -33,7 +34,7 @@ export default function Shipping() {
 
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-7 h-auto gap-1 p-1">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-8 h-auto gap-1 p-1">
             <TabsTrigger value="orders" className="flex items-center gap-2">
               <Package className="h-4 w-4" />
               Orders
@@ -65,6 +66,10 @@ export default function Shipping() {
             <TabsTrigger value="carriers" className="flex items-center gap-2">
               <Building2 className="h-4 w-4" />
               Carriers
+            </TabsTrigger>
+            <TabsTrigger value="webhooks" className="flex items-center gap-2">
+              <Webhook className="h-4 w-4" />
+              Webhooks
             </TabsTrigger>
           </TabsList>
 
@@ -129,6 +134,10 @@ export default function Shipping() {
               />
               <CarrierManagement />
             </div>
+          </TabsContent>
+
+          <TabsContent value="webhooks">
+            <WebhookTester />
           </TabsContent>
         </Tabs>
       </div>
