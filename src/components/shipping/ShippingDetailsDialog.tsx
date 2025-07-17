@@ -337,16 +337,30 @@ export function ShippingDetailsDialog({ isOpen, onClose, order, onUpdateOrder }:
 
       if (error) {
         console.error('❌ Label creation error:', error);
+        console.log('📊 Full error context:', { error, data });
+        
+        // Try to extract more specific error information
+        let errorMessage = "Failed to create shipping label";
+        let shouldRetry = false;
+
+        // Check if we have specific error data from the edge function
+        if (data?.error) {
+          errorMessage = data.error;
+          if (data.code === 'UPS_TOKEN_EXPIRED' || data.code === 'UPS_AUTH_FAILED') {
+            shouldRetry = true;
+          }
+        } else if (error.message?.includes('non-2xx status code')) {
+          // Generic Supabase function error - try to get more details
+          errorMessage = "UPS API request failed. Please check your UPS configuration.";
+          shouldRetry = true; // Try once to refresh token
+        }
         
         // Check if it's a token expiration error that we can retry
-        if ((error.message?.includes('token expired') || 
-             error.message?.includes('Invalid Authentication Information') ||
-             data?.code === 'UPS_TOKEN_EXPIRED') && retryCount < 1) {
-          
-          console.log('🔄 Token expired, attempting to refresh and retry...');
+        if (shouldRetry && retryCount < 1) {
+          console.log('🔄 Attempting to refresh token and retry...');
           toast({
             title: "Refreshing authentication",
-            description: "UPS token expired, refreshing and retrying...",
+            description: "UPS token may have expired, refreshing and retrying...",
           });
           
           // Try to refresh the token
@@ -356,16 +370,14 @@ export function ShippingDetailsDialog({ isOpen, onClose, order, onUpdateOrder }:
               console.log('✅ Token refreshed, retrying label creation...');
               // Retry the label creation
               return createShippingLabel(retryCount + 1);
+            } else {
+              console.error('❌ Token refresh failed:', refreshError);
+              errorMessage = "Failed to refresh UPS authentication. Please re-connect UPS.";
             }
           } catch (refreshError) {
-            console.error('Failed to refresh token:', refreshError);
+            console.error('❌ Token refresh exception:', refreshError);
+            errorMessage = "Failed to refresh UPS authentication. Please re-connect UPS.";
           }
-        }
-        
-        // Handle specific error messages
-        let errorMessage = error.message || "Failed to create shipping label";
-        if (data?.code === 'UPS_AUTH_FAILED' || data?.code === 'UPS_TOKEN_EXPIRED') {
-          errorMessage = data.error || "UPS authentication failed. Please re-connect UPS.";
         }
         
         toast({
@@ -373,7 +385,6 @@ export function ShippingDetailsDialog({ isOpen, onClose, order, onUpdateOrder }:
           description: errorMessage,
           variant: "destructive"
         });
-        console.log('🔄 Error response data:', data);
         return;
       }
 

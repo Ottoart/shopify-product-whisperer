@@ -76,8 +76,12 @@ serve(async (req) => {
     // Get authenticated user
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
+      console.error('❌ No authorization header provided');
       return new Response(
-        JSON.stringify({ error: 'No authorization header' }),
+        JSON.stringify({ 
+          error: 'Authentication required',
+          code: 'MISSING_AUTH'
+        }),
         { 
           status: 401, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -87,14 +91,21 @@ serve(async (req) => {
 
     const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
     if (authError || !user) {
+      console.error('❌ Authentication failed:', authError);
       return new Response(
-        JSON.stringify({ error: 'Invalid authentication' }),
+        JSON.stringify({ 
+          error: 'Invalid authentication',
+          code: 'INVALID_AUTH',
+          details: authError?.message 
+        }),
         { 
           status: 401, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
     }
+
+    console.log('✅ User authenticated:', user.id);
 
     const requestData: ShipmentRequest = await req.json();
     console.log('📦 Received shipment request:', JSON.stringify(requestData, null, 2));
