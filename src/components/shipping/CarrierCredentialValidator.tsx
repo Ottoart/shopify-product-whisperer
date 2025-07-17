@@ -89,10 +89,21 @@ export const CarrierCredentialValidator = () => {
           lastChecked: new Date().toISOString()
         };
       } else {
+        // Handle specific UPS error codes
+        const errorMessage = data?.response?.errors?.[0]?.message || 
+                           data?.response?.error || 
+                           'Authentication failed';
+        const errorCode = data?.response?.errors?.[0]?.code;
+        
+        let detailedMessage = errorMessage;
+        if (errorCode === '250002') {
+          detailedMessage = 'Invalid Authentication Information - Check your Client ID, Client Secret, and ensure you\'re using the correct environment (Sandbox vs Production)';
+        }
+        
         return {
           carrier: 'UPS',
           status: 'invalid',
-          message: data?.response?.error || 'Authentication failed',
+          message: detailedMessage,
           details: data,
           lastChecked: new Date().toISOString()
         };
