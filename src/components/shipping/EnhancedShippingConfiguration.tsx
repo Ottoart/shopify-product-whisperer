@@ -111,6 +111,7 @@ export function EnhancedShippingConfiguration({
 }: EnhancedShippingConfigurationProps) {
   const [shipFromAddresses, setShipFromAddresses] = useState<ShipFromAddress[]>([]);
   const [packages, setPackages] = useState<PackageOption[]>([]);
+  const [availableServices, setAvailableServices] = useState<any[]>([]);
   const [selectedShipFrom, setSelectedShipFrom] = useState<string>("");
   const [selectedPackage, setSelectedPackage] = useState<string>("");
   const [customDimensions, setCustomDimensions] = useState({
@@ -155,6 +156,7 @@ export function EnhancedShippingConfiguration({
   useEffect(() => {
     fetchShipFromAddresses();
     fetchPackages();
+    fetchAvailableServices();
   }, []);
 
   // Initialize form data from selected order
@@ -219,6 +221,21 @@ export function EnhancedShippingConfiguration({
 
     setPackages(carrierPackages);
     setSelectedPackage("custom");
+  };
+
+  const fetchAvailableServices = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('shipping_services')
+        .select('*')
+        .eq('is_available', true);
+
+      if (error) throw error;
+
+      setAvailableServices(data || []);
+    } catch (error) {
+      console.error('Error fetching available services:', error);
+    }
   };
 
   const addShipFromAddress = async () => {
@@ -784,6 +801,43 @@ export function EnhancedShippingConfiguration({
               </Button>
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Service Selection */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Package className="h-4 w-4" />
+            Service
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Select value={selectedService} onValueChange={setSelectedService}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select a service" />
+            </SelectTrigger>
+            <SelectContent>
+              {availableServices.length === 0 ? (
+                <SelectItem value="no-services" disabled>
+                  No services available - configure carriers first
+                </SelectItem>
+              ) : (
+                availableServices.map(service => (
+                  <SelectItem key={service.service_code} value={service.service_code}>
+                    <div className="flex items-center justify-between w-full">
+                      <span>{service.service_name}</span>
+                      {service.estimated_days && (
+                        <Badge variant="outline" className="ml-2 text-xs">
+                          {service.estimated_days}
+                        </Badge>
+                      )}
+                    </div>
+                  </SelectItem>
+                ))
+              )}
+            </SelectContent>
+          </Select>
         </CardContent>
       </Card>
 
