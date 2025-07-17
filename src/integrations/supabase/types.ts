@@ -290,6 +290,7 @@ export type Database = {
         Row: {
           address_validated: boolean | null
           carrier: string | null
+          confirmation_type: string | null
           created_at: string
           currency: string
           customer_email: string
@@ -303,6 +304,7 @@ export type Database = {
           order_date: string
           order_number: string
           priority_level: number | null
+          requested_service: string | null
           service_type: string | null
           shipped_date: string | null
           shipping_address_line1: string
@@ -327,6 +329,7 @@ export type Database = {
         Insert: {
           address_validated?: boolean | null
           carrier?: string | null
+          confirmation_type?: string | null
           created_at?: string
           currency?: string
           customer_email: string
@@ -340,6 +343,7 @@ export type Database = {
           order_date: string
           order_number: string
           priority_level?: number | null
+          requested_service?: string | null
           service_type?: string | null
           shipped_date?: string | null
           shipping_address_line1: string
@@ -364,6 +368,7 @@ export type Database = {
         Update: {
           address_validated?: boolean | null
           carrier?: string | null
+          confirmation_type?: string | null
           created_at?: string
           currency?: string
           customer_email?: string
@@ -377,6 +382,7 @@ export type Database = {
           order_date?: string
           order_number?: string
           priority_level?: number | null
+          requested_service?: string | null
           service_type?: string | null
           shipped_date?: string | null
           shipping_address_line1?: string

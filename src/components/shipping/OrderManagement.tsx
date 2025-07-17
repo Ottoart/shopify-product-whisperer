@@ -304,8 +304,8 @@ export function OrderManagement() {
         bValue = b.shippingAddress.state;
         break;
       case 'requestedService':
-        aValue = a.shippingDetails.serviceType || 'Standard';
-        bValue = b.shippingDetails.serviceType || 'Standard';
+        aValue = a.shippingDetails.requestedService || 'Standard';
+        bValue = b.shippingDetails.requestedService || 'Standard';
         break;
       default:
         return 0;
@@ -748,11 +748,11 @@ export function OrderManagement() {
                           {order.shippingAddress.state}
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          {order.shippingDetails?.serviceType || "Standard"}
-                        </div>
-                      </TableCell>
+                       <TableCell>
+                         <div className="text-sm">
+                           {order.shippingDetails?.requestedService || "Not Set"}
+                         </div>
+                       </TableCell>
                     </TableRow>
                   );
                 })}
