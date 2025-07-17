@@ -71,15 +71,13 @@ export async function ensureValidUPSToken(supabase: any, userId: string): Promis
     console.log('🔄 Token expires at:', credentials.token_expires_at);
     console.log('🔄 Current time:', new Date().toISOString());
 
-    // If no refresh token available, use client_credentials to get a new token
-    const grantType = credentials.refresh_token ? 'refresh_token' : 'client_credentials';
-    const tokenBody = new URLSearchParams({ grant_type: grantType });
-    
-    if (grantType === 'refresh_token') {
-      tokenBody.append('refresh_token', credentials.refresh_token);
-    }
+    // UPS OAuth 2.0 only supports client_credentials grant type
+    // No refresh tokens - always get a fresh token using client credentials
+    const tokenBody = new URLSearchParams({ 
+      grant_type: 'client_credentials' 
+    });
 
-    console.log('🔄 Using grant type:', grantType);
+    console.log('🔄 Using grant type: client_credentials (UPS requirement)');
     console.log('🔄 Client ID:', credentials.client_id);
 
     // Use proper UPS OAuth 2.0 endpoint with correct headers
