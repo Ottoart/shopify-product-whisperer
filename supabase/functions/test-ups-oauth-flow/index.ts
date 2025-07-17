@@ -44,7 +44,7 @@ serve(async (req) => {
       .eq('user_id', user.id)
       .eq('carrier_name', 'UPS')
       .eq('is_active', true)
-      .single();
+      .maybeSingle();
 
     if (configError || !carrierConfig) {
       return new Response(

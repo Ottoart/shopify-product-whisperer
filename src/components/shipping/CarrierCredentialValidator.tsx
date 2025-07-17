@@ -134,17 +134,20 @@ export const CarrierCredentialValidator = () => {
       console.log('OAuth Flow Test Results:', data);
       
       // Check which environment worked
-      const workingEnvironment = data.results?.find((result: any) => result.success);
-      const failedEnvironments = data.results?.filter((result: any) => !result.success);
+      const workingEnvironments = data.results?.filter((result: any) => result.success) || [];
+      const failedEnvironments = data.results?.filter((result: any) => !result.success) || [];
       
-      if (workingEnvironment) {
+      if (workingEnvironments.length > 0) {
+        // Use sandbox as default if both work, otherwise use the working one
+        const preferredEnvironment = workingEnvironments.find((env: any) => env.environment === 'sandbox') || workingEnvironments[0];
+        
         toast({
           title: "OAuth Test Results",
-          description: `✅ ${workingEnvironment.environment} environment works! Failed: ${failedEnvironments.map((e: any) => e.environment).join(', ')}`,
+          description: `✅ Working: ${workingEnvironments.map((e: any) => e.environment).join(', ')}. Using ${preferredEnvironment.environment}.`,
         });
         
         // Auto-update the carrier configuration with the working environment
-        await updateCarrierEnvironment(workingEnvironment.environment);
+        await updateCarrierEnvironment(preferredEnvironment.environment);
       } else {
         toast({
           title: "OAuth Test Failed",
@@ -187,13 +190,49 @@ export const CarrierCredentialValidator = () => {
         description: `UPS carrier configuration updated to use ${environment} environment`,
       });
 
-      // Refresh carriers list
+      // Refresh carriers list to show updated data
       await fetchCarriers();
+      
+      // Clear any existing validation results to force fresh test
+      setValidationResults({});
+      
     } catch (error) {
       console.error('Failed to update environment:', error);
       toast({
         title: "Update Failed",
         description: "Failed to update carrier environment setting",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const clearUPSToken = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('clear-ups-token');
+      
+      if (error) {
+        toast({
+          title: "Clear Token Failed",
+          description: `Error: ${error.message}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Token Cleared",
+        description: "UPS token cleared. Test credentials again to get a fresh token.",
+      });
+
+      // Refresh carriers list and clear validation results
+      await fetchCarriers();
+      setValidationResults({});
+      
+    } catch (error) {
+      console.error('Clear token error:', error);
+      toast({
+        title: "Clear Failed",
+        description: `Failed to clear token: ${(error as Error).message}`,
         variant: "destructive",
       });
     }
@@ -363,6 +402,15 @@ export const CarrierCredentialValidator = () => {
           >
             <TestTube className="h-4 w-4" />
             Test OAuth Flow
+          </Button>
+          <Button
+            onClick={clearUPSToken}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Clear UPS Token
           </Button>
           <Button onClick={fetchCarriers} disabled={loading} variant="outline">
             <RefreshCw className="h-4 w-4 mr-2" />
