@@ -380,6 +380,85 @@ export const CarrierCredentialValidator = () => {
     return totalCarriers > 0 ? (validatedCarriers / totalCarriers) * 100 : 0;
   };
 
+  const setupUPSCredentials = async () => {
+    try {
+      // Find UPS configuration if it exists
+      let upsConfig = carriers.find(c => c.carrier_name === 'UPS');
+      
+      // Prompt for client ID
+      const clientId = window.prompt('Enter your UPS Client ID:');
+      if (!clientId) return;
+      
+      // Prompt for client secret
+      const clientSecret = window.prompt('Enter your UPS Client Secret:');
+      if (!clientSecret) return;
+      
+      // Prompt for account number
+      const accountNumber = window.prompt('Enter your UPS Account Number:');
+      if (!accountNumber) return;
+      
+      // Prepare credentials object
+      const credentials = {
+        client_id: clientId,
+        client_secret: clientSecret,
+        environment: 'sandbox', // Default to sandbox
+        access_token: null,
+        token_expires_at: '2024-01-01T00:00:00.000Z' // Expired to force refresh
+      };
+      
+      if (upsConfig) {
+        // Update existing configuration
+        const { error } = await supabase
+          .from('carrier_configurations')
+          .update({ 
+            api_credentials: credentials,
+            account_number: accountNumber,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', upsConfig.id);
+          
+        if (error) throw error;
+      } else {
+        // Create new configuration
+        const { data: userData } = await supabase.auth.getUser();
+        if (!userData.user) {
+          throw new Error('User not authenticated');
+        }
+        
+        const { error } = await supabase
+          .from('carrier_configurations')
+          .insert({
+            carrier_name: 'UPS',
+            api_credentials: credentials,
+            account_number: accountNumber,
+            is_active: true,
+            settings: {},
+            pickup_type_code: '01',
+            default_package_type: '02',
+            user_id: userData.user.id
+          });
+          
+        if (error) throw error;
+      }
+      
+      toast({
+        title: "UPS Credentials Saved",
+        description: "Your UPS credentials have been saved. Test them now to generate a token.",
+      });
+      
+      // Refresh carriers to show the new configuration
+      await fetchCarriers();
+      
+    } catch (error) {
+      console.error('Error setting up UPS credentials:', error);
+      toast({
+        title: "Error",
+        description: `Failed to save UPS credentials: ${(error as Error).message}`,
+        variant: "destructive",
+      });
+    }
+  };
+
   useEffect(() => {
     fetchCarriers();
   }, []);
@@ -394,6 +473,15 @@ export const CarrierCredentialValidator = () => {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button
+            onClick={setupUPSCredentials}
+            variant="default"
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <Key className="h-4 w-4" />
+            Setup UPS Credentials
+          </Button>
           <Button
             onClick={testOAuthFlow}
             variant="outline"

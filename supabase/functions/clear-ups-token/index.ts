@@ -57,7 +57,7 @@ serve(async (req) => {
 
     const credentials = carrierConfig.api_credentials as any;
     
-    // Force token to be expired so it gets refreshed
+    // Force token to be expired but preserve client_id and client_secret
     const expiredCredentials = {
       ...credentials,
       access_token: null,
