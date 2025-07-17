@@ -178,8 +178,8 @@ serve(async (req) => {
     // Determine if we're using production or sandbox based on the credentials
     const isProduction = credentials.environment === 'production';
     const ratingApiUrl = isProduction 
-      ? 'https://onlinetools.ups.com/api/rating/v2409/rate'  // Production
-      : 'https://wwwcie.ups.com/api/rating/v2409/rate';      // Sandbox
+      ? 'https://onlinetools.ups.com/api/rating/v1/rate'  // Production - Updated to v1
+      : 'https://wwwcie.ups.com/api/rating/v1/rate';      // Sandbox - Updated to v1
       
     console.log(`Using ${isProduction ? 'PRODUCTION' : 'SANDBOX'} UPS Rating endpoint: ${ratingApiUrl}`);
     
