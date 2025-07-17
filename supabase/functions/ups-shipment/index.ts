@@ -14,6 +14,7 @@ interface ShipmentRequest {
     name: string;
     company?: string;
     address: string;
+    address2?: string;
     city: string;
     state: string;
     zip: string;
@@ -24,6 +25,7 @@ interface ShipmentRequest {
     name: string;
     company?: string;
     address: string;
+    address2?: string;
     city: string;
     state: string;
     zip: string;
@@ -171,7 +173,9 @@ serve(async (req) => {
             CompanyDisplayableName: requestData.shipFrom.company || requestData.shipFrom.name,
             ShipperNumber: upsAccountNumber,
             Address: {
-              AddressLine: [requestData.shipFrom.address],
+              AddressLine: requestData.shipFrom.address2 
+                ? [requestData.shipFrom.address, requestData.shipFrom.address2]
+                : [requestData.shipFrom.address],
               City: requestData.shipFrom.city,
               StateProvinceCode: requestData.shipFrom.state,
               PostalCode: requestData.shipFrom.zip,
@@ -186,7 +190,9 @@ serve(async (req) => {
             AttentionName: requestData.shipTo.name,
             CompanyDisplayableName: requestData.shipTo.company || requestData.shipTo.name,
             Address: {
-              AddressLine: [requestData.shipTo.address],
+              AddressLine: requestData.shipTo.address2 
+                ? [requestData.shipTo.address, requestData.shipTo.address2]
+                : [requestData.shipTo.address],
               City: requestData.shipTo.city,
               StateProvinceCode: requestData.shipTo.state,
               PostalCode: requestData.shipTo.zip,
@@ -202,7 +208,9 @@ serve(async (req) => {
             AttentionName: requestData.shipFrom.name,
             CompanyDisplayableName: requestData.shipFrom.company || requestData.shipFrom.name,
             Address: {
-              AddressLine: [requestData.shipFrom.address],
+              AddressLine: requestData.shipFrom.address2 
+                ? [requestData.shipFrom.address, requestData.shipFrom.address2]
+                : [requestData.shipFrom.address],
               City: requestData.shipFrom.city,
               StateProvinceCode: requestData.shipFrom.state,
               PostalCode: requestData.shipFrom.zip,

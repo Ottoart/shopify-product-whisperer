@@ -307,6 +307,7 @@ export function ShippingDetailsDialog({ isOpen, onClose, order, onUpdateOrder }:
           shipTo: {
             name: order.customerName,
             address: order.shippingAddress.line1,
+            address2: order.shippingAddress.line2,
             city: order.shippingAddress.city,
             state: order.shippingAddress.state,
             zip: order.shippingAddress.zip,
