@@ -265,11 +265,13 @@ serve(async (req) => {
 
     console.log('📡 Sending UPS request:', JSON.stringify(upsShipmentRequest, null, 2));
 
-    // Determine if we're using production or sandbox based on the credentials
+    // Determine environment - default to sandbox for safety
     const isProduction = credentials.environment === 'production';
+    console.log('🌍 UPS Environment:', credentials.environment || 'sandbox (default)');
+    
     const shipmentApiUrl = isProduction 
-      ? 'https://onlinetools.ups.com/api/shipments/v1/ship'  // Production - using v1 which is more stable
-      : 'https://wwwcie.ups.com/api/shipments/v1/ship';      // Sandbox - using v1 which is more stable
+      ? 'https://onlinetools.ups.com/api/shipments/v1/ship'  // Production
+      : 'https://wwwcie.ups.com/api/shipments/v1/ship';      // Sandbox
       
     console.log(`Using ${isProduction ? 'PRODUCTION' : 'SANDBOX'} UPS Shipping endpoint: ${shipmentApiUrl}`);
     
