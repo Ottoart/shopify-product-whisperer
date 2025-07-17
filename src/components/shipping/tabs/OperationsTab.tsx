@@ -3,6 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { OrderManagement } from '../OrderManagement';
+import { ShippingLabelManager } from '../ShippingLabelManager';
 import { 
   BarChart, 
   Bar, 
@@ -15,7 +18,8 @@ import {
   Line,
   PieChart,
   Pie,
-  Cell
+  Cell,
+  BarChart as BarChartIcon
 } from 'recharts';
 import { 
   Package, 
@@ -28,7 +32,8 @@ import {
   MapPin,
   Calendar,
   Info,
-  MoreHorizontal
+  MoreHorizontal,
+  FileText
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -291,7 +296,23 @@ export function OperationsTab({ storeFilter, dateRange, dateRangeLabel }: Operat
   );
 
   return (
-    <div className="space-y-6">
+    <Tabs defaultValue="dashboard" className="space-y-6">
+      <TabsList className="grid w-full grid-cols-3">
+        <TabsTrigger value="dashboard" className="flex items-center gap-2">
+          <BarChartIcon className="h-4 w-4" />
+          Dashboard
+        </TabsTrigger>
+        <TabsTrigger value="orders" className="flex items-center gap-2">
+          <Package className="h-4 w-4" />
+          Order Management
+        </TabsTrigger>
+        <TabsTrigger value="labels" className="flex items-center gap-2">
+          <FileText className="h-4 w-4" />
+          Shipping Labels
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="dashboard" className="space-y-6">
       {/* Key Operations Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
@@ -467,6 +488,15 @@ export function OperationsTab({ storeFilter, dateRange, dateRangeLabel }: Operat
 
       {/* UPS API Documentation Integration */}
       <UpsApiDocs />
-    </div>
+      </TabsContent>
+
+      <TabsContent value="orders">
+        <OrderManagement />
+      </TabsContent>
+
+      <TabsContent value="labels">
+        <ShippingLabelManager />
+      </TabsContent>
+    </Tabs>
   );
 }

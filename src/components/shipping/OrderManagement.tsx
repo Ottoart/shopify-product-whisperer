@@ -48,6 +48,7 @@ import {
   Grid3X3
 } from "lucide-react";
 import { ShippedProductsView } from './ShippedProductsView';
+import { LabelPurchaseDialog } from './LabelPurchaseDialog';
 
 export function OrderManagement() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -97,6 +98,8 @@ export function OrderManagement() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showLabelPurchaseDialog, setShowLabelPurchaseDialog] = useState(false);
+  const [selectedOrderForLabelPurchase, setSelectedOrderForLabelPurchase] = useState<Order | null>(null);
   const { user } = useAuth();
 
   // Auto-refresh every 30 minutes
@@ -370,6 +373,21 @@ export function OrderManagement() {
     setShowProductDialog(true);
   };
 
+  const handlePurchaseLabel = (order: Order) => {
+    setSelectedOrderForLabelPurchase(order);
+    setShowLabelPurchaseDialog(true);
+  };
+
+  const handleLabelPurchased = () => {
+    // Refresh orders to update status
+    fetchOrders();
+    // Close the dialog after a short delay
+    setTimeout(() => {
+      setShowLabelPurchaseDialog(false);
+      setSelectedOrderForLabelPurchase(null);
+    }, 3000);
+  };
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Header Actions */}
@@ -612,14 +630,15 @@ export function OrderManagement() {
                        State {getSortIcon('state')}
                      </button>
                    </TableHead>
-                    <TableHead className="w-32">
-                      <button 
-                        className="flex items-center gap-1 hover:text-foreground/80" 
-                        onClick={() => handleSort('requestedService')}
-                      >
-                        Requested Service {getSortIcon('requestedService')}
-                      </button>
-                    </TableHead>
+                     <TableHead className="w-32">
+                       <button 
+                         className="flex items-center gap-1 hover:text-foreground/80" 
+                         onClick={() => handleSort('requestedService')}
+                       >
+                         Requested Service {getSortIcon('requestedService')}
+                       </button>
+                     </TableHead>
+                     <TableHead className="w-32">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -748,11 +767,41 @@ export function OrderManagement() {
                           {order.shippingAddress.state}
                         </div>
                       </TableCell>
-                       <TableCell>
-                         <div className="text-sm">
-                           {order.shippingDetails?.requestedService || "Not Set"}
-                         </div>
-                       </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            {order.shippingDetails?.requestedService || "Not Set"}
+                          </div>
+                        </TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => handlePurchaseLabel(order)}
+                              className="flex items-center gap-1"
+                            >
+                              <Truck className="h-3 w-3" />
+                              Ship Label
+                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="p-1 h-6 w-6">
+                                  <MoreHorizontal className="h-3 w-3" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleOrderClick(order)}>
+                                  <Edit2 className="h-4 w-4 mr-2" />
+                                  Edit Order
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                  <Package className="h-4 w-4 mr-2" />
+                                  Mark as Shipped
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </TableCell>
                     </TableRow>
                   );
                 })}
@@ -809,6 +858,13 @@ export function OrderManagement() {
             )
           );
         }}
+      />
+
+      <LabelPurchaseDialog
+        open={showLabelPurchaseDialog}
+        onOpenChange={setShowLabelPurchaseDialog}
+        order={selectedOrderForLabelPurchase}
+        onLabelPurchased={handleLabelPurchased}
       />
     </div>
   );
