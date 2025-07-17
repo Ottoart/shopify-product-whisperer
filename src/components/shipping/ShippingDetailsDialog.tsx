@@ -248,6 +248,22 @@ export function ShippingDetailsDialog({ isOpen, onClose, order, onUpdateOrder }:
         return;
       }
 
+      // Get the ship-from address from store configuration
+      const { data: storeConfig, error: storeError } = await supabase
+        .from('store_shipping_configs')
+        .select('*')
+        .eq('is_default', true)
+        .maybeSingle();
+
+      if (storeError || !storeConfig) {
+        toast({
+          title: "Configuration Error",
+          description: "No default shipping address configured. Please add a ship-from address first.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // UPS account number for label creation
       const upsAccountNumber = "A906G5";
 
@@ -256,12 +272,15 @@ export function ShippingDetailsDialog({ isOpen, onClose, order, onUpdateOrder }:
           orderId: order.id,
           serviceCode: selectedRate.service_code,
           shipFrom: {
-            name: "Default Store",
-            address: "123 Store Street",
-            city: "Your City",
-            state: "Your State",
-            zip: "12345",
-            country: "US"
+            name: storeConfig.from_name,
+            company: storeConfig.from_company,
+            address: storeConfig.from_address_line1,
+            address2: storeConfig.from_address_line2,
+            city: storeConfig.from_city,
+            state: storeConfig.from_state,
+            zip: storeConfig.from_zip,
+            country: storeConfig.from_country,
+            phone: storeConfig.from_phone
           },
           shipTo: {
             name: order.customerName,
