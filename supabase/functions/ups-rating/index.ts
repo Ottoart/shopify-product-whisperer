@@ -74,11 +74,12 @@ serve(async (req) => {
     const requestData: RatingRequest = await req.json();
 
     // Ensure we have a valid UPS token
+    console.log('🔧 Getting UPS credentials for user:', user.id);
     const authResult = await ensureValidUPSToken(supabase, user.id);
     if (!authResult.success) {
       console.error('UPS authentication failed:', authResult.error);
       return new Response(
-        JSON.stringify({ error: authResult.error }),
+        JSON.stringify({ error: 'UPS authentication failed: ' + authResult.error }),
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -86,6 +87,7 @@ serve(async (req) => {
       );
     }
 
+    console.log('✅ UPS authentication successful');
     const credentials = authResult.credentials;
     const accountNumber = credentials.account_number;
 
