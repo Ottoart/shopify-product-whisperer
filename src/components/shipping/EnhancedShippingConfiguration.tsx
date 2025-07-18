@@ -528,6 +528,8 @@ export function EnhancedShippingConfiguration({
         body: requestData
       });
 
+      console.log('📦 Shipping rates response:', { data, error });
+
       if (error) throw error;
 
       if (data?.rates && data.rates.length > 0) {
