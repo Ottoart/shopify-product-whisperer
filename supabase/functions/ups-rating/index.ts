@@ -40,14 +40,14 @@ serve(async (req) => {
   }
 
   try {
-    // Get the authorization header
+    // Get user from token
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       console.error('❌ No authorization header provided');
       return new Response(
         JSON.stringify({ error: 'No authorization header' }),
         { 
-          status: 401, 
+          status: 401,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
@@ -58,15 +58,17 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get user ID from the Authorization header
-    const { data: { user }, error: authError } = await createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
-      global: { headers: { Authorization: authHeader } }
-    }).auth.getUser();
-    
-    if (authError || !user) {
-      console.error('❌ Authentication error:', authError);
+    // Extract user ID from JWT token directly
+    let userId: string;
+    try {
+      const token = authHeader.replace('Bearer ', '');
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      userId = payload.sub;
+      console.log('✅ Extracted user ID:', userId);
+    } catch (error) {
+      console.error('❌ Invalid JWT token:', error);
       return new Response(
-        JSON.stringify({ error: 'Invalid authentication' }),
+        JSON.stringify({ error: 'Invalid authentication token' }),
         { 
           status: 401, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -78,8 +80,8 @@ serve(async (req) => {
     console.log('📦 UPS Rating request received:', JSON.stringify(requestData, null, 2));
 
     // Ensure we have a valid UPS token
-    console.log('🔧 Getting UPS credentials for user:', user.id);
-    const authResult = await ensureValidUPSToken(supabase, user.id);
+    console.log('🔧 Getting UPS credentials for user:', userId);
+    const authResult = await ensureValidUPSToken(supabase, userId);
     if (!authResult.success) {
       console.error('❌ UPS authentication failed:', authResult.error);
       return new Response(
