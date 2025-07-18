@@ -185,6 +185,12 @@ serve(async (req) => {
     allRates.sort((a, b) => a.cost - b.cost);
 
     console.log(`Found ${allRates.length} total rates`);
+    if (allRates.length === 0) {
+      console.log('❌ No rates found from any carrier - this means all carriers failed or returned empty arrays');
+      console.log('🔍 Active carriers checked:', carriers?.map(c => c.carrier_name) || []);
+    } else {
+      console.log('✅ Rates found:', allRates.map(r => `${r.carrier} ${r.service_name}: $${r.cost}`));
+    }
 
     return new Response(
       JSON.stringify({ 
