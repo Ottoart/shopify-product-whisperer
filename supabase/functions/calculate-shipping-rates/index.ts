@@ -240,13 +240,15 @@ async function getUPSRates(carrier: any, shipFrom: any, shipTo: any, packageDeta
 
     if (error) {
       console.error('UPS API error:', error);
-      return getHardcodedRates(carrier).filter(r => r.carrier === 'UPS');
+      // Don't return fake rates for authenticated UPS - return empty array instead
+      return [];
     }
 
     return data?.rates || [];
   } catch (error) {
     console.error('UPS rating error:', error);
-    return getHardcodedRates(carrier).filter(r => r.carrier === 'UPS');
+    // Don't return fake rates for authenticated UPS - return empty array instead
+    return [];
   }
 }
 
