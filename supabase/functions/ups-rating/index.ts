@@ -2,11 +2,13 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3'
 import { ensureValidUPSToken } from '../_shared/ups-auth.ts'
 
+// CORS headers
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Request interface
 interface RatingRequest {
   shipFrom: {
     address: string;
@@ -38,10 +40,12 @@ serve(async (req) => {
   }
 
   try {
+    // Get the authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
+      console.error('❌ No authorization header provided');
       return new Response(
-        JSON.stringify({ error: 'Authorization required' }),
+        JSON.stringify({ error: 'No authorization header' }),
         { 
           status: 401, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -55,13 +59,12 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get user ID from the Authorization header
-    const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: authError } = await createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
       global: { headers: { Authorization: authHeader } }
     }).auth.getUser();
     
     if (authError || !user) {
-      console.error('Authentication error:', authError);
+      console.error('❌ Authentication error:', authError);
       return new Response(
         JSON.stringify({ error: 'Invalid authentication' }),
         { 
@@ -72,12 +75,13 @@ serve(async (req) => {
     }
 
     const requestData: RatingRequest = await req.json();
+    console.log('📦 UPS Rating request received:', JSON.stringify(requestData, null, 2));
 
     // Ensure we have a valid UPS token
     console.log('🔧 Getting UPS credentials for user:', user.id);
     const authResult = await ensureValidUPSToken(supabase, user.id);
     if (!authResult.success) {
-      console.error('UPS authentication failed:', authResult.error);
+      console.error('❌ UPS authentication failed:', authResult.error);
       return new Response(
         JSON.stringify({ error: 'UPS authentication failed: ' + authResult.error }),
         { 
@@ -91,14 +95,19 @@ serve(async (req) => {
     const credentials = authResult.credentials;
     const accountNumber = credentials.account_number;
 
-    // Validate required fields before API call
+    // Validate required fields
     if (!requestData.shipFrom?.zip || !requestData.shipFrom?.country ||
         !requestData.shipTo?.zip || !requestData.shipTo?.country ||
         !requestData.package?.weight) {
+      console.error('❌ Missing required fields:', requestData);
       return new Response(
         JSON.stringify({ 
           error: 'Missing required fields', 
-          required: ['shipFrom.zip', 'shipFrom.country', 'shipTo.zip', 'shipTo.country', 'package.weight']
+          details: {
+            shipFrom: requestData.shipFrom,
+            shipTo: requestData.shipTo,
+            package: requestData.package
+          }
         }),
         { 
           status: 400, 
@@ -107,122 +116,162 @@ serve(async (req) => {
       );
     }
 
-    // Prepare UPS Rating API request
-    const ratingRequest = {
-      RateRequest: {
-        Request: {
-          RequestOption: "Rate",
-          TransactionReference: {
-            CustomerContext: "Rating"
-          }
-        },
-        Shipment: {
-          Shipper: {
-            ShipperNumber: accountNumber || "",
-            Address: {
-              AddressLine: [requestData.shipFrom.address],
-              City: requestData.shipFrom.city,
-              StateProvinceCode: requestData.shipFrom.state,
-              PostalCode: requestData.shipFrom.zip,
-              CountryCode: requestData.shipFrom.country
-            }
-          },
-          ShipTo: {
-            Address: {
-              AddressLine: [requestData.shipTo.address],
-              City: requestData.shipTo.city,
-              StateProvinceCode: requestData.shipTo.state,
-              PostalCode: requestData.shipTo.zip,
-              CountryCode: requestData.shipTo.country
-            }
-          },
-          ShipFrom: {
-            Address: {
-              AddressLine: [requestData.shipFrom.address],
-              City: requestData.shipFrom.city,
-              StateProvinceCode: requestData.shipFrom.state,
-              PostalCode: requestData.shipFrom.zip,
-              CountryCode: requestData.shipFrom.country
-            }
-          },
-          Package: [
-            {
-              PackagingType: {
-                Code: "02", // Customer Supplied Package
-                Description: "Package"
-              },
-              PackageWeight: {
-                UnitOfMeasurement: {
-                  Code: "LBS"
-                },
-                Weight: requestData.package.weight.toString()
-              },
-              Dimensions: requestData.package.length ? {
-                UnitOfMeasurement: {
-                  Code: "IN"
-                },
-                Length: requestData.package.length.toString(),
-                Width: requestData.package.width?.toString() || "1",
-                Height: requestData.package.height?.toString() || "1"
-              } : undefined
-            }
-          ]
-        }
-      }
-    };
-
-    // Add service code if specified
-    if (requestData.serviceCode) {
-      ratingRequest.RateRequest.Shipment.Service = {
-        Code: requestData.serviceCode
-      };
-    }
-
-    // Determine if we're using production or sandbox based on the credentials
-    const isProduction = credentials.environment === 'production';
-    const ratingApiUrl = isProduction 
-      ? 'https://onlinetools.ups.com/api/rating/v1/rate'  // Production - Updated to v1
-      : 'https://wwwcie.ups.com/api/rating/v1/rate';      // Sandbox - Updated to v1
-      
-    console.log(`Using ${isProduction ? 'PRODUCTION' : 'SANDBOX'} UPS Rating endpoint: ${ratingApiUrl}`);
-    
-    // Call UPS Rating API with proper error handling
-    const upsResponse = await fetch(ratingApiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${credentials.access_token}`,
-        'transId': crypto.randomUUID(),
-        'transactionSrc': 'rating'
-      },
-      body: JSON.stringify(ratingRequest)
-    });
-
-    const responseText = await upsResponse.text();
-    console.log('UPS API response status:', upsResponse.status);
-    console.log('UPS API response:', responseText);
-
-    if (!upsResponse.ok) {
+    if (!accountNumber) {
+      console.error('❌ Missing UPS account number');
       return new Response(
-        JSON.stringify({ 
-          error: 'UPS API error', 
-          details: responseText,
-          status: upsResponse.status 
-        }),
+        JSON.stringify({ error: 'UPS account number not configured' }),
         { 
-          status: upsResponse.status, 
+          status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
     }
 
-    let upsData;
-    try {
-      upsData = JSON.parse(responseText);
-    } catch (e) {
-      console.error('Failed to parse UPS response:', e);
+    // Determine environment and API endpoint
+    const isProduction = credentials.environment === 'production';
+    console.log('🌍 UPS Environment:', isProduction ? 'PRODUCTION' : 'SANDBOX');
+    
+    const ratingApiUrl = isProduction 
+      ? 'https://onlinetools.ups.com/api/rating/v1/rate'
+      : 'https://wwwcie.ups.com/api/rating/v1/rate';
+      
+    console.log('📍 Using Rating API URL:', ratingApiUrl);
+
+    // Construct proper UPS Rating API request according to documentation
+    const upsRequest = {
+      RateRequest: {
+        Request: {
+          RequestOption: "Shop",  // "Shop" returns all available services, "Rate" returns specific service
+          TransactionReference: {
+            CustomerContext: "Rating and Service Selection"
+          }
+        },
+        Shipment: {
+          Shipper: {
+            Name: "Shipper",
+            ShipperNumber: accountNumber,
+            Address: {
+              AddressLine: [requestData.shipFrom.address || ""],
+              City: requestData.shipFrom.city || "",
+              StateProvinceCode: requestData.shipFrom.state || "",
+              PostalCode: requestData.shipFrom.zip || "",
+              CountryCode: requestData.shipFrom.country || "US"
+            }
+          },
+          ShipTo: {
+            Name: "Consignee", 
+            Address: {
+              AddressLine: [requestData.shipTo.address || ""],
+              City: requestData.shipTo.city || "",
+              StateProvinceCode: requestData.shipTo.state || "",
+              PostalCode: requestData.shipTo.zip || "",
+              CountryCode: requestData.shipTo.country || "US"
+            }
+          },
+          ShipFrom: {
+            Name: "Ship From Location",
+            Address: {
+              AddressLine: [requestData.shipFrom.address || ""],
+              City: requestData.shipFrom.city || "",
+              StateProvinceCode: requestData.shipFrom.state || "",
+              PostalCode: requestData.shipFrom.zip || "",
+              CountryCode: requestData.shipFrom.country || "US"
+            }
+          },
+          Package: [{
+            PackagingType: {
+              Code: "02",  // Customer Supplied Package
+              Description: "Package"
+            },
+            Dimensions: {
+              UnitOfMeasurement: {
+                Code: "IN",
+                Description: "Inches"
+              },
+              Length: (requestData.package.length || 12).toString(),
+              Width: (requestData.package.width || 12).toString(), 
+              Height: (requestData.package.height || 6).toString()
+            },
+            PackageWeight: {
+              UnitOfMeasurement: {
+                Code: "LBS",
+                Description: "Pounds"
+              },
+              Weight: (requestData.package.weight || 1).toString()
+            }
+          }]
+        }
+      }
+    };
+
+    console.log('📦 Final UPS API Request:', JSON.stringify(upsRequest, null, 2));
+
+    // Prepare headers for UPS API call - CRITICAL: Proper format
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${credentials.access_token}`,
+      'transId': 'PrepFox-Rating-' + Date.now(),
+      'transactionSrc': 'PrepFox'
+    };
+
+    console.log('📡 Request headers:', {
+      'Content-Type': headers['Content-Type'],
+      'Authorization': 'Bearer ' + credentials.access_token?.substring(0, 20) + '...',
+      'transId': headers.transId,
+      'transactionSrc': headers.transactionSrc
+    });
+
+    // Make the UPS API call
+    console.log('🚀 Calling UPS Rating API...');
+    const response = await fetch(ratingApiUrl, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(upsRequest)
+    });
+
+    console.log('📥 UPS API Response Status:', response.status);
+    console.log('📥 UPS API Response Headers:', Object.fromEntries(response.headers.entries()));
+
+    const responseText = await response.text();
+    console.log('📥 UPS API Response Body:', responseText);
+
+    if (!response.ok) {
+      console.error('❌ UPS API Error - Status:', response.status);
+      console.error('❌ UPS API Error - Response:', responseText);
+      
+      let errorMessage = 'UPS API request failed';
+      try {
+        const errorData = JSON.parse(responseText);
+        if (errorData.response?.errors?.[0]?.message) {
+          errorMessage = errorData.response.errors[0].message;
+        } else if (errorData.Fault?.detail?.Errors?.ErrorDetail?.PrimaryErrorCode?.Description) {
+          errorMessage = errorData.Fault.detail.Errors.ErrorDetail.PrimaryErrorCode.Description;
+        }
+      } catch (e) {
+        console.log('Could not parse error response as JSON');
+      }
+      
       return new Response(
-        JSON.stringify({ error: 'Invalid response from UPS API' }),
+        JSON.stringify({ 
+          error: errorMessage,
+          status: response.status,
+          details: responseText
+        }),
+        { 
+          status: response.status, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Parse successful response
+    let rateResponse;
+    try {
+      rateResponse = JSON.parse(responseText);
+    } catch (e) {
+      console.error('❌ Failed to parse UPS response as JSON:', e);
+      return new Response(
+        JSON.stringify({ error: 'Invalid response format from UPS' }),
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -230,27 +279,33 @@ serve(async (req) => {
       );
     }
 
+    console.log('✅ UPS API Success - Parsed Response:', JSON.stringify(rateResponse, null, 2));
+
     // Transform UPS response to our format
     const rates = [];
     
-    if (upsData.RateResponse?.RatedShipment) {
-      const ratedShipments = Array.isArray(upsData.RateResponse.RatedShipment) 
-        ? upsData.RateResponse.RatedShipment 
-        : [upsData.RateResponse.RatedShipment];
+    if (rateResponse.RateResponse?.RatedShipment) {
+      const ratedShipments = Array.isArray(rateResponse.RateResponse.RatedShipment) 
+        ? rateResponse.RateResponse.RatedShipment 
+        : [rateResponse.RateResponse.RatedShipment];
 
       for (const shipment of ratedShipments) {
-        const serviceCode = shipment.Service?.Code || 'UNK';
+        const serviceCode = shipment.Service?.Code || 'UNKNOWN';
+        const serviceName = getUPSServiceName(serviceCode);
+        const serviceType = getUPSServiceType(serviceCode);
+        const estimatedDays = getUPSEstimatedDays(serviceCode);
+        
+        const totalCharges = shipment.TotalCharges?.MonetaryValue || '0';
+        const currency = shipment.TotalCharges?.CurrencyCode || 'USD';
+
         rates.push({
-          service_code: serviceCode,
-          service_name: getUPSServiceName(serviceCode),
-          service_type: getUPSServiceType(serviceCode),
-          cost: parseFloat(shipment.TotalCharges?.MonetaryValue || '0'),
-          currency: shipment.TotalCharges?.CurrencyCode || 'USD',
-          estimated_days: getUPSEstimatedDays(serviceCode),
-          delivery_date: shipment.GuaranteedDaysToDelivery ? 
-            new Date(Date.now() + parseInt(shipment.GuaranteedDaysToDelivery) * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : 
-            undefined,
           carrier: 'UPS',
+          service_code: serviceCode,
+          service_name: serviceName,
+          service_type: serviceType,
+          cost: parseFloat(totalCharges),
+          currency: currency,
+          estimated_days: estimatedDays,
           supports_tracking: true,
           supports_insurance: true,
           supports_signature: true
@@ -258,20 +313,23 @@ serve(async (req) => {
       }
     }
 
-    console.log('Transformed rates:', rates);
+    console.log('✅ Transformed rates:', rates);
 
     return new Response(
       JSON.stringify({ rates }),
       { 
-        status: 200,
+        status: 200, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     );
 
   } catch (error) {
-    console.error('UPS rating error:', error);
+    console.error('❌ Unexpected error in UPS rating:', error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error', details: error.message }),
+      JSON.stringify({ 
+        error: 'Internal server error',
+        details: error.message 
+      }),
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -280,6 +338,7 @@ serve(async (req) => {
   }
 });
 
+// Helper functions for UPS service mapping
 function getUPSServiceName(code: string): string {
   const serviceNames: { [key: string]: string } = {
     '01': 'UPS Next Day Air',
@@ -290,7 +349,7 @@ function getUPSServiceName(code: string): string {
     '11': 'UPS Standard',
     '12': 'UPS 3 Day Select',
     '13': 'UPS Next Day Air Saver',
-    '14': 'UPS Next Day Air Early',
+    '14': 'UPS Next Day Air Early A.M.',
     '54': 'UPS Worldwide Express Plus',
     '59': 'UPS 2nd Day Air A.M.',
     '65': 'UPS Saver'
@@ -299,37 +358,32 @@ function getUPSServiceName(code: string): string {
 }
 
 function getUPSServiceType(code: string): string {
-  const serviceTypes: { [key: string]: string } = {
-    '01': 'overnight',
-    '02': 'expedited',
-    '03': 'standard',
-    '07': 'overnight',
-    '08': 'expedited',
-    '11': 'standard',
-    '12': 'expedited',
-    '13': 'overnight',
-    '14': 'overnight',
-    '54': 'overnight',
-    '59': 'expedited',
-    '65': 'standard'
-  };
-  return serviceTypes[code] || 'standard';
+  const expeditedCodes = ['01', '13', '14', '59'];
+  const expressOvernightCodes = ['01', '13', '14'];
+  const expedited2DayCodes = ['02', '59'];
+  const expedited3DayCodes = ['12'];
+  
+  if (expressOvernightCodes.includes(code)) return 'overnight';
+  if (expedited2DayCodes.includes(code)) return 'expedited';
+  if (expedited3DayCodes.includes(code)) return 'expedited';
+  if (expeditedCodes.includes(code)) return 'expedited';
+  return 'standard';
 }
 
 function getUPSEstimatedDays(code: string): string {
   const estimatedDays: { [key: string]: string } = {
-    '01': '1',
-    '02': '2',
-    '03': '1-5',
-    '07': '1-2',
-    '08': '2-3',
-    '11': '1-5',
-    '12': '3',
-    '13': '1',
-    '14': '1',
-    '54': '1',
-    '59': '2',
-    '65': '1-5'
+    '01': '1 business day',
+    '02': '2 business days', 
+    '03': '1-5 business days',
+    '07': '1-3 business days',
+    '08': '3-5 business days',
+    '11': '1-5 business days',
+    '12': '3 business days',
+    '13': '1 business day',
+    '14': '1 business day',
+    '54': '1-2 business days',
+    '59': '2 business days',
+    '65': '1-3 business days'
   };
-  return estimatedDays[code] || '1-5';
+  return estimatedDays[code] || '3-5 business days';
 }
