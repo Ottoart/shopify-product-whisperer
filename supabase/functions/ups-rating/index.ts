@@ -58,22 +58,28 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get user from Supabase auth
-    const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
-    
-    if (authError || !user) {
-      console.error('❌ Authentication error:', authError?.message || 'No user found');
+    // Extract user ID from JWT token directly
+    let userId: string;
+    try {
+      const token = authHeader.replace('Bearer ', '');
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      userId = payload.sub;
+      
+      if (!userId) {
+        throw new Error('No sub claim in token');
+      }
+      
+      console.log('✅ Extracted user ID:', userId);
+    } catch (error) {
+      console.error('❌ JWT parsing error:', error);
       return new Response(
-        JSON.stringify({ error: 'Invalid authentication' }),
+        JSON.stringify({ error: 'Invalid authentication token' }),
         { 
           status: 401, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
     }
-    
-    const userId = user.id;
-    console.log('✅ Authenticated user ID:', userId);
 
     const requestData: RatingRequest = await req.json();
     console.log('📦 UPS Rating request received:', JSON.stringify(requestData, null, 2));
