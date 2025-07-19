@@ -53,40 +53,44 @@ serve(async (req) => {
       );
     }
 
-    // Initialize Supabase client with service role for internal function calls
+    // Initialize Supabase client with anon key for auth verification
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Extract user ID from JWT token directly
-    let userId: string;
-    try {
-      const token = authHeader.replace('Bearer ', '');
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      userId = payload.sub;
-      
-      if (!userId) {
-        throw new Error('No sub claim in token');
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: authHeader
+        }
       }
-      
-      console.log('✅ Extracted user ID:', userId);
-    } catch (error) {
-      console.error('❌ JWT parsing error:', error);
+    });
+
+    // Get user from Supabase auth
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      console.error('❌ Authentication error:', authError?.message || 'No user found');
       return new Response(
-        JSON.stringify({ error: 'Invalid authentication token' }),
+        JSON.stringify({ error: 'Invalid authentication' }),
         { 
           status: 401, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
     }
+    
+    const userId = user.id;
+    console.log('✅ Authenticated user ID:', userId);
+
+    // Create service role client for database operations
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const serviceSupabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const requestData: RatingRequest = await req.json();
     console.log('📦 UPS Rating request received:', JSON.stringify(requestData, null, 2));
 
     // Ensure we have a valid UPS token
     console.log('🔧 Getting UPS credentials for user:', userId);
-    const authResult = await ensureValidUPSToken(supabase, userId);
+    const authResult = await ensureValidUPSToken(serviceSupabase, userId);
     if (!authResult.success) {
       console.error('❌ UPS authentication failed:', authResult.error);
       return new Response(
