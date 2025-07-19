@@ -33,7 +33,8 @@ import {
   Calendar,
   Info,
   MoreHorizontal,
-  FileText
+  FileText,
+  Settings
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -41,6 +42,7 @@ import { format, subDays, parseISO, differenceInDays } from 'date-fns';
 import { AIRecommendations } from "../components/AIRecommendations";
 import { UpsApiDocs } from "../UpsApiDocs";
 import { CarrierRateComparison } from "../CarrierRateComparison";
+import { UpsProductionModeSwitch } from "../UpsProductionModeSwitch";
 
 interface OperationsTabProps {
   storeFilter: string | null;
@@ -298,7 +300,7 @@ export function OperationsTab({ storeFilter, dateRange, dateRangeLabel }: Operat
 
   return (
     <Tabs defaultValue="dashboard" className="space-y-6">
-      <TabsList className="grid w-full grid-cols-4">
+      <TabsList className="grid w-full grid-cols-5">
         <TabsTrigger value="dashboard" className="flex items-center gap-2">
           <BarChartIcon className="h-4 w-4" />
           Dashboard
@@ -310,6 +312,10 @@ export function OperationsTab({ storeFilter, dateRange, dateRangeLabel }: Operat
         <TabsTrigger value="shipping" className="flex items-center gap-2">
           <Truck className="h-4 w-4" />
           Rate Comparison
+        </TabsTrigger>
+        <TabsTrigger value="ups-config" className="flex items-center gap-2">
+          <Settings className="h-4 w-4" />
+          UPS Config
         </TabsTrigger>
         <TabsTrigger value="labels" className="flex items-center gap-2">
           <FileText className="h-4 w-4" />
@@ -501,6 +507,10 @@ export function OperationsTab({ storeFilter, dateRange, dateRangeLabel }: Operat
 
       <TabsContent value="shipping">
         <CarrierRateComparison />
+      </TabsContent>
+
+      <TabsContent value="ups-config">
+        <UpsProductionModeSwitch />
       </TabsContent>
 
       <TabsContent value="labels">
