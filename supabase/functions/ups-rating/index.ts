@@ -127,30 +127,11 @@ serve(async (req) => {
       );
     }
 
-    // CRITICAL: Check if this is Canadian shipping with US account
-    const isCanadianShipping = (requestData.shipFrom.country === 'CA' || requestData.shipFrom.country === 'Canada') &&
-                              (requestData.shipTo.country === 'CA' || requestData.shipTo.country === 'Canada');
-    
-    if (isCanadianShipping) {
-      console.error('❌ CANADIAN SHIPPING DETECTED - This requires Canadian UPS account setup');
-      console.error('Ship From Country:', requestData.shipFrom.country);
-      console.error('Ship To Country:', requestData.shipTo.country);
-      console.error('Account Number:', accountNumber);
-      
-      return new Response(
-        JSON.stringify({ 
-          error: 'Canadian shipping requires proper UPS Canada account configuration. US sandbox accounts cannot process Canadian domestic shipping.',
-          details: {
-            issue: 'Account/Region Mismatch',
-            solution: 'You need a Canadian UPS account or switch to US addresses for testing'
-          }
-        }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
+    // Log shipping countries for debugging
+    console.log('🌍 Shipping details:');
+    console.log('Ship From Country:', requestData.shipFrom.country);
+    console.log('Ship To Country:', requestData.shipTo.country);
+    console.log('Account Number:', accountNumber);
 
     if (!accountNumber) {
       console.error('❌ Missing UPS account number');
