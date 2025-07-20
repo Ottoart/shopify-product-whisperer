@@ -217,6 +217,12 @@ serve(async (req) => {
 async function getUPSRates(carrier: any, shipFrom: any, shipTo: any, packageDetails: any, additionalServices?: any): Promise<ShippingRate[]> {
   // Use existing UPS rating function
   try {
+    console.log('🔄 Calling UPS rating function with:', {
+      shipFrom,
+      shipTo,
+      packageDetails
+    });
+    
     const upsClient = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
     
     const { data, error } = await upsClient.functions.invoke('ups-rating', {
@@ -244,15 +250,19 @@ async function getUPSRates(carrier: any, shipFrom: any, shipTo: any, packageDeta
       }
     });
 
+    console.log('📦 UPS API response:', { data, error });
+
     if (error) {
-      console.error('UPS API error:', error);
+      console.error('❌ UPS API error:', error);
       // Don't return fake rates for authenticated UPS - return empty array instead
       return [];
     }
 
-    return data?.rates || [];
+    const rates = data?.rates || [];
+    console.log('✅ UPS rates received:', rates);
+    return rates;
   } catch (error) {
-    console.error('UPS rating error:', error);
+    console.error('❌ UPS rating error:', error);
     // Don't return fake rates for authenticated UPS - return empty array instead
     return [];
   }
