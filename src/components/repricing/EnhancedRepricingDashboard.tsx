@@ -93,7 +93,7 @@ export function EnhancedRepricingDashboard() {
 
       toast({
         title: "AI Pricing Insights Generated",
-        description: `Generated new pricing optimization insights.`,
+        description: "Generated new pricing optimization insights.",
       });
 
       loadRepricingData();

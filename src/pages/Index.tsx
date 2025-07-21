@@ -210,7 +210,7 @@ const Index = () => {
         message = `Syncing products from ${store.store_name}...`;
       } else if (store.platform === 'ebay') {
         syncFunction = 'sync-ebay-products';
-        message = `Syncing products from eBay store...`;
+        message = "Syncing products from eBay store...";
       } else {
         throw new Error(`Sync not supported for ${store.platform}`);
       }

@@ -195,7 +195,7 @@ export function OrderManagement() {
       
       const message = data?.success && data?.message 
         ? data.message 
-        : `Successfully synced orders for store`;
+        : "Successfully synced orders for store";
         
       toast({
         title: "Store updated",

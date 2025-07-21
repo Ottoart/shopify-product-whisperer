@@ -887,7 +887,7 @@ export function EnhancedShippingConfiguration({
                   <SelectItem key={pkg.id || pkg.label} value={pkg.id || pkg.label}>
                     <div>
                       <div className="font-medium">
-                        {pkg.source === 'carrier' && `📦 `}{pkg.label}
+                        {pkg.source === 'carrier' && "📦 "}{pkg.label}
                       </div>
                       <div className="text-xs text-muted-foreground">
                         {pkg.length} x {pkg.width} x {pkg.height} {pkg.unit}

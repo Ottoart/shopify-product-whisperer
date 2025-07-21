@@ -207,7 +207,7 @@ serve(async (req) => {
     const message = totalErrors === 0 
       ? `Sync completed successfully. New orders: ${totalSynced}, Status updates: ${totalStatusUpdated}`
       : totalErrors === totalStores
-      ? `Sync failed for all stores. No orders synced.`
+      ? "Sync failed for all stores. No orders synced."
       : `Sync partially completed. New orders: ${totalSynced}, Status updates: ${totalStatusUpdated} from ${totalStores - totalErrors} of ${totalStores} stores.`;
 
     return new Response(
@@ -295,7 +295,7 @@ async function syncShopifyOrders(storeConfig: any, user: any, supabase: any, syn
   
   // Log some order details for debugging
   if (shopifyOrders.length > 0) {
-    console.log(`Sample order from Shopify:`, {
+    console.log("Sample order from Shopify:", {
       name: shopifyOrders[0].name,
       created_at: shopifyOrders[0].created_at,
       financial_status: shopifyOrders[0].financial_status,
@@ -604,7 +604,7 @@ function getShopifyTrackingInfo(shopifyOrder: any): { tracking_number: string | 
 
 async function syncWalmartOrders(storeConfig: any, user: any, supabase: any, syncResults: any[]) {
   // Walmart Marketplace API endpoint for orders
-  const apiUrl = `https://marketplace.walmartapis.com/v3/orders`;
+  const apiUrl = "https://marketplace.walmartapis.com/v3/orders";
   
   console.log(`Fetching orders from Walmart API: ${apiUrl}`);
   
