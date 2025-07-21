@@ -37,17 +37,58 @@ Deno.serve(async (req) => {
     const request: RatingRequest = await req.json();
     console.log('Canada Post rating request:', request);
 
-    // Get API credentials from environment
-    const isDev = Deno.env.get('ENVIRONMENT') !== 'production';
-    const apiKey = isDev 
-      ? Deno.env.get('CANADA_POST_DEV_API_KEY')
-      : Deno.env.get('CANADA_POST_PROD_API_KEY');
-    const apiSecret = isDev 
-      ? Deno.env.get('CANADA_POST_DEV_API_SECRET')
-      : Deno.env.get('CANADA_POST_PROD_API_SECRET');
+    // Get API credentials from environment - check if this is a system/internal carrier first
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Check if we have a Canada Post configuration in the database
+    const { data: canadaPostConfig } = await supabase
+      .from('carrier_configurations')
+      .select('*')
+      .eq('carrier_name', 'Canada Post')
+      .eq('is_active', true)
+      .single();
+
+    let apiKey: string | null = null;
+    let apiSecret: string | null = null;
+
+    if (canadaPostConfig?.api_credentials?.system_carrier) {
+      // This is a PrepFox managed Canada Post - use system credentials
+      console.log('Using PrepFox managed Canada Post credentials');
+      const isDev = Deno.env.get('ENVIRONMENT') !== 'production';
+      apiKey = isDev 
+        ? Deno.env.get('CANADA_POST_DEV_API_KEY')
+        : Deno.env.get('CANADA_POST_PROD_API_KEY');
+      apiSecret = isDev 
+        ? Deno.env.get('CANADA_POST_DEV_API_SECRET')
+        : Deno.env.get('CANADA_POST_PROD_API_SECRET');
+    } else if (canadaPostConfig?.api_credentials) {
+      // User provided their own Canada Post credentials
+      apiKey = canadaPostConfig.api_credentials.api_key;
+      apiSecret = canadaPostConfig.api_credentials.api_secret;
+    } else {
+      // Fallback to environment variables
+      const isDev = Deno.env.get('ENVIRONMENT') !== 'production';
+      apiKey = isDev 
+        ? Deno.env.get('CANADA_POST_DEV_API_KEY')
+        : Deno.env.get('CANADA_POST_PROD_API_KEY');
+      apiSecret = isDev 
+        ? Deno.env.get('CANADA_POST_DEV_API_SECRET')
+        : Deno.env.get('CANADA_POST_PROD_API_SECRET');
+    }
 
     if (!apiKey || !apiSecret) {
       console.error('Canada Post API credentials not configured');
+      console.log('Environment check:', {
+        isDev: Deno.env.get('ENVIRONMENT') !== 'production',
+        hasDevKey: !!Deno.env.get('CANADA_POST_DEV_API_KEY'),
+        hasProdKey: !!Deno.env.get('CANADA_POST_PROD_API_KEY'),
+        hasDevSecret: !!Deno.env.get('CANADA_POST_DEV_API_SECRET'),
+        hasProdSecret: !!Deno.env.get('CANADA_POST_PROD_API_SECRET'),
+        configFound: !!canadaPostConfig,
+        isSystemCarrier: canadaPostConfig?.api_credentials?.system_carrier
+      });
       return new Response(
         JSON.stringify({ error: 'Canada Post API credentials not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -55,6 +96,7 @@ Deno.serve(async (req) => {
     }
 
     // Canada Post API endpoint
+    const isDev = Deno.env.get('ENVIRONMENT') !== 'production';
     const baseUrl = isDev 
       ? 'https://ct.soa-gw.canadapost.ca' 
       : 'https://soa-gw.canadapost.ca';
