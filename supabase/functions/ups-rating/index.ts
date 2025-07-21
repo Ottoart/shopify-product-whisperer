@@ -144,15 +144,9 @@ serve(async (req) => {
       );
     }
 
-    // Determine environment and API endpoint
-    const isProduction = credentials.environment === 'production';
-    console.log('🌍 UPS Environment:', isProduction ? 'PRODUCTION' : 'SANDBOX');
-    
-    const ratingApiUrl = isProduction 
-      ? 'https://onlinetools.ups.com/api/rating/v1/rate'
-      : 'https://wwwcie.ups.com/api/rating/v1/rate';
-      
-    console.log('📍 Using Rating API URL:', ratingApiUrl);
+    // Force sandbox environment for consistency with token endpoint
+    const ratingApiUrl = 'https://wwwcie.ups.com/api/rating/v1/rate';
+    console.log('📍 Using Rating API URL (SANDBOX):', ratingApiUrl);
 
     // Construct proper UPS Rating API request according to documentation
     const upsRequest = {
@@ -223,12 +217,13 @@ serve(async (req) => {
 
     console.log('📦 Final UPS API Request:', JSON.stringify(upsRequest, null, 2));
 
-    // Prepare headers for UPS API call - CRITICAL: Proper format
+    // Prepare headers for UPS API call - CRITICAL: Proper format per UPS documentation
     const headers = {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${credentials.access_token}`,
       'transId': 'PrepFox-Rating-' + Date.now(),
-      'transactionSrc': 'PrepFox'
+      'transactionSrc': 'PrepFox',
+      'Accept': 'application/json'
     };
 
     console.log('📡 Request headers:', {

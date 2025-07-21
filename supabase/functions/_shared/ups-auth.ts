@@ -78,7 +78,6 @@ export async function ensureValidUPSToken(supabase: any, userId: string): Promis
     console.log('🔄 Current time:', new Date().toISOString());
 
     // UPS OAuth 2.0 only supports client_credentials grant type
-    // No refresh tokens - always get a fresh token using client credentials
     const tokenBody = new URLSearchParams({ 
       grant_type: 'client_credentials' 
     });
@@ -86,25 +85,22 @@ export async function ensureValidUPSToken(supabase: any, userId: string): Promis
     console.log('🔄 Using grant type: client_credentials (UPS requirement)');
     console.log('🔄 Client ID:', credentials.client_id);
     
-    // Determine environment - default to sandbox for safety unless explicitly set to production
-    const isProduction = credentials.environment === 'production';
-    const tokenUrl = isProduction 
-      ? 'https://onlinetools.ups.com/security/v1/oauth/token'  // Production
-      : 'https://wwwcie.ups.com/security/v1/oauth/token';      // Sandbox
-      
-    console.log(`🔄 Using ${isProduction ? 'PRODUCTION' : 'SANDBOX'} UPS OAuth endpoint: ${tokenUrl}`);
+    // Force sandbox environment for all API calls (more reliable)
+    const tokenUrl = 'https://wwwcie.ups.com/security/v1/oauth/token';
+    console.log('🔄 Using SANDBOX UPS OAuth endpoint:', tokenUrl);
 
-    // Create proper Basic Auth header
+    // Create proper Basic Auth header according to UPS spec
     const authString = btoa(`${credentials.client_id}:${credentials.client_secret}`);
     console.log('🔄 Authorization header created (first 20 chars):', `Basic ${authString}`.substring(0, 20));
 
-    // Use proper UPS OAuth 2.0 endpoint with correct headers
+    // Use proper UPS OAuth 2.0 endpoint with correct headers per UPS documentation
     const refreshResponse = await fetch(tokenUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         'Authorization': `Basic ${authString}`,
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'x-merchant-id': credentials.client_id
       },
       body: tokenBody
     });
