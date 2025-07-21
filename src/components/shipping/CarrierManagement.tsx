@@ -731,46 +731,57 @@ export function CarrierManagement() {
             Cancel
           </Button>
           <Button 
-            onClick={() => {
-              // Save configuration and redirect to Canada Post login
-              toast({
-                title: "Connecting to Canada Post",
-                description: "Redirecting to Canada Post for authorization...",
-              });
-              
-              // Open Canada Post login in new tab
-              window.open('https://www.canadapost-postescanada.ca/cpc/en/business/login.page', '_blank');
-              
-              // For demo purposes, simulate successful connection after a delay
-              setTimeout(() => {
-                const newCanadaPostCarrier = {
-                  id: 'canada-post-user',
-                  name: 'Canada Post',
-                  logo: '🇨🇦',
-                  connected: true,
-                  status: 'connected',
-                  services: [
-                    { id: 'cp-regular', name: 'Regular Parcel', enabled: true },
-                    { id: 'cp-expedited', name: 'Expedited Parcel', enabled: true },
-                    { id: 'cp-xpress', name: 'Xpresspost', enabled: true },
-                    { id: 'cp-priority', name: 'Priority', enabled: true }
-                  ],
-                  lastSync: 'Just now',
-                  isInternal: false,
-                  markup: 0,
-                  adminControlled: false,
-                  accountDetails: canadaPostConfig
+            onClick={async () => {
+              try {
+                // Save configuration first
+                const configData = {
+                  account_number: canadaPostConfig.accountNumber,
+                  account_type: canadaPostConfig.accountType,
+                  contract_number: canadaPostConfig.contractNumber,
+                  payment_method: canadaPostConfig.paymentMethod
                 };
+
+                // Get OAuth URL from our edge function
+                const { data, error } = await supabase.functions.invoke('canada-post-oauth-url');
                 
-                setConnectedUserCarriers(prev => [...prev, newCanadaPostCarrier]);
-                
+                if (error) {
+                  throw error;
+                }
+
+                if (data?.auth_url) {
+                  toast({
+                    title: "Connecting to Canada Post",
+                    description: "Opening authorization window...",
+                  });
+
+                  // Open Canada Post OAuth in a new window
+                  const popup = window.open(
+                    data.auth_url,
+                    'canada-post-oauth',
+                    'width=600,height=700,scrollbars=yes,resizable=yes'
+                  );
+
+                  // Monitor for popup close
+                  const checkClosed = setInterval(() => {
+                    if (popup?.closed) {
+                      clearInterval(checkClosed);
+                      // Refresh the page to show updated state
+                      setTimeout(() => {
+                        window.location.reload();
+                      }, 1000);
+                    }
+                  }, 1000);
+
+                  setIsCanadaPostConfigOpen(false);
+                }
+              } catch (error) {
+                console.error('Canada Post connection error:', error);
                 toast({
-                  title: "Canada Post Connected",
-                  description: "Your Canada Post account has been successfully connected!",
+                  title: "Connection Failed",
+                  description: "Failed to initiate Canada Post authorization",
+                  variant: "destructive",
                 });
-                
-                setIsCanadaPostConfigOpen(false);
-              }, 3000);
+              }
             }}
             disabled={!canadaPostConfig.accountNumber || !canadaPostConfig.contractNumber}
             className="gap-2"
