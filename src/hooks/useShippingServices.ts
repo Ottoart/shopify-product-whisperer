@@ -32,6 +32,7 @@ export const useShippingServices = () => {
   const [carriers, setCarriers] = useState<CarrierConfiguration[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // TODO: Replace with actual auth user
   const user = { id: 'demo-user-id', email: 'user@example.com' };
 
   const fetchServices = async (forceRefresh = false) => {
