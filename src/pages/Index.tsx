@@ -348,9 +348,9 @@ const Index = () => {
             <CardContent>
               <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                 <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2" style={{ gridTemplateColumns: `repeat(${Math.min(stores.length, 4)}, 1fr)` }}>
-                  {stores.map((store) => (
+                  {stores.map((store, index) => (
                     <TabsTrigger 
-                      key={store.store_name} 
+                      key={`${store.platform}-${store.store_name}-${index}`} 
                       value={store.store_name}
                       className="flex items-center justify-between gap-2 px-4 py-2 relative group"
                     >
