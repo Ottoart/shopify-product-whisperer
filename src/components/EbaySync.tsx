@@ -103,11 +103,20 @@ export const EbaySync = ({ onProductsUpdated }: EbaySyncProps) => {
           {isImporting ? 'Syncing eBay Products...' : 'Sync eBay Products'}
         </Button>
 
-        {/* Info */}
-        <Alert>
-          <Zap className="h-4 w-4" />
-          <AlertDescription className="text-xs">
-            Import all your active eBay inventory items. Products will be tagged with vendor "eBay" for easy filtering.
+        {/* Reconnect Alert */}
+        <Alert className="border-destructive bg-destructive/10">
+          <Zap className="h-4 w-4 text-destructive" />
+          <AlertDescription className="text-xs text-destructive">
+            <strong>⚠️ eBay orders not working:</strong> Your eBay connection lacks required permissions. 
+            <br />
+            <Button 
+              size="sm" 
+              variant="destructive" 
+              className="mt-2"
+              onClick={() => window.open('/settings', '_blank')}
+            >
+              Reconnect eBay Store
+            </Button>
           </AlertDescription>
         </Alert>
       </CardContent>
