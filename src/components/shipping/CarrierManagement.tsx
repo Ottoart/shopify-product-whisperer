@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -78,10 +80,12 @@ export function CarrierManagement() {
   
   // Canada Post configuration state
   const [canadaPostConfig, setCanadaPostConfig] = useState({
-    accountNumber: '',
-    accountType: 'Commercial',
+    apiKey: '',
+    apiSecret: '',
+    customerNumber: '',
     contractNumber: '',
-    paymentMethod: 'Account'
+    accountType: 'commercial',
+    isProduction: false
   });
 
   // Fetch real carrier configurations from database

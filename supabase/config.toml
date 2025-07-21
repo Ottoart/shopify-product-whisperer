@@ -88,5 +88,5 @@ verify_jwt = true
 [functions.canada-post-oauth-url]
 verify_jwt = true
 
-[functions.canada-post-oauth-callback]
-verify_jwt = false
+[functions.canada-post-setup]
+verify_jwt = true
