@@ -1,0 +1,1 @@
+DELETE FROM carrier_configurations WHERE user_id = '3a393edd-271d-4d32-b18d-e10fce7ee248' AND carrier_name = 'Canada Post';
