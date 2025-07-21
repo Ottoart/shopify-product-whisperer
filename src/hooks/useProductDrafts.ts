@@ -40,7 +40,7 @@ export const useProductDrafts = (productHandle?: string) => {
       if (error) throw error;
       return data || [];
     },
-    enabled: !!session?.user?.id && !!productHandle,
+    enabled: Boolean(session?.user?.id) && Boolean(productHandle),
   });
 
   // Save draft mutation

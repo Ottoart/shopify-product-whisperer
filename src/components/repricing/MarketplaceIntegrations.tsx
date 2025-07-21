@@ -63,7 +63,7 @@ export default function MarketplaceIntegrations() {
         return {
           id: syncStatus?.id || crypto.randomUUID(),
           marketplace: config.name,
-          connected: !!syncStatus,
+          connected: Boolean(syncStatus),
           lastSync: syncStatus?.last_sync_at || null,
           syncStatus: (syncStatus?.sync_status || 'pending') as 'pending' | 'syncing' | 'success' | 'error',
           errorMessage: syncStatus?.error_message || undefined,

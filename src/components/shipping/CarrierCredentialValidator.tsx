@@ -383,11 +383,11 @@ export const CarrierCredentialValidator = () => {
     
     switch (config.carrier_name.toUpperCase()) {
       case 'UPS':
-        return !!(creds.client_id && creds.client_secret && creds.access_token);
+        return Boolean(creds.client_id && creds.client_secret && creds.access_token);
       case 'FEDEX':
-        return !!(creds.client_id && creds.client_secret);
+        return Boolean(creds.client_id && creds.client_secret);
       case 'USPS':
-        return !!(creds.user_id && creds.password);
+        return Boolean(creds.user_id && creds.password);
       default:
         return false;
     }

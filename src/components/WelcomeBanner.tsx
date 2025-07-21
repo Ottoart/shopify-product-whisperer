@@ -66,7 +66,7 @@ export function WelcomeBanner() {
       .eq('user_id', user.id)
       .single();
     
-    setProfileComplete(!!(profile?.display_name || profile?.company_name));
+    setProfileComplete(Boolean(profile?.display_name || profile?.company_name));
   };
 
   const setupSteps: SetupStep[] = [

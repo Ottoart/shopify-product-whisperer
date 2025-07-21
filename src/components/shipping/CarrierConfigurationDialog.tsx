@@ -397,7 +397,7 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
                       <Checkbox 
                         id="negotiated_rates" 
                         checked={upsConfig.enable_negotiated_rates}
-                        onCheckedChange={(checked) => setUpsConfig(prev => ({ ...prev, enable_negotiated_rates: !!checked }))}
+                        onCheckedChange={(checked) => setUpsConfig(prev => ({ ...prev, enable_negotiated_rates: Boolean(checked) }))}
                       />
                       <Label htmlFor="negotiated_rates">Enable Negotiated Rates</Label>
                     </div>
@@ -405,7 +405,7 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
                       <Checkbox 
                         id="carbon_neutral" 
                         checked={upsConfig.enable_carbon_neutral}
-                        onCheckedChange={(checked) => setUpsConfig(prev => ({ ...prev, enable_carbon_neutral: !!checked }))}
+                        onCheckedChange={(checked) => setUpsConfig(prev => ({ ...prev, enable_carbon_neutral: Boolean(checked) }))}
                       />
                       <Label htmlFor="carbon_neutral">Use the UPS Carbon Neutral shipping program</Label>
                     </div>
@@ -413,7 +413,7 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
                       <Checkbox 
                         id="ground_freight" 
                         checked={upsConfig.enable_ground_freight}
-                        onCheckedChange={(checked) => setUpsConfig(prev => ({ ...prev, enable_ground_freight: !!checked }))}
+                        onCheckedChange={(checked) => setUpsConfig(prev => ({ ...prev, enable_ground_freight: Boolean(checked) }))}
                       />
                       <Label htmlFor="ground_freight">Enable Ground Freight Pricing</Label>
                     </div>
@@ -527,7 +527,7 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
                     <Checkbox 
                       id="sendle_sandbox" 
                       checked={sendleConfig.sandbox}
-                      onCheckedChange={(checked) => setSendleConfig(prev => ({ ...prev, sandbox: !!checked }))}
+                      onCheckedChange={(checked) => setSendleConfig(prev => ({ ...prev, sandbox: Boolean(checked) }))}
                     />
                     <Label htmlFor="sendle_sandbox">Use Sandbox Environment</Label>
                   </div>

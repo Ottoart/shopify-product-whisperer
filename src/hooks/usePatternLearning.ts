@@ -34,7 +34,7 @@ export const usePatternLearning = () => {
       if (error) throw error;
       return data || [];
     },
-    enabled: !!session?.user?.id,
+    enabled: Boolean(session?.user?.id),
   });
 
   // Analyze edit patterns
@@ -121,7 +121,7 @@ export const usePatternLearning = () => {
       if (error) throw error;
       return data || [];
     },
-    enabled: !!session?.user?.id,
+    enabled: Boolean(session?.user?.id),
   });
 
   // Delete edit history entry
