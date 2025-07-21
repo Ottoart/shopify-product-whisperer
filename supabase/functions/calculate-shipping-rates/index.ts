@@ -161,6 +161,9 @@ serve(async (req) => {
           case 'USPS':
             carrierRates = await getUSPSRates(carrier, shipFrom, shipTo, packageDetails, rateRequest.additional_services);
             break;
+          case 'CANADA POST':
+            carrierRates = await getCanadaPostRates(carrier, shipFrom, shipTo, packageDetails, rateRequest.additional_services);
+            break;
           default:
             console.log(`Carrier ${carrier.carrier_name} not supported yet`);
             // Return hardcoded rates for unsupported carriers
@@ -278,6 +281,63 @@ async function getUSPSRates(carrier: any, shipFrom: any, shipTo: any, packageDet
   // TODO: Implement USPS API integration
   console.log('USPS integration not implemented yet, returning hardcoded rates');
   return getHardcodedRates(carrier).filter(r => r.carrier === 'USPS');
+}
+
+async function getCanadaPostRates(carrier: any, shipFrom: any, shipTo: any, packageDetails: any, additionalServices?: any): Promise<ShippingRate[]> {
+  // TODO: Implement Canada Post API integration
+  console.log('Canada Post integration not implemented yet, returning hardcoded rates');
+  
+  // Return Canada Post specific services
+  const baseRate = Math.random() * 8 + 6; // Random base rate between $6-14 CAD
+  const rates: ShippingRate[] = [];
+  
+  // Default Canada Post services if no specific services configured
+  const defaultServices = [
+    { service_code: 'REG', service_name: 'Regular Parcel', service_type: 'standard', estimated_days: '5-7' },
+    { service_code: 'EXP', service_name: 'Expedited Parcel', service_type: 'expedited', estimated_days: '2-3' },
+    { service_code: 'XP', service_name: 'Xpresspost', service_type: 'expedited', estimated_days: '1-2' },
+    { service_code: 'PC', service_name: 'Priority Courier', service_type: 'overnight', estimated_days: '1' }
+  ];
+  
+  const services = carrier.shipping_services?.length > 0 ? carrier.shipping_services : defaultServices;
+  
+  for (const service of services) {
+    let multiplier = 1;
+    
+    // Adjust cost based on service type
+    switch (service.service_type?.toLowerCase() || service.service_code) {
+      case 'overnight':
+      case 'PC':
+        multiplier = 2.5;
+        break;
+      case 'expedited':
+      case 'EXP':
+      case 'XP':
+        multiplier = 1.6;
+        break;
+      case 'standard':
+      case 'REG':
+        multiplier = 1;
+        break;
+      default:
+        multiplier = 1.2;
+    }
+    
+    rates.push({
+      carrier: 'Canada Post',
+      service_code: service.service_code,
+      service_name: service.service_name,
+      service_type: service.service_type || 'standard',
+      cost: Math.round((baseRate * multiplier) * 100) / 100,
+      currency: 'CAD',
+      estimated_days: service.estimated_days || '3-5',
+      supports_tracking: true,
+      supports_insurance: true,
+      supports_signature: false
+    });
+  }
+  
+  return rates;
 }
 
 function getHardcodedRates(carrier: any): ShippingRate[] {
