@@ -60,21 +60,25 @@ serve(async (req) => {
     ebayAuthUrl.searchParams.set('response_type', 'code');
     ebayAuthUrl.searchParams.set('redirect_uri', ebayRuName);
     
-    // Use correct eBay OAuth scopes for new OAuth security
+    // Use correct eBay OAuth scopes for new OAuth security - INCLUDES FULFILLMENT FOR ORDERS
     const scopes = isProduction ? [
       'https://api.ebay.com/oauth/api_scope/sell.marketing.readonly',
       'https://api.ebay.com/oauth/api_scope/sell.marketing',
       'https://api.ebay.com/oauth/api_scope/sell.inventory.readonly',
       'https://api.ebay.com/oauth/api_scope/sell.inventory',
       'https://api.ebay.com/oauth/api_scope/sell.account.readonly',
-      'https://api.ebay.com/oauth/api_scope/sell.account'
+      'https://api.ebay.com/oauth/api_scope/sell.account',
+      'https://api.ebay.com/oauth/api_scope/sell.fulfillment.readonly',
+      'https://api.ebay.com/oauth/api_scope/sell.fulfillment'
     ] : [
       'https://api.sandbox.ebay.com/oauth/api_scope/sell.marketing.readonly',
       'https://api.sandbox.ebay.com/oauth/api_scope/sell.marketing',
       'https://api.sandbox.ebay.com/oauth/api_scope/sell.inventory.readonly',
       'https://api.sandbox.ebay.com/oauth/api_scope/sell.inventory',
       'https://api.sandbox.ebay.com/oauth/api_scope/sell.account.readonly',
-      'https://api.sandbox.ebay.com/oauth/api_scope/sell.account'
+      'https://api.sandbox.ebay.com/oauth/api_scope/sell.account',
+      'https://api.sandbox.ebay.com/oauth/api_scope/sell.fulfillment.readonly',
+      'https://api.sandbox.ebay.com/oauth/api_scope/sell.fulfillment'
     ];
     
     ebayAuthUrl.searchParams.set('scope', scopes.join(' '));

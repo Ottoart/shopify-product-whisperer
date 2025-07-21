@@ -804,6 +804,7 @@ async function syncEbayOrders(storeConfig: any, user: any, supabase: any, syncRe
   }
 
   // eBay API endpoint for orders (Sell Fulfillment API)
+  // Note: This requires 'https://api.ebay.com/oauth/api_scope/sell.fulfillment' scope
   const apiUrl = 'https://api.ebay.com/sell/fulfillment/v1/order';
   
   console.log(`Fetching orders from eBay API: ${apiUrl}`);
