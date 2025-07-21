@@ -32,8 +32,32 @@ export const useShippingServices = () => {
   const [carriers, setCarriers] = useState<CarrierConfiguration[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // TODO: Replace with actual auth user
-  const user = { id: 'demo-user-id', email: 'user@example.com' };
+  const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
+
+  // Get authenticated user
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) {
+        console.error('Error getting user:', error);
+        setUser(null);
+      } else {
+        setUser(user);
+      }
+    };
+    
+    getUser();
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        setUser(session.user);
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const fetchServices = async (forceRefresh = false) => {
     if (!user) return;
