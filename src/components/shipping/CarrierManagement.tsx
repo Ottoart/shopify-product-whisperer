@@ -719,10 +719,15 @@ export function CarrierManagement() {
             </Select>
           </div>
           
-          <div className="p-3 bg-blue-50 rounded-lg border">
-            <p className="text-sm text-blue-800">
-              After entering your details, you'll be redirected to Canada Post to authorize your account.
-            </p>
+          <div className="p-4 bg-blue-50 rounded-lg border">
+            <h4 className="font-medium text-blue-900 mb-2">📋 How to Connect Canada Post:</h4>
+            <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
+              <li>Enter your Canada Post account details above</li>
+              <li>Click "Connect & Authorize" to open Canada Post login</li>
+              <li>Login with your Canada Post business account credentials</li>
+              <li>Authorize the PrepFox app to access shipping rates</li>
+              <li>Return to this page - your account will be connected!</li>
+            </ol>
           </div>
         </div>
         
@@ -1166,10 +1171,19 @@ export function CarrierManagement() {
             <div className="grid gap-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold">Your Connected Carrier Accounts</h2>
-                <Button onClick={() => setIsAddCarrierOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Your Carrier Account
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline"
+                    onClick={() => setIsCanadaPostConfigOpen(true)}
+                    className="gap-2 border-orange-200 hover:bg-orange-50"
+                  >
+                    🇨🇦 Connect Canada Post
+                  </Button>
+                  <Button onClick={() => setIsAddCarrierOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Your Carrier Account
+                  </Button>
+                </div>
               </div>
               
               {loading ? (
@@ -1187,10 +1201,19 @@ export function CarrierManagement() {
                     <p className="text-muted-foreground mb-4">
                       Connect your own carrier accounts for custom rates and services
                     </p>
-                    <Button onClick={() => setIsAddCarrierOpen(true)}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Your Carrier Account
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline"
+                        onClick={() => setIsCanadaPostConfigOpen(true)}
+                        className="gap-2 border-orange-200 hover:bg-orange-50"
+                      >
+                        🇨🇦 Connect Canada Post
+                      </Button>
+                      <Button onClick={() => setIsAddCarrierOpen(true)}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Your Carrier Account
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               ) : (
