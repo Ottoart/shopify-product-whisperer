@@ -32,6 +32,7 @@ import { AboutUs } from "./pages/AboutUs";
 import NotFound from "./pages/NotFound";
 import { LearningDashboard } from "./components/LearningDashboard";
 import Logs from "./pages/Logs";
+import CanadaPostCallback from "./pages/CanadaPostCallback";
 
 const queryClient = new QueryClient();
 
@@ -87,6 +88,7 @@ const AppContent = () => {
                 <Route path="/carriers" element={<ProtectedRoute><Carriers /></ProtectedRoute>} />
                 <Route path="/sync-status" element={<ProtectedRoute><SyncStatus /></ProtectedRoute>} />
                 <Route path="/logs" element={<ProtectedRoute><Logs /></ProtectedRoute>} />
+                <Route path="/canada-post-oauth-callback" element={<ProtectedRoute><CanadaPostCallback /></ProtectedRoute>} />
                 
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />

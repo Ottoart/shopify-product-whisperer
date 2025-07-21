@@ -741,8 +741,8 @@ export function CarrierManagement() {
                       description: "Opening Canada Post login...",
                     });
 
-                    // Open Canada Post OAuth in the same window (like ShipStation)
-                    window.location.href = data.auth_url;
+                    // Use window.location.replace to avoid iframe issues
+                    window.location.replace(data.auth_url);
                   }
                 } catch (error) {
                   console.error('Canada Post connection error:', error);
