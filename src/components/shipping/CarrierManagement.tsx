@@ -35,7 +35,7 @@ interface Carrier {
   status: 'connected' | 'disconnected' | 'error';
   services: CarrierService[];
   lastSync?: string;
-  
+  discounted_rates?: boolean;
   markup: number;
   adminControlled: boolean;
 }
@@ -56,7 +56,7 @@ interface SubscriptionPlan {
 
 export function CarrierManagement() {
   const { toast } = useToast();
-  const user = { id: 'demo-user-id' };
+  const user = { id: 'demo-user-id', email: 'user@example.com' };
   
   // Check if user is admin
   const isAdmin = user?.email === 'ottman1@gmail.com';
@@ -210,11 +210,17 @@ export function CarrierManagement() {
             id: "canada-post-internal",
             name: "Canada Post",
             logo: "🇨🇦",
-            status: "available",
+            status: "connected" as const,
             description: "Canada Post shipping services",
-            services: ["Regular", "Expedited", "Priority", "Xpresspost"],
+            services: [
+              { id: "regular", name: "Regular", enabled: true },
+              { id: "expedited", name: "Expedited", enabled: true },
+              { id: "priority", name: "Priority", enabled: true },
+              { id: "xpresspost", name: "Xpresspost", enabled: true }
+            ],
             integration_status: "available",
             setup_required: false,
+            connected: true,
             discounted_rates: true,
             markup: 15,
             adminControlled: true
@@ -223,12 +229,15 @@ export function CarrierManagement() {
             id: "shipstation-internal",
             name: "ShipStation",
             logo: "📦",
-            status: "available",
+            status: "connected" as const,
             description: "ShipStation multi-carrier platform",
-            services: ["Multiple carriers"],
+            services: [
+              { id: "multiple", name: "Multiple carriers", enabled: true }
+            ],
             integration_status: "available",
             setup_required: true,
-            connected: false,
+            connected: true,
+            discounted_rates: true,
             markup: 12,
             adminControlled: true
           }
@@ -257,11 +266,17 @@ export function CarrierManagement() {
             id: "ups-internal",
             name: "UPS",
             logo: "🟤",
-            status: "available",
+            status: "connected" as const,
             description: "UPS shipping services",
-            services: ["Ground", "Next Day Air", "2nd Day Air"],
+            services: [
+              { id: "ground", name: "Ground", enabled: true },
+              { id: "next-day", name: "Next Day Air", enabled: true },
+              { id: "2nd-day", name: "2nd Day Air", enabled: true }
+            ],
             integration_status: "available",
             setup_required: true,
+            connected: true,
+            discounted_rates: true,
             markup: 15,
             adminControlled: true
           };
@@ -273,13 +288,17 @@ export function CarrierManagement() {
             id: "fedex-internal",
             name: "FedEx",
             logo: "🟣",
-            status: "coming_soon",
+            status: "disconnected" as const,
             description: "FedEx shipping services",
-            services: ["Ground", "Express", "Overnight"],
+            services: [
+              { id: "ground", name: "Ground", enabled: true },
+              { id: "express", name: "Express", enabled: true },
+              { id: "overnight", name: "Overnight", enabled: true }
+            ],
             integration_status: "coming_soon",
             setup_required: true,
             connected: false,
-            connected: false,
+            discounted_rates: false,
             markup: 15,
             adminControlled: true
           };
