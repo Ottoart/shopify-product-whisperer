@@ -80,6 +80,7 @@ const shippingItems = [
 
 const settingsItems = [
   { title: "Store Config", url: "/settings", icon: Settings, description: "Configure store settings" },
+  { title: "Carriers", url: "/carriers", icon: Truck, description: "Manage shipping carriers" },
 ];
 
 export function AppSidebar() {
