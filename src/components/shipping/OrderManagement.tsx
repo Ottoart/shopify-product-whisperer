@@ -138,16 +138,36 @@ export function OrderManagement() {
   const handleRefreshOrders = useCallback(async () => {
     setIsRefreshing(true);
     try {
+      // First sync from external stores
+      console.log('🔄 Syncing orders from external stores...');
+      const { data, error } = await supabase.functions.invoke('sync-orders', {
+        body: { syncAll: true }
+      });
+      
+      if (error) {
+        console.error('❌ Sync error:', error);
+        throw error;
+      }
+      
+      console.log('✅ Sync successful:', data);
+      
+      // Then fetch updated orders from local database
       await fetchOrders();
       setLastRefresh(new Date());
+      
+      const message = data?.success && data?.message 
+        ? data.message 
+        : "Orders refreshed successfully";
+        
       toast({
         title: "Orders refreshed",
-        description: "Order data has been updated successfully",
+        description: message,
       });
-    } catch (error) {
+    } catch (error: any) {
+      console.error('❌ Refresh failed:', error);
       toast({
         title: "Refresh failed",
-        description: "Failed to refresh order data",
+        description: error.message || "Failed to refresh order data",
         variant: "destructive",
       });
     } finally {
@@ -163,14 +183,23 @@ export function OrderManagement() {
         body: { storeId }
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Store sync error:', error);
+        throw error;
+      }
+      
+      console.log('✅ Store sync successful:', data);
       
       // Refresh orders after sync
       await fetchOrders();
       
+      const message = data?.success && data?.message 
+        ? data.message 
+        : `Successfully synced orders for store`;
+        
       toast({
         title: "Store updated",
-        description: `Successfully synced orders for store`,
+        description: message,
       });
     } catch (error) {
       toast({

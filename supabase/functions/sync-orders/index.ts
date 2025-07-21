@@ -143,7 +143,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Found ${storeConfigs.length} active store(s) to sync`);
+    console.log(`Found ${storeConfigs.length} active store(s) to sync:`, storeConfigs.map(s => `${s.store_name} (${s.platform})`));
 
     const syncResults = [];
 
