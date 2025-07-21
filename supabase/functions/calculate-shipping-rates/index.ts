@@ -49,27 +49,46 @@ serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get('Authorization');
+    console.log('🚀 Calculate Shipping Rates Function Called');
+    console.log('📋 All request headers:', Object.fromEntries(req.headers.entries()));
+    
+    const authHeader = req.headers.get('authorization') || req.headers.get('Authorization');
+    console.log('🔑 Auth header found:', authHeader ? 'YES' : 'NO');
+    console.log('🔑 Auth header value (first 50 chars):', authHeader ? authHeader.substring(0, 50) : 'NONE');
+
     if (!authHeader) {
+      console.error('❌ No authorization header provided to calculate-shipping-rates');
       return new Response(
-        JSON.stringify({ error: 'Authorization required' }),
+        JSON.stringify({ error: 'Authentication required' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } }
-    });
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
+    // Extract user ID from JWT token directly instead of using Supabase auth
+    let userId: string;
+    try {
+      const token = authHeader.replace('Bearer ', '').replace('bearer ', '');
+      console.log('🔍 Extracting user ID from token (first 50 chars):', token.substring(0, 50));
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      userId = payload.sub;
+      console.log('✅ Extracted user ID:', userId);
+      
+      if (!userId) {
+        throw new Error('No user ID in token');
+      }
+    } catch (error) {
+      console.error('❌ Failed to extract user ID from JWT:', error);
       return new Response(
-        JSON.stringify({ error: 'Invalid authentication' }),
+        JSON.stringify({ error: 'Invalid authentication token' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Create service role client for database operations
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
 
     const rateRequest: RateRequest = await req.json();
     console.log('Rate calculation request:', rateRequest);
@@ -79,7 +98,7 @@ serve(async (req) => {
       .from('orders')
       .select('*')
       .eq('id', rateRequest.order_id)
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single();
 
     if (orderError || !order) {
@@ -96,7 +115,7 @@ serve(async (req) => {
         *,
         shipping_services(*)
       `)
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .eq('is_active', true);
 
     if (carriersError) {
@@ -154,7 +173,9 @@ serve(async (req) => {
 
         switch (carrier.carrier_name.toUpperCase()) {
           case 'UPS':
-            carrierRates = await getUPSRates(carrier, shipFrom, shipTo, packageDetails, rateRequest.additional_services, req.headers.get('Authorization') || undefined);
+            console.log('🔄 About to call getUPSRates with auth header:', authHeader ? 'PRESENT' : 'MISSING');
+            carrierRates = await getUPSRates(carrier, shipFrom, shipTo, packageDetails, rateRequest.additional_services, authHeader);
+            console.log(`📦 UPS returned ${carrierRates.length} rates`);
             break;
           case 'FEDEX':
             carrierRates = await getFedExRates(carrier, shipFrom, shipTo, packageDetails, rateRequest.additional_services);
