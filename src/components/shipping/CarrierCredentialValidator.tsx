@@ -388,6 +388,13 @@ export const CarrierCredentialValidator = () => {
         return Boolean(creds.client_id && creds.client_secret);
       case 'USPS':
         return Boolean(creds.user_id && creds.password);
+      case 'CANADA POST':
+        // For system/managed Canada Post, credentials are always available
+        if (creds.system_carrier || creds.managed_by_prepfox) {
+          return true;
+        }
+        // For user-provided Canada Post credentials
+        return Boolean(creds.apiKey && creds.apiSecret);
       default:
         return false;
     }
