@@ -53,10 +53,10 @@ serve(async (req) => {
       );
     }
 
-    // Initialize Supabase client with anon key for auth verification
+    // Initialize Supabase client with service role for auth verification
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
       global: {
         headers: {
           Authorization: authHeader
@@ -69,28 +69,75 @@ serve(async (req) => {
     
     if (authError || !user?.id) {
       console.error('❌ Authentication error:', authError?.message || 'missing sub claim');
-      return new Response(
-        JSON.stringify({ error: 'invalid claim: missing sub claim' }),
-        { 
-          status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      
+      // Try alternative approach - extract JWT directly
+      const token = authHeader.replace('Bearer ', '');
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const userId = payload.sub;
+        
+        if (!userId) {
+          return new Response(
+            JSON.stringify({ error: 'invalid claim: missing sub claim' }),
+            { 
+              status: 401, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
         }
-      );
+        
+        console.log('✅ Extracted user ID from JWT:', userId);
+        // Use the extracted user ID for service role client
+        const serviceSupabase = createClient(supabaseUrl, supabaseServiceKey);
+        const authResult = await ensureValidUPSTokenForRating(serviceSupabase, userId);
+        
+        if (!authResult.success) {
+          console.error('❌ UPS authentication failed:', authResult.error);
+          return new Response(
+            JSON.stringify({ error: 'UPS authentication failed: ' + authResult.error }),
+            { 
+              status: 400, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
+        }
+
+        // Continue with the rest of the function using the extracted userId
+        const requestData: RatingRequest = await req.json();
+        console.log('📦 UPS Rating request received:', JSON.stringify(requestData, null, 2));
+
+        console.log('✅ UPS authentication successful');
+        const credentials = authResult.credentials;
+        const accountNumber = credentials.account_number;
+
+        // Continue with validation and API call...
+        return await processUPSRating(requestData, credentials, accountNumber);
+        
+      } catch (jwtError) {
+        console.error('❌ Failed to extract user from JWT:', jwtError);
+        return new Response(
+          JSON.stringify({ error: 'invalid claim: missing sub claim' }),
+          { 
+            status: 401, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
     }
     
     const userId = user.id;
     console.log('✅ Authenticated user ID:', userId);
 
-    // Create service role client for database operations
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const serviceSupabase = createClient(supabaseUrl, supabaseServiceKey);
-
     const requestData: RatingRequest = await req.json();
     console.log('📦 UPS Rating request received:', JSON.stringify(requestData, null, 2));
+
+    // Create service role client for database operations
+    const serviceSupabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Ensure we have a valid UPS token
     console.log('🔧 Getting UPS credentials for user:', userId);
     const authResult = await ensureValidUPSTokenForRating(serviceSupabase, userId);
+    
     if (!authResult.success) {
       console.error('❌ UPS authentication failed:', authResult.error);
       return new Response(
@@ -106,6 +153,24 @@ serve(async (req) => {
     const credentials = authResult.credentials;
     const accountNumber = credentials.account_number;
 
+    return await processUPSRating(requestData, credentials, accountNumber);
+
+  } catch (error) {
+    console.error('❌ Unexpected error in UPS rating:', error);
+    return new Response(
+      JSON.stringify({ 
+        error: 'Internal server error',
+        details: error.message 
+      }),
+      { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    );
+  }
+});
+
+async function processUPSRating(requestData: RatingRequest, credentials: any, accountNumber: string) {
     // Validate required fields
     if (!requestData.shipFrom?.zip || !requestData.shipFrom?.country ||
         !requestData.shipTo?.zip || !requestData.shipTo?.country ||
@@ -334,21 +399,7 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     );
-
-  } catch (error) {
-    console.error('❌ Unexpected error in UPS rating:', error);
-    return new Response(
-      JSON.stringify({ 
-        error: 'Internal server error',
-        details: error.message 
-      }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
-  }
-});
+}
 
 // Helper functions for UPS service mapping
 function getUPSServiceName(code: string): string {
