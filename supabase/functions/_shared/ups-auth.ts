@@ -19,10 +19,10 @@ export async function ensureValidUPSToken(supabase: any, userId: string): Promis
     const credentials = carrierConfig.api_credentials as any;
     
     console.log('🔍 Checking UPS credentials:', {
-      hasAccessToken: !!credentials.access_token,
-      hasClientId: !!credentials.client_id,
-      hasClientSecret: !!credentials.client_secret,
-      hasRefreshToken: !!credentials.refresh_token,
+      hasAccessToken: Boolean(credentials.access_token),
+      hasClientId: Boolean(credentials.client_id),
+      hasClientSecret: Boolean(credentials.client_secret),
+      hasRefreshToken: Boolean(credentials.refresh_token),
       expiresAt: credentials.token_expires_at
     });
     

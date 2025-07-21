@@ -31,8 +31,8 @@ serve(async (req) => {
     const errorDescription = url.searchParams.get('error_description');
     
     console.log('OAuth parameters:');
-    console.log('- code exists:', !!code, 'length:', code?.length || 0);
-    console.log('- state exists:', !!state, 'value:', state);
+    console.log('- code exists:', Boolean(code), 'length:', code?.length || 0);
+    console.log('- state exists:', Boolean(state), 'value:', state);
     console.log('- error:', error);
     console.log('- errorDescription:', errorDescription);
 
@@ -101,7 +101,7 @@ serve(async (req) => {
     console.log('Token endpoint:', tokenEndpoint);
     console.log('Client ID starts with:', ebayClientId.substring(0, 15) + '...');
     console.log('Client ID full length:', ebayClientId.length);
-    console.log('Client secret exists:', !!ebayClientSecret);
+    console.log('Client secret exists:', Boolean(ebayClientSecret));
     console.log('Client secret length:', ebayClientSecret?.length || 0);
     console.log('RU Name (redirect_uri):', ebayRuName);
     console.log('Authorization code length:', code.length);

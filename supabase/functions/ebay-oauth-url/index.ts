@@ -22,10 +22,10 @@ serve(async (req) => {
     const ebayClientId = Deno.env.get('EBAY_CLIENT_ID');
     const ebayRuName = Deno.env.get('EBAY_RU_NAME');
     
-    console.log('eBay Client ID exists:', !!ebayClientId);
+    console.log('eBay Client ID exists:', Boolean(ebayClientId));
     console.log('eBay Client ID length:', ebayClientId?.length || 0);
     console.log('eBay Client ID preview:', ebayClientId?.substring(0, 15) + '...');
-    console.log('eBay RU Name exists:', !!ebayRuName);
+    console.log('eBay RU Name exists:', Boolean(ebayRuName));
     
     if (!ebayClientId) {
       throw new Error('eBay Client ID not configured in secrets');

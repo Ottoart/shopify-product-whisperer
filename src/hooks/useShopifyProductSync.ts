@@ -47,7 +47,7 @@ export const useShopifyProductSync = () => {
       
       return data as SyncStatus | null;
     },
-    enabled: !!session?.user?.id,
+    enabled: Boolean(session?.user?.id),
   });
 
   // Get local products count
@@ -71,7 +71,7 @@ export const useShopifyProductSync = () => {
       console.log('Sync hook count result:', count);
       return count || 0;
     },
-    enabled: !!session?.user?.id,
+    enabled: Boolean(session?.user?.id),
   });
 
   // Get products from local database
@@ -106,7 +106,7 @@ export const useShopifyProductSync = () => {
       
       return allProducts;
     },
-    enabled: !!session?.user?.id,
+    enabled: Boolean(session?.user?.id),
   });
 
   // Sync batch mutation
@@ -234,7 +234,7 @@ export const useShopifyProductSync = () => {
     // Helpers
     hasCredentials: () => {
       const { storeUrl, accessToken } = getShopifyCredentials();
-      return !!(storeUrl && accessToken);
+      return Boolean(storeUrl && accessToken);
     },
     
     // Status checks

@@ -244,7 +244,7 @@ CRITICAL: Use this brand tone and style when creating product descriptions. Matc
   const prompt = createPrompt(request) + userPatterns + brandTone;
   
   console.log('Calling OpenAI API...');
-  console.log('OpenAI API Key exists:', !!apiKey);
+  console.log('OpenAI API Key exists:', Boolean(apiKey));
   console.log('OpenAI API Key length:', apiKey?.length || 0);
   
   const requestBody = {
