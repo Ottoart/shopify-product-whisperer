@@ -578,7 +578,7 @@ export const ProductActivity = ({ onProductsUpdated, storeUrl }: ProductActivity
       {editingProduct && (
         <ProductEditor
           product={editingProduct}
-          isOpen={!!editingProduct}
+          isOpen={Boolean(editingProduct)}
           onClose={() => {
             setEditingProduct(null);
             setSelectedProducts(new Set());

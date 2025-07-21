@@ -109,7 +109,7 @@ serve(async (req) => {
 
     console.log('🔍 Testing credentials with OAuth token acquisition');
     console.log('🔍 Client ID:', credentials.client_id);
-    console.log('🔍 Has client secret:', !!credentials.client_secret);
+    console.log('🔍 Has client secret:', Boolean(credentials.client_secret));
     console.log('🔍 Environment:', credentials.environment || 'sandbox');
 
     // Determine environment based on credentials

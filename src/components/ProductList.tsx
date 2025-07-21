@@ -343,7 +343,7 @@ export const ProductList = ({
       {editingProduct && (
         <ProductEditor
           product={editingProduct}
-          isOpen={!!editingProduct}
+          isOpen={Boolean(editingProduct)}
           onClose={() => setEditingProduct(null)}
           onProductUpdated={onProductsUpdated}
         />
@@ -353,7 +353,7 @@ export const ProductList = ({
       {processingProduct && (
         <SingleProductProcessor
           product={processingProduct}
-          isOpen={!!processingProduct}
+          isOpen={Boolean(processingProduct)}
           onClose={() => setProcessingProduct(null)}
           onProductUpdated={onProductUpdated}
         />

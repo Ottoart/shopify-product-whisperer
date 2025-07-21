@@ -88,7 +88,7 @@ export const useProducts = () => {
       
       return mappedProducts;
     },
-    enabled: !!session?.user?.id,
+    enabled: Boolean(session?.user?.id),
   });
 
   const saveProductsMutation = useMutation({
