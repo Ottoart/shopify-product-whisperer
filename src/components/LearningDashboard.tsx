@@ -691,7 +691,7 @@ export const LearningDashboard = () => {
                         <CardHeader className="pb-4">
                           <div className="flex items-start justify-between">
                             <div className="flex items-start gap-3">
-                              <div className={`p-2 rounded-lg bg-gray-100 dark:bg-gray-800`}>
+                              <div className={"p-2 rounded-lg bg-gray-100 dark:bg-gray-800"}>
                                 <Icon className={`h-5 w-5 ${color}`} />
                               </div>
                               <div>

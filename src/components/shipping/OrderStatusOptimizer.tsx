@@ -41,7 +41,7 @@ export function OrderStatusOptimizer() {
         throw new Error('Not authenticated');
       }
 
-      const response = await fetch(`https://rtaomiqsnctigleqjojt.supabase.co/functions/v1/bulk-update-order-statuses`, {
+      const response = await fetch("https://rtaomiqsnctigleqjojt.supabase.co/functions/v1/bulk-update-order-statuses", {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
@@ -83,7 +83,7 @@ export function OrderStatusOptimizer() {
         throw new Error('Not authenticated');
       }
 
-      const response = await fetch(`https://rtaomiqsnctigleqjojt.supabase.co/functions/v1/update-order-statuses`, {
+      const response = await fetch("https://rtaomiqsnctigleqjojt.supabase.co/functions/v1/update-order-statuses", {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
@@ -123,7 +123,7 @@ export function OrderStatusOptimizer() {
       }
 
       // First run the enhanced sync with status updates
-      const syncResponse = await fetch(`https://rtaomiqsnctigleqjojt.supabase.co/functions/v1/sync-orders`, {
+      const syncResponse = await fetch("https://rtaomiqsnctigleqjojt.supabase.co/functions/v1/sync-orders", {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
@@ -135,7 +135,7 @@ export function OrderStatusOptimizer() {
 
       if (syncResult.success) {
         // Then run bulk cleanup for old orders
-        const cleanupResponse = await fetch(`https://rtaomiqsnctigleqjojt.supabase.co/functions/v1/bulk-update-order-statuses`, {
+        const cleanupResponse = await fetch("https://rtaomiqsnctigleqjojt.supabase.co/functions/v1/bulk-update-order-statuses", {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${session.access_token}`,
