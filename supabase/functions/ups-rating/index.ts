@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3'
-import { ensureValidUPSToken } from '../_shared/ups-auth.ts'
+import { ensureValidUPSTokenForRating } from '../_shared/ups-auth.ts'
 
 // CORS headers
 const corsHeaders = {
@@ -67,10 +67,10 @@ serve(async (req) => {
     // Get user from Supabase auth
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
-    if (authError || !user) {
-      console.error('❌ Authentication error:', authError?.message || 'No user found');
+    if (authError || !user?.id) {
+      console.error('❌ Authentication error:', authError?.message || 'missing sub claim');
       return new Response(
-        JSON.stringify({ error: 'Invalid authentication' }),
+        JSON.stringify({ error: 'invalid claim: missing sub claim' }),
         { 
           status: 401, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -90,7 +90,7 @@ serve(async (req) => {
 
     // Ensure we have a valid UPS token
     console.log('🔧 Getting UPS credentials for user:', userId);
-    const authResult = await ensureValidUPSToken(serviceSupabase, userId);
+    const authResult = await ensureValidUPSTokenForRating(serviceSupabase, userId);
     if (!authResult.success) {
       console.error('❌ UPS authentication failed:', authResult.error);
       return new Response(
