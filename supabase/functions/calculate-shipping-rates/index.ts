@@ -302,18 +302,25 @@ async function getCanadaPostRates(carrier: any, shipFrom: any, shipTo: any, pack
     const { data, error } = await canadaPostClient.functions.invoke('canada-post-rating', {
       body: {
         shipFrom: {
-          postalCode: fromPostalCode,
-          country: shipFrom.country || 'CA'
+          postalCode: fromPostalCode
         },
         shipTo: {
-          postalCode: toPostalCode,
-          country: shipTo.country || 'CA'
+          address: {
+            postalCode: toPostalCode,
+            countryCode: shipTo.country || 'US'
+          }
         },
         package: {
-          weight: weightKg,
-          length: lengthCm,
-          width: widthCm,
-          height: heightCm
+          weight: {
+            value: weightKg,
+            units: 'KG'
+          },
+          dimensions: {
+            length: lengthCm,
+            width: widthCm,
+            height: heightCm,
+            units: 'CM'
+          }
         }
       }
     });
@@ -325,21 +332,31 @@ async function getCanadaPostRates(carrier: any, shipFrom: any, shipTo: any, pack
       return getFallbackCanadaPostRates();
     }
 
-    const canadaPostRates = data?.rates || [];
+    const canadaPostRates = data || [];
     
     // Convert Canada Post rates to our standard format
-    const rates: ShippingRate[] = canadaPostRates.map((rate: any) => ({
-      carrier: 'Canada Post',
-      service_code: rate.serviceCode,
-      service_name: rate.serviceName,
-      service_type: rate.serviceType,
-      cost: rate.price,
-      currency: rate.currency,
-      estimated_days: rate.estimatedDays,
-      supports_tracking: true,
-      supports_insurance: true,
-      supports_signature: rate.serviceCode === 'PC' // Only Priority Courier supports signature
-    }));
+    const rates: ShippingRate[] = canadaPostRates.map((rate: any) => {
+      // Map service code to service type
+      let serviceType = 'standard';
+      if (rate.serviceCode?.includes('PC')) {
+        serviceType = 'overnight';
+      } else if (rate.serviceCode?.includes('EP') || rate.serviceCode?.includes('XP')) {
+        serviceType = 'expedited';
+      }
+      
+      return {
+        carrier: 'Canada Post',
+        service_code: rate.serviceCode,
+        service_name: rate.service,
+        service_type: serviceType,
+        cost: rate.cost,
+        currency: rate.currency,
+        estimated_days: rate.deliveryDays,
+        supports_tracking: true,
+        supports_insurance: true,
+        supports_signature: rate.serviceCode === 'DOM.PC' // Only Priority Courier supports signature
+      };
+    });
 
     console.log('✅ Canada Post rates received:', rates);
     return rates;
