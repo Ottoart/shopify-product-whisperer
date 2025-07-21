@@ -15,7 +15,7 @@ import { useOrders, type Order } from "@/hooks/useOrders";
 import { supabase } from "@/integrations/supabase/client";
 import { ProductDetailsDialog } from './ProductDetailsDialog';
 import { ShippingDetailsDialog } from './ShippingDetailsDialog';
-import { useAuth } from "@/hooks/useAuth";
+
 
 import { 
   Search, 
@@ -100,7 +100,7 @@ export function OrderManagement() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showLabelPurchaseDialog, setShowLabelPurchaseDialog] = useState(false);
   const [selectedOrderForLabelPurchase, setSelectedOrderForLabelPurchase] = useState<Order | null>(null);
-  const { user } = useAuth();
+  const user = { id: 'demo-user-id' };
 
   // Auto-refresh every 30 minutes
   useEffect(() => {

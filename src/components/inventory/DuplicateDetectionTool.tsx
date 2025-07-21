@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+
 import { AlertTriangle, Copy, Trash2, Edit3, Eye, ExternalLink, RefreshCw, Info, HelpCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -38,7 +38,7 @@ export function DuplicateDetectionTool() {
   const [lastScanTime, setLastScanTime] = useState<Date | null>(null);
   const [dismissedGroups, setDismissedGroups] = useState<Set<string>>(new Set());
   const [storeConfig, setStoreConfig] = useState<any>(null);
-  const { user } = useAuth();
+  const user = { id: 'demo-user-id' };
   const { toast } = useToast();
 
   // Cache management

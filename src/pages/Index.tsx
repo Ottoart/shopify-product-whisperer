@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useSessionContext } from '@supabase/auth-helpers-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Auth } from '@/components/Auth';
+
 import { ProductList } from '@/components/ProductList';
 import { QueueManager } from '@/components/QueueManager';
 import { ProductTypeGenerator } from '@/components/ProductTypeGenerator';
@@ -131,7 +131,7 @@ const Index = () => {
   };
 
   if (!session) {
-    return <Auth />;
+    return <div>Please sign in to continue.</div>;
   }
 
   const addToQueue = (productIds: string[]) => {

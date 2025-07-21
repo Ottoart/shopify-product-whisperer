@@ -7,9 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { SessionContextProvider } from "@supabase/auth-helpers-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppSidebar } from "@/components/AppSidebar";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { UserMenu } from "@/components/UserMenu";
-import { useAuth } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import MainDashboard from "./pages/MainDashboard";
 import PrepFoxDashboard from "./pages/PrepFoxDashboard";
@@ -26,39 +24,23 @@ import SyncStatus from "./pages/SyncStatus";
 import Repricing from "./pages/Repricing";
 import Strategies from "./pages/Strategies";
 import Inventory from "./pages/Inventory";
-import Auth from "./pages/Auth";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import { AboutUs } from "./pages/AboutUs";
 import NotFound from "./pages/NotFound";
 import { LearningDashboard } from "./components/LearningDashboard";
 import Logs from "./pages/Logs";
 import CanadaPostCallback from "./pages/CanadaPostCallback";
+import { CustomerTrackingPage as CustomerTracking } from "./pages/CustomerTracking";
 
 const queryClient = new QueryClient();
 
 const AppContent = () => {
-  const { user } = useAuth();
-  
-  if (!user) {
-    return (
-      <BrowserRouter>
-        <Routes>
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-          <Route path="/about" element={<AboutUs />} />
-          <Route path="*" element={<Auth />} />
-        </Routes>
-      </BrowserRouter>
-    );
-  }
-
   return (
     <BrowserRouter>
       <SidebarProvider>
         <div className="min-h-screen flex w-full">
           <AppSidebar />
           <div className="flex-1 flex flex-col">
-            {/* Global header with sidebar trigger and user menu */}
             <header className="h-12 flex items-center justify-between border-b bg-background px-4">
               <div className="flex items-center">
                 <SidebarTrigger className="mr-4" />
@@ -67,33 +49,31 @@ const AppContent = () => {
               <UserMenu />
             </header>
             
-            {/* Main content area */}
             <main className="flex-1 overflow-auto">
               <Routes>
-                <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-                <Route path="/dashboard" element={<ProtectedRoute><PrepFoxDashboard /></ProtectedRoute>} />
-                <Route path="/ai-dashboard" element={<ProtectedRoute><LearningDashboard /></ProtectedRoute>} />
-                <Route path="/marketplace-gateway" element={<ProtectedRoute><MarketplaceGateway /></ProtectedRoute>} />
-                <Route path="/shipping-overview" element={<ProtectedRoute><ShippingOverview /></ProtectedRoute>} />
-                <Route path="/shipping" element={<ProtectedRoute><Shipping /></ProtectedRoute>} />
-                <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-                <Route path="/activity" element={<ProtectedRoute><Activity /></ProtectedRoute>} />
-                <Route path="/bulk-editor" element={<ProtectedRoute><BulkEditor /></ProtectedRoute>} />
-                <Route path="/shopify-integration" element={<ProtectedRoute><ShopifyIntegration /></ProtectedRoute>} />
-                <Route path="/repricing" element={<ProtectedRoute><Repricing /></ProtectedRoute>} />
-                <Route path="/repricing-dashboard" element={<ProtectedRoute><Repricing /></ProtectedRoute>} />
-                <Route path="/strategies" element={<ProtectedRoute><Strategies /></ProtectedRoute>} />
-                <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
-                <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-                <Route path="/carriers" element={<ProtectedRoute><Carriers /></ProtectedRoute>} />
-                <Route path="/sync-status" element={<ProtectedRoute><SyncStatus /></ProtectedRoute>} />
-                <Route path="/logs" element={<ProtectedRoute><Logs /></ProtectedRoute>} />
-                <Route path="/canada-post-oauth-callback" element={<ProtectedRoute><CanadaPostCallback /></ProtectedRoute>} />
-                
-                <Route path="/auth" element={<Auth />} />
+                <Route path="/" element={<Index />} />
+                <Route path="/dashboard" element={<PrepFoxDashboard />} />
+                <Route path="/ai-dashboard" element={<LearningDashboard />} />
+                <Route path="/marketplace-gateway" element={<MarketplaceGateway />} />
+                <Route path="/shipping-overview" element={<ShippingOverview />} />
+                <Route path="/shipping" element={<Shipping />} />
+                <Route path="/analytics" element={<Analytics />} />
+                <Route path="/activity" element={<Activity />} />
+                <Route path="/bulk-editor" element={<BulkEditor />} />
+                <Route path="/shopify-integration" element={<ShopifyIntegration />} />
+                <Route path="/repricing" element={<Repricing />} />
+                <Route path="/repricing-dashboard" element={<Repricing />} />
+                <Route path="/strategies" element={<Strategies />} />
+                <Route path="/inventory" element={<Inventory />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/carriers" element={<Carriers />} />
+                <Route path="/sync-status" element={<SyncStatus />} />
+                <Route path="/logs" element={<Logs />} />
+                <Route path="/canada-post-oauth-callback" element={<CanadaPostCallback />} />
+                <Route path="/customer-tracking" element={<CustomerTracking />} />
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                 <Route path="/about" element={<AboutUs />} />
-                <Route path="*" element={<ProtectedRoute><NotFound /></ProtectedRoute>} />
+                <Route path="*" element={<NotFound />} />
               </Routes>
             </main>
           </div>

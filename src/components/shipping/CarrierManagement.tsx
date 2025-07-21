@@ -12,7 +12,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
+
 import { supabase } from "@/integrations/supabase/client";
 import { 
   Building2, CheckCircle, XCircle, Settings, Plus, RefreshCw, AlertCircle, 
@@ -35,7 +35,7 @@ interface Carrier {
   status: 'connected' | 'disconnected' | 'error';
   services: CarrierService[];
   lastSync?: string;
-  isInternal?: boolean;
+  
   markup: number;
   adminControlled: boolean;
 }
@@ -56,7 +56,7 @@ interface SubscriptionPlan {
 
 export function CarrierManagement() {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const user = { id: 'demo-user-id' };
   
   // Check if user is admin
   const isAdmin = user?.email === 'ottman1@gmail.com';
@@ -132,7 +132,6 @@ export function CarrierManagement() {
               markup: 0
             })),
             lastSync: new Date(config.updated_at).toLocaleDateString(),
-            isInternal: false,
             markup: 0,
             adminControlled: false,
             credentials: config.api_credentials,
@@ -188,7 +187,7 @@ export function CarrierManagement() {
             markup: 0
           })),
           lastSync: new Date(carrierConfigs[0].updated_at).toLocaleDateString(),
-          isInternal: true, // Changed to true for PrepFox tab
+          
           markup: 15,
           adminControlled: true, // Changed to true for admin control
           credentials: carrierConfigs[0].api_credentials,
@@ -211,32 +210,25 @@ export function CarrierManagement() {
             id: "canada-post-internal",
             name: "Canada Post",
             logo: "🇨🇦",
-            connected: true,
-            status: 'connected' as const,
-            services: [
-              { id: "cp-regular", name: "Regular Parcel", enabled: true },
-              { id: "cp-expedited", name: "Expedited Parcel", enabled: true },
-              { id: "cp-xpress", name: "Xpresspost", enabled: false },
-              { id: "cp-priority", name: "Priority", enabled: true }
-            ],
-            lastSync: "1 hour ago",
-            isInternal: true,
+            status: "available",
+            description: "Canada Post shipping services",
+            services: ["Regular", "Expedited", "Priority", "Xpresspost"],
+            integration_status: "available",
+            setup_required: false,
+            discounted_rates: true,
             markup: 15,
             adminControlled: true
           },
           {
             id: "shipstation-internal",
-            name: "PrepFox Express",
-            logo: "🚚",
-            connected: true,
-            status: 'connected' as const,
-            services: [
-              { id: "ss-standard", name: "Standard Delivery", enabled: true },
-              { id: "ss-express", name: "Express Delivery", enabled: true },
-              { id: "ss-overnight", name: "Overnight", enabled: false }
-            ],
-            lastSync: "30 minutes ago",
-            isInternal: true,
+            name: "ShipStation",
+            logo: "📦",
+            status: "available",
+            description: "ShipStation multi-carrier platform",
+            services: ["Multiple carriers"],
+            integration_status: "available",
+            setup_required: true,
+            connected: false,
             markup: 12,
             adminControlled: true
           }
@@ -263,13 +255,13 @@ export function CarrierManagement() {
           // Use real UPS data from database
           const upsConfig = {
             id: "ups-internal",
-            name: "UPS (Native)",
-            logo: "🤎",
-            connected: true,
-            status: 'connected' as const,
-            services: upsServices,
-            lastSync: realUpsCarrier.updated_at ? new Date(realUpsCarrier.updated_at).toLocaleDateString() : 'Never',
-            isInternal: true,
+            name: "UPS",
+            logo: "🟤",
+            status: "available",
+            description: "UPS shipping services",
+            services: ["Ground", "Next Day Air", "2nd Day Air"],
+            integration_status: "available",
+            setup_required: true,
             markup: 15,
             adminControlled: true
           };
@@ -278,19 +270,16 @@ export function CarrierManagement() {
         } else {
           // Show default UPS placeholder
           const defaultUps = {
-            id: "ups-internal",
-            name: "UPS (Native)",
-            logo: "🤎",
+            id: "fedex-internal",
+            name: "FedEx",
+            logo: "🟣",
+            status: "coming_soon",
+            description: "FedEx shipping services",
+            services: ["Ground", "Express", "Overnight"],
+            integration_status: "coming_soon",
+            setup_required: true,
             connected: false,
-            status: 'disconnected' as const,
-            services: [
-              { id: "ups-ground", name: "UPS Ground", enabled: false },
-              { id: "ups-2day", name: "UPS 2nd Day Air", enabled: false },
-              { id: "ups-next", name: "UPS Next Day Air", enabled: false },
-              { id: "ups-worldwide", name: "UPS Worldwide Express", enabled: false }
-            ],
-            lastSync: "Never",
-            isInternal: true,
+            connected: false,
             markup: 15,
             adminControlled: true
           };
@@ -832,7 +821,7 @@ export function CarrierManagement() {
                       return;
                     }
                     
-                    // Add as personal account if no internal version exists
+                    // Add as personal account
                     toast({
                       title: "Carrier Connection Started",
                       description: `Setting up ${carrier.name} connection...`,
@@ -850,7 +839,7 @@ export function CarrierManagement() {
                           { id: `${carrier.id}-express`, name: "Express Service", enabled: true }
                         ],
                         lastSync: "Just now",
-                        isInternal: false,
+                        
                         markup: 0,
                         adminControlled: false
                       };
@@ -1014,7 +1003,7 @@ export function CarrierManagement() {
                                 Connected
                               </Badge>
                             )}
-                            {carrier.isInternal && (
+                            {carrier.discounted_rates && (
                               <Badge variant="secondary">
                                 PrepFox {carrier.name.includes("PrepFox") ? "" : "Partner"}
                               </Badge>

@@ -1,5 +1,5 @@
 import { useSessionContext } from '@supabase/auth-helpers-react';
-import { Auth } from '@/components/Auth';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +11,7 @@ const PrepFoxDashboard = () => {
   const { session } = useSessionContext();
 
   if (!session) {
-    return <Auth />;
+    return <div>Please sign in to continue.</div>;
   }
 
   return (

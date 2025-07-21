@@ -279,9 +279,8 @@ export const CarrierCredentialValidator = () => {
 
   const validateCanadaPostCredentials = async (config: CarrierConfig): Promise<ValidationResult> => {
     try {
-      // For system/managed Canada Post, just check if the system credentials are configured
-      if (config.api_credentials?.system_carrier || config.api_credentials?.managed_by_prepfox) {
-        // Test using the canada-post-rating function to validate system credentials
+      // Test using the canada-post-rating function to validate system credentials
+      try {
         const testRating = {
           shipFrom: { postalCode: 'K1A0A6' }, // Ottawa postal code for testing
           shipTo: { 
@@ -326,7 +325,10 @@ export const CarrierCredentialValidator = () => {
             lastChecked: new Date().toISOString()
           };
         }
-      } else {
+      } catch (testError) {
+        console.error('Test rating error:', testError);
+        // For user-provided credentials, we could implement a similar test
+        // For now, just check if credentials are present
         // For user-provided credentials, we could implement a similar test
         // For now, just check if credentials are present
         const creds = config.api_credentials;
@@ -472,7 +474,7 @@ export const CarrierCredentialValidator = () => {
         return Boolean(creds.user_id && creds.password);
       case 'CANADA POST':
         // For system/managed Canada Post, credentials are always available
-        if (creds.system_carrier || creds.managed_by_prepfox) {
+        {
           return true;
         }
         // For user-provided Canada Post credentials

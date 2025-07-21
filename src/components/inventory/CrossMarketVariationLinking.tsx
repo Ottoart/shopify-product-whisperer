@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+
 import { Link2, Unlink, Plus, ShoppingCart, DollarSign, Package } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 
@@ -42,7 +42,7 @@ export function CrossMarketVariationLinking() {
   const [newGroupSku, setNewGroupSku] = useState('');
   const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
-  const { user } = useAuth();
+  const user = { id: 'demo-user-id' };
   const { toast } = useToast();
 
   const loadData = async () => {

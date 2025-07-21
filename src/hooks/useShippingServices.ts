@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+
 
 export interface ShippingService {
   id: string;
@@ -32,7 +32,7 @@ export const useShippingServices = () => {
   const [carriers, setCarriers] = useState<CarrierConfiguration[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
+  const user = { id: 'demo-user-id', email: 'user@example.com' };
 
   const fetchServices = async (forceRefresh = false) => {
     if (!user) return;

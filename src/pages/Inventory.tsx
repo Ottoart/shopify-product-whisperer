@@ -4,11 +4,11 @@ import { Card } from '@/components/ui/card';
 import { DuplicateDetectionTool } from '@/components/inventory/DuplicateDetectionTool';
 import { CrossMarketVariationLinking } from '@/components/inventory/CrossMarketVariationLinking';
 import { Package, Copy, Link2, CheckCircle, Sparkles, HelpCircle } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function Inventory() {
-  const { user } = useAuth();
+  const user = { id: 'demo-user-id', user_metadata: { display_name: 'User' }, email: 'user@example.com' };
   
   // Extract display name from user metadata or use email
   const displayName = user?.user_metadata?.display_name || 

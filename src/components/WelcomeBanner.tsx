@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +26,7 @@ interface SetupStep {
 }
 
 export function WelcomeBanner() {
-  const { user } = useAuth();
+  const user = { id: 'demo-user-id' };
   const [isVisible, setIsVisible] = useState(true);
   const [storeCount, setStoreCount] = useState(0);
   const [productCount, setProductCount] = useState(0);
