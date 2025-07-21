@@ -178,9 +178,11 @@ serve(async (req) => {
           );
         }
 
+        console.log(`✅ Got ${carrierRates.length} rates from ${carrier.carrier_name}:`, carrierRates.map(r => `${r.service_name}: $${r.cost}`));
         allRates.push(...carrierRates);
       } catch (error) {
-        console.error(`Error getting rates from ${carrier.carrier_name}:`, error);
+        console.error(`❌ Error getting rates from ${carrier.carrier_name}:`, error);
+        console.error(`❌ Full error details:`, JSON.stringify(error, null, 2));
         // Continue with other carriers
       }
     }
@@ -224,7 +226,8 @@ async function getUPSRates(carrier: any, shipFrom: any, shipTo: any, packageDeta
     console.log('🔄 Calling UPS rating function with:', {
       shipFrom,
       shipTo,
-      packageDetails
+      packageDetails,
+      hasAuthHeader: Boolean(authHeader)
     });
     
     const upsClient = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
@@ -253,22 +256,37 @@ async function getUPSRates(carrier: any, shipFrom: any, shipTo: any, packageDeta
       }
     };
 
-    // Call UPS rating function with auth header
-    const { data, error } = await upsClient.functions.invoke('ups-rating', {
-      body: upsRequest,
-      headers: authHeader ? { Authorization: authHeader } : {}
-    });
+    console.log('📦 UPS Request payload:', JSON.stringify(upsRequest, null, 2));
+    console.log('🔑 Auth header present:', authHeader ? 'YES' : 'NO');
 
-    console.log('📦 UPS API response:', { data, error });
+    // Call UPS rating function with auth header
+    const requestOptions: any = {
+      body: upsRequest
+    };
+
+    if (authHeader) {
+      requestOptions.headers = {
+        Authorization: authHeader
+      };
+    }
+
+    console.log('📡 Making UPS function call with options:', JSON.stringify(requestOptions, null, 2));
+
+    const { data, error } = await upsClient.functions.invoke('ups-rating', requestOptions);
+
+    console.log('📦 UPS API response data:', JSON.stringify(data, null, 2));
+    console.log('❌ UPS API response error:', JSON.stringify(error, null, 2));
 
     if (error) {
       console.error('❌ UPS API error:', error);
+      console.error('❌ UPS Error message:', error.message || 'Unknown error');
+      console.error('❌ UPS Error details:', error.details || 'No details');
       // Don't return fake rates for authenticated UPS - return empty array instead
       return [];
     }
 
     const rates = data?.rates || [];
-    console.log('✅ UPS rates received:', rates);
+    console.log(`✅ UPS rates received: ${rates.length} rates`, rates.map((r: any) => `${r.service_name}: $${r.cost}`));
     return rates;
   } catch (error) {
     console.error('❌ UPS rating error:', error);

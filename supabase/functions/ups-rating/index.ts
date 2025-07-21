@@ -40,8 +40,13 @@ serve(async (req) => {
   }
 
   try {
+    console.log('🎯 UPS Rating Function Called');
+    console.log('📋 Request headers:', Object.fromEntries(req.headers.entries()));
+    
     // Extract JWT token and get user ID directly
     const authHeader = req.headers.get('Authorization');
+    console.log('🔑 Auth header received:', authHeader ? 'YES' : 'NO');
+    
     if (!authHeader?.startsWith('Bearer ')) {
       console.error('❌ No valid authorization header provided');
       return new Response(
@@ -57,7 +62,10 @@ serve(async (req) => {
     let userId: string;
     try {
       const token = authHeader.replace('Bearer ', '');
+      console.log('🔍 JWT token first 50 chars:', token.substring(0, 50));
       const payload = JSON.parse(atob(token.split('.')[1]));
+      console.log('🔍 JWT payload keys:', Object.keys(payload));
+      console.log('🔍 JWT payload sub:', payload.sub);
       userId = payload.sub;
       
       if (!userId) {
@@ -66,6 +74,7 @@ serve(async (req) => {
       console.log('✅ Extracted user ID from JWT:', userId);
     } catch (jwtError) {
       console.error('❌ Failed to extract user from JWT:', jwtError);
+      console.error('❌ JWT Error details:', JSON.stringify(jwtError, null, 2));
       return new Response(
         JSON.stringify({ error: 'invalid claim: missing sub claim' }),
         { 
