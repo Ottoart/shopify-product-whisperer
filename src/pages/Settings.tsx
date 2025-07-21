@@ -1,12 +1,18 @@
 import { useState } from 'react';
-import { Settings as SettingsIcon, Store, Key, Database, Bell, Printer, FileText } from 'lucide-react';
+import { Settings as SettingsIcon, Store, Key, Database, Bell, Printer, FileText, Building2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StoreConfig } from '@/components/StoreConfig';
 import { PrintingSettings } from '@/components/shipping/PrintingSettings';
+import { CarrierManagement } from '@/components/shipping/CarrierManagement';
+import { CarrierConfigurationDialog } from '@/components/shipping/CarrierConfigurationDialog';
+import { CarrierCredentialValidator } from '@/components/shipping/CarrierCredentialValidator';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
 import Logs from '@/pages/Logs';
 
 const Settings = () => {
+  const [isCarrierDialogOpen, setIsCarrierDialogOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -17,8 +23,9 @@ const Settings = () => {
         </div>
 
         <Tabs defaultValue="store" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="store">Store</TabsTrigger>
+            <TabsTrigger value="carriers">Carriers</TabsTrigger>
             <TabsTrigger value="printing">Printing</TabsTrigger>
             <TabsTrigger value="api">API Keys</TabsTrigger>
             <TabsTrigger value="sync">Sync</TabsTrigger>
@@ -39,6 +46,46 @@ const Settings = () => {
               </CardHeader>
               <CardContent>
                 <StoreConfig />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="carriers" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5" />
+                  Shipping Carriers
+                </CardTitle>
+                <CardDescription>
+                  Configure and manage your shipping carrier integrations
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {/* Quick Add Carrier Button */}
+                  <div className="flex justify-start">
+                    <Button onClick={() => setIsCarrierDialogOpen(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Configure New Carrier
+                    </Button>
+                  </div>
+                  
+                  {/* Carrier Configuration Dialog */}
+                  <CarrierConfigurationDialog 
+                    isOpen={isCarrierDialogOpen} 
+                    onClose={() => setIsCarrierDialogOpen(false)} 
+                  />
+
+                  {/* Carrier Management */}
+                  <CarrierManagement />
+
+                  {/* Carrier Credential Validator */}
+                  <div className="mt-6">
+                    <h3 className="text-lg font-semibold mb-4">Carrier Validation</h3>
+                    <CarrierCredentialValidator />
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

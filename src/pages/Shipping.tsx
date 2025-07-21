@@ -2,15 +2,13 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Truck, Package, RotateCcw, Settings, Zap, Building2, Store, Plus, Webhook, TestTube, Brain } from "lucide-react";
+import { Truck, Package, RotateCcw, Settings, Zap, Building2, Store, Webhook, TestTube, Brain } from "lucide-react";
 import { OrderManagement } from "@/components/shipping/OrderManagement";
 import { EnhancedShippingConfiguration } from "@/components/shipping/EnhancedShippingConfiguration";
 import { ShippingRules } from "@/components/shipping/ShippingRules";
 import { TrackingPage } from "@/components/shipping/TrackingPage";
 import { ReturnsManagement } from "@/components/shipping/ReturnsManagement";
 import { BatchActionQueue } from "@/components/shipping/BatchActionQueue";
-import { CarrierManagement } from "@/components/shipping/CarrierManagement";
-import { CarrierConfigurationDialog } from "@/components/shipping/CarrierConfigurationDialog";
 import { StoreConfig } from "@/components/StoreConfig";
 import { ShopifyConnectionTest } from "@/components/shipping/ShopifyConnectionTest";
 import { WebhookTester } from "@/components/shipping/WebhookTester";
@@ -22,7 +20,6 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 export default function Shipping() {
   const [activeTab, setActiveTab] = useState("orders");
-  const [isCarrierDialogOpen, setIsCarrierDialogOpen] = useState(false);
 
   return (
     <ProtectedRoute>
@@ -38,7 +35,7 @@ export default function Shipping() {
 
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-11 h-auto gap-1 p-1">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-10 h-auto gap-1 p-1">
             <TabsTrigger value="orders" className="flex items-center gap-2">
               <Package className="h-4 w-4" />
               Orders
@@ -124,27 +121,23 @@ export default function Shipping() {
 
           <TabsContent value="carriers">
             <div className="space-y-6">
-              {/* Quick Add Carrier Button */}
               <Card>
-                <CardHeader>
-                  <CardTitle>Carrier Configuration</CardTitle>
-                  <CardDescription>
-                    Configure shipping carriers and manage their services
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button onClick={() => setIsCarrierDialogOpen(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Configure Carriers
-                  </Button>
+                <CardContent className="pt-6">
+                  <div className="text-center py-8">
+                    <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">Carrier Management Moved</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Carrier configuration has been moved to Settings for better organization.
+                    </p>
+                    <Button 
+                      onClick={() => window.location.href = '/settings'}
+                      className="animate-fade-in"
+                    >
+                      Go to Settings → Carriers
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
-              
-              <CarrierConfigurationDialog 
-                isOpen={isCarrierDialogOpen} 
-                onClose={() => setIsCarrierDialogOpen(false)} 
-              />
-              <CarrierManagement />
             </div>
           </TabsContent>
 

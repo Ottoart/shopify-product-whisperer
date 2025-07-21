@@ -16,6 +16,7 @@ import PrepFoxDashboard from "./pages/PrepFoxDashboard";
 import MarketplaceGateway from "./pages/MarketplaceGateway";
 import Shipping from "./pages/Shipping";
 import ShippingOverview from "./pages/ShippingOverview";
+import Carriers from "./pages/Carriers";
 import Analytics from "./pages/Analytics";
 import Activity from "./pages/Activity";
 import BulkEditor from "./pages/BulkEditor";
@@ -83,6 +84,7 @@ const AppContent = () => {
                 <Route path="/strategies" element={<ProtectedRoute><Strategies /></ProtectedRoute>} />
                 <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                <Route path="/carriers" element={<ProtectedRoute><Carriers /></ProtectedRoute>} />
                 <Route path="/sync-status" element={<ProtectedRoute><SyncStatus /></ProtectedRoute>} />
                 <Route path="/logs" element={<ProtectedRoute><Logs /></ProtectedRoute>} />
                 
