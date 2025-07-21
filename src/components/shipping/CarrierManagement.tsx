@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { 
   Building2, CheckCircle, XCircle, Settings, Plus, RefreshCw, AlertCircle, 
   CreditCard, Crown, Zap, TestTube, Shield, DollarSign, Eye, EyeOff, 
-  Users, Package, Globe, Truck, Percent, Lock 
+  Users, Package, Globe, Truck, Percent, Lock, ExternalLink 
 } from "lucide-react";
 
 interface CarrierService {
@@ -72,8 +72,17 @@ export function CarrierManagement() {
   const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
   const [isPlanComparisonOpen, setIsPlanComparisonOpen] = useState(false);
   const [isAddCarrierOpen, setIsAddCarrierOpen] = useState(false);
+  const [isCanadaPostConfigOpen, setIsCanadaPostConfigOpen] = useState(false);
   const [connectedUserCarriers, setConnectedUserCarriers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Canada Post configuration state
+  const [canadaPostConfig, setCanadaPostConfig] = useState({
+    accountNumber: '',
+    accountType: 'Commercial',
+    contractNumber: '',
+    paymentMethod: 'Account'
+  });
 
   // Fetch real carrier configurations from database
   useEffect(() => {
@@ -645,6 +654,135 @@ export function CarrierManagement() {
     </Dialog>
   );
 
+  const CanadaPostConfigModal = () => (
+    <Dialog open={isCanadaPostConfigOpen} onOpenChange={setIsCanadaPostConfigOpen}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            🇨🇦 Canada Post Configuration
+          </DialogTitle>
+          <DialogDescription>
+            Enter your Canada Post account details to activate shipping rates
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="accountNumber">Account Number</Label>
+            <Input
+              id="accountNumber"
+              placeholder="e.g., 0008126390"
+              value={canadaPostConfig.accountNumber}
+              onChange={(e) => setCanadaPostConfig(prev => ({ ...prev, accountNumber: e.target.value }))}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="accountType">Account Type</Label>
+            <Select 
+              value={canadaPostConfig.accountType} 
+              onValueChange={(value) => setCanadaPostConfig(prev => ({ ...prev, accountType: value }))}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Commercial">Commercial</SelectItem>
+                <SelectItem value="Personal">Personal</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="contractNumber">Contract Number</Label>
+            <Input
+              id="contractNumber"
+              placeholder="e.g., 0043880018"
+              value={canadaPostConfig.contractNumber}
+              onChange={(e) => setCanadaPostConfig(prev => ({ ...prev, contractNumber: e.target.value }))}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="paymentMethod">Payment Method</Label>
+            <Select 
+              value={canadaPostConfig.paymentMethod} 
+              onValueChange={(value) => setCanadaPostConfig(prev => ({ ...prev, paymentMethod: value }))}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Account">Account</SelectItem>
+                <SelectItem value="Credit Card">Credit Card</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="p-3 bg-blue-50 rounded-lg border">
+            <p className="text-sm text-blue-800">
+              After entering your details, you'll be redirected to Canada Post to authorize your account.
+            </p>
+          </div>
+        </div>
+        
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={() => setIsCanadaPostConfigOpen(false)}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={() => {
+              // Save configuration and redirect to Canada Post login
+              toast({
+                title: "Connecting to Canada Post",
+                description: "Redirecting to Canada Post for authorization...",
+              });
+              
+              // Open Canada Post login in new tab
+              window.open('https://www.canadapost-postescanada.ca/cpc/en/business/login.page', '_blank');
+              
+              // For demo purposes, simulate successful connection after a delay
+              setTimeout(() => {
+                const newCanadaPostCarrier = {
+                  id: 'canada-post-user',
+                  name: 'Canada Post',
+                  logo: '🇨🇦',
+                  connected: true,
+                  status: 'connected',
+                  services: [
+                    { id: 'cp-regular', name: 'Regular Parcel', enabled: true },
+                    { id: 'cp-expedited', name: 'Expedited Parcel', enabled: true },
+                    { id: 'cp-xpress', name: 'Xpresspost', enabled: true },
+                    { id: 'cp-priority', name: 'Priority', enabled: true }
+                  ],
+                  lastSync: 'Just now',
+                  isInternal: false,
+                  markup: 0,
+                  adminControlled: false,
+                  accountDetails: canadaPostConfig
+                };
+                
+                setConnectedUserCarriers(prev => [...prev, newCanadaPostCarrier]);
+                
+                toast({
+                  title: "Canada Post Connected",
+                  description: "Your Canada Post account has been successfully connected!",
+                });
+                
+                setIsCanadaPostConfigOpen(false);
+              }, 3000);
+            }}
+            disabled={!canadaPostConfig.accountNumber || !canadaPostConfig.contractNumber}
+            className="gap-2"
+          >
+            <ExternalLink className="h-4 w-4" />
+            Connect & Authorize
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+
   const AddCarrierModal = () => (
     <Dialog open={isAddCarrierOpen} onOpenChange={setIsAddCarrierOpen}>
       <DialogContent className="max-w-3xl">
@@ -660,8 +798,15 @@ export function CarrierManagement() {
             <button
               key={carrier.id}
               className="p-4 border rounded-lg hover:bg-muted transition-colors text-center space-y-2 disabled:opacity-50"
-              disabled={!isAdmin}
+              disabled={!isAdmin && carrier.id !== 'canada-post'}
               onClick={() => {
+                if (carrier.id === 'canada-post') {
+                  // Open Canada Post configuration modal
+                  setIsAddCarrierOpen(false);
+                  setIsCanadaPostConfigOpen(true);
+                  return;
+                }
+                
                 if (isAdmin) {
                   // Check if there's an internal version of this carrier
                   const internalCarrier = prepfoxCarriers.find(c => 
@@ -740,23 +885,24 @@ export function CarrierManagement() {
               <div className="text-3xl mb-2">{carrier.logo}</div>
               <div className="font-medium">{carrier.name}</div>
               <div className="text-sm text-muted-foreground">{carrier.description}</div>
-              {!isAdmin && (
+              {carrier.id === 'canada-post' && (
+                <Badge variant="secondary" className="mt-2">Available to All</Badge>
+              )}
+              {!isAdmin && carrier.id !== 'canada-post' && (
                 <Badge variant="outline" className="mt-2">Admin Only</Badge>
               )}
             </button>
           ))}
         </div>
 
-        {!isAdmin && (
-          <div className="p-4 bg-amber-50 rounded-lg">
-            <div className="flex items-center gap-2 text-amber-800">
-              <Lock className="h-4 w-4" />
-              <span className="text-sm font-medium">
-                Only administrators can connect new carriers
-              </span>
-            </div>
+        <div className="p-4 bg-blue-50 rounded-lg">
+          <div className="flex items-center gap-2 text-blue-800">
+            <Globe className="h-4 w-4" />
+            <span className="text-sm font-medium">
+              Canada Post is available for all users to connect their own accounts
+            </span>
           </div>
-        )}
+        </div>
       </DialogContent>
     </Dialog>
   );
@@ -1143,6 +1289,7 @@ export function CarrierManagement() {
         <ServiceManagementModal />
         <SubscriptionModal />
         <PlanComparisonModal />
+        <CanadaPostConfigModal />
         <AddCarrierModal />
       </div>
     </div>
