@@ -59,20 +59,28 @@ Deno.serve(async (req) => {
       ? 'https://ct.soa-gw.canadapost.ca' 
       : 'https://soa-gw.canadapost.ca';
     
-    // Create rating request XML
-    const isInternational = request.shipTo.country !== 'CA';
+    // Create proper mailing scenario request XML
+    const isUSA = request.shipTo.country === 'US';
+    const isInternational = request.shipTo.country !== 'CA' && request.shipTo.country !== 'US';
     
-    const destinationXml = isInternational 
-      ? `<international>
+    let destinationXml = '';
+    if (isUSA) {
+      destinationXml = `<united-states>
+      <zip-code>${request.shipTo.postalCode.replace(/\s/g, '')}</zip-code>
+    </united-states>`;
+    } else if (isInternational) {
+      destinationXml = `<international>
       <country-code>${request.shipTo.country}</country-code>
       <postal-code>${request.shipTo.postalCode.replace(/\s/g, '')}</postal-code>
-    </international>`
-      : `<domestic>
+    </international>`;
+    } else {
+      destinationXml = `<domestic>
       <postal-code>${request.shipTo.postalCode.replace(/\s/g, '')}</postal-code>
     </domestic>`;
+    }
     
     const ratingXml = `<?xml version="1.0" encoding="UTF-8"?>
-<rating-request xmlns="http://www.canadapost.ca/ws/ship/rate-v4">
+<mailing-scenario xmlns="http://www.canadapost.ca/ws/ship/rate-v4">
   <customer-number>${apiKey}</customer-number>
   <parcel-characteristics>
     <weight>${request.package.weight}</weight>
@@ -86,7 +94,7 @@ Deno.serve(async (req) => {
   <destination>
     ${destinationXml}
   </destination>
-</rating-request>`;
+</mailing-scenario>`;
 
     console.log('Canada Post XML request:', ratingXml);
 
@@ -149,47 +157,60 @@ Deno.serve(async (req) => {
 function parseCanadaPostXMLResponse(xml: string): CanadaPostRate[] {
   const rates: CanadaPostRate[] = [];
   
-  // This is a simplified XML parser - in production use a proper XML library
-  const serviceRegex = /<service-name>([^<]+)<\/service-name>[\s\S]*?<service-code>([^<]+)<\/service-code>[\s\S]*?<price>([^<]+)<\/price>/g;
-  let match;
+  // Parse Canada Post XML response format
+  // Look for price-quote elements containing service details
+  const priceQuoteRegex = /<price-quote>([\s\S]*?)<\/price-quote>/g;
+  let quoteMatch;
   
-  while ((match = serviceRegex.exec(xml)) !== null) {
-    const [, serviceName, serviceCode, price] = match;
+  while ((quoteMatch = priceQuoteRegex.exec(xml)) !== null) {
+    const quoteContent = quoteMatch[1];
     
-    let serviceType = 'standard';
-    let estimatedDays = '5-7';
+    // Extract service details from each price-quote
+    const serviceCodeMatch = quoteContent.match(/<service-code>([^<]+)<\/service-code>/);
+    const serviceNameMatch = quoteContent.match(/<service-name>([^<]+)<\/service-name>/);
+    const dueMatch = quoteContent.match(/<due>([^<]+)<\/due>/);
     
-    // Map service codes to types and delivery times
-    switch (serviceCode) {
-      case 'REG':
+    if (serviceCodeMatch && serviceNameMatch && dueMatch) {
+      const serviceCode = serviceCodeMatch[1];
+      const serviceName = serviceNameMatch[1];
+      const price = parseFloat(dueMatch[1]);
+      
+      let serviceType = 'standard';
+      let estimatedDays = '5-7';
+      
+      // Map Canada Post service codes to types and delivery times
+      if (serviceCode.includes('DOM.RP') || serviceCode === 'REG') {
         serviceType = 'standard';
         estimatedDays = '5-7';
-        break;
-      case 'EXP':
+      } else if (serviceCode.includes('DOM.EP') || serviceCode === 'EXP') {
         serviceType = 'expedited';
         estimatedDays = '2-3';
-        break;
-      case 'XP':
+      } else if (serviceCode.includes('DOM.XP') || serviceCode === 'XP') {
         serviceType = 'expedited';
         estimatedDays = '1-2';
-        break;
-      case 'PC':
+      } else if (serviceCode.includes('DOM.PC') || serviceCode === 'PC') {
         serviceType = 'overnight';
         estimatedDays = '1';
-        break;
-      default:
-        serviceType = 'standard';
+      } else if (serviceCode.includes('USA.EP')) {
+        serviceType = 'expedited';
         estimatedDays = '3-5';
+      } else if (serviceCode.includes('USA.XP')) {
+        serviceType = 'expedited';
+        estimatedDays = '2-3';
+      } else if (serviceCode.includes('INT')) {
+        serviceType = 'international';
+        estimatedDays = '7-14';
+      }
+      
+      rates.push({
+        serviceCode,
+        serviceName,
+        serviceType,
+        price,
+        currency: 'CAD',
+        estimatedDays: `${estimatedDays} business days`
+      });
     }
-    
-    rates.push({
-      serviceCode,
-      serviceName,
-      serviceType,
-      price: parseFloat(price),
-      currency: 'CAD',
-      estimatedDays: `${estimatedDays} business days`
-    });
   }
   
   return rates.length > 0 ? rates : getFallbackRates();
