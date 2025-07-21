@@ -77,30 +77,38 @@ export async function ensureValidUPSToken(supabase: any, userId: string): Promis
     console.log('🔄 Token expires at:', credentials.token_expires_at);
     console.log('🔄 Current time:', new Date().toISOString());
 
-    // UPS OAuth 2.0 only supports client_credentials grant type
+    // For authorization code flow, we need to use refresh_token grant type
+    if (!credentials.refresh_token) {
+      return {
+        success: false,
+        error: 'No refresh token available. Please re-authorize with UPS.'
+      };
+    }
+
     const tokenBody = new URLSearchParams({ 
-      grant_type: 'client_credentials' 
+      grant_type: 'refresh_token',
+      refresh_token: credentials.refresh_token
     });
 
-    console.log('🔄 Using grant type: client_credentials (UPS requirement)');
+    console.log('🔄 Using grant type: refresh_token (authorization code flow)');
     console.log('🔄 Client ID:', credentials.client_id);
+    console.log('🔄 Has refresh token:', Boolean(credentials.refresh_token));
     
-    // Force sandbox environment for all API calls (more reliable)
-    const tokenUrl = 'https://wwwcie.ups.com/security/v1/oauth/token';
-    console.log('🔄 Using SANDBOX UPS OAuth endpoint:', tokenUrl);
+    // Use the refresh endpoint as documented by UPS
+    const tokenUrl = 'https://wwwcie.ups.com/security/v1/oauth/refresh';
+    console.log('🔄 Using SANDBOX UPS OAuth refresh endpoint:', tokenUrl);
 
     // Create proper Basic Auth header according to UPS spec
     const authString = btoa(`${credentials.client_id}:${credentials.client_secret}`);
     console.log('🔄 Authorization header created (first 20 chars):', `Basic ${authString}`.substring(0, 20));
 
-    // Use proper UPS OAuth 2.0 endpoint with correct headers per UPS documentation
+    // Use proper UPS OAuth 2.0 refresh endpoint with correct headers per UPS documentation
     const refreshResponse = await fetch(tokenUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         'Authorization': `Basic ${authString}`,
-        'Accept': 'application/json',
-        'x-merchant-id': credentials.client_id
+        'Accept': 'application/json'
       },
       body: tokenBody
     });
