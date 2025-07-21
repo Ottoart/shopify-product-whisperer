@@ -525,7 +525,10 @@ export function EnhancedShippingConfiguration({
       console.log('📦 Fetching shipping rates with corrected data:', requestData);
 
       const { data, error } = await supabase.functions.invoke('calculate-shipping-rates', {
-        body: requestData
+        body: requestData,
+        headers: {
+          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        }
       });
 
       console.log('📦 Shipping rates response:', { data, error });
