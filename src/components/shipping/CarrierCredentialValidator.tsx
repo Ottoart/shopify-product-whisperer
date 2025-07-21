@@ -277,6 +277,85 @@ export const CarrierCredentialValidator = () => {
     };
   };
 
+  const validateCanadaPostCredentials = async (config: CarrierConfig): Promise<ValidationResult> => {
+    try {
+      // For system/managed Canada Post, just check if the system credentials are configured
+      if (config.api_credentials?.system_carrier || config.api_credentials?.managed_by_prepfox) {
+        // Test using the canada-post-rating function to validate system credentials
+        const testRating = {
+          shipFrom: { postalCode: 'K1A0A6' }, // Ottawa postal code for testing
+          shipTo: { 
+            address: { 
+              postalCode: 'M5V3A8', // Toronto postal code
+              countryCode: 'CA' 
+            } 
+          },
+          package: {
+            weight: { value: 1, units: 'KG' as const },
+            dimensions: { length: 10, width: 10, height: 10, units: 'CM' as const }
+          }
+        };
+
+        const { data, error } = await supabase.functions.invoke('canada-post-rating', {
+          body: testRating
+        });
+
+        if (error) {
+          return {
+            carrier: 'Canada Post',
+            status: 'error',
+            message: `API Error: ${error.message}`,
+            lastChecked: new Date().toISOString()
+          };
+        }
+
+        // If we got rates back, the credentials are working
+        if (data && Array.isArray(data) && data.length > 0) {
+          return {
+            carrier: 'Canada Post',
+            status: 'valid',
+            message: `✅ Canada Post API validation successful. ${data.length} services available.`,
+            details: { services: data.length, testRating: true },
+            lastChecked: new Date().toISOString()
+          };
+        } else {
+          return {
+            carrier: 'Canada Post',
+            status: 'invalid',
+            message: 'Canada Post API returned no rates. Check credentials or service availability.',
+            lastChecked: new Date().toISOString()
+          };
+        }
+      } else {
+        // For user-provided credentials, we could implement a similar test
+        // For now, just check if credentials are present
+        const creds = config.api_credentials;
+        if (creds?.apiKey && creds?.apiSecret) {
+          return {
+            carrier: 'Canada Post',
+            status: 'valid',
+            message: '✅ Canada Post credentials configured. API testing not implemented for user credentials yet.',
+            lastChecked: new Date().toISOString()
+          };
+        } else {
+          return {
+            carrier: 'Canada Post',
+            status: 'invalid',
+            message: 'Missing Canada Post API credentials (apiKey or apiSecret)',
+            lastChecked: new Date().toISOString()
+          };
+        }
+      }
+    } catch (error) {
+      return {
+        carrier: 'Canada Post',
+        status: 'error',
+        message: `Validation failed: ${(error as Error).message}`,
+        lastChecked: new Date().toISOString()
+      };
+    }
+  };
+
   const validateCredentials = async (config: CarrierConfig) => {
     const carrierId = config.id;
     setValidating(prev => ({ ...prev, [carrierId]: true }));
@@ -302,6 +381,9 @@ export const CarrierCredentialValidator = () => {
         break;
       case 'USPS':
         result = await validateUSPSCredentials(config);
+        break;
+      case 'CANADA POST':
+        result = await validateCanadaPostCredentials(config);
         break;
       default:
         result = {
