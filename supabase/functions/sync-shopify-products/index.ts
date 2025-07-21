@@ -87,7 +87,7 @@ serve(async (req) => {
         vendor: product.vendor || null,
         type: product.product_type || null,
         tags: product.tags || null,
-        published: !!product.published_at,
+        published: Boolean(product.published_at),
         body_html: product.body_html || null,
         seo_title: product.seo_title || null,
         seo_description: product.seo_description || null,
@@ -171,7 +171,7 @@ serve(async (req) => {
       batchNumber: startPage,
       productsSynced: products.length,
       totalSynced: totalSynced || 0,
-      hasMorePages: !!nextPageInfo,
+      hasMorePages: Boolean(nextPageInfo),
       nextPageInfo: nextPageInfo,
       message: `Synced batch ${startPage}: ${products.length} products. Total: ${totalSynced || 0}`
     }), {

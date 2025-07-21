@@ -231,7 +231,7 @@ export function ShippingDetailsDialog({ isOpen, onClose, order, onUpdateOrder }:
     console.log('🏷️ Starting label creation...');
     
     if (!selectedRate || !order) {
-      console.error('❌ Missing requirements:', { selectedRate: !!selectedRate, order: !!order });
+      console.error('❌ Missing requirements:', { selectedRate: Boolean(selectedRate), order: Boolean(order) });
       toast({
         title: "No rate selected",
         description: "Please select a shipping rate first",

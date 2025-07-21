@@ -56,7 +56,7 @@ serve(async (req) => {
     const credentials = carrierConfig.api_credentials as any;
     console.log('🔍 Testing OAuth flow with credentials:', {
       client_id: credentials.client_id,
-      has_client_secret: !!credentials.client_secret,
+      has_client_secret: Boolean(credentials.client_secret),
       current_token_expires: credentials.token_expires_at,
       account_number: carrierConfig.account_number
     });

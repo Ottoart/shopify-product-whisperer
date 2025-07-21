@@ -50,7 +50,7 @@ serve(async (req) => {
     console.log('Product handle:', validatedRequest.productHandle);
     console.log('Product title:', validatedRequest.productData?.title);
     console.log('Use direct AI:', validatedRequest.useDirectAI);
-    console.log('Has custom template:', !!validatedRequest.customPromptTemplate);
+    console.log('Has custom template:', Boolean(validatedRequest.customPromptTemplate));
     
     // Validate environment
     const env = validateEnvironment();

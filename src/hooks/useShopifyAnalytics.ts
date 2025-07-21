@@ -78,7 +78,7 @@ export const useShopifyAnalytics = () => {
       
       return data;
     },
-    enabled: !!session?.user?.id,
+    enabled: Boolean(session?.user?.id),
   });
 
   // Fetch fresh data from Shopify
@@ -161,7 +161,7 @@ export const useShopifyAnalytics = () => {
   // Check if credentials are available
   const hasCredentials = () => {
     const { storeUrl, accessToken } = getShopifyCredentials();
-    return !!(storeUrl && accessToken);
+    return Boolean(storeUrl && accessToken);
   };
 
   return {
