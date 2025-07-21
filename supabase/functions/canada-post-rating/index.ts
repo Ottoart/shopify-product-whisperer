@@ -4,40 +4,52 @@ import { corsHeaders } from '../_shared/cors.ts';
 interface RatingRequest {
   shipFrom: {
     postalCode: string;
-    country: string;
   };
   shipTo: {
-    postalCode: string;
-    country: string;
+    address: {
+      postalCode?: string;
+      countryCode: string;
+      stateProvinceCode?: string;
+    };
   };
   package: {
-    weight: number; // in kg
-    length: number; // in cm
-    width: number;  // in cm
-    height: number; // in cm
+    weight: {
+      value: number;
+      units: 'LBS' | 'KG';
+    };
+    dimensions?: {
+      length: number;
+      width: number;
+      height: number;
+      units: 'IN' | 'CM';
+    };
   };
+  additionalServices?: any[];
 }
 
 interface CanadaPostRate {
+  carrier: string;
+  service: string;
   serviceCode: string;
-  serviceName: string;
-  serviceType: string;
-  price: number;
+  cost: number;
+  estimatedDeliveryDate?: string;
+  deliveryDays?: string;
   currency: string;
-  estimatedDays: string;
-  deliveryDate?: string;
 }
 
 Deno.serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const request: RatingRequest = await req.json();
-    console.log('Canada Post rating request:', request);
+    console.log('📦 Canada Post Rating API called');
+    
+    const { shipFrom, shipTo, package: pkg }: RatingRequest = await req.json();
+    console.log('📍 Request details:', { shipFrom, shipTo, package: pkg });
 
-    // Get API credentials from environment - check if this is a system/internal carrier first
+    // Get API credentials from environment or database
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -52,10 +64,11 @@ Deno.serve(async (req) => {
 
     let apiKey: string | null = null;
     let apiSecret: string | null = null;
+    let customerNumber: string | null = null;
 
     if (canadaPostConfig?.api_credentials?.system_carrier) {
       // This is a PrepFox managed Canada Post - use system credentials
-      console.log('Using PrepFox managed Canada Post credentials');
+      console.log('🔑 Using PrepFox managed Canada Post credentials');
       const isDev = Deno.env.get('ENVIRONMENT') !== 'production';
       apiKey = isDev 
         ? Deno.env.get('CANADA_POST_DEV_API_KEY')
@@ -63,138 +76,154 @@ Deno.serve(async (req) => {
       apiSecret = isDev 
         ? Deno.env.get('CANADA_POST_DEV_API_SECRET')
         : Deno.env.get('CANADA_POST_PROD_API_SECRET');
+      customerNumber = '0000000'; // Default customer number for development
     } else if (canadaPostConfig?.api_credentials) {
       // User provided their own Canada Post credentials
-      apiKey = canadaPostConfig.api_credentials.api_key;
-      apiSecret = canadaPostConfig.api_credentials.api_secret;
-    } else {
-      // Fallback to environment variables
-      const isDev = Deno.env.get('ENVIRONMENT') !== 'production';
-      apiKey = isDev 
-        ? Deno.env.get('CANADA_POST_DEV_API_KEY')
-        : Deno.env.get('CANADA_POST_PROD_API_KEY');
-      apiSecret = isDev 
-        ? Deno.env.get('CANADA_POST_DEV_API_SECRET')
-        : Deno.env.get('CANADA_POST_PROD_API_SECRET');
+      console.log('🔑 Using user provided Canada Post credentials');
+      apiKey = canadaPostConfig.api_credentials.apiKey;
+      apiSecret = canadaPostConfig.api_credentials.apiSecret;
+      customerNumber = canadaPostConfig.api_credentials.customerNumber || '0000000';
     }
 
     if (!apiKey || !apiSecret) {
-      console.error('Canada Post API credentials not configured');
-      console.log('Environment check:', {
-        isDev: Deno.env.get('ENVIRONMENT') !== 'production',
-        hasDevKey: !!Deno.env.get('CANADA_POST_DEV_API_KEY'),
-        hasProdKey: !!Deno.env.get('CANADA_POST_PROD_API_KEY'),
-        hasDevSecret: !!Deno.env.get('CANADA_POST_DEV_API_SECRET'),
-        hasProdSecret: !!Deno.env.get('CANADA_POST_PROD_API_SECRET'),
-        configFound: !!canadaPostConfig,
-        isSystemCarrier: canadaPostConfig?.api_credentials?.system_carrier
+      console.log('⚠️ No Canada Post credentials available, returning fallback rates');
+      return new Response(JSON.stringify(getFallbackRates()), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
       });
-      return new Response(
-        JSON.stringify({ error: 'Canada Post API credentials not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
     }
 
-    // Canada Post API endpoint
-    const isDev = Deno.env.get('ENVIRONMENT') !== 'production';
-    const baseUrl = isDev 
-      ? 'https://ct.soa-gw.canadapost.ca' 
-      : 'https://soa-gw.canadapost.ca';
-    
-    // Create proper mailing scenario request XML
-    const isUSA = request.shipTo.country === 'US';
-    const isInternational = request.shipTo.country !== 'CA' && request.shipTo.country !== 'US';
-    
-    let destinationXml = '';
-    if (isUSA) {
-      destinationXml = `<united-states>
-      <zip-code>${request.shipTo.postalCode.replace(/\s/g, '')}</zip-code>
-    </united-states>`;
-    } else if (isInternational) {
-      destinationXml = `<international>
-      <country-code>${request.shipTo.country}</country-code>
-      <postal-code>${request.shipTo.postalCode.replace(/\s/g, '')}</postal-code>
-    </international>`;
-    } else {
-      destinationXml = `<domestic>
-      <postal-code>${request.shipTo.postalCode.replace(/\s/g, '')}</postal-code>
-    </domestic>`;
+    console.log('🔑 Using Canada Post credentials');
+
+    // Convert weight to kilograms if needed
+    let weightInKg = pkg.weight.value;
+    if (pkg.weight.units === 'LBS') {
+      weightInKg = pkg.weight.value * 0.453592;
     }
-    
-    const ratingXml = `<?xml version="1.0" encoding="UTF-8"?>
-<mailing-scenario xmlns="http://www.canadapost.ca/ws/ship/rate-v4">
-  <customer-number>${apiKey}</customer-number>
-  <parcel-characteristics>
-    <weight>${request.package.weight}</weight>
-    <dimensions>
-      <length>${request.package.length}</length>
-      <width>${request.package.width}</width>
-      <height>${request.package.height}</height>
-    </dimensions>
-  </parcel-characteristics>
-  <origin-postal-code>${request.shipFrom.postalCode.replace(/\s/g, '')}</origin-postal-code>
-  <destination>
-    ${destinationXml}
-  </destination>
-</mailing-scenario>`;
 
-    console.log('Canada Post XML request:', ratingXml);
-
-    // Make API call to Canada Post
-    const response = await fetch(`${baseUrl}/rs/ship/price`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/vnd.cpc.ship.rate-v4+xml',
-        'Accept': 'application/vnd.cpc.ship.rate-v4+xml',
-        'Authorization': `Basic ${btoa(`${apiKey}:${apiSecret}`)}`,
-        'Accept-language': 'en-CA'
-      },
-      body: ratingXml
+    // Build XML request according to Canada Post API specification
+    const xmlRequest = buildCanadaPostXMLRequest({
+      customerNumber: customerNumber || '0000000',
+      weight: weightInKg,
+      originPostalCode: shipFrom.postalCode.replace(/\s+/g, '').toUpperCase(),
+      destinationPostalCode: shipTo.address.postalCode?.replace(/\s+/g, '').toUpperCase(),
+      destinationCountry: shipTo.address.countryCode,
+      dimensions: pkg.dimensions
     });
 
-    console.log('Canada Post API response status:', response.status);
-    const responseText = await response.text();
-    console.log('Canada Post API response:', responseText);
+    console.log('📝 XML Request:', xmlRequest);
 
-    if (!response.ok) {
-      console.error('Canada Post API error:', response.status, responseText);
+    // Determine the correct endpoint (dev vs production)
+    const isDev = Deno.env.get('ENVIRONMENT') !== 'production';
+    const baseUrl = isDev ? 'https://ct.soa-gw.canadapost.ca' : 'https://soa-gw.canadapost.ca';
+    const endpoint = `${baseUrl}/rs/ship/price`;
+
+    // Make request to Canada Post API
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${btoa(`${apiKey}:${apiSecret}`)}`,
+        'Accept': 'application/vnd.cpc.ship.rate-v4+xml',
+        'Content-Type': 'application/vnd.cpc.ship.rate-v4+xml',
+        'Accept-Language': 'en-CA'
+      },
+      body: xmlRequest
+    });
+
+    console.log('📊 Canada Post API Response Status:', response.status);
+
+    if (response.ok) {
+      const xmlResponse = await response.text();
+      console.log('📋 Canada Post XML Response:', xmlResponse.substring(0, 500) + '...');
       
-      // Return fallback rates if API fails
-      return new Response(
-        JSON.stringify({ 
-          rates: getFallbackRates(),
-          source: 'fallback',
-          error: `Canada Post API error: ${response.status}`
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      // Parse the XML response
+      const rates = parseCanadaPostXMLResponse(xmlResponse);
+      console.log('💰 Parsed rates:', rates);
+      
+      return new Response(JSON.stringify(rates), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    } else {
+      const errorText = await response.text();
+      console.error('❌ Canada Post API Error:', response.status, errorText);
+      
+      // Return fallback rates on API error
+      console.log('🔄 Returning fallback rates due to API error');
+      return new Response(JSON.stringify(getFallbackRates()), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
     }
 
-    // Parse XML response (simplified - in production you'd want a proper XML parser)
-    const rates = parseCanadaPostXMLResponse(responseText);
-
-    return new Response(
-      JSON.stringify({ 
-        rates,
-        source: 'canada_post_api'
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
   } catch (error) {
-    console.error('Canada Post rating error:', error);
+    console.error('💥 Error in Canada Post rating:', error);
     
-    // Return fallback rates on error
-    return new Response(
-      JSON.stringify({ 
-        rates: getFallbackRates(),
-        source: 'fallback_error',
-        error: error.message
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    // Return fallback rates on any error
+    return new Response(JSON.stringify(getFallbackRates()), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200,
+    });
   }
 });
+
+function buildCanadaPostXMLRequest({
+  customerNumber,
+  weight,
+  originPostalCode,
+  destinationPostalCode,
+  destinationCountry,
+  dimensions
+}: {
+  customerNumber: string;
+  weight: number;
+  originPostalCode: string;
+  destinationPostalCode?: string;
+  destinationCountry: string;
+  dimensions?: any;
+}) {
+  const dimensionsXml = dimensions ? `
+    <dimensions>
+      <length>${dimensions.units === 'IN' ? dimensions.length * 2.54 : dimensions.length}</length>
+      <width>${dimensions.units === 'IN' ? dimensions.width * 2.54 : dimensions.width}</width>
+      <height>${dimensions.units === 'IN' ? dimensions.height * 2.54 : dimensions.height}</height>
+    </dimensions>` : '';
+
+  // Determine destination type based on country
+  let destinationXml = '';
+  if (destinationCountry === 'CA' && destinationPostalCode) {
+    destinationXml = `
+      <destination>
+        <domestic>
+          <postal-code>${destinationPostalCode}</postal-code>
+        </domestic>
+      </destination>`;
+  } else if (destinationCountry === 'US' && destinationPostalCode) {
+    destinationXml = `
+      <destination>
+        <united-states>
+          <zip-code>${destinationPostalCode}</zip-code>
+        </united-states>
+      </destination>`;
+  } else {
+    destinationXml = `
+      <destination>
+        <international>
+          <country-code>${destinationCountry}</country-code>
+        </international>
+      </destination>`;
+  }
+
+  return `<?xml version="1.0" encoding="utf-8"?>
+<mailing-scenario xmlns="http://www.canadapost.ca/ws/ship/rate-v4">
+  <customer-number>${customerNumber}</customer-number>
+  <parcel-characteristics>
+    <weight>${weight.toFixed(3)}</weight>${dimensionsXml}
+  </parcel-characteristics>
+  <origin-postal-code>${originPostalCode}</origin-postal-code>
+  ${destinationXml}
+</mailing-scenario>`;
+}
 
 function parseCanadaPostXMLResponse(xml: string): CanadaPostRate[] {
   const rates: CanadaPostRate[] = [];
@@ -245,12 +274,12 @@ function parseCanadaPostXMLResponse(xml: string): CanadaPostRate[] {
       }
       
       rates.push({
+        carrier: 'Canada Post',
+        service: serviceName,
         serviceCode,
-        serviceName,
-        serviceType,
-        price,
-        currency: 'CAD',
-        estimatedDays: `${estimatedDays} business days`
+        cost: price,
+        deliveryDays: `${estimatedDays} business days`,
+        currency: 'CAD'
       });
     }
   }
@@ -259,32 +288,30 @@ function parseCanadaPostXMLResponse(xml: string): CanadaPostRate[] {
 }
 
 function getFallbackRates(): CanadaPostRate[] {
-  const baseRate = 12.50; // Base rate in CAD
-  
   return [
     {
-      serviceCode: 'REG',
-      serviceName: 'Regular Parcel',
-      serviceType: 'standard',
-      price: baseRate,
-      currency: 'CAD',
-      estimatedDays: '5-7 business days'
+      carrier: 'Canada Post',
+      service: 'Regular Parcel',
+      serviceCode: 'DOM.RP',
+      cost: 15.99,
+      deliveryDays: '5-7 business days',
+      currency: 'CAD'
     },
     {
-      serviceCode: 'EXP',
-      serviceName: 'Expedited Parcel',
-      serviceType: 'expedited',
-      price: baseRate * 1.6,
-      currency: 'CAD',
-      estimatedDays: '2-3 business days'
+      carrier: 'Canada Post',
+      service: 'Expedited Parcel',
+      serviceCode: 'DOM.EP',
+      cost: 22.99,
+      deliveryDays: '2-3 business days',
+      currency: 'CAD'
     },
     {
-      serviceCode: 'PC',
-      serviceName: 'Priority Courier',
-      serviceType: 'overnight',
-      price: baseRate * 2.5,
-      currency: 'CAD',
-      estimatedDays: '1 business day'
+      carrier: 'Canada Post',
+      service: 'Priority Courier',
+      serviceCode: 'DOM.PC',
+      cost: 35.99,
+      deliveryDays: '1 business day',
+      currency: 'CAD'
     }
   ];
 }
