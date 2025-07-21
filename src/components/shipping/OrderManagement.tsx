@@ -100,41 +100,7 @@ export function OrderManagement() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showLabelPurchaseDialog, setShowLabelPurchaseDialog] = useState(false);
   const [selectedOrderForLabelPurchase, setSelectedOrderForLabelPurchase] = useState<Order | null>(null);
-  const user = { id: 'demo-user-id' };
-
-  // Auto-refresh every 30 minutes
-  useEffect(() => {
-    const interval = setInterval(() => {
-      handleRefreshOrders();
-    }, 30 * 60 * 1000); // 30 minutes
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // Refresh on user login
-  useEffect(() => {
-    if (user) {
-      handleRefreshOrders();
-    }
-  }, [user]);
-
-  useEffect(() => {
-    // Filter to only show orders that are awaiting shipment from active stores
-    const filteredData = ordersData.filter(order => {
-      // Only orders that are pending shipment (exclude shipped, delivered, cancelled, refunded)
-      const isAwaitingShipment = ['awaiting', 'awaiting_payment', 'pending', 'processing', 'ready_to_ship'].includes(order.status);
-      // Only from active stores
-      const isFromActiveStore = storeConfigs.some(store => store.store_name === order.storeName && store.is_active);
-      
-      return isAwaitingShipment && isFromActiveStore;
-    });
-    setOrders(filteredData);
-  }, [ordersData, storeConfigs]);
-
-  useEffect(() => {
-    fetchStoreConfigs();
-  }, []);
-
+  
   const handleRefreshOrders = useCallback(async () => {
     setIsRefreshing(true);
     try {
@@ -174,6 +140,39 @@ export function OrderManagement() {
       setIsRefreshing(false);
     }
   }, [fetchOrders, toast]);
+
+  // Auto-refresh every 30 minutes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      handleRefreshOrders();
+    }, 30 * 60 * 1000); // 30 minutes
+
+    return () => clearInterval(interval);
+  }, [handleRefreshOrders]);
+
+  // Initial fetch on component mount - run only once
+  useEffect(() => {
+    handleRefreshOrders();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Filter orders when data changes
+  useEffect(() => {
+    // Filter to only show orders that are awaiting shipment from active stores
+    const filteredData = ordersData.filter(order => {
+      // Only orders that are pending shipment (exclude shipped, delivered, cancelled, refunded)
+      const isAwaitingShipment = ['awaiting', 'awaiting_payment', 'pending', 'processing', 'ready_to_ship'].includes(order.status);
+      // Only from active stores
+      const isFromActiveStore = storeConfigs.some(store => store.store_name === order.storeName && store.is_active);
+      
+      return isAwaitingShipment && isFromActiveStore;
+    });
+    setOrders(filteredData);
+  }, [ordersData, storeConfigs]);
+
+  // Fetch store configs on mount
+  useEffect(() => {
+    fetchStoreConfigs();
+  }, []);
 
   const handleStoreUpdate = async (storeId: string) => {
     setIsRefreshing(true);
