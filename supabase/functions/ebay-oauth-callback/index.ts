@@ -221,11 +221,45 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    const tokenExpiresAt = new Date();
+    tokenExpiresAt.setSeconds(tokenExpiresAt.getSeconds() + tokenData.expires_in);
+
+    // Create marketplace configuration for eBay sync compatibility
+    const marketplaceData = {
+      user_id: userId,
+      platform: 'ebay',
+      external_user_id: ebayUserId,
+      access_token: tokenData.access_token,
+      refresh_token: tokenData.refresh_token,
+      token_expires_at: tokenExpiresAt.toISOString(),
+      store_name: storeName,
+      store_url: `https://www.ebay.com/usr/${ebayUsername}`,
+      is_active: true,
+      metadata: {
+        ebay_user_id: ebayUserId,
+        ebay_username: ebayUsername,
+        connected_at: new Date().toISOString(),
+        scope: tokenData.scope
+      }
+    };
+
+    const { data: marketplaceConfig, error: marketplaceError } = await supabase
+      .from('marketplace_configurations')
+      .insert(marketplaceData)
+      .select()
+      .single();
+
+    if (marketplaceError) {
+      console.error('Marketplace configuration error:', marketplaceError);
+      throw new Error('Failed to save marketplace configuration');
+    }
+
+    // Also create store configuration for compatibility
     const storeData = {
       user_id: userId,
       store_name: storeName,
       platform: 'ebay',
-      domain: ebayUserId,
+      domain: `ebay-${ebayUserId}`,
       access_token: JSON.stringify({
         access_token: tokenData.access_token,
         refresh_token: tokenData.refresh_token,
@@ -250,60 +284,38 @@ serve(async (req) => {
       throw new Error('Failed to save store configuration');
     }
 
-    // Success page with script to communicate with parent window
+    // Success page with script to close immediately
     const successPage = `
       <!DOCTYPE html>
       <html>
       <head>
         <title>eBay Connected Successfully</title>
-        <style>
-          body { font-family: system-ui; padding: 2rem; text-align: center; }
-          .success { color: #059669; margin: 1rem 0; }
-          .checkmark { font-size: 4rem; color: #059669; }
-        </style>
       </head>
       <body>
-        <div class="checkmark">✅</div>
-        <h1>eBay Store Connected!</h1>
-        <div class="success">
-          Your eBay store has been successfully connected to your account.
-        </div>
-        <p>This window will close automatically...</p>
         <script>
           console.log('eBay OAuth callback script executing...');
           
-          // Store success data in session storage for parent window to read
           try {
             if (window.opener && !window.opener.closed) {
               console.log('Found opener window, storing success data...');
               window.opener.sessionStorage.setItem('ebay_auth_success', JSON.stringify({
                 store: ${JSON.stringify(storeConfig)},
-                marketplace: { platform: 'ebay', name: 'eBay' },
+                marketplace: ${JSON.stringify(marketplaceConfig)},
                 credentials: { ebay_user_id: '${ebayUserId}' }
               }));
               
-              // Try to signal the parent window
-              try {
-                window.opener.postMessage({ type: 'EBAY_AUTH_SUCCESS' }, '*');
-              } catch (e) {
-                console.log('Could not post message to parent:', e);
-              }
+              // Signal the parent window
+              window.opener.postMessage({ type: 'EBAY_AUTH_SUCCESS' }, '*');
               
-              // Give a moment for the data to be stored, then close
-              setTimeout(() => {
-                console.log('Closing popup window...');
-                window.close();
-              }, 500);
+              // Close immediately
+              window.close();
             } else {
-              console.log('No opener window found, redirecting...');
-              setTimeout(() => {
-                window.location.href = 'https://www.ebay.com/sh/lst/active';
-              }, 3000);
+              console.log('No opener window found, closing...');
+              window.close();
             }
           } catch (error) {
             console.error('Error in callback script:', error);
-            // Fallback: just close the window
-            setTimeout(() => window.close(), 1000);
+            window.close();
           }
         </script>
       </body>

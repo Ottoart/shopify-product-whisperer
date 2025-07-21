@@ -100,6 +100,12 @@ export function EbayOAuthForm({ marketplace, onBack, onSuccess }: EbayOAuthFormP
           }
           
           setIsConnecting(false);
+          
+          toast({
+            title: "eBay Store Connected!",
+            description: `Successfully connected ${connectionData.store?.store_name || 'eBay store'}`,
+          });
+          
           onSuccess(connectionData);
           return true;
         }
@@ -146,11 +152,7 @@ export function EbayOAuthForm({ marketplace, onBack, onSuccess }: EbayOAuthFormP
           
           // If no success or error was found, it was cancelled
           setIsConnecting(false);
-          toast({
-            title: "Connection Cancelled",
-            description: "eBay connection was cancelled or interrupted.",
-            variant: "destructive"
-          });
+          // Don't show cancelled message as it's confusing for users
         }
       }, 1000);
 
