@@ -658,142 +658,107 @@ export function CarrierManagement() {
     <Dialog open={isCanadaPostConfigOpen} onOpenChange={setIsCanadaPostConfigOpen}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            🇨🇦 Canada Post Configuration
+          <DialogTitle className="flex items-center gap-3 mb-2">
+            <div className="bg-red-600 text-white px-3 py-1 rounded text-sm font-bold">
+              CANADA POST
+            </div>
           </DialogTitle>
-          <DialogDescription>
-            Enter your Canada Post account details to activate shipping rates
+          <DialogDescription className="text-base font-medium text-foreground mb-4">
+            Connect your Canada Post Account
           </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="accountNumber">Account Number</Label>
-            <Input
-              id="accountNumber"
-              placeholder="e.g., 0008126390"
-              value={canadaPostConfig.accountNumber}
-              onChange={(e) => setCanadaPostConfig(prev => ({ ...prev, accountNumber: e.target.value }))}
-            />
+          <div className="text-sm text-muted-foreground">
+            <p className="mb-3">
+              <strong>PrepFox has partnered with Canada Post to streamline the shipping process for Canadian merchants!</strong> PrepFox now supports both <strong>Solutions for Small Business Account (Venture One)</strong> accounts and <strong>Commercial</strong> accounts.
+            </p>
+            <p className="mb-4">
+              Don't yet have a Canada Post account? <span className="text-blue-600 underline cursor-pointer">Click here to get started.</span>
+            </p>
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="accountType">Account Type</Label>
-            <Select 
-              value={canadaPostConfig.accountType} 
-              onValueChange={(value) => setCanadaPostConfig(prev => ({ ...prev, accountType: value }))}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Commercial">Commercial</SelectItem>
-                <SelectItem value="Personal">Personal</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="contractNumber">Contract Number</Label>
-            <Input
-              id="contractNumber"
-              placeholder="e.g., 0043880018"
-              value={canadaPostConfig.contractNumber}
-              onChange={(e) => setCanadaPostConfig(prev => ({ ...prev, contractNumber: e.target.value }))}
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="paymentMethod">Payment Method</Label>
-            <Select 
-              value={canadaPostConfig.paymentMethod} 
-              onValueChange={(value) => setCanadaPostConfig(prev => ({ ...prev, paymentMethod: value }))}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Account">Account</SelectItem>
-                <SelectItem value="Credit Card">Credit Card</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="p-4 bg-blue-50 rounded-lg border">
-            <h4 className="font-medium text-blue-900 mb-2">📋 How to Connect Canada Post:</h4>
-            <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
-              <li>Enter your Canada Post account details above</li>
-              <li>Click "Connect & Authorize" to open Canada Post login</li>
-              <li>Login with your Canada Post business account credentials</li>
-              <li>Authorize the PrepFox app to access shipping rates</li>
-              <li>Return to this page - your account will be connected!</li>
-            </ol>
+
+          <div className="space-y-3">
+            <p className="text-sm font-medium">
+              To continue, please select the type of account you have and click Connect.
+            </p>
+            
+            <div className="space-y-2">
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="accountType"
+                  value="small_business"
+                  checked={canadaPostConfig.accountType === 'small_business'}
+                  onChange={(e) => setCanadaPostConfig(prev => ({ ...prev, accountType: e.target.value }))}
+                  className="w-4 h-4 text-blue-600"
+                />
+                <span className="text-sm">Solutions for Small Business Account (Venture One)</span>
+              </label>
+              
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="accountType"
+                  value="commercial"
+                  checked={canadaPostConfig.accountType === 'commercial'}
+                  onChange={(e) => setCanadaPostConfig(prev => ({ ...prev, accountType: e.target.value }))}
+                  className="w-4 h-4 text-blue-600"
+                />
+                <span className="text-sm">Commercial*</span>
+              </label>
+            </div>
+            
+            <div className="text-xs text-muted-foreground">
+              *Reminder: Commercial account holders are required to manifest each day's shipments. Failure to manifest shipments may result in additional monthly invoice fees. <span className="text-blue-600 underline cursor-pointer">Click here for more information.</span>
+            </div>
           </div>
         </div>
         
-        <DialogFooter className="gap-2">
+        <DialogFooter className="flex justify-between">
           <Button variant="outline" onClick={() => setIsCanadaPostConfigOpen(false)}>
-            Cancel
+            Back
           </Button>
-          <Button 
-            onClick={async () => {
-              try {
-                // Save configuration first
-                const configData = {
-                  account_number: canadaPostConfig.accountNumber,
-                  account_type: canadaPostConfig.accountType,
-                  contract_number: canadaPostConfig.contractNumber,
-                  payment_method: canadaPostConfig.paymentMethod
-                };
-
-                // Get OAuth URL from our edge function
-                const { data, error } = await supabase.functions.invoke('canada-post-oauth-url');
-                
-                if (error) {
-                  throw error;
-                }
-
-                if (data?.auth_url) {
-                  toast({
-                    title: "Connecting to Canada Post",
-                    description: "Opening authorization window...",
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setIsCanadaPostConfigOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={async () => {
+                try {
+                  // Get OAuth URL from our edge function with account type
+                  const { data, error } = await supabase.functions.invoke('canada-post-oauth-url', {
+                    body: { accountType: canadaPostConfig.accountType }
                   });
+                  
+                  if (error) {
+                    throw error;
+                  }
 
-                  // Open Canada Post OAuth in a new window
-                  const popup = window.open(
-                    data.auth_url,
-                    'canada-post-oauth',
-                    'width=600,height=700,scrollbars=yes,resizable=yes'
-                  );
+                  if (data?.auth_url) {
+                    toast({
+                      title: "Connecting to Canada Post",
+                      description: "Opening Canada Post login...",
+                    });
 
-                  // Monitor for popup close
-                  const checkClosed = setInterval(() => {
-                    if (popup?.closed) {
-                      clearInterval(checkClosed);
-                      // Refresh the page to show updated state
-                      setTimeout(() => {
-                        window.location.reload();
-                      }, 1000);
-                    }
-                  }, 1000);
-
-                  setIsCanadaPostConfigOpen(false);
+                    // Open Canada Post OAuth in the same window (like ShipStation)
+                    window.location.href = data.auth_url;
+                  }
+                } catch (error) {
+                  console.error('Canada Post connection error:', error);
+                  toast({
+                    title: "Connection Failed",
+                    description: "Failed to initiate Canada Post authorization",
+                    variant: "destructive",
+                  });
                 }
-              } catch (error) {
-                console.error('Canada Post connection error:', error);
-                toast({
-                  title: "Connection Failed",
-                  description: "Failed to initiate Canada Post authorization",
-                  variant: "destructive",
-                });
-              }
-            }}
-            disabled={!canadaPostConfig.accountNumber || !canadaPostConfig.contractNumber}
-            className="gap-2"
-          >
-            <ExternalLink className="h-4 w-4" />
-            Connect & Authorize
-          </Button>
+              }}
+              disabled={!canadaPostConfig.accountType}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              Connect
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

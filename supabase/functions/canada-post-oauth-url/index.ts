@@ -36,6 +36,10 @@ serve(async (req) => {
       );
     }
 
+    // Parse request body to get account type
+    const body = await req.json().catch(() => ({}));
+    const accountType = body.accountType || 'small_business';
+
     // Generate a state parameter for security
     const state = crypto.randomUUID();
     
@@ -48,6 +52,7 @@ serve(async (req) => {
         notification_id: state,
         payload: { 
           user_id: user.id,
+          account_type: accountType,
           created_at: new Date().toISOString(),
           expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 minutes
         }
@@ -65,20 +70,30 @@ serve(async (req) => {
     const baseUrl = req.headers.get('origin') || 'https://751c8744-5cc2-4126-b021-cefc67bc436e.lovableproject.com';
     const callbackUrl = `${baseUrl}/canada-post-oauth-callback`;
 
-    // Canada Post OAuth URL (this would be the actual Canada Post OAuth URL in production)
-    // For now, we'll redirect to Canada Post business login and handle the manual flow
-    const canadaPostOAuthUrl = 'https://www.canadapost-postescanada.ca/cpc/en/business/login.page';
+    // Canada Post login URL (matches ShipStation's exact approach)
+    const canadaPostOAuthUrl = `https://sso-osu.canadapost-postescanada.ca/lfe-cap/en/login?` +
+      `templateId=cpcapps&` +
+      `manifestId=cpgSecurity&` +
+      `language=en_CA&` +
+      `stepupId=smb_link,commercial_link,smb_mode2&` +
+      `sourceApp=DRC&` +
+      `profile=${encodeURIComponent('{"language":"en"}')}&` +
+      `sourceUrl=${encodeURIComponent('https://www.canadapost-postescanada.ca/information/app/drc/home')}&` +
+      `targetUrl=${encodeURIComponent(`https://www.canadapost-postescanada.ca/information/app/drc/merchant?state=${state}&callback=${encodeURIComponent(callbackUrl)}&language=en_CA&forceVouchFor=true`)}`;
     
     console.log(`Generated Canada Post OAuth URL for user ${user.id}`);
+    console.log(`Account Type: ${accountType}`);
     console.log(`State: ${state}`);
     console.log(`Callback URL: ${callbackUrl}`);
+    console.log(`OAuth URL: ${canadaPostOAuthUrl}`);
 
     return new Response(
       JSON.stringify({ 
         auth_url: canadaPostOAuthUrl,
         state: state,
         callback_url: callbackUrl,
-        instructions: 'After logging in to Canada Post, you will need to manually configure your API credentials in the carrier settings.'
+        account_type: accountType,
+        instructions: 'You will be redirected to Canada Post login. After logging in and authorizing, you will be redirected back to complete the setup.'
       }),
       { 
         status: 200, 
