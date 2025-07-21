@@ -166,6 +166,38 @@ const carrierServices: Record<string, ShippingService[]> = {
       supports_insurance: false,
       supports_signature: false
     }
+  ],
+  'canada post': [
+    {
+      service_code: 'REG',
+      service_name: 'Regular Parcel',
+      service_type: 'standard',
+      estimated_days: '5-7 business days',
+      max_weight_lbs: 66,
+      supports_tracking: true,
+      supports_insurance: true,
+      supports_signature: false
+    },
+    {
+      service_code: 'EXP',
+      service_name: 'Expedited Parcel',
+      service_type: 'expedited',
+      estimated_days: '2-3 business days',
+      max_weight_lbs: 66,
+      supports_tracking: true,
+      supports_insurance: true,
+      supports_signature: false
+    },
+    {
+      service_code: 'PC',
+      service_name: 'Priority Courier',
+      service_type: 'overnight',
+      estimated_days: '1 business day',
+      max_weight_lbs: 66,
+      supports_tracking: true,
+      supports_insurance: true,
+      supports_signature: true
+    }
   ]
 };
 

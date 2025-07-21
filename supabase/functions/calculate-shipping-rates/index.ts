@@ -284,60 +284,114 @@ async function getUSPSRates(carrier: any, shipFrom: any, shipTo: any, packageDet
 }
 
 async function getCanadaPostRates(carrier: any, shipFrom: any, shipTo: any, packageDetails: any, additionalServices?: any): Promise<ShippingRate[]> {
-  // TODO: Implement Canada Post API integration
-  console.log('Canada Post integration not implemented yet, returning hardcoded rates');
-  
-  // Return Canada Post specific services
-  const baseRate = Math.random() * 8 + 6; // Random base rate between $6-14 CAD
-  const rates: ShippingRate[] = [];
-  
-  // Default Canada Post services if no specific services configured
-  const defaultServices = [
-    { service_code: 'REG', service_name: 'Regular Parcel', service_type: 'standard', estimated_days: '5-7' },
-    { service_code: 'EXP', service_name: 'Expedited Parcel', service_type: 'expedited', estimated_days: '2-3' },
-    { service_code: 'XP', service_name: 'Xpresspost', service_type: 'expedited', estimated_days: '1-2' },
-    { service_code: 'PC', service_name: 'Priority Courier', service_type: 'overnight', estimated_days: '1' }
-  ];
-  
-  const services = carrier.shipping_services?.length > 0 ? carrier.shipping_services : defaultServices;
-  
-  for (const service of services) {
-    let multiplier = 1;
+  try {
+    console.log('🔄 Calling Canada Post rating function');
     
-    // Adjust cost based on service type
-    switch (service.service_type?.toLowerCase() || service.service_code) {
-      case 'overnight':
-      case 'PC':
-        multiplier = 2.5;
-        break;
-      case 'expedited':
-      case 'EXP':
-      case 'XP':
-        multiplier = 1.6;
-        break;
-      case 'standard':
-      case 'REG':
-        multiplier = 1;
-        break;
-      default:
-        multiplier = 1.2;
+    // Convert package details to metric (Canada Post uses metric)
+    const weightKg = packageDetails.weight * 0.453592; // lbs to kg
+    const lengthCm = packageDetails.length * 2.54; // inches to cm
+    const widthCm = packageDetails.width * 2.54;
+    const heightCm = packageDetails.height * 2.54;
+    
+    // Extract postal codes (Canada Post requires them)
+    const fromPostalCode = shipFrom.zip || shipFrom.postalCode || 'K1A0A6'; // Default to Ottawa if not provided
+    const toPostalCode = shipTo.zip || shipTo.postalCode || 'M5V3A8'; // Default to Toronto if not provided
+    
+    const canadaPostClient = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    
+    const { data, error } = await canadaPostClient.functions.invoke('canada-post-rating', {
+      body: {
+        shipFrom: {
+          postalCode: fromPostalCode,
+          country: shipFrom.country || 'CA'
+        },
+        shipTo: {
+          postalCode: toPostalCode,
+          country: shipTo.country || 'CA'
+        },
+        package: {
+          weight: weightKg,
+          length: lengthCm,
+          width: widthCm,
+          height: heightCm
+        }
+      }
+    });
+
+    console.log('📦 Canada Post API response:', { data, error });
+
+    if (error) {
+      console.error('❌ Canada Post API error:', error);
+      return getFallbackCanadaPostRates();
     }
+
+    const canadaPostRates = data?.rates || [];
     
-    rates.push({
+    // Convert Canada Post rates to our standard format
+    const rates: ShippingRate[] = canadaPostRates.map((rate: any) => ({
       carrier: 'Canada Post',
-      service_code: service.service_code,
-      service_name: service.service_name,
-      service_type: service.service_type || 'standard',
-      cost: Math.round((baseRate * multiplier) * 100) / 100,
+      service_code: rate.serviceCode,
+      service_name: rate.serviceName,
+      service_type: rate.serviceType,
+      cost: rate.price,
+      currency: rate.currency,
+      estimated_days: rate.estimatedDays,
+      supports_tracking: true,
+      supports_insurance: true,
+      supports_signature: rate.serviceCode === 'PC' // Only Priority Courier supports signature
+    }));
+
+    console.log('✅ Canada Post rates received:', rates);
+    return rates;
+    
+  } catch (error) {
+    console.error('❌ Canada Post rating error:', error);
+    return getFallbackCanadaPostRates();
+  }
+}
+
+function getFallbackCanadaPostRates(): ShippingRate[] {
+  console.log('🔄 Using fallback Canada Post rates');
+  const baseRate = 12.50;
+  
+  return [
+    {
+      carrier: 'Canada Post',
+      service_code: 'REG',
+      service_name: 'Regular Parcel',
+      service_type: 'standard',
+      cost: baseRate,
       currency: 'CAD',
-      estimated_days: service.estimated_days || '3-5',
+      estimated_days: '5-7 business days',
       supports_tracking: true,
       supports_insurance: true,
       supports_signature: false
-    });
-  }
-  
-  return rates;
+    },
+    {
+      carrier: 'Canada Post',
+      service_code: 'EXP',
+      service_name: 'Expedited Parcel',
+      service_type: 'expedited',
+      cost: Math.round((baseRate * 1.6) * 100) / 100,
+      currency: 'CAD',
+      estimated_days: '2-3 business days',
+      supports_tracking: true,
+      supports_insurance: true,
+      supports_signature: false
+    },
+    {
+      carrier: 'Canada Post',
+      service_code: 'PC',
+      service_name: 'Priority Courier',
+      service_type: 'overnight',
+      cost: Math.round((baseRate * 2.5) * 100) / 100,
+      currency: 'CAD',
+      estimated_days: '1 business day',
+      supports_tracking: true,
+      supports_insurance: true,
+      supports_signature: true
+    }
+  ];
 }
 
 function getHardcodedRates(carrier: any): ShippingRate[] {
