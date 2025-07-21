@@ -40,10 +40,10 @@ serve(async (req) => {
   }
 
   try {
-    // Get user from token
+    // Extract JWT token and get user ID directly
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      console.error('❌ No authorization header provided');
+    if (!authHeader?.startsWith('Bearer ')) {
+      console.error('❌ No valid authorization header provided');
       return new Response(
         JSON.stringify({ error: 'No authorization header' }),
         { 
@@ -53,85 +53,34 @@ serve(async (req) => {
       );
     }
 
-    // Initialize Supabase client with service role for auth verification
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-      global: {
-        headers: {
-          Authorization: authHeader
-        }
-      }
-    });
-
-    // Get user from Supabase auth
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !user?.id) {
-      console.error('❌ Authentication error:', authError?.message || 'missing sub claim');
-      
-      // Try alternative approach - extract JWT directly
+    // Extract user ID from JWT token directly
+    let userId: string;
+    try {
       const token = authHeader.replace('Bearer ', '');
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        const userId = payload.sub;
-        
-        if (!userId) {
-          return new Response(
-            JSON.stringify({ error: 'invalid claim: missing sub claim' }),
-            { 
-              status: 401, 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-            }
-          );
-        }
-        
-        console.log('✅ Extracted user ID from JWT:', userId);
-        // Use the extracted user ID for service role client
-        const serviceSupabase = createClient(supabaseUrl, supabaseServiceKey);
-        const authResult = await ensureValidUPSTokenForRating(serviceSupabase, userId);
-        
-        if (!authResult.success) {
-          console.error('❌ UPS authentication failed:', authResult.error);
-          return new Response(
-            JSON.stringify({ error: 'UPS authentication failed: ' + authResult.error }),
-            { 
-              status: 400, 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-            }
-          );
-        }
-
-        // Continue with the rest of the function using the extracted userId
-        const requestData: RatingRequest = await req.json();
-        console.log('📦 UPS Rating request received:', JSON.stringify(requestData, null, 2));
-
-        console.log('✅ UPS authentication successful');
-        const credentials = authResult.credentials;
-        const accountNumber = credentials.account_number;
-
-        // Continue with validation and API call...
-        return await processUPSRating(requestData, credentials, accountNumber);
-        
-      } catch (jwtError) {
-        console.error('❌ Failed to extract user from JWT:', jwtError);
-        return new Response(
-          JSON.stringify({ error: 'invalid claim: missing sub claim' }),
-          { 
-            status: 401, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        );
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      userId = payload.sub;
+      
+      if (!userId) {
+        throw new Error('No user ID in token');
       }
+      console.log('✅ Extracted user ID from JWT:', userId);
+    } catch (jwtError) {
+      console.error('❌ Failed to extract user from JWT:', jwtError);
+      return new Response(
+        JSON.stringify({ error: 'invalid claim: missing sub claim' }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
-    
-    const userId = user.id;
-    console.log('✅ Authenticated user ID:', userId);
 
     const requestData: RatingRequest = await req.json();
     console.log('📦 UPS Rating request received:', JSON.stringify(requestData, null, 2));
 
     // Create service role client for database operations
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const serviceSupabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Ensure we have a valid UPS token

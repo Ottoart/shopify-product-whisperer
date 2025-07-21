@@ -146,14 +146,15 @@ serve(async (req) => {
 
     // Get rates from each carrier
     for (const carrier of carriers || []) {
-      console.log(`Getting rates from ${carrier.carrier_name}`);
+      console.log(`Getting rates from ${carrier.carrier_name} (ID: ${carrier.id})`);
+      console.log(`Carrier active: ${carrier.is_active}, Has credentials: ${Boolean(carrier.api_credentials)}`);
       
       try {
         let carrierRates: ShippingRate[] = [];
 
         switch (carrier.carrier_name.toUpperCase()) {
           case 'UPS':
-            carrierRates = await getUPSRates(carrier, shipFrom, shipTo, packageDetails, rateRequest.additional_services);
+            carrierRates = await getUPSRates(carrier, shipFrom, shipTo, packageDetails, rateRequest.additional_services, req.headers.get('Authorization') || undefined);
             break;
           case 'FEDEX':
             carrierRates = await getFedExRates(carrier, shipFrom, shipTo, packageDetails, rateRequest.additional_services);
@@ -217,7 +218,7 @@ serve(async (req) => {
   }
 });
 
-async function getUPSRates(carrier: any, shipFrom: any, shipTo: any, packageDetails: any, additionalServices?: any): Promise<ShippingRate[]> {
+async function getUPSRates(carrier: any, shipFrom: any, shipTo: any, packageDetails: any, additionalServices?: any, authHeader?: string): Promise<ShippingRate[]> {
   // Use existing UPS rating function
   try {
     console.log('🔄 Calling UPS rating function with:', {
@@ -228,29 +229,34 @@ async function getUPSRates(carrier: any, shipFrom: any, shipTo: any, packageDeta
     
     const upsClient = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
     
-    const { data, error } = await upsClient.functions.invoke('ups-rating', {
-      body: {
-        shipFrom: {
-          address: shipFrom.address,
-          city: shipFrom.city,
-          state: shipFrom.state,
-          zip: shipFrom.zip,
-          country: shipFrom.country
-        },
-        shipTo: {
-          address: shipTo.address,
-          city: shipTo.city,
-          state: shipTo.state,
-          zip: shipTo.zip,
-          country: shipTo.country
-        },
-        package: {
-          weight: packageDetails.weight,
-          length: packageDetails.length,
-          width: packageDetails.width,
-          height: packageDetails.height
-        }
+    // Create the request object for UPS rating
+    const upsRequest = {
+      shipFrom: {
+        address: shipFrom.address,
+        city: shipFrom.city,
+        state: shipFrom.state,
+        zip: shipFrom.zip,
+        country: shipFrom.country
+      },
+      shipTo: {
+        address: shipTo.address,
+        city: shipTo.city,
+        state: shipTo.state,
+        zip: shipTo.zip,
+        country: shipTo.country
+      },
+      package: {
+        weight: packageDetails.weight,
+        length: packageDetails.length,
+        width: packageDetails.width,
+        height: packageDetails.height
       }
+    };
+
+    // Call UPS rating function with auth header
+    const { data, error } = await upsClient.functions.invoke('ups-rating', {
+      body: upsRequest,
+      headers: authHeader ? { Authorization: authHeader } : {}
     });
 
     console.log('📦 UPS API response:', { data, error });

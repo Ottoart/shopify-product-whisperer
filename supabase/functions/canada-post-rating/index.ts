@@ -76,13 +76,13 @@ Deno.serve(async (req) => {
       apiSecret = isDev 
         ? Deno.env.get('CANADA_POST_DEV_API_SECRET')
         : Deno.env.get('CANADA_POST_PROD_API_SECRET');
-      customerNumber = '0000000'; // Default customer number for development
+      customerNumber = '2004381'; // Use a valid customer number instead of 0000000
     } else if (canadaPostConfig?.api_credentials) {
       // User provided their own Canada Post credentials
       console.log('🔑 Using user provided Canada Post credentials');
       apiKey = canadaPostConfig.api_credentials.apiKey;
       apiSecret = canadaPostConfig.api_credentials.apiSecret;
-      customerNumber = canadaPostConfig.api_credentials.customerNumber || '0000000';
+      customerNumber = canadaPostConfig.api_credentials.customerNumber || '2004381';
     }
 
     if (!apiKey || !apiSecret) {
