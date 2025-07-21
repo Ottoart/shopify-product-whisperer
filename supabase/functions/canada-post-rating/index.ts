@@ -60,6 +60,17 @@ Deno.serve(async (req) => {
       : 'https://soa-gw.canadapost.ca';
     
     // Create rating request XML
+    const isInternational = request.shipTo.country !== 'CA';
+    
+    const destinationXml = isInternational 
+      ? `<international>
+      <country-code>${request.shipTo.country}</country-code>
+      <postal-code>${request.shipTo.postalCode.replace(/\s/g, '')}</postal-code>
+    </international>`
+      : `<domestic>
+      <postal-code>${request.shipTo.postalCode.replace(/\s/g, '')}</postal-code>
+    </domestic>`;
+    
     const ratingXml = `<?xml version="1.0" encoding="UTF-8"?>
 <rating-request xmlns="http://www.canadapost.ca/ws/ship/rate-v4">
   <customer-number>${apiKey}</customer-number>
@@ -73,9 +84,7 @@ Deno.serve(async (req) => {
   </parcel-characteristics>
   <origin-postal-code>${request.shipFrom.postalCode.replace(/\s/g, '')}</origin-postal-code>
   <destination>
-    <domestic>
-      <postal-code>${request.shipTo.postalCode.replace(/\s/g, '')}</postal-code>
-    </domestic>
+    ${destinationXml}
   </destination>
 </rating-request>`;
 
