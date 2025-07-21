@@ -1169,6 +1169,7 @@ export function EnhancedShippingConfiguration({
                           {rate.carrier.toLowerCase() === 'ups' && '📦'}
                           {rate.carrier.toLowerCase() === 'fedex' && '🚚'}
                           {rate.carrier.toLowerCase() === 'usps' && '📮'}
+                          {(rate.carrier.toLowerCase() === 'canada post' || rate.carrier.toLowerCase().includes('canada')) && '🇨🇦'}
                         </div>
                         <div>
                           <div className="font-semibold">{rate.service_name}</div>
