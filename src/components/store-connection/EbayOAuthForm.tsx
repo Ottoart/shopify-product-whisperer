@@ -34,9 +34,10 @@ export function EbayOAuthForm({ marketplace, onBack, onSuccess }: EbayOAuthFormP
       if (!user) {
         toast({
           title: "Authentication Error",
-          description: "You must be logged in to connect a store",
+          description: "You must be logged in to connect a store. Please refresh the page and try again.",
           variant: "destructive"
         });
+        setIsConnecting(false);
         return;
       }
 

@@ -202,18 +202,23 @@ export function StoreCredentialsForm({ marketplace, onBack, onSuccess }: StoreCr
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast({
-          title: "Authentication Error",
-          description: "You must be logged in to connect a store",
+          title: "Authentication Error", 
+          description: "You must be logged in to connect a store. Please refresh the page and try again.",
           variant: "destructive"
         });
+        setIsConnecting(false);
         return;
       }
 
+      // Generate a unique domain to avoid conflicts  
+      const timestamp = Date.now();
+      const uniqueDomain = `${formData.shop_domain || formData.seller_id || formData.client_id || marketplace.name.toLowerCase()}_${timestamp}`;
+      
       const storeData = {
         user_id: user.id,
         store_name: formData.store_name,
         platform: marketplace.platform,
-        domain: formData.shop_domain || formData.seller_id || formData.client_id || marketplace.name.toLowerCase(),
+        domain: uniqueDomain,
         access_token: JSON.stringify(formData), // Store all credentials as JSON
         is_active: true
       };
@@ -228,9 +233,18 @@ export function StoreCredentialsForm({ marketplace, onBack, onSuccess }: StoreCr
 
       onSuccess({ store: data, marketplace, credentials: formData });
     } catch (error: any) {
+      console.error('Store connection error:', error);
+      let errorMessage = "Failed to connect store. Please check your credentials.";
+      
+      if (error.message?.includes('duplicate key')) {
+        errorMessage = "A store with these credentials already exists. Please check your existing stores.";
+      } else if (error.message?.includes('new row violates row-level security')) {
+        errorMessage = "Authentication error. Please refresh the page and try again.";
+      }
+      
       toast({
         title: "Connection Failed",
-        description: error.message || "Failed to connect store. Please check your credentials.",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
