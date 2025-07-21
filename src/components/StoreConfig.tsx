@@ -250,9 +250,10 @@ export function StoreConfig() {
 
       </Card>
 
-      {stores.length > 0 && (
+      {/* Filter out eBay stores from old table - they should use marketplace_configurations */}
+      {stores.filter(store => store.platform !== 'ebay').length > 0 && (
         <div className="space-y-4">
-          {stores.map((store) => (
+          {stores.filter(store => store.platform !== 'ebay').map((store) => (
             <Card key={store.id}>
               <CardContent className="p-6">
                  <div className="flex items-center justify-between">
@@ -451,7 +452,7 @@ export function StoreConfig() {
         </div>
       )}
 
-      {stores.length === 0 && marketplaces.length === 0 && (
+      {stores.filter(store => store.platform !== 'ebay').length === 0 && marketplaces.length === 0 && (
         <Card>
           <CardContent className="p-12 text-center">
             <Store className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
