@@ -49,31 +49,33 @@ serve(async (req) => {
 
     console.log(`Starting eBay product sync for user ${user.id}`);
 
-    // eBay Sell Marketing API to get seller's active listings
-    const ebayApiUrl = 'https://api.ebay.com/sell/marketing/v1/item';
-    
+    // Parse access token from stored credentials
+    let accessToken = ebayConfig.access_token;
+    if (typeof accessToken === 'string' && accessToken.startsWith('{')) {
+      try {
+        const tokenData = JSON.parse(accessToken);
+        accessToken = tokenData.access_token;
+      } catch (e) {
+        console.log('Access token is already a string, using directly');
+      }
+    }
+
+    // eBay Sell Inventory API - Primary method for getting active listings
+    // This API provides comprehensive product data including inventory items
     let allItems: any[] = [];
     let offset = 0;
-    const limit = 200;
+    const limit = 100; // eBay recommends smaller batches for better performance
+    let hasMore = true;
     
     try {
-      // First, try to get listings using the Sell API
-      const response = await fetch(`${ebayApiUrl}?limit=${limit}&offset=${offset}`, {
-        headers: {
-          'Authorization': `Bearer ${ebayConfig.access_token}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Accept-Language': 'en-US',
-          'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
-        },
-      });
-
-      if (!response.ok) {
-        // If that fails, try the Inventory API which should list items
-        console.log('Marketing API failed, trying Inventory API for listings...');
-        const inventoryResponse = await fetch('https://api.ebay.com/sell/inventory/v1/inventory_item?limit=200', {
+      while (hasMore && offset < 1000) { // Safety limit to prevent infinite loops
+        console.log(`Fetching eBay inventory items, offset: ${offset}`);
+        
+        const inventoryApiUrl = `https://api.ebay.com/sell/inventory/v1/inventory_item?limit=${limit}&offset=${offset}`;
+        
+        const inventoryResponse = await fetch(inventoryApiUrl, {
           headers: {
-            'Authorization': `Bearer ${ebayConfig.access_token}`,
+            'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
             'Accept': 'application/json',
             'Accept-Language': 'en-US',
@@ -84,16 +86,44 @@ serve(async (req) => {
         if (!inventoryResponse.ok) {
           const errorText = await inventoryResponse.text();
           console.error('eBay Inventory API error:', inventoryResponse.status, errorText);
-          throw new Error(`eBay API error: ${inventoryResponse.status} - ${errorText}`);
+          
+          // If Inventory API fails, try the Browse API as fallback
+          console.log('Inventory API failed, trying Browse API for seller items...');
+          const browseApiUrl = `https://api.ebay.com/buy/browse/v1/item_summary/search?filter=seller:${ebayConfig.external_user_id}&limit=${limit}&offset=${offset}`;
+          
+          const browseResponse = await fetch(browseApiUrl, {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
+            },
+          });
+          
+          if (!browseResponse.ok) {
+            const browseErrorText = await browseResponse.text();
+            console.error('eBay Browse API error:', browseResponse.status, browseErrorText);
+            throw new Error(`eBay API error: ${browseResponse.status} - ${browseErrorText}`);
+          }
+          
+          const browseData = await browseResponse.json();
+          console.log('Browse API response:', JSON.stringify(browseData, null, 2));
+          const browserItems = browseData.itemSummaries || [];
+          allItems.push(...browserItems);
+          hasMore = browseData.total > (offset + limit);
+          
+        } else {
+          const inventoryData = await inventoryResponse.json();
+          console.log(`Inventory API response (offset ${offset}):`, JSON.stringify(inventoryData, null, 2));
+          
+          const inventoryItems = inventoryData.inventoryItems || [];
+          allItems.push(...inventoryItems);
+          
+          // Check if there are more items to fetch
+          hasMore = inventoryItems.length === limit;
         }
         
-        const inventoryData = await inventoryResponse.json();
-        console.log('Inventory API response:', JSON.stringify(inventoryData, null, 2));
-        allItems = inventoryData.inventoryItems || [];
-      } else {
-        const data = await response.json();
-        console.log('Marketing API response:', JSON.stringify(data, null, 2));
-        allItems = data.items || [];
+        offset += limit;
       }
     } catch (error) {
       console.error('API call failed:', error);
@@ -108,23 +138,40 @@ serve(async (req) => {
       let itemData: any = {};
       
       if (item.product) {
-        // Inventory API format
+        // Inventory API format - most comprehensive data
         itemData = {
           sku: item.sku,
           title: item.product.title,
           description: item.product.description,
           imageUrls: item.product.imageUrls,
           price: item.product.aspects?.Price?.[0],
-          condition: item.product.aspects?.Condition?.[0],
+          condition: item.product.condition || item.product.aspects?.Condition?.[0],
           brand: item.product.brand,
           category: item.product.aspects?.Category?.[0],
-          quantity: item.availability?.shipToLocationAvailability?.quantity,
+          quantity: item.availability?.shipToLocationAvailability?.quantity || 0,
+          weight: item.product.weight?.value,
+          weightUnit: item.product.weight?.unit,
+          packageType: item.packageWeightAndSize?.packageType,
+        };
+      } else if (item.itemId) {
+        // Browse API format - fallback format
+        itemData = {
+          sku: item.itemId,
+          title: item.title,
+          description: item.shortDescription,
+          imageUrls: item.image ? [item.image.imageUrl] : [],
+          price: item.price?.value,
+          condition: item.condition,
+          brand: item.brand,
+          category: item.categories?.[0]?.categoryName,
+          quantity: 1, // Browse API doesn't provide quantity
+          categoryId: item.categories?.[0]?.categoryId,
         };
       } else {
-        // Marketing API or other format
+        // Legacy or other format
         itemData = {
-          sku: item.sku || item.itemId,
-          title: item.title || item.name,
+          sku: item.sku || item.itemId || `ebay-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+          title: item.title || item.name || 'Untitled eBay Product',
           description: item.description,
           imageUrls: item.imageUrls || [item.imageUrl],
           price: item.price?.value || item.currentPrice?.value,
@@ -135,33 +182,62 @@ serve(async (req) => {
         };
       }
       
+      // Create proper handle from SKU or title
+      const handle = (itemData.sku || itemData.title || `ebay-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`)
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+      
+      // Convert weight to grams if available
+      let weightInGrams = null;
+      if (itemData.weight && itemData.weightUnit) {
+        if (itemData.weightUnit === 'POUND') {
+          weightInGrams = parseFloat(itemData.weight) * 453.592;
+        } else if (itemData.weightUnit === 'OUNCE') {
+          weightInGrams = parseFloat(itemData.weight) * 28.3495;
+        } else if (itemData.weightUnit === 'KILOGRAM') {
+          weightInGrams = parseFloat(itemData.weight) * 1000;
+        } else if (itemData.weightUnit === 'GRAM') {
+          weightInGrams = parseFloat(itemData.weight);
+        }
+      }
+
       return {
         user_id: user.id,
-        handle: (itemData.sku || `ebay-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`).toLowerCase().replace(/[^a-z0-9]/g, '-'),
+        handle: handle,
         title: itemData.title || 'Untitled eBay Product',
         vendor: 'eBay',
-        type: itemData.brand || null,
+        type: itemData.brand || 'eBay Item',
         tags: ['eBay', itemData.condition || 'Used', itemData.category].filter(Boolean).join(', '),
         published: true,
-        body_html: itemData.description || null,
+        body_html: itemData.description || `<p>${itemData.title || 'eBay Product'}</p>`,
         category: itemData.category || null,
         
         // Variant data from eBay listing
         variant_sku: itemData.sku || null,
         variant_price: itemData.price ? parseFloat(itemData.price.toString()) : null,
-        variant_inventory_qty: itemData.quantity || 1,
-        variant_grams: null, // Not available in API response
+        variant_inventory_qty: itemData.quantity || 0,
+        variant_grams: weightInGrams,
         variant_requires_shipping: true,
         variant_taxable: true,
         
-        // Image data
-        image_src: Array.isArray(itemData.imageUrls) ? itemData.imageUrls[0] : itemData.imageUrls || null,
+        // Image data - handle both single images and arrays
+        image_src: Array.isArray(itemData.imageUrls) && itemData.imageUrls.length > 0 
+          ? itemData.imageUrls[0] 
+          : (typeof itemData.imageUrls === 'string' ? itemData.imageUrls : null),
         image_position: 1,
         
         // eBay specific fields
         google_shopping_condition: itemData.condition || 'Used',
         google_shopping_gender: null,
         google_shopping_age_group: null,
+        
+        // SEO fields
+        seo_title: itemData.title || 'eBay Product',
+        seo_description: itemData.description ? 
+          itemData.description.replace(/<[^>]*>/g, '').substring(0, 160) + '...' : 
+          `${itemData.title || 'eBay Product'} - Available on eBay`,
         
         // Sync status
         shopify_sync_status: null, // This is an eBay product, not Shopify
