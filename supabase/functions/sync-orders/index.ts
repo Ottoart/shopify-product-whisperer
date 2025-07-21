@@ -803,9 +803,8 @@ async function syncEbayOrders(storeConfig: any, user: any, supabase: any, syncRe
     throw new Error(`No eBay access token found for ${storeConfig.store_name}`);
   }
 
-  // eBay API endpoint for orders (Sell Fulfillment API)
-  // Note: This requires 'https://api.ebay.com/oauth/api_scope/sell.fulfillment' scope
-  const apiUrl = 'https://api.ebay.com/sell/fulfillment/v1/order';
+  // eBay Sell Fulfillment API endpoint for orders with full shipping details for sellers
+  const apiUrl = `https://api.ebay.com/sell/fulfillment/v1/order?filter=orderfulfillmentstatus:{NOT_STARTED|IN_PROGRESS}&limit=50`;
   
   console.log(`Fetching orders from eBay API: ${apiUrl}`);
   
@@ -946,15 +945,25 @@ async function syncEbayOrders(storeConfig: any, user: any, supabase: any, syncRe
         orderStatus = 'awaiting';
     }
 
-    // Get buyer info
+    // Get buyer info - eBay provides full buyer details in fulfillment API
     const buyer = ebayOrder.buyer || {};
-    const customerName = buyer.username || 'eBay Customer';
+    
+    // Extract customer name from fulfillment instructions
+    const fulfillmentStartInstructions = ebayOrder.fulfillmentStartInstructions || [];
+    const shippingStep = fulfillmentStartInstructions.find(step => step.shippingStep);
+    const shipTo = shippingStep?.shippingStep?.shipTo || {};
+    
+    // Use full name from shipping address, fallback to buyer username
+    const customerName = shipTo.fullName || 
+                        `${shipTo.firstName || ''} ${shipTo.lastName || ''}`.trim() || 
+                        buyer.username || 
+                        'eBay Customer';
+    
+    // Use buyer email if available, otherwise construct from username
     const customerEmail = buyer.email || `${buyer.username}@ebay.marketplace`;
 
-    // Get shipping address
-    const fulfillmentStartInstructions = ebayOrder.fulfillmentStartInstructions || [];
-    const shippingStep = fulfillmentStartInstructions.find(step => step.destinationTimeZone);
-    const shippingAddress = shippingStep?.shippingStep?.shipTo || {};
+    // Get full shipping address from fulfillment instructions
+    const shippingAddress = shipTo.contactAddress || {};
 
     const orderData = {
       user_id: user.id,
@@ -967,12 +976,12 @@ async function syncEbayOrders(storeConfig: any, user: any, supabase: any, syncRe
       status: orderStatus,
       store_name: storeConfig.store_name,
       store_platform: 'ebay',
-      shipping_address_line1: shippingAddress.contactAddress?.addressLine1 || '',
-      shipping_address_line2: shippingAddress.contactAddress?.addressLine2 || null,
-      shipping_city: shippingAddress.contactAddress?.city || '',
-      shipping_state: shippingAddress.contactAddress?.stateOrProvince || '',
-      shipping_zip: shippingAddress.contactAddress?.postalCode || '',
-      shipping_country: shippingAddress.contactAddress?.countryCode || 'US',
+      shipping_address_line1: shippingAddress.addressLine1 || '',
+      shipping_address_line2: shippingAddress.addressLine2 || null,
+      shipping_city: shippingAddress.city || '',
+      shipping_state: shippingAddress.stateOrProvince || '',
+      shipping_zip: shippingAddress.postalCode || '',
+      shipping_country: shippingAddress.countryCode || 'US',
       shipped_date: orderStatus === 'shipped' ? ebayOrder.lastModifiedDate : null,
       tags: ['ebay', 'marketplace'],
       notes: `eBay Order ID: ${ebayOrder.orderId}`
