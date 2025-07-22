@@ -12,14 +12,7 @@ interface ConnectionSuccessProps {
 }
 
 export function ConnectionSuccess({ marketplace, connectionData, onFinish }: ConnectionSuccessProps) {
-  // Auto-close after 10 seconds
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      onFinish();
-    }, 10000);
-
-    return () => clearTimeout(timer);
-  }, [onFinish]);
+  // Removed auto-close - popup stays until user clicks a button
 
   return (
     <div className="space-y-6 text-center">
@@ -113,9 +106,6 @@ export function ConnectionSuccess({ marketplace, connectionData, onFinish }: Con
         </Button>
       </div>
 
-      <p className="text-xs text-muted-foreground">
-        This window will close automatically in a few seconds
-      </p>
     </div>
   );
 }
