@@ -844,6 +844,213 @@ export type Database = {
         }
         Relationships: []
       }
+      pack_items: {
+        Row: {
+          created_at: string
+          id: string
+          item_condition: string | null
+          pack_session_id: string
+          packing_notes: string | null
+          quantity_packed: number | null
+          quantity_requested: number
+          submission_item_id: string
+          updated_at: string
+          verified_at: string | null
+          verified_by_user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_condition?: string | null
+          pack_session_id: string
+          packing_notes?: string | null
+          quantity_packed?: number | null
+          quantity_requested: number
+          submission_item_id: string
+          updated_at?: string
+          verified_at?: string | null
+          verified_by_user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_condition?: string | null
+          pack_session_id?: string
+          packing_notes?: string | null
+          quantity_packed?: number | null
+          quantity_requested?: number
+          submission_item_id?: string
+          updated_at?: string
+          verified_at?: string | null
+          verified_by_user_id?: string | null
+        }
+        Relationships: []
+      }
+      pack_sessions: {
+        Row: {
+          actual_time_minutes: number | null
+          completed_at: string | null
+          created_at: string
+          estimated_time_minutes: number | null
+          fulfillment_order_id: string
+          id: string
+          packed_items: number | null
+          packing_station_id: string
+          session_notes: string | null
+          started_at: string | null
+          status: string
+          total_items: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          actual_time_minutes?: number | null
+          completed_at?: string | null
+          created_at?: string
+          estimated_time_minutes?: number | null
+          fulfillment_order_id: string
+          id?: string
+          packed_items?: number | null
+          packing_station_id: string
+          session_notes?: string | null
+          started_at?: string | null
+          status?: string
+          total_items?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          actual_time_minutes?: number | null
+          completed_at?: string | null
+          created_at?: string
+          estimated_time_minutes?: number | null
+          fulfillment_order_id?: string
+          id?: string
+          packed_items?: number | null
+          packing_station_id?: string
+          session_notes?: string | null
+          started_at?: string | null
+          status?: string
+          total_items?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      packages: {
+        Row: {
+          carrier: string | null
+          created_at: string
+          delivered_at: string | null
+          delivery_confirmation: Json | null
+          height_inches: number | null
+          id: string
+          length_inches: number | null
+          pack_session_id: string
+          package_number: string
+          package_type: string
+          packed_at: string | null
+          service_type: string | null
+          shipped_at: string | null
+          shipping_cost: number | null
+          shipping_label_id: string | null
+          status: string
+          tracking_number: string | null
+          updated_at: string
+          user_id: string
+          weight_lbs: number | null
+          width_inches: number | null
+        }
+        Insert: {
+          carrier?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          delivery_confirmation?: Json | null
+          height_inches?: number | null
+          id?: string
+          length_inches?: number | null
+          pack_session_id: string
+          package_number: string
+          package_type?: string
+          packed_at?: string | null
+          service_type?: string | null
+          shipped_at?: string | null
+          shipping_cost?: number | null
+          shipping_label_id?: string | null
+          status?: string
+          tracking_number?: string | null
+          updated_at?: string
+          user_id: string
+          weight_lbs?: number | null
+          width_inches?: number | null
+        }
+        Update: {
+          carrier?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          delivery_confirmation?: Json | null
+          height_inches?: number | null
+          id?: string
+          length_inches?: number | null
+          pack_session_id?: string
+          package_number?: string
+          package_type?: string
+          packed_at?: string | null
+          service_type?: string | null
+          shipped_at?: string | null
+          shipping_cost?: number | null
+          shipping_label_id?: string | null
+          status?: string
+          tracking_number?: string | null
+          updated_at?: string
+          user_id?: string
+          weight_lbs?: number | null
+          width_inches?: number | null
+        }
+        Relationships: []
+      }
+      packing_stations: {
+        Row: {
+          assigned_user_id: string | null
+          created_at: string
+          current_session_id: string | null
+          equipment_available: Json | null
+          id: string
+          is_active: boolean
+          location_zone: string | null
+          performance_metrics: Json | null
+          station_code: string
+          station_name: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_user_id?: string | null
+          created_at?: string
+          current_session_id?: string | null
+          equipment_available?: Json | null
+          id?: string
+          is_active?: boolean
+          location_zone?: string | null
+          performance_metrics?: Json | null
+          station_code: string
+          station_name: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_user_id?: string | null
+          created_at?: string
+          current_session_id?: string | null
+          equipment_available?: Json | null
+          id?: string
+          is_active?: boolean
+          location_zone?: string | null
+          performance_metrics?: Json | null
+          station_code?: string
+          station_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       performance_metrics: {
         Row: {
           avg_order_value: number | null
@@ -1669,6 +1876,75 @@ export type Database = {
         }
         Relationships: []
       }
+      return_authorizations: {
+        Row: {
+          approved_at: string | null
+          approved_by_user_id: string | null
+          created_at: string
+          customer_notes: string | null
+          id: string
+          internal_notes: string | null
+          order_id: string
+          package_id: string | null
+          processed_at: string | null
+          received_at: string | null
+          refund_amount: number | null
+          requested_at: string
+          restocking_fee: number | null
+          return_reason: string
+          return_shipping_cost: number | null
+          return_type: string
+          rma_number: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by_user_id?: string | null
+          created_at?: string
+          customer_notes?: string | null
+          id?: string
+          internal_notes?: string | null
+          order_id: string
+          package_id?: string | null
+          processed_at?: string | null
+          received_at?: string | null
+          refund_amount?: number | null
+          requested_at?: string
+          restocking_fee?: number | null
+          return_reason: string
+          return_shipping_cost?: number | null
+          return_type?: string
+          rma_number: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by_user_id?: string | null
+          created_at?: string
+          customer_notes?: string | null
+          id?: string
+          internal_notes?: string | null
+          order_id?: string
+          package_id?: string | null
+          processed_at?: string | null
+          received_at?: string | null
+          refund_amount?: number | null
+          requested_at?: string
+          restocking_fee?: number | null
+          return_reason?: string
+          return_shipping_cost?: number | null
+          return_type?: string
+          rma_number?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       returns: {
         Row: {
           admin_notes: string | null
@@ -1727,6 +2003,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      shipping_analytics: {
+        Row: {
+          avg_pack_time_minutes: number | null
+          carrier_performance: Json | null
+          cost_per_package: number | null
+          created_at: string
+          date: string
+          id: string
+          on_time_delivery_rate: number | null
+          return_rate: number | null
+          service_type_breakdown: Json | null
+          total_packages: number | null
+          total_shipping_cost: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avg_pack_time_minutes?: number | null
+          carrier_performance?: Json | null
+          cost_per_package?: number | null
+          created_at?: string
+          date?: string
+          id?: string
+          on_time_delivery_rate?: number | null
+          return_rate?: number | null
+          service_type_breakdown?: Json | null
+          total_packages?: number | null
+          total_shipping_cost?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avg_pack_time_minutes?: number | null
+          carrier_performance?: Json | null
+          cost_per_package?: number | null
+          created_at?: string
+          date?: string
+          id?: string
+          on_time_delivery_rate?: number | null
+          return_rate?: number | null
+          service_type_breakdown?: Json | null
+          total_packages?: number | null
+          total_shipping_cost?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       shipping_labels: {
         Row: {
@@ -2382,6 +2706,10 @@ export type Database = {
       check_low_stock: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      generate_rma_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
     }
     Enums: {

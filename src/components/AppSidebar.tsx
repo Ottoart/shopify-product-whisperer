@@ -52,6 +52,7 @@ const mainItems = [
   { title: "Receiving", url: "/receiving", icon: CheckCircle, description: "Warehouse receiving dashboard" },
   { title: "Inventory", url: "/inventory-management", icon: Package, description: "Manage warehouse inventory" },
   { title: "Order Fulfillment", url: "/fulfillment", icon: Target, description: "Pick, pack, and ship orders" },
+  { title: "Packing & Shipping", url: "/packing", icon: Package, description: "Pack orders and manage shipments" },
   { title: "PrepFox Dashboard", url: "/dashboard", icon: TrendingUp, description: "Modules & subscriptions pricing" },
   { title: "AI Learning Dashboard", url: "/ai-dashboard", icon: BarChart3, description: "Analytics and insights" },
 ];
