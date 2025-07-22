@@ -91,7 +91,7 @@ export function AboutUs() {
         <div className="text-center space-y-6">
           <div className="flex justify-center mb-6">
             <img 
-              src="/lovable-uploads/fcf82908-fe52-49e7-90f3-556b1ba63232.png" 
+              src="/src/assets/logo.png" 
               alt="PrepFox Logo" 
               className="h-16 md:h-20 object-contain"
             />
