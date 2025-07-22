@@ -47,7 +47,6 @@ import {
 
 const mainItems = [
   { title: "Marketplace Gateway", url: "/marketplace-gateway", icon: Globe, description: "Central connection hub" },
-  { title: "Products", url: "/", icon: Package, description: "Manage your product catalog" },
   { title: "PrepFox Dashboard", url: "/dashboard", icon: TrendingUp, description: "Modules & subscriptions pricing" },
   { title: "AI Learning Dashboard", url: "/ai-dashboard", icon: BarChart3, description: "Analytics and insights" },
 ];
@@ -63,6 +62,7 @@ const fulfillmentItems = [
 ];
 
 const toolItems = [
+  { title: "Products", url: "/", icon: Package, description: "Manage your product catalog" },
   { title: "Product Activity", url: "/activity", icon: Activity, description: "Track product changes" },
   { title: "Bulk Editor", url: "/bulk-editor", icon: FileText, description: "Edit multiple products" },
 ];
@@ -230,12 +230,12 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Catalogue */}
+        {/* Product Catalogues */}
         <SidebarGroup>
           <SidebarGroupLabel className="text-primary">
             <Package className="h-4 w-4 mr-2" />
             <span className={`${collapsed ? "group-hover:inline hidden" : "inline"} transition-all duration-300`}>
-              Catalogue
+              Product Catalogues
             </span>
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -293,12 +293,12 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Repricing */}
+        {/* Listings RePricer */}
         <SidebarGroup>
           <SidebarGroupLabel className="text-primary">
             <DollarSign className="h-4 w-4 mr-2" />
             <span className={`${collapsed ? "group-hover:inline hidden" : "inline"} transition-all duration-300`}>
-              Repricing
+              Listings RePricer
             </span>
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -324,12 +324,12 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Shipping */}
+        {/* Order Management */}
         <SidebarGroup>
           <SidebarGroupLabel className="text-primary">
             <Truck className="h-4 w-4 mr-2" />
             <span className={`${collapsed ? "group-hover:inline hidden" : "inline"} transition-all duration-300`}>
-              Shipping
+              Order Management
             </span>
           </SidebarGroupLabel>
           <SidebarGroupContent>
