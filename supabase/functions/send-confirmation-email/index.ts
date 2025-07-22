@@ -32,11 +32,22 @@ Deno.serve(async (req) => {
   try {
     // If we have a webhook secret, verify the webhook
     if (hookSecret) {
+      console.log('Verifying webhook with secret')
       const wh = new Webhook(hookSecret)
+      let webhookData
+      
+      try {
+        webhookData = wh.verify(payload, headers)
+        console.log('Webhook verified successfully')
+      } catch (verifyError) {
+        console.error('Webhook verification failed:', verifyError)
+        throw new Error(`Webhook verification failed: ${verifyError.message}`)
+      }
+
       const {
         user,
         email_data: { token, token_hash, redirect_to, email_action_type },
-      } = wh.verify(payload, headers) as {
+      } = webhookData as {
         user: {
           email: string
           user_metadata?: {
@@ -52,33 +63,53 @@ Deno.serve(async (req) => {
         }
       }
 
+      console.log('Processing email for user:', user.email)
+
       const userName = user.user_metadata?.first_name 
         ? `${user.user_metadata.first_name}${user.user_metadata.last_name ? ' ' + user.user_metadata.last_name : ''}`
         : undefined
 
-      const html = await renderAsync(
-        React.createElement(ConfirmationEmail, {
-          supabase_url: Deno.env.get('SUPABASE_URL') ?? '',
-          token,
-          token_hash,
-          redirect_to,
-          email_action_type,
-          user_email: user.email,
-          user_name: userName,
+      let html
+      try {
+        console.log('Rendering email template')
+        html = await renderAsync(
+          React.createElement(ConfirmationEmail, {
+            supabase_url: Deno.env.get('SUPABASE_URL') ?? '',
+            token,
+            token_hash,
+            redirect_to,
+            email_action_type,
+            user_email: user.email,
+            user_name: userName,
+          })
+        )
+        console.log('Email template rendered successfully')
+      } catch (renderError) {
+        console.error('Email template rendering failed:', renderError)
+        throw new Error(`Email template rendering failed: ${renderError.message}`)
+      }
+
+      try {
+        console.log('Sending email via Resend')
+        const { error } = await resend.emails.send({
+          from: 'PrepFox <noreply@resend.dev>',
+          to: [user.email],
+          subject: 'Welcome to PrepFox - Confirm your email',
+          html,
         })
-      )
 
-      const { error } = await resend.emails.send({
-        from: 'PrepFox <noreply@resend.dev>',
-        to: [user.email],
-        subject: 'Welcome to PrepFox - Confirm your email',
-        html,
-      })
-
-      if (error) {
-        throw error
+        if (error) {
+          console.error('Resend error:', error)
+          throw new Error(`Resend error: ${JSON.stringify(error)}`)
+        }
+        
+        console.log('Email sent successfully')
+      } catch (sendError) {
+        console.error('Email sending failed:', sendError)
+        throw sendError
       }
     } else {
+      console.log('No webhook secret found, running in test mode')
       // For testing purposes - send a test email
       const testPayload = JSON.parse(payload)
       
@@ -102,10 +133,12 @@ Deno.serve(async (req) => {
       })
 
       if (error) {
+        console.error('Test email error:', error)
         throw error
       }
     }
 
+    console.log('Function completed successfully')
     return new Response(
       JSON.stringify({ success: true }),
       {
@@ -118,10 +151,12 @@ Deno.serve(async (req) => {
     )
   } catch (error) {
     console.error('Error in send-confirmation-email function:', error)
+    console.error('Error stack:', error.stack)
     return new Response(
       JSON.stringify({
         error: {
           message: error.message,
+          stack: error.stack,
         },
       }),
       {
