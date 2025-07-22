@@ -82,6 +82,8 @@ const AppContent = () => {
                 <Route path="/sync-status" element={<SyncStatus />} />
                 <Route path="/logs" element={<Logs />} />
                 <Route path="/canada-post-oauth-callback" element={<CanadaPostCallback />} />
+                <Route path="/auth" element={<AuthPage />} />
+                <Route path="/customer-portal" element={<CustomerPortal />} />
                 <Route path="/customer-tracking" element={<CustomerTracking />} />
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                 <Route path="/about" element={<AboutUs />} />
