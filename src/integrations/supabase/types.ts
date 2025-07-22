@@ -2474,6 +2474,36 @@ export type Database = {
           },
         ]
       }
+      role_permissions: {
+        Row: {
+          conditions: Json | null
+          created_at: string | null
+          id: string
+          permission: Database["public"]["Enums"]["permission_type"]
+          resource_type: string
+          role: string
+          updated_at: string | null
+        }
+        Insert: {
+          conditions?: Json | null
+          created_at?: string | null
+          id?: string
+          permission: Database["public"]["Enums"]["permission_type"]
+          resource_type: string
+          role: string
+          updated_at?: string | null
+        }
+        Update: {
+          conditions?: Json | null
+          created_at?: string | null
+          id?: string
+          permission?: Database["public"]["Enums"]["permission_type"]
+          resource_type?: string
+          role?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       shipping_analytics: {
         Row: {
           avg_pack_time_minutes: number | null
@@ -3211,6 +3241,48 @@ export type Database = {
         }
         Relationships: []
       }
+      user_permissions: {
+        Row: {
+          conditions: Json | null
+          created_at: string | null
+          expires_at: string | null
+          granted: boolean | null
+          granted_by: string
+          id: string
+          permission: Database["public"]["Enums"]["permission_type"]
+          resource_id: string | null
+          resource_type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          conditions?: Json | null
+          created_at?: string | null
+          expires_at?: string | null
+          granted?: boolean | null
+          granted_by: string
+          id?: string
+          permission: Database["public"]["Enums"]["permission_type"]
+          resource_id?: string | null
+          resource_type: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          conditions?: Json | null
+          created_at?: string | null
+          expires_at?: string | null
+          granted?: boolean | null
+          granted_by?: string
+          id?: string
+          permission?: Database["public"]["Enums"]["permission_type"]
+          resource_id?: string | null
+          resource_type?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       vendor_brand_tones: {
         Row: {
           brand_tone_analysis: Json
@@ -3346,12 +3418,36 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_permission: {
+        Args: {
+          _user_id: string
+          _permission: Database["public"]["Enums"]["permission_type"]
+          _resource_type: string
+          _resource_id?: string
+        }
+        Returns: boolean
+      }
       is_admin: {
         Args: { _user_id: string }
         Returns: boolean
       }
     }
     Enums: {
+      permission_type:
+        | "read"
+        | "write"
+        | "delete"
+        | "admin"
+        | "billing_view"
+        | "billing_manage"
+        | "user_manage"
+        | "company_manage"
+        | "system_logs"
+        | "analytics_view"
+        | "inventory_manage"
+        | "orders_manage"
+        | "shipping_manage"
+        | "repricing_manage"
       user_role: "master_admin" | "admin" | "manager" | "user"
     }
     CompositeTypes: {
@@ -3480,6 +3576,22 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      permission_type: [
+        "read",
+        "write",
+        "delete",
+        "admin",
+        "billing_view",
+        "billing_manage",
+        "user_manage",
+        "company_manage",
+        "system_logs",
+        "analytics_view",
+        "inventory_manage",
+        "orders_manage",
+        "shipping_manage",
+        "repricing_manage",
+      ],
       user_role: ["master_admin", "admin", "manager", "user"],
     },
   },
