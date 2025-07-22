@@ -19,6 +19,7 @@ import {
   Play
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { TestEmailButton } from "@/components/TestEmailButton";
 
 const LandingPage = () => {
   const features = [
@@ -294,6 +295,10 @@ const LandingPage = () => {
           <p className="text-sm text-primary-foreground/80 mt-6">
             Get started in under 5 minutes • Full feature access • Expert onboarding included
           </p>
+          
+          <div className="mt-8">
+            <TestEmailButton />
+          </div>
         </div>
       </section>
 
