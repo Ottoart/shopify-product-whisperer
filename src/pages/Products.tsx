@@ -75,6 +75,7 @@ interface StoreConfig {
   platform: string;
   domain: string;
   is_active: boolean;
+  access_token: string;
 }
 
 export default function Products() {
@@ -140,12 +141,33 @@ export default function Products() {
     try {
       setSyncLoading(true);
       
-      // Call sync function for specific store or all stores
-      const { error } = await supabase.functions.invoke('sync-shopify-products', {
-        body: storeId ? { storeId } : {}
-      });
-
-      if (error) throw error;
+      if (storeId) {
+        // Sync specific store
+        const store = stores.find(s => s.id === storeId);
+        if (store && store.platform === 'shopify') {
+          const { error } = await supabase.functions.invoke('sync-shopify-products', {
+            body: { 
+              storeUrl: store.domain,
+              accessToken: store.access_token 
+            }
+          });
+          if (error) throw error;
+        }
+      } else {
+        // Sync all Shopify stores
+        const shopifyStores = stores.filter(s => s.platform === 'shopify');
+        for (const store of shopifyStores) {
+          const { error } = await supabase.functions.invoke('sync-shopify-products', {
+            body: { 
+              storeUrl: store.domain,
+              accessToken: store.access_token 
+            }
+          });
+          if (error) {
+            console.error(`Sync failed for store ${store.store_name}:`, error);
+          }
+        }
+      }
 
       toast({
         title: "Sync started",
