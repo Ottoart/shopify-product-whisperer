@@ -65,7 +65,7 @@ const fulfillmentItems = [
 ];
 
 const toolItems = [
-  { title: "Products", url: "/", icon: Package, description: "Manage your product catalog" },
+  { title: "Products", url: "/products", icon: Package, description: "Manage your product catalog" },
   { title: "Product Activity", url: "/activity", icon: Activity, description: "Track product changes" },
   { title: "Bulk Editor", url: "/bulk-editor", icon: FileText, description: "Edit multiple products" },
 ];
