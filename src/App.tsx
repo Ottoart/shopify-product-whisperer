@@ -38,6 +38,7 @@ import FulfillmentDashboard from "./pages/FulfillmentDashboard";
 import PackingDashboard from "./pages/PackingDashboard";
 import AuthPage from "./pages/AuthPage";
 import CustomerPortal from "./pages/CustomerPortal";
+import LandingPage from "./pages/LandingPage";
 
 const queryClient = new QueryClient();
 
@@ -58,7 +59,8 @@ const AppContent = () => {
             
             <main className="flex-1 overflow-auto">
               <Routes>
-                <Route path="/" element={<Index />} />
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/app" element={<Index />} />
                 <Route path="/dashboard" element={<PrepFoxDashboard />} />
                 
                 <Route path="/marketplace-gateway" element={<MarketplaceGateway />} />
