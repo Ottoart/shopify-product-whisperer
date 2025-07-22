@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { ConnectStoreButton } from "@/components/ConnectStoreButton";
+import { ProductComparison } from "@/components/ProductComparison";
 
 interface Product {
   id: string;
@@ -86,6 +87,9 @@ export default function Products() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStore, setSelectedStore] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [showComparison, setShowComparison] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [optimizedData, setOptimizedData] = useState<any>(null);
 
   useEffect(() => {
     if (session?.user) {
@@ -186,7 +190,12 @@ export default function Products() {
         variant_grams: 0,
       };
 
-      const { error } = await supabase.functions.invoke('ai-optimize-product', {
+      toast({
+        title: "AI Optimization starting",
+        description: "Generating optimized version...",
+      });
+
+      const { data, error } = await supabase.functions.invoke('ai-optimize-product', {
         body: { 
           productHandle: product.handle,
           productData,
@@ -196,13 +205,14 @@ export default function Products() {
 
       if (error) throw error;
 
-      toast({
-        title: "AI Optimization started",
-        description: "Your product is being optimized with AI",
-      });
-
-      // Refresh products
-      fetchProducts();
+      if (data?.success && data?.optimizedData) {
+        // Set up the comparison dialog
+        setSelectedProduct(product);
+        setOptimizedData(data.optimizedData);
+        setShowComparison(true);
+      } else {
+        throw new Error('No optimized data received');
+      }
     } catch (error) {
       console.error('Error optimizing product:', error);
       toast({
@@ -466,6 +476,50 @@ export default function Products() {
             </div>
           )}
         </>
+      )}
+
+      {/* AI Optimization Comparison Dialog */}
+      {selectedProduct && optimizedData && (
+        <ProductComparison
+          isOpen={showComparison}
+          onClose={() => {
+            setShowComparison(false);
+            setSelectedProduct(null);
+            setOptimizedData(null);
+          }}
+          originalProduct={{
+            id: selectedProduct.id,
+            handle: selectedProduct.handle,
+            title: selectedProduct.title || '',
+            body_html: selectedProduct.body_html || null,
+            tags: selectedProduct.tags || null,
+            type: selectedProduct.product_type || null,
+            category: selectedProduct.category || null,
+            vendor: selectedProduct.vendor || null,
+            seo_title: null,
+            seo_description: null,
+            published: null,
+            variant_price: selectedProduct.price || null,
+            variant_compare_at_price: null,
+            variant_sku: selectedProduct.sku || null,
+            variant_barcode: null,
+            variant_grams: null,
+            variant_inventory_qty: selectedProduct.inventory_quantity || null,
+            variant_inventory_policy: null,
+            variant_requires_shipping: null,
+            variant_taxable: null,
+            google_shopping_condition: selectedProduct.google_shopping_condition || null,
+            google_shopping_gender: selectedProduct.google_shopping_gender || null,
+            google_shopping_age_group: selectedProduct.google_shopping_age_group || null,
+          }}
+          optimizedProduct={optimizedData}
+          onSave={() => {
+            setShowComparison(false);
+            setSelectedProduct(null);
+            setOptimizedData(null);
+            fetchProducts(); // Refresh the products list
+          }}
+        />
       )}
     </div>
   );
