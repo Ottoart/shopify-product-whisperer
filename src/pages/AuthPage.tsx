@@ -36,6 +36,23 @@ export default function AuthPage() {
   });
 
   useEffect(() => {
+    // Handle URL hash parameters for email confirmation
+    const handleHashParams = () => {
+      const hash = window.location.hash.substring(1);
+      const params = new URLSearchParams(hash);
+      
+      if (params.get('type') === 'signup' && params.get('access_token')) {
+        // Clear the hash from URL
+        window.history.replaceState(null, '', window.location.pathname);
+        
+        // Show success message
+        toast({
+          title: 'Email confirmed!',
+          description: 'Your email has been confirmed successfully. Welcome to PrepFox!',
+        });
+      }
+    };
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
@@ -61,8 +78,11 @@ export default function AuthPage() {
       }
     });
 
+    // Handle hash parameters on page load
+    handleHashParams();
+
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, toast]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
