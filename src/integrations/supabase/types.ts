@@ -182,6 +182,83 @@ export type Database = {
         }
         Relationships: []
       }
+      fulfillment_destinations: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+        }
+        Relationships: []
+      }
+      inventory_submissions: {
+        Row: {
+          created_at: string
+          destination_id: string
+          id: string
+          special_instructions: string | null
+          status: string
+          submission_number: string
+          submitted_at: string | null
+          total_items: number | null
+          total_prep_cost: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          destination_id: string
+          id?: string
+          special_instructions?: string | null
+          status?: string
+          submission_number: string
+          submitted_at?: string | null
+          total_items?: number | null
+          total_prep_cost?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          destination_id?: string
+          id?: string
+          special_instructions?: string | null
+          status?: string
+          submission_number?: string
+          submitted_at?: string | null
+          total_items?: number | null
+          total_prep_cost?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_inventory_submissions_destination"
+            columns: ["destination_id"]
+            isOneToOne: false
+            referencedRelation: "fulfillment_destinations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marketplace_configurations: {
         Row: {
           access_token: string | null
@@ -484,6 +561,36 @@ export type Database = {
           total_revenue?: number | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      prep_services: {
+        Row: {
+          base_price: number | null
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+        }
+        Insert: {
+          base_price?: number | null
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+        }
+        Update: {
+          base_price?: number | null
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
         }
         Relationships: []
       }
@@ -1308,6 +1415,117 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      submission_items: {
+        Row: {
+          created_at: string
+          expiration_date: string | null
+          height_inches: number | null
+          id: string
+          length_inches: number | null
+          lot_number: string | null
+          product_title: string
+          quantity: number
+          sku: string
+          submission_id: string
+          unit_cost: number | null
+          weight_lbs: number | null
+          width_inches: number | null
+        }
+        Insert: {
+          created_at?: string
+          expiration_date?: string | null
+          height_inches?: number | null
+          id?: string
+          length_inches?: number | null
+          lot_number?: string | null
+          product_title: string
+          quantity: number
+          sku: string
+          submission_id: string
+          unit_cost?: number | null
+          weight_lbs?: number | null
+          width_inches?: number | null
+        }
+        Update: {
+          created_at?: string
+          expiration_date?: string | null
+          height_inches?: number | null
+          id?: string
+          length_inches?: number | null
+          lot_number?: string | null
+          product_title?: string
+          quantity?: number
+          sku?: string
+          submission_id?: string
+          unit_cost?: number | null
+          weight_lbs?: number | null
+          width_inches?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_submission_items_submission"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      submission_prep_services: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string | null
+          prep_service_id: string
+          quantity: number
+          submission_id: string
+          total_price: number | null
+          unit_price: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id?: string | null
+          prep_service_id: string
+          quantity?: number
+          submission_id: string
+          total_price?: number | null
+          unit_price?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string | null
+          prep_service_id?: string
+          quantity?: number
+          submission_id?: string
+          total_price?: number | null
+          unit_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_submission_prep_services_item"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "submission_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_submission_prep_services_service"
+            columns: ["prep_service_id"]
+            isOneToOne: false
+            referencedRelation: "prep_services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_submission_prep_services_submission"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tracking_events: {
         Row: {

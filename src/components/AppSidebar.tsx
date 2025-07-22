@@ -48,6 +48,7 @@ import {
 const mainItems = [
   { title: "Marketplace Gateway", url: "/marketplace-gateway", icon: Globe, description: "Central connection hub" },
   { title: "Products", url: "/", icon: Package, description: "Manage your product catalog" },
+  { title: "Send Inventory", url: "/send-inventory", icon: Warehouse, description: "Create fulfillment submissions" },
   { title: "PrepFox Dashboard", url: "/dashboard", icon: TrendingUp, description: "Modules & subscriptions pricing" },
   { title: "AI Learning Dashboard", url: "/ai-dashboard", icon: BarChart3, description: "Analytics and insights" },
 ];
