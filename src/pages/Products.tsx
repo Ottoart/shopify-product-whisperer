@@ -206,9 +206,34 @@ export default function Products() {
       if (error) throw error;
 
       if (data?.success && data?.optimizedData) {
+        // Transform the AI response to match ProductComparison expected format
+        const optimizedData = {
+          title: data.optimizedData.title || product.title || '',
+          description: data.optimizedData.description || product.body_html || '',
+          tags: data.optimizedData.tags || product.tags || '',
+          type: data.optimizedData.type || product.product_type || '',
+          category: data.optimizedData.category || product.category || '',
+          vendor: data.optimizedData.vendor || product.vendor || '',
+          seo_title: data.optimizedData.seo_title || '',
+          seo_description: data.optimizedData.seo_description || '',
+          published: data.optimizedData.published || true,
+          variant_price: data.optimizedData.variant_price || product.price || 0,
+          variant_compare_at_price: data.optimizedData.variant_compare_at_price || 0,
+          variant_sku: data.optimizedData.variant_sku || product.sku || '',
+          variant_barcode: data.optimizedData.variant_barcode || '',
+          variant_grams: data.optimizedData.variant_grams || 0,
+          variant_inventory_qty: data.optimizedData.variant_inventory_qty || product.inventory_quantity || 0,
+          variant_inventory_policy: data.optimizedData.variant_inventory_policy || 'deny',
+          variant_requires_shipping: data.optimizedData.variant_requires_shipping || true,
+          variant_taxable: data.optimizedData.variant_taxable || true,
+          google_shopping_condition: data.optimizedData.google_shopping_condition || product.google_shopping_condition || 'new',
+          google_shopping_gender: data.optimizedData.google_shopping_gender || product.google_shopping_gender || 'unisex',
+          google_shopping_age_group: data.optimizedData.google_shopping_age_group || product.google_shopping_age_group || 'adult',
+        };
+
         // Set up the comparison dialog
         setSelectedProduct(product);
-        setOptimizedData(data.optimizedData);
+        setOptimizedData(optimizedData);
         setShowComparison(true);
       } else {
         throw new Error('No optimized data received');
