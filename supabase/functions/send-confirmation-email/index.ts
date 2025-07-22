@@ -25,6 +25,10 @@ Deno.serve(async (req) => {
   const payload = await req.text()
   const headers = Object.fromEntries(req.headers)
   
+  console.log('Hook secret exists:', !!hookSecret)
+  console.log('Resend API key exists:', !!Deno.env.get('RESEND_API_KEY'))
+  console.log('Request headers:', headers)
+  
   try {
     // If we have a webhook secret, verify the webhook
     if (hookSecret) {
