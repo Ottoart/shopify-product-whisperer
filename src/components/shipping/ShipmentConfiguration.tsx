@@ -59,7 +59,7 @@ const defaultConfig: ShipmentConfig = {
   weightUnit: 'lbs',
   weightOz: 0,
   weightOzUnit: 'oz',
-  service: "",
+  service: "any",
   packageType: "custom",
   length: 12,
   width: 8,
@@ -412,7 +412,7 @@ export function ShipmentConfiguration({ orderId, onRatesFetched }: ShipmentConfi
                 <SelectValue placeholder="Select shipping service" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Any Service</SelectItem>
+                <SelectItem value="any">Any Service</SelectItem>
                 {services.map(service => (
                   <SelectItem key={service.value} value={service.value}>
                     {service.label}

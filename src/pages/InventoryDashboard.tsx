@@ -39,7 +39,7 @@ export default function InventoryDashboard() {
   } = useInventoryData();
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedBin, setSelectedBin] = useState('');
+  const [selectedBin, setSelectedBin] = useState('all');
   
   // Movement form state
   const [movementForm, setMovementForm] = useState({
@@ -65,7 +65,7 @@ export default function InventoryDashboard() {
       item.submission_item.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.submission_item.product_title.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesBin = !selectedBin || item.bin_id === selectedBin;
+    const matchesBin = selectedBin === 'all' || item.bin_id === selectedBin;
     
     return matchesSearch && matchesBin;
   });
@@ -396,7 +396,7 @@ export default function InventoryDashboard() {
                     <SelectValue placeholder="Filter by bin" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All bins</SelectItem>
+                    <SelectItem value="all">All bins</SelectItem>
                     {bins.map((bin) => (
                       <SelectItem key={bin.id} value={bin.id}>
                         {bin.bin_code} - {bin.zone_name}
