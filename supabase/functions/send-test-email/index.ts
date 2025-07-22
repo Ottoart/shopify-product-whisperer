@@ -1,4 +1,10 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import React from 'npm:react@18.3.1'
+import { Resend } from 'npm:resend@4.0.0'
+import { renderAsync } from 'npm:@react-email/components@0.0.22'
+import { ConfirmationEmail } from '../send-confirmation-email/_templates/confirmation-email.tsx'
+
+const resend = new Resend(Deno.env.get('RESEND_API_KEY') as string)
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,28 +18,40 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   try {
-    // Call the send-confirmation-email function with test data
-    const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-confirmation-email`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
-      },
-      body: JSON.stringify({
-        email: 'ottman1@gmail.com',
-        name: 'Test User'
+    // Send a test email directly using the email template
+    const html = await renderAsync(
+      React.createElement(ConfirmationEmail, {
+        supabase_url: 'https://rtaomiqsnctigleqjojt.supabase.co',
+        token: 'test-token',
+        token_hash: 'test-hash',
+        redirect_to: 'https://your-app.com',
+        email_action_type: 'signup',
+        user_email: 'ottman1@gmail.com',
+        user_name: 'Test User',
       })
-    });
+    )
 
-    const result = await response.json();
+    const { error } = await resend.emails.send({
+      from: 'PrepFox <noreply@resend.dev>',
+      to: ['ottman1@gmail.com'],
+      subject: 'PrepFox Email Template Preview',
+      html,
+    })
 
-    return new Response(JSON.stringify(result), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        ...corsHeaders,
-      },
-    });
+    if (error) {
+      throw error
+    }
+
+    return new Response(
+      JSON.stringify({ success: true, message: 'Test email sent successfully!' }),
+      {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          ...corsHeaders,
+        },
+      }
+    );
   } catch (error: any) {
     console.error('Error in send-test-email function:', error);
     return new Response(
