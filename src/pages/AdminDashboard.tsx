@@ -24,6 +24,8 @@ import { AdminUserManagement } from "@/components/admin/AdminUserManagement";
 import { CompanyManagement } from "@/components/admin/CompanyManagement";
 import { BillingManagement } from "@/components/admin/BillingManagement";
 import { SystemLogs } from "@/components/admin/SystemLogs";
+import { PermissionManagement } from "@/components/admin/PermissionManagement";
+import { RolePermissionsOverview } from "@/components/admin/RolePermissionsOverview";
 
 interface AdminUser {
   id: string;
@@ -321,10 +323,12 @@ export default function AdminDashboard() {
       </div>
 
       <Tabs defaultValue="users" className="space-y-4">
-        <TabsList>
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="users">Admin Users</TabsTrigger>
           <TabsTrigger value="companies">Companies</TabsTrigger>
           <TabsTrigger value="billing">Billing</TabsTrigger>
+          <TabsTrigger value="permissions">Permissions</TabsTrigger>
+          <TabsTrigger value="roles">Role Matrix</TabsTrigger>
           <TabsTrigger value="logs">System Logs</TabsTrigger>
         </TabsList>
 
@@ -338,6 +342,14 @@ export default function AdminDashboard() {
 
         <TabsContent value="billing">
           <BillingManagement />
+        </TabsContent>
+
+        <TabsContent value="permissions">
+          <PermissionManagement />
+        </TabsContent>
+
+        <TabsContent value="roles">
+          <RolePermissionsOverview />
         </TabsContent>
 
         <TabsContent value="logs">

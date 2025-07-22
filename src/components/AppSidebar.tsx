@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useUserRole } from "@/hooks/usePermissions";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import { 
   BarChart3, 
   Package, 
@@ -71,7 +73,7 @@ const toolItems = [
 const repricingItems = [
   { title: "Dynamic Repricing", url: "/repricing", icon: DollarSign, description: "Manage pricing strategies" },
   { title: "Listings", url: "/repricing?tab=listings", icon: FileText, description: "Manage product listings and prices" },
-  { title: "Analytics", url: "/analytics", icon: TrendingUp, description: "View performance metrics" },
+  { title: "Analytics", url: "/analytics", icon: TrendingUp, description: "View performance metrics", permission: "analytics_view", resourceType: "analytics" },
   { title: "Strategies", url: "/strategies", icon: Target, description: "Create and manage repricing strategies" },
 ];
 
@@ -85,10 +87,11 @@ const shippingItems = [
 const settingsItems = [
   { title: "Store Management", url: "/settings", icon: Store, description: "Manage stores, connections, and integrations" },
   { title: "Carriers", url: "/carriers", icon: Truck, description: "Manage shipping carriers" },
-  { title: "Admin Dashboard", url: "/admin", icon: Settings, description: "System administration (Admin only)" },
+  { title: "Admin Dashboard", url: "/admin", icon: Settings, description: "System administration (Admin only)", permission: "admin", resourceType: "system" },
 ];
 
 export function AppSidebar() {
+  const { data: userRole } = useUserRole();
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
@@ -305,23 +308,38 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {repricingItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink 
-                      to={item.url}
-                      className={getNavCls}
-                      title={collapsed ? item.description : undefined}
-                    >
-                      <item.icon className="h-4 w-4 flex-shrink-0" />
-                      <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col transition-all duration-300 overflow-hidden`}>
-                        <span className="whitespace-nowrap">{item.title}</span>
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">{item.description}</span>
-                      </div>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {repricingItems.map((item) => {
+                const menuContent = (
+                  <NavLink 
+                    to={item.url}
+                    className={getNavCls}
+                    title={collapsed ? item.description : undefined}
+                  >
+                    <item.icon className="h-4 w-4 flex-shrink-0" />
+                    <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col transition-all duration-300 overflow-hidden`}>
+                      <span className="whitespace-nowrap">{item.title}</span>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">{item.description}</span>
+                    </div>
+                  </NavLink>
+                );
+
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      {'permission' in item && item.permission ? (
+                        <PermissionGate 
+                          permission={item.permission as any} 
+                          resourceType={item.resourceType || ""}
+                        >
+                          {menuContent}
+                        </PermissionGate>
+                      ) : (
+                        menuContent
+                      )}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -445,23 +463,38 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {settingsItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink 
-                      to={item.url} 
-                      className={getNavCls}
-                      title={collapsed ? item.description : undefined}
-                      >
-                        <item.icon className="h-4 w-4 flex-shrink-0" />
-                        <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col transition-all duration-300 overflow-hidden`}>
-                          <span className="whitespace-nowrap">{item.title}</span>
-                          <span className="text-xs text-muted-foreground whitespace-nowrap">{item.description}</span>
-                        </div>
-                      </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {settingsItems.map((item) => {
+                const menuContent = (
+                  <NavLink 
+                    to={item.url} 
+                    className={getNavCls}
+                    title={collapsed ? item.description : undefined}
+                  >
+                    <item.icon className="h-4 w-4 flex-shrink-0" />
+                    <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col transition-all duration-300 overflow-hidden`}>
+                      <span className="whitespace-nowrap">{item.title}</span>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">{item.description}</span>
+                    </div>
+                  </NavLink>
+                );
+
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      {'permission' in item && item.permission ? (
+                        <PermissionGate 
+                          permission={item.permission as any} 
+                          resourceType={item.resourceType || ""}
+                        >
+                          {menuContent}
+                        </PermissionGate>
+                      ) : (
+                        menuContent
+                      )}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
