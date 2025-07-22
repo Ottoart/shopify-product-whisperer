@@ -62,16 +62,10 @@ const fulfillmentItems = [
   { title: "Customer Tracking", url: "/customer-tracking", icon: MapPin, description: "Public order tracking" },
 ];
 
-const shopifyItems = [
-  { title: "Shopify Integration", url: "/shopify-integration", icon: Zap, description: "Connect and manage Shopify" },
-  { title: "Sync Status", url: "/sync-status", icon: Database, description: "Monitor sync operations" },
-];
-
 const toolItems = [
   { title: "Product Activity", url: "/activity", icon: Activity, description: "Track product changes" },
   { title: "Bulk Editor", url: "/bulk-editor", icon: FileText, description: "Edit multiple products" },
   { title: "Inventory Management", url: "/inventory", icon: Warehouse, description: "Manage duplicates and variations" },
-  { title: "Store Connections", url: "/settings", icon: Store, description: "Manage connected stores" },
 ];
 
 const repricingItems = [
@@ -88,8 +82,14 @@ const shippingItems = [
   { title: "Rate Calculator", url: "/shipping/rates", icon: Calculator, description: "Calculate shipping costs" },
 ];
 
-const settingsItems = [
+const storeIntegrationItems = [
   { title: "Store Config", url: "/settings", icon: Settings, description: "Configure store settings" },
+  { title: "Store Connections", url: "/settings", icon: Store, description: "Manage connected stores" },
+  { title: "Shopify Integration", url: "/shopify-integration", icon: Zap, description: "Connect and manage Shopify" },
+  { title: "Sync Status", url: "/sync-status", icon: Database, description: "Monitor sync operations" },
+];
+
+const carrierItems = [
   { title: "Carriers", url: "/carriers", icon: Truck, description: "Manage shipping carriers" },
 ];
 
@@ -440,17 +440,17 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Shopify */}
+        {/* Store Integration */}
         <SidebarGroup>
           <SidebarGroupLabel className="text-primary">
-            <Database className="h-4 w-4 mr-2" />
+            <Store className="h-4 w-4 mr-2" />
             <span className={`${collapsed ? "group-hover:inline hidden" : "inline"} transition-all duration-300`}>
-              Shopify
+              Store Integration
             </span>
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {shopifyItems.map((item) => (
+              {storeIntegrationItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink 
@@ -471,17 +471,17 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Settings */}
+        {/* Carriers */}
         <SidebarGroup>
           <SidebarGroupLabel className="text-primary">
-            <Settings className="h-4 w-4 mr-2" />
+            <Truck className="h-4 w-4 mr-2" />
             <span className={`${collapsed ? "group-hover:inline hidden" : "inline"} transition-all duration-300`}>
-              Settings
+              Carriers
             </span>
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {settingsItems.map((item) => (
+              {carrierItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink 
