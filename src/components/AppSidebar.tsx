@@ -82,10 +82,7 @@ const shippingItems = [
 ];
 
 const storeIntegrationItems = [
-  { title: "Store Config", url: "/settings", icon: Settings, description: "Configure store settings" },
-  { title: "Store Connections", url: "/settings", icon: Store, description: "Manage connected stores" },
-  { title: "Shopify Integration", url: "/shopify-integration", icon: Zap, description: "Connect and manage Shopify" },
-  { title: "Sync Status", url: "/sync-status", icon: Database, description: "Monitor sync operations" },
+  { title: "Store Management", url: "/settings", icon: Store, description: "Manage stores, connections, and integrations" },
 ];
 
 const carrierItems = [
