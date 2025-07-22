@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useSession } from "@supabase/auth-helpers-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Settings, Store, Shield, FileText } from "lucide-react";
+import { User, Settings, Store, Shield, FileText, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface Profile {
@@ -31,12 +32,86 @@ interface StoreConfig {
 export function UserMenu() {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const session = useSession();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [stores, setStores] = useState<StoreConfig[]>([]);
 
-  const userEmail = "user@example.com";
-  const displayName = "User";
-  const initials = "U";
+  const user = session?.user;
+  const userEmail = user?.email || "";
+  const displayName = profile?.display_name || user?.user_metadata?.display_name || "User";
+  const initials = displayName.charAt(0).toUpperCase();
+
+  useEffect(() => {
+    if (user) {
+      fetchProfile();
+      fetchStores();
+    }
+  }, [user]);
+
+  const fetchProfile = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching profile:', error);
+        return;
+      }
+      
+      if (data) {
+        setProfile(data);
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  };
+
+  const fetchStores = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('store_configurations')
+        .select('id, store_name, platform, is_active')
+        .eq('user_id', user.id)
+        .eq('is_active', true);
+      
+      if (error) {
+        console.error('Error fetching stores:', error);
+        return;
+      }
+      
+      setStores(data || []);
+    } catch (error) {
+      console.error('Error fetching stores:', error);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      toast({
+        title: "Signed out successfully",
+        description: "You have been logged out of your account.",
+      });
+      
+      navigate("/");
+    } catch (error) {
+      console.error('Error signing out:', error);
+      toast({
+        title: "Error signing out",
+        description: "There was a problem signing you out. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <DropdownMenu>
@@ -61,13 +136,28 @@ export function UserMenu() {
         <DropdownMenuSeparator />
         
         <DropdownMenuLabel className="text-xs text-muted-foreground">
-          Connected Stores (0)
+          Connected Stores ({stores.length})
         </DropdownMenuLabel>
         
-        <DropdownMenuItem disabled>
-          <Store className="mr-2 h-4 w-4" />
-          No stores connected
-        </DropdownMenuItem>
+        {stores.length === 0 ? (
+          <DropdownMenuItem disabled>
+            <Store className="mr-2 h-4 w-4" />
+            No stores connected
+          </DropdownMenuItem>
+        ) : (
+          stores.map((store) => (
+            <DropdownMenuItem key={store.id}>
+              <Store className="mr-2 h-4 w-4" />
+              <div className="flex flex-col">
+                <span className="text-sm">{store.store_name}</span>
+                <span className="text-xs text-muted-foreground">{store.platform}</span>
+              </div>
+              <Badge variant="secondary" className="ml-auto">
+                Active
+              </Badge>
+            </DropdownMenuItem>
+          ))
+        )}
         
         <DropdownMenuSeparator />
         
@@ -94,6 +184,13 @@ export function UserMenu() {
         <DropdownMenuItem onClick={() => navigate('/privacy-policy')}>
           <Shield className="mr-2 h-4 w-4" />
           <span>Privacy Policy</span>
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator />
+        
+        <DropdownMenuItem onClick={handleSignOut}>
+          <LogOut className="mr-2 h-4 w-4" />
+          <span>Sign Out</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
