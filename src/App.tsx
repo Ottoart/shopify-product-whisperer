@@ -32,6 +32,7 @@ import Logs from "./pages/Logs";
 import CanadaPostCallback from "./pages/CanadaPostCallback";
 import { CustomerTrackingPage as CustomerTracking } from "./pages/CustomerTracking";
 import SendInventory from "./pages/SendInventory";
+import ReceivingDashboard from "./pages/ReceivingDashboard";
 
 const queryClient = new QueryClient();
 
@@ -56,7 +57,8 @@ const AppContent = () => {
                 <Route path="/dashboard" element={<PrepFoxDashboard />} />
                 <Route path="/ai-dashboard" element={<LearningDashboard />} />
                 <Route path="/marketplace-gateway" element={<MarketplaceGateway />} />
-                <Route path="/send-inventory" element={<SendInventory />} />
+            <Route path="/send-inventory" element={<SendInventory />} />
+            <Route path="/receiving" element={<ReceivingDashboard />} />
                 <Route path="/shipping-overview" element={<ShippingOverview />} />
                 <Route path="/shipping" element={<Shipping />} />
                 <Route path="/analytics" element={<Analytics />} />

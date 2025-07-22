@@ -140,6 +140,48 @@ export type Database = {
         }
         Relationships: []
       }
+      bin_inventory: {
+        Row: {
+          bin_id: string
+          created_at: string
+          id: string
+          last_updated_at: string
+          quantity: number
+          submission_item_id: string
+        }
+        Insert: {
+          bin_id: string
+          created_at?: string
+          id?: string
+          last_updated_at?: string
+          quantity?: number
+          submission_item_id: string
+        }
+        Update: {
+          bin_id?: string
+          created_at?: string
+          id?: string
+          last_updated_at?: string
+          quantity?: number
+          submission_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_bin_inventory_bin"
+            columns: ["bin_id"]
+            isOneToOne: false
+            referencedRelation: "warehouse_bins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_bin_inventory_item"
+            columns: ["submission_item_id"]
+            isOneToOne: false
+            referencedRelation: "submission_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       carrier_configurations: {
         Row: {
           account_number: string | null
@@ -255,6 +297,82 @@ export type Database = {
             columns: ["destination_id"]
             isOneToOne: false
             referencedRelation: "fulfillment_destinations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      item_inspections: {
+        Row: {
+          assigned_bin_id: string | null
+          condition_status: string
+          created_at: string
+          expiration_check_passed: boolean | null
+          id: string
+          inspected_at: string
+          inspected_by_user_id: string
+          label_check_passed: boolean | null
+          notes: string | null
+          packaging_check_passed: boolean | null
+          quality_grade: string | null
+          quantity_expected: number
+          quantity_received: number
+          received_carton_id: string | null
+          submission_item_id: string
+        }
+        Insert: {
+          assigned_bin_id?: string | null
+          condition_status?: string
+          created_at?: string
+          expiration_check_passed?: boolean | null
+          id?: string
+          inspected_at?: string
+          inspected_by_user_id: string
+          label_check_passed?: boolean | null
+          notes?: string | null
+          packaging_check_passed?: boolean | null
+          quality_grade?: string | null
+          quantity_expected: number
+          quantity_received: number
+          received_carton_id?: string | null
+          submission_item_id: string
+        }
+        Update: {
+          assigned_bin_id?: string | null
+          condition_status?: string
+          created_at?: string
+          expiration_check_passed?: boolean | null
+          id?: string
+          inspected_at?: string
+          inspected_by_user_id?: string
+          label_check_passed?: boolean | null
+          notes?: string | null
+          packaging_check_passed?: boolean | null
+          quality_grade?: string | null
+          quantity_expected?: number
+          quantity_received?: number
+          received_carton_id?: string | null
+          submission_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_inspection_bin"
+            columns: ["assigned_bin_id"]
+            isOneToOne: false
+            referencedRelation: "warehouse_bins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_inspection_carton"
+            columns: ["received_carton_id"]
+            isOneToOne: false
+            referencedRelation: "received_cartons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_inspection_item"
+            columns: ["submission_item_id"]
+            isOneToOne: false
+            referencedRelation: "submission_items"
             referencedColumns: ["id"]
           },
         ]
@@ -913,6 +1031,175 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      received_cartons: {
+        Row: {
+          carton_barcode: string
+          condition_status: string
+          created_at: string
+          height_inches: number | null
+          id: string
+          length_inches: number | null
+          receiving_record_id: string
+          scanned_at: string
+          scanned_by_user_id: string
+          weight_lbs: number | null
+          width_inches: number | null
+        }
+        Insert: {
+          carton_barcode: string
+          condition_status?: string
+          created_at?: string
+          height_inches?: number | null
+          id?: string
+          length_inches?: number | null
+          receiving_record_id: string
+          scanned_at?: string
+          scanned_by_user_id: string
+          weight_lbs?: number | null
+          width_inches?: number | null
+        }
+        Update: {
+          carton_barcode?: string
+          condition_status?: string
+          created_at?: string
+          height_inches?: number | null
+          id?: string
+          length_inches?: number | null
+          receiving_record_id?: string
+          scanned_at?: string
+          scanned_by_user_id?: string
+          weight_lbs?: number | null
+          width_inches?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_carton_receiving"
+            columns: ["receiving_record_id"]
+            isOneToOne: false
+            referencedRelation: "receiving_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      receiving_discrepancies: {
+        Row: {
+          actual_quantity: number | null
+          created_at: string
+          description: string
+          discrepancy_type: string
+          expected_quantity: number | null
+          id: string
+          receiving_record_id: string
+          reported_at: string
+          reported_by_user_id: string
+          resolution_notes: string | null
+          resolution_status: string
+          resolved_at: string | null
+          resolved_by_user_id: string | null
+          severity: string
+          submission_item_id: string | null
+        }
+        Insert: {
+          actual_quantity?: number | null
+          created_at?: string
+          description: string
+          discrepancy_type: string
+          expected_quantity?: number | null
+          id?: string
+          receiving_record_id: string
+          reported_at?: string
+          reported_by_user_id: string
+          resolution_notes?: string | null
+          resolution_status?: string
+          resolved_at?: string | null
+          resolved_by_user_id?: string | null
+          severity?: string
+          submission_item_id?: string | null
+        }
+        Update: {
+          actual_quantity?: number | null
+          created_at?: string
+          description?: string
+          discrepancy_type?: string
+          expected_quantity?: number | null
+          id?: string
+          receiving_record_id?: string
+          reported_at?: string
+          reported_by_user_id?: string
+          resolution_notes?: string | null
+          resolution_status?: string
+          resolved_at?: string | null
+          resolved_by_user_id?: string | null
+          severity?: string
+          submission_item_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_discrepancy_item"
+            columns: ["submission_item_id"]
+            isOneToOne: false
+            referencedRelation: "submission_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_discrepancy_receiving"
+            columns: ["receiving_record_id"]
+            isOneToOne: false
+            referencedRelation: "receiving_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      receiving_records: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          received_at: string
+          received_by_user_id: string
+          status: string
+          submission_id: string
+          total_cartons: number | null
+          total_items_expected: number | null
+          total_items_received: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          received_at?: string
+          received_by_user_id: string
+          status?: string
+          submission_id: string
+          total_cartons?: number | null
+          total_items_expected?: number | null
+          total_items_received?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          received_at?: string
+          received_by_user_id?: string
+          status?: string
+          submission_id?: string
+          total_cartons?: number | null
+          total_items_expected?: number | null
+          total_items_received?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_receiving_submission"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       repricing_alerts: {
         Row: {
@@ -1637,6 +1924,48 @@ export type Database = {
           user_id?: string
           vendor_name?: string
           website_url?: string | null
+        }
+        Relationships: []
+      }
+      warehouse_bins: {
+        Row: {
+          aisle_number: number | null
+          bin_code: string
+          bin_type: string
+          created_at: string
+          current_capacity: number | null
+          id: string
+          is_active: boolean
+          max_capacity: number | null
+          shelf_level: number | null
+          updated_at: string
+          zone_name: string
+        }
+        Insert: {
+          aisle_number?: number | null
+          bin_code: string
+          bin_type?: string
+          created_at?: string
+          current_capacity?: number | null
+          id?: string
+          is_active?: boolean
+          max_capacity?: number | null
+          shelf_level?: number | null
+          updated_at?: string
+          zone_name: string
+        }
+        Update: {
+          aisle_number?: number | null
+          bin_code?: string
+          bin_type?: string
+          created_at?: string
+          current_capacity?: number | null
+          id?: string
+          is_active?: boolean
+          max_capacity?: number | null
+          shelf_level?: number | null
+          updated_at?: string
+          zone_name?: string
         }
         Relationships: []
       }
