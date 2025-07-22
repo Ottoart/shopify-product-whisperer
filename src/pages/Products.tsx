@@ -33,6 +33,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { ConnectStoreButton } from "@/components/ConnectStoreButton";
 import { ProductComparison } from "@/components/ProductComparison";
+import { ProductList } from "@/components/ProductList";
 
 interface Product {
   id: string;
@@ -91,6 +92,7 @@ export default function Products() {
   const [showComparison, setShowComparison] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [optimizedData, setOptimizedData] = useState<any>(null);
+  const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (session?.user) {
@@ -339,188 +341,80 @@ export default function Products() {
         </Card>
       )}
 
-      {/* Filters and Search */}
-      {stores.length > 0 && (
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                  <Input
-                    placeholder="Search products by title or SKU..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-              
-              <Select value={selectedStore} onValueChange={setSelectedStore}>
-                <SelectTrigger className="w-full sm:w-48">
-                  <SelectValue placeholder="Filter by store" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Stores</SelectItem>
-                  {stores.map((store) => (
-                    <SelectItem key={store.id} value={store.platform}>
-                      {store.store_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                <SelectTrigger className="w-full sm:w-48">
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="draft">Draft</SelectItem>
-                  <SelectItem value="archived">Archived</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Products Grid */}
+      {/* Products with Advanced Filtering */}
       {stores.length > 0 && (
         <>
-          {filteredProducts.length === 0 ? (
+          {products.length === 0 ? (
             <Card className="text-center py-12">
               <CardContent>
-                <div className="text-muted-foreground mb-4">
-                  {searchTerm ? (
-                    <>
-                      <Search className="w-16 h-16 mx-auto mb-4" />
-                      <h3 className="text-xl font-semibold mb-2">No products found</h3>
-                      <p>Try adjusting your search or filters</p>
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="w-16 h-16 mx-auto mb-4" />
-                      <h3 className="text-xl font-semibold mb-2">No products yet</h3>
-                      <p>Sync your store to import products</p>
-                      <Button 
-                        className="mt-4" 
-                        onClick={() => syncProducts()}
-                        disabled={syncLoading}
-                      >
-                        <Sync className={`w-4 h-4 mr-2 ${syncLoading ? 'animate-spin' : ''}`} />
-                        Sync Products
-                      </Button>
-                    </>
-                  )}
-                </div>
+                <Plus className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+                <h3 className="text-xl font-semibold mb-2">No products yet</h3>
+                <p className="text-muted-foreground mb-4">Sync your store to import products</p>
+                <Button 
+                  onClick={() => syncProducts()}
+                  disabled={syncLoading}
+                >
+                  <Sync className={`w-4 h-4 mr-2 ${syncLoading ? 'animate-spin' : ''}`} />
+                  Sync Products
+                </Button>
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredProducts.map((product) => (
-                <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                  <div className="aspect-video bg-muted relative">
-                    {product.images?.[0] ? (
-                      <img 
-                        src={product.images[0]} 
-                        alt={product.title}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Store className="w-8 h-8 text-muted-foreground" />
-                      </div>
-                    )}
-                    
-                    {product.ai_optimized && (
-                      <Badge className="absolute top-2 left-2 bg-gradient-to-r from-purple-500 to-pink-500">
-                        <Zap className="w-3 h-3 mr-1" />
-                        AI Optimized
-                      </Badge>
-                    )}
-                  </div>
-                  
-                  <CardHeader className="pb-2">
-                    <div className="flex justify-between items-start">
-                      <CardTitle className="text-lg line-clamp-2">
-                        {product.title}
-                      </CardTitle>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => optimizeWithAI(product.id)}>
-                            <Zap className="w-4 h-4 mr-2" />
-                            Optimize with AI
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Edit3 className="w-4 h-4 mr-2" />
-                            Edit Product
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Eye className="w-4 h-4 mr-2" />
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <ExternalLink className="w-4 h-4 mr-2" />
-                            View in Store
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <Badge variant={product.status === 'active' ? 'default' : 'secondary'}>
-                        {product.status}
-                      </Badge>
-                      <Badge variant="outline">
-                        {product.store_platform || 'Unknown'}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  
-                  <CardContent className="pt-0">
-                    <div className="space-y-2 text-sm text-muted-foreground">
-                      {product.sku && (
-                        <div>SKU: {product.sku}</div>
-                      )}
-                      {product.price && (
-                        <div className="font-semibold text-foreground">
-                          ${product.price.toFixed(2)}
-                        </div>
-                      )}
-                      {product.inventory_quantity !== undefined && (
-                        <div>Stock: {product.inventory_quantity} units</div>
-                      )}
-                      {product.last_synced && (
-                        <div className="text-xs">
-                          Synced: {new Date(product.last_synced).toLocaleDateString()}
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="flex gap-2 mt-4">
-                      <Button size="sm" variant="outline" className="flex-1">
-                        <Edit3 className="w-4 h-4 mr-1" />
-                        Edit
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => optimizeWithAI(product.id)}
-                      >
-                        <Zap className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            <Card>
+              <ProductList
+                products={products.map(p => ({
+                  id: p.id,
+                  title: p.title || '',
+                  handle: p.handle,
+                  type: p.product_type || '',
+                  vendor: p.vendor || '',
+                  category: p.category || '',
+                  tags: p.tags || '',
+                  published: p.status === 'active',
+                  option1Name: 'Title',
+                  option1Value: 'Default Title',
+                  variantSku: p.sku || '',
+                  variantGrams: 0,
+                  variantInventoryTracker: 'shopify',
+                  variantInventoryQty: p.inventory_quantity || 0,
+                  variantInventoryPolicy: 'deny',
+                  variantFulfillmentService: 'manual',
+                  variantPrice: p.price || 0,
+                  variantCompareAtPrice: 0,
+                  variantRequiresShipping: true,
+                  variantTaxable: true,
+                  variantBarcode: '',
+                  imagePosition: 1,
+                  imageSrc: p.images?.[0] || '',
+                  bodyHtml: p.body_html || '',
+                  seoTitle: p.title || '',
+                  seoDescription: '',
+                  googleShoppingCondition: p.google_shopping_condition || 'new',
+                  googleShoppingGender: p.google_shopping_gender || 'unisex',
+                  googleShoppingAgeGroup: p.google_shopping_age_group || 'adult',
+                  updatedAt: p.updated_at || '',
+                  shopifySyncStatus: p.shopify_sync_status,
+                  shopifySyncedAt: p.shopify_synced_at
+                }))}
+                selectedProducts={selectedProducts}
+                onSelectionChange={setSelectedProducts}
+                onAddToQueue={(productIds) => {
+                  toast({
+                    title: "Products added to queue",
+                    description: `${productIds.length} products added to optimization queue`,
+                  });
+                }}
+                onProductsUpdated={fetchProducts}
+                onProductUpdated={(productId, updatedData) => {
+                  toast({
+                    title: "Product updated",
+                    description: "Product has been successfully updated",
+                  });
+                  fetchProducts();
+                }}
+                storeUrl={stores.find(s => s.platform === 'shopify')?.domain || ''}
+              />
+            </Card>
           )}
         </>
       )}
