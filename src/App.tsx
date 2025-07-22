@@ -49,7 +49,15 @@ import RepricingFeatures from "./pages/RepricingFeatures";
 import RepricingPricing from "./pages/RepricingPricing";
 import AdminDashboard from "./pages/AdminDashboard";
 
-const queryClient = new QueryClient();
+// Create query client outside component to prevent recreating
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      retry: 1,
+    },
+  },
+});
 
 // Protected route component that requires authentication
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -147,18 +155,18 @@ const AppContent = () => {
   );
 };
 
-const App = () => {
+function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <SessionContextProvider supabaseClient={supabase}>
-        <TooltipProvider delayDuration={0}>
+    <TooltipProvider delayDuration={0}>
+      <QueryClientProvider client={queryClient}>
+        <SessionContextProvider supabaseClient={supabase}>
           <AppContent />
-          <Toaster />
-          <Sonner />
-        </TooltipProvider>
-      </SessionContextProvider>
-    </QueryClientProvider>
+        </SessionContextProvider>
+      </QueryClientProvider>
+      <Toaster />
+      <Sonner />
+    </TooltipProvider>
   );
-};
+}
 
 export default App;
