@@ -1,7 +1,7 @@
 // Central domain configuration
 export const DOMAINS = {
   // Main production domain for user-facing URLs
-  PRODUCTION: 'https://prohair.ca',
+  PRODUCTION: 'https://prepfox.ca',
   
   // Supabase backend URLs (keep unchanged)
   SUPABASE_URL: 'https://rtaomiqsnctigleqjojt.supabase.co',

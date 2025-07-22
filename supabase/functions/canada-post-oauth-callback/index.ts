@@ -123,8 +123,8 @@ serve(async (req) => {
 
     console.log(`Canada Post OAuth callback completed for user ${userId}`);
 
-    // Redirect back to ProHair domain
-    const redirectUrl = `https://prohair.ca/settings?tab=carriers&canada-post=authorized`;
+    // Redirect back to PrepFox domain
+    const redirectUrl = `https://prepfox.ca/settings?tab=carriers&canada-post=authorized`;
 
     return new Response(null, {
       status: 302,

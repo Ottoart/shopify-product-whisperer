@@ -67,8 +67,8 @@ serve(async (req) => {
       );
     }
 
-    // Use ProHair domain for callback
-    const callbackUrl = `https://prohair.ca/canada-post-oauth-callback`;
+    // Use PrepFox domain for callback
+    const callbackUrl = `https://prepfox.ca/canada-post-oauth-callback`;
 
     // Canada Post login URL (matches ShipStation's exact approach)
     const canadaPostOAuthUrl = `https://sso-osu.canadapost-postescanada.ca/lfe-cap/en/login?` +
