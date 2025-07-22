@@ -52,6 +52,16 @@ const mainItems = [
   { title: "AI Learning Dashboard", url: "/ai-dashboard", icon: BarChart3, description: "Analytics and insights" },
 ];
 
+const fulfillmentItems = [
+  { title: "Send Inventory", url: "/send-inventory", icon: Warehouse, description: "Create fulfillment submissions" },
+  { title: "Receiving", url: "/receiving", icon: CheckCircle, description: "Warehouse receiving dashboard" },
+  { title: "Inventory Management", url: "/inventory-management", icon: Package, description: "Manage warehouse inventory" },
+  { title: "Order Fulfillment", url: "/fulfillment", icon: Target, description: "Pick, pack, and ship orders" },
+  { title: "Packing & Shipping", url: "/packing", icon: Package, description: "Pack orders and manage shipments" },
+  { title: "Customer Portal", url: "/customer-portal", icon: Users, description: "Customer account management" },
+  { title: "Customer Tracking", url: "/customer-tracking", icon: MapPin, description: "Public order tracking" },
+];
+
 const shopifyItems = [
   { title: "Shopify Integration", url: "/shopify-integration", icon: Zap, description: "Connect and manage Shopify" },
   { title: "Sync Status", url: "/sync-status", icon: Database, description: "Monitor sync operations" },
@@ -81,14 +91,6 @@ const shippingItems = [
 const settingsItems = [
   { title: "Store Config", url: "/settings", icon: Settings, description: "Configure store settings" },
   { title: "Carriers", url: "/carriers", icon: Truck, description: "Manage shipping carriers" },
-  // Fulfillment by PrepFox
-  { title: "Send Inventory", url: "/send-inventory", icon: Warehouse, description: "Create fulfillment submissions" },
-  { title: "Receiving", url: "/receiving", icon: CheckCircle, description: "Warehouse receiving dashboard" },
-  { title: "Inventory Management", url: "/inventory-management", icon: Package, description: "Manage warehouse inventory" },
-  { title: "Order Fulfillment", url: "/fulfillment", icon: Target, description: "Pick, pack, and ship orders" },
-  { title: "Packing & Shipping", url: "/packing", icon: Package, description: "Pack orders and manage shipments" },
-  { title: "Customer Portal", url: "/customer-portal", icon: Users, description: "Customer account management" },
-  { title: "Customer Tracking", url: "/customer-tracking", icon: MapPin, description: "Public order tracking" },
 ];
 
 export function AppSidebar() {
@@ -188,6 +190,37 @@ export function AppSidebar() {
                     <NavLink 
                       to={item.url} 
                       end={item.url === "/"}
+                      className={getNavCls}
+                      title={collapsed ? item.description : undefined}
+                      >
+                        <item.icon className="h-4 w-4 flex-shrink-0" />
+                        <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col transition-all duration-300 overflow-hidden`}>
+                          <span className="whitespace-nowrap">{item.title}</span>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">{item.description}</span>
+                        </div>
+                      </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Fulfillment by PrepFox */}
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-primary">
+            <Target className="h-4 w-4 mr-2" />
+            <span className={`${collapsed ? "group-hover:inline hidden" : "inline"} transition-all duration-300`}>
+              Fulfillment by PrepFox
+            </span>
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {fulfillmentItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink 
+                      to={item.url} 
                       className={getNavCls}
                       title={collapsed ? item.description : undefined}
                       >
