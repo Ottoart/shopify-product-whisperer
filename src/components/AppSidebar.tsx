@@ -50,6 +50,7 @@ const mainItems = [
   { title: "Products", url: "/", icon: Package, description: "Manage your product catalog" },
   { title: "Send Inventory", url: "/send-inventory", icon: Warehouse, description: "Create fulfillment submissions" },
   { title: "Receiving", url: "/receiving", icon: CheckCircle, description: "Warehouse receiving dashboard" },
+  { title: "Inventory", url: "/inventory-management", icon: Package, description: "Manage warehouse inventory" },
   { title: "PrepFox Dashboard", url: "/dashboard", icon: TrendingUp, description: "Modules & subscriptions pricing" },
   { title: "AI Learning Dashboard", url: "/ai-dashboard", icon: BarChart3, description: "Analytics and insights" },
 ];

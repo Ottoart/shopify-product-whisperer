@@ -251,6 +251,78 @@ export type Database = {
         }
         Relationships: []
       }
+      inventory_adjustments: {
+        Row: {
+          adjusted_at: string
+          adjusted_by_user_id: string
+          adjustment_quantity: number
+          bin_id: string
+          created_at: string
+          id: string
+          reason: string
+          submission_item_id: string
+        }
+        Insert: {
+          adjusted_at?: string
+          adjusted_by_user_id: string
+          adjustment_quantity: number
+          bin_id: string
+          created_at?: string
+          id?: string
+          reason: string
+          submission_item_id: string
+        }
+        Update: {
+          adjusted_at?: string
+          adjusted_by_user_id?: string
+          adjustment_quantity?: number
+          bin_id?: string
+          created_at?: string
+          id?: string
+          reason?: string
+          submission_item_id?: string
+        }
+        Relationships: []
+      }
+      inventory_movements: {
+        Row: {
+          created_at: string
+          from_bin_id: string | null
+          id: string
+          moved_at: string
+          moved_by_user_id: string
+          movement_type: string
+          quantity: number
+          reason: string | null
+          submission_item_id: string
+          to_bin_id: string
+        }
+        Insert: {
+          created_at?: string
+          from_bin_id?: string | null
+          id?: string
+          moved_at?: string
+          moved_by_user_id: string
+          movement_type?: string
+          quantity: number
+          reason?: string | null
+          submission_item_id: string
+          to_bin_id: string
+        }
+        Update: {
+          created_at?: string
+          from_bin_id?: string | null
+          id?: string
+          moved_at?: string
+          moved_by_user_id?: string
+          movement_type?: string
+          quantity?: number
+          reason?: string | null
+          submission_item_id?: string
+          to_bin_id?: string
+        }
+        Relationships: []
+      }
       inventory_submissions: {
         Row: {
           created_at: string
@@ -376,6 +448,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      low_stock_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by_user_id: string | null
+          alert_level: string
+          created_at: string
+          current_quantity: number
+          id: string
+          is_acknowledged: boolean
+          submission_item_id: string
+          threshold_quantity: number
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by_user_id?: string | null
+          alert_level?: string
+          created_at?: string
+          current_quantity: number
+          id?: string
+          is_acknowledged?: boolean
+          submission_item_id: string
+          threshold_quantity: number
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by_user_id?: string | null
+          alert_level?: string
+          created_at?: string
+          current_quantity?: number
+          id?: string
+          is_acknowledged?: boolean
+          submission_item_id?: string
+          threshold_quantity?: number
+        }
+        Relationships: []
       }
       marketplace_configurations: {
         Row: {
@@ -2010,7 +2118,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      check_low_stock: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
