@@ -101,8 +101,7 @@ const LandingPage = () => {
           
           <div className="hidden md:flex items-center space-x-8">
             <Link to="/features" className="text-muted-foreground hover:text-foreground transition-colors">Features</Link>
-            <Link to="/shipping-landing" className="text-muted-foreground hover:text-foreground transition-colors">Shipping</Link>
-            <Link to="/repricing-landing" className="text-muted-foreground hover:text-foreground transition-colors">Repricing</Link>
+            <Link to="/about-us" className="text-muted-foreground hover:text-foreground transition-colors">About</Link>
             <Link to="/pricing" className="text-muted-foreground hover:text-foreground transition-colors">Pricing</Link>
             <Link to="/resources" className="text-muted-foreground hover:text-foreground transition-colors">Resources</Link>
           </div>
@@ -195,12 +194,7 @@ const LandingPage = () => {
                       </div>
                       <div className="mt-4">
                         <Button variant="ghost" className="text-primary p-0 hover:bg-transparent hover:text-primary/90" asChild>
-                          <Link to={
-                            index === 0 ? "/shipping-landing" : 
-                            index === 1 ? "/repricing-landing" : 
-                            index === 2 ? "/fulfillment" :
-                            "/marketplace-gateway"
-                          }>
+                          <Link to="/auth">
                             Learn more <ArrowRight className="ml-1 h-4 w-4" />
                           </Link>
                         </Button>
