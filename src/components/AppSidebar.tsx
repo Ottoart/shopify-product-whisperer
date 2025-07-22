@@ -81,11 +81,8 @@ const shippingItems = [
   { title: "Rate Calculator", url: "/shipping/rates", icon: Calculator, description: "Calculate shipping costs" },
 ];
 
-const storeIntegrationItems = [
+const settingsItems = [
   { title: "Store Management", url: "/settings", icon: Store, description: "Manage stores, connections, and integrations" },
-];
-
-const carrierItems = [
   { title: "Carriers", url: "/carriers", icon: Truck, description: "Manage shipping carriers" },
 ];
 
@@ -436,48 +433,17 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Store Integration */}
+        {/* Settings */}
         <SidebarGroup>
           <SidebarGroupLabel className="text-primary">
-            <Store className="h-4 w-4 mr-2" />
+            <Settings className="h-4 w-4 mr-2" />
             <span className={`${collapsed ? "group-hover:inline hidden" : "inline"} transition-all duration-300`}>
-              Store Integration
+              Settings
             </span>
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {storeIntegrationItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink 
-                      to={item.url} 
-                      className={getNavCls}
-                      title={collapsed ? item.description : undefined}
-                      >
-                        <item.icon className="h-4 w-4 flex-shrink-0" />
-                        <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col transition-all duration-300 overflow-hidden`}>
-                          <span className="whitespace-nowrap">{item.title}</span>
-                          <span className="text-xs text-muted-foreground whitespace-nowrap">{item.description}</span>
-                        </div>
-                      </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Carriers */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-primary">
-            <Truck className="h-4 w-4 mr-2" />
-            <span className={`${collapsed ? "group-hover:inline hidden" : "inline"} transition-all duration-300`}>
-              Carriers
-            </span>
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {carrierItems.map((item) => (
+              {settingsItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink 
