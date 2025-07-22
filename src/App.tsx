@@ -44,6 +44,9 @@ import ShippingFeatures from "./pages/ShippingFeatures";
 import ShippingPricing from "./pages/ShippingPricing";
 import ShippingIntegrations from "./pages/ShippingIntegrations";
 import ShippingResources from "./pages/ShippingResources";
+import RepricingLanding from "./pages/RepricingLanding";
+import RepricingFeatures from "./pages/RepricingFeatures";
+import RepricingPricing from "./pages/RepricingPricing";
 
 const queryClient = new QueryClient();
 
@@ -86,6 +89,9 @@ const AppContent = () => {
                 <Route path="/bulk-editor" element={<BulkEditor />} />
                 <Route path="/shopify-integration" element={<ShopifyIntegration />} />
                 <Route path="/repricing" element={<Repricing />} />
+                <Route path="/repricing-landing" element={<RepricingLanding />} />
+                <Route path="/repricing/features" element={<RepricingFeatures />} />
+                <Route path="/repricing/pricing" element={<RepricingPricing />} />
                 <Route path="/repricing-dashboard" element={<Repricing />} />
                 <Route path="/strategies" element={<Strategies />} />
                 <Route path="/inventory" element={<Inventory />} />
