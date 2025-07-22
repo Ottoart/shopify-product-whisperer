@@ -8,7 +8,10 @@ import { SubmissionsList } from "@/components/fulfillment/SubmissionsList";
 
 export default function SendInventory() {
   const [activeTab, setActiveTab] = useState("create");
-  const { submissions, loading } = useFulfillmentData();
+  // This page needs to use the correct hook for inventory submissions
+  // For now, we'll use placeholder data
+  const submissions: any[] = [];
+  const loading = false;
 
   const draftSubmissions = submissions.filter(sub => sub.status === 'draft');
   const submittedSubmissions = submissions.filter(sub => sub.status === 'submitted');

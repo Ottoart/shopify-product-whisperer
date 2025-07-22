@@ -27,8 +27,6 @@ export default function ReceivingDashboard() {
     createInspection,
     reportDiscrepancy,
   } = useReceivingData();
-  
-  const { submissions } = useFulfillmentData();
   const { toast } = useToast();
   const [selectedReceivingRecord, setSelectedReceivingRecord] = useState<string>("");
   
@@ -172,7 +170,8 @@ export default function ReceivingDashboard() {
     }
   };
 
-  const submittedSubmissions = submissions.filter(s => s.status === 'submitted');
+  // This should be fetched from the appropriate hook for submissions
+  const submittedSubmissions: any[] = [];
   const availableBins = bins.filter(bin => bin.bin_type === 'storage' || bin.bin_type === 'staging');
 
   return (

@@ -34,6 +34,7 @@ import { CustomerTrackingPage as CustomerTracking } from "./pages/CustomerTracki
 import SendInventory from "./pages/SendInventory";
 import ReceivingDashboard from "./pages/ReceivingDashboard";
 import InventoryDashboard from "./pages/InventoryDashboard";
+import FulfillmentDashboard from "./pages/FulfillmentDashboard";
 
 const queryClient = new QueryClient();
 
@@ -61,6 +62,7 @@ const AppContent = () => {
         <Route path="/send-inventory" element={<SendInventory />} />
         <Route path="/receiving" element={<ReceivingDashboard />} />
         <Route path="/inventory-management" element={<InventoryDashboard />} />
+        <Route path="/fulfillment" element={<FulfillmentDashboard />} />
                 <Route path="/shipping-overview" element={<ShippingOverview />} />
                 <Route path="/shipping" element={<Shipping />} />
                 <Route path="/analytics" element={<Analytics />} />

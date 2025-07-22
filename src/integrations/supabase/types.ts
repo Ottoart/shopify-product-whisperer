@@ -251,6 +251,57 @@ export type Database = {
         }
         Relationships: []
       }
+      fulfillment_orders: {
+        Row: {
+          assigned_picker_id: string | null
+          created_at: string
+          estimated_pick_time_minutes: number | null
+          id: string
+          order_id: string
+          pack_completed_at: string | null
+          pack_started_at: string | null
+          pick_completed_at: string | null
+          pick_started_at: string | null
+          priority_level: number
+          special_instructions: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_picker_id?: string | null
+          created_at?: string
+          estimated_pick_time_minutes?: number | null
+          id?: string
+          order_id: string
+          pack_completed_at?: string | null
+          pack_started_at?: string | null
+          pick_completed_at?: string | null
+          pick_started_at?: string | null
+          priority_level?: number
+          special_instructions?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_picker_id?: string | null
+          created_at?: string
+          estimated_pick_time_minutes?: number | null
+          id?: string
+          order_id?: string
+          pack_completed_at?: string | null
+          pack_started_at?: string | null
+          pick_completed_at?: string | null
+          pick_started_at?: string | null
+          priority_level?: number
+          special_instructions?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       inventory_adjustments: {
         Row: {
           adjusted_at: string
@@ -281,6 +332,57 @@ export type Database = {
           id?: string
           reason?: string
           submission_item_id?: string
+        }
+        Relationships: []
+      }
+      inventory_allocations: {
+        Row: {
+          allocated_at: string
+          allocation_priority: number | null
+          bin_id: string
+          created_at: string
+          expires_at: string | null
+          fulfillment_order_id: string
+          id: string
+          notes: string | null
+          quantity_allocated: number
+          quantity_picked: number | null
+          status: string
+          submission_item_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          allocated_at?: string
+          allocation_priority?: number | null
+          bin_id: string
+          created_at?: string
+          expires_at?: string | null
+          fulfillment_order_id: string
+          id?: string
+          notes?: string | null
+          quantity_allocated: number
+          quantity_picked?: number | null
+          status?: string
+          submission_item_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          allocated_at?: string
+          allocation_priority?: number | null
+          bin_id?: string
+          created_at?: string
+          expires_at?: string | null
+          fulfillment_order_id?: string
+          id?: string
+          notes?: string | null
+          quantity_allocated?: number
+          quantity_picked?: number | null
+          status?: string
+          submission_item_id?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -785,6 +887,165 @@ export type Database = {
           profit_margin?: number | null
           total_orders?: number | null
           total_revenue?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      pick_items: {
+        Row: {
+          bin_id: string
+          created_at: string
+          fulfillment_order_id: string
+          id: string
+          location_path: string | null
+          notes: string | null
+          pick_list_id: string
+          pick_sequence: number
+          picked_at: string | null
+          picked_by_user_id: string | null
+          quantity_picked: number | null
+          quantity_requested: number
+          status: string
+          submission_item_id: string
+          updated_at: string
+        }
+        Insert: {
+          bin_id: string
+          created_at?: string
+          fulfillment_order_id: string
+          id?: string
+          location_path?: string | null
+          notes?: string | null
+          pick_list_id: string
+          pick_sequence?: number
+          picked_at?: string | null
+          picked_by_user_id?: string | null
+          quantity_picked?: number | null
+          quantity_requested: number
+          status?: string
+          submission_item_id: string
+          updated_at?: string
+        }
+        Update: {
+          bin_id?: string
+          created_at?: string
+          fulfillment_order_id?: string
+          id?: string
+          location_path?: string | null
+          notes?: string | null
+          pick_list_id?: string
+          pick_sequence?: number
+          picked_at?: string | null
+          picked_by_user_id?: string | null
+          quantity_picked?: number | null
+          quantity_requested?: number
+          status?: string
+          submission_item_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pick_lists: {
+        Row: {
+          assigned_picker_id: string | null
+          completed_at: string | null
+          created_at: string
+          estimated_time_minutes: number | null
+          id: string
+          list_name: string
+          notes: string | null
+          optimized_path: Json | null
+          pick_session_id: string | null
+          started_at: string | null
+          status: string
+          total_items: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_picker_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          estimated_time_minutes?: number | null
+          id?: string
+          list_name: string
+          notes?: string | null
+          optimized_path?: Json | null
+          pick_session_id?: string | null
+          started_at?: string | null
+          status?: string
+          total_items?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_picker_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          estimated_time_minutes?: number | null
+          id?: string
+          list_name?: string
+          notes?: string | null
+          optimized_path?: Json | null
+          pick_session_id?: string | null
+          started_at?: string | null
+          status?: string
+          total_items?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      pick_sessions: {
+        Row: {
+          assigned_picker_id: string | null
+          completed_at: string | null
+          created_at: string
+          efficiency_score: number | null
+          id: string
+          notes: string | null
+          session_name: string
+          session_type: string
+          started_at: string | null
+          status: string
+          total_items: number
+          total_orders: number
+          total_pick_lists: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_picker_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          efficiency_score?: number | null
+          id?: string
+          notes?: string | null
+          session_name: string
+          session_type?: string
+          started_at?: string | null
+          status?: string
+          total_items?: number
+          total_orders?: number
+          total_pick_lists?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_picker_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          efficiency_score?: number | null
+          id?: string
+          notes?: string | null
+          session_name?: string
+          session_type?: string
+          started_at?: string | null
+          status?: string
+          total_items?: number
+          total_orders?: number
+          total_pick_lists?: number
           updated_at?: string
           user_id?: string
         }
