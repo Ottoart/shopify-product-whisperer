@@ -166,8 +166,32 @@ export default function Products() {
 
   const optimizeWithAI = async (productId: string) => {
     try {
+      // Find the product in our current list
+      const product = products.find(p => p.id === productId);
+      if (!product) {
+        throw new Error('Product not found');
+      }
+
+      // Prepare product data for AI optimization
+      const productData = {
+        title: product.title || '',
+        type: product.product_type || '',
+        description: product.body_html || '',
+        tags: product.tags || '',
+        vendor: product.vendor || '',
+        variant_price: product.price || 0,
+        variant_compare_at_price: 0,
+        variant_sku: product.sku || '',
+        variant_barcode: '',
+        variant_grams: 0,
+      };
+
       const { error } = await supabase.functions.invoke('ai-optimize-product', {
-        body: { productId }
+        body: { 
+          productHandle: product.handle,
+          productData,
+          useDirectAI: true
+        }
       });
 
       if (error) throw error;
