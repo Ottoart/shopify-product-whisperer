@@ -39,6 +39,11 @@ import PackingDashboard from "./pages/PackingDashboard";
 import AuthPage from "./pages/AuthPage";
 import CustomerPortal from "./pages/CustomerPortal";
 import LandingPage from "./pages/LandingPage";
+import ShippingLanding from "./pages/ShippingLanding";
+import ShippingFeatures from "./pages/ShippingFeatures";
+import ShippingPricing from "./pages/ShippingPricing";
+import ShippingIntegrations from "./pages/ShippingIntegrations";
+import ShippingResources from "./pages/ShippingResources";
 
 const queryClient = new QueryClient();
 
@@ -60,6 +65,11 @@ const AppContent = () => {
             <main className="flex-1 overflow-auto">
               <Routes>
                 <Route path="/" element={<LandingPage />} />
+                <Route path="/shipping-landing" element={<ShippingLanding />} />
+                <Route path="/shipping-features" element={<ShippingFeatures />} />
+                <Route path="/shipping-pricing" element={<ShippingPricing />} />
+                <Route path="/shipping-integrations" element={<ShippingIntegrations />} />
+                <Route path="/shipping-resources" element={<ShippingResources />} />
                 <Route path="/app" element={<Index />} />
                 <Route path="/dashboard" element={<PrepFoxDashboard />} />
                 
