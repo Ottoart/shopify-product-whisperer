@@ -36,6 +36,8 @@ import ReceivingDashboard from "./pages/ReceivingDashboard";
 import InventoryDashboard from "./pages/InventoryDashboard";
 import FulfillmentDashboard from "./pages/FulfillmentDashboard";
 import PackingDashboard from "./pages/PackingDashboard";
+import AuthPage from "./pages/AuthPage";
+import CustomerPortal from "./pages/CustomerPortal";
 
 const queryClient = new QueryClient();
 

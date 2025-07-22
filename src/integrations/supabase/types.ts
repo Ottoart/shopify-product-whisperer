@@ -224,6 +224,132 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_addresses: {
+        Row: {
+          address_line1: string
+          address_line2: string | null
+          address_type: string
+          city: string
+          company: string | null
+          country: string
+          created_at: string
+          first_name: string
+          id: string
+          is_default: boolean | null
+          last_name: string
+          phone: string | null
+          postal_code: string
+          state: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address_line1: string
+          address_line2?: string | null
+          address_type?: string
+          city: string
+          company?: string | null
+          country?: string
+          created_at?: string
+          first_name: string
+          id?: string
+          is_default?: boolean | null
+          last_name: string
+          phone?: string | null
+          postal_code: string
+          state: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address_line1?: string
+          address_line2?: string | null
+          address_type?: string
+          city?: string
+          company?: string | null
+          country?: string
+          created_at?: string
+          first_name?: string
+          id?: string
+          is_default?: boolean | null
+          last_name?: string
+          phone?: string | null
+          postal_code?: string
+          state?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      customer_profiles: {
+        Row: {
+          company_name: string | null
+          created_at: string
+          first_name: string | null
+          id: string
+          last_name: string | null
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company_name?: string | null
+          created_at?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company_name?: string | null
+          created_at?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      delivery_preferences: {
+        Row: {
+          created_at: string
+          delivery_instructions: string | null
+          id: string
+          notification_preferences: Json | null
+          preferred_delivery_time: string | null
+          safe_place_instructions: string | null
+          signature_required: boolean | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          delivery_instructions?: string | null
+          id?: string
+          notification_preferences?: Json | null
+          preferred_delivery_time?: string | null
+          safe_place_instructions?: string | null
+          signature_required?: boolean | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          delivery_instructions?: string | null
+          id?: string
+          notification_preferences?: Json | null
+          preferred_delivery_time?: string | null
+          safe_place_instructions?: string | null
+          signature_required?: boolean | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       fulfillment_destinations: {
         Row: {
           code: string
@@ -676,6 +802,53 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      order_feedback: {
+        Row: {
+          created_at: string
+          delivery_experience: string | null
+          delivery_rating: number | null
+          feedback_text: string | null
+          id: string
+          order_id: string
+          package_id: string | null
+          rating: number | null
+          user_id: string | null
+          would_recommend: boolean | null
+        }
+        Insert: {
+          created_at?: string
+          delivery_experience?: string | null
+          delivery_rating?: number | null
+          feedback_text?: string | null
+          id?: string
+          order_id: string
+          package_id?: string | null
+          rating?: number | null
+          user_id?: string | null
+          would_recommend?: boolean | null
+        }
+        Update: {
+          created_at?: string
+          delivery_experience?: string | null
+          delivery_rating?: number | null
+          feedback_text?: string | null
+          id?: string
+          order_id?: string
+          package_id?: string | null
+          rating?: number | null
+          user_id?: string | null
+          would_recommend?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_feedback_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       order_items: {
         Row: {
@@ -1608,6 +1781,53 @@ export type Database = {
         }
         Relationships: []
       }
+      public_tracking: {
+        Row: {
+          created_at: string
+          customer_email: string | null
+          estimated_delivery: string | null
+          id: string
+          order_number: string | null
+          package_id: string | null
+          status: string
+          tracking_events: Json | null
+          tracking_number: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_email?: string | null
+          estimated_delivery?: string | null
+          id?: string
+          order_number?: string | null
+          package_id?: string | null
+          status?: string
+          tracking_events?: Json | null
+          tracking_number: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_email?: string | null
+          estimated_delivery?: string | null
+          id?: string
+          order_number?: string | null
+          package_id?: string | null
+          status?: string
+          tracking_events?: Json | null
+          tracking_number?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "public_tracking_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       received_cartons: {
         Row: {
           carton_barcode: string
@@ -2507,6 +2727,89 @@ export type Database = {
           },
         ]
       }
+      support_tickets: {
+        Row: {
+          assigned_to: string | null
+          category: string
+          created_at: string
+          customer_email: string | null
+          customer_name: string | null
+          description: string
+          id: string
+          priority: string
+          status: string
+          subject: string
+          ticket_number: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          category?: string
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          description: string
+          id?: string
+          priority?: string
+          status?: string
+          subject: string
+          ticket_number: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          category?: string
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          description?: string
+          id?: string
+          priority?: string
+          status?: string
+          subject?: string
+          ticket_number?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      ticket_messages: {
+        Row: {
+          created_at: string
+          id: string
+          is_internal: boolean | null
+          message_text: string
+          ticket_id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_internal?: boolean | null
+          message_text: string
+          ticket_id: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_internal?: boolean | null
+          message_text?: string
+          ticket_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tracking_events: {
         Row: {
           carrier: string
@@ -2708,6 +3011,10 @@ export type Database = {
         Returns: undefined
       }
       generate_rma_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_ticket_number: {
         Args: Record<PropertyKey, never>
         Returns: string
       }
