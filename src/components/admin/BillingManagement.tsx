@@ -15,12 +15,12 @@ import { CreditCard, DollarSign, Calendar, Building2 } from "lucide-react";
 interface BillingInfo {
   id: string;
   company_id: string;
-  subscription_id: string;
-  status: string;
+  plan_name: string;
   plan_price: number;
+  status: string;
   billing_interval: string;
-  current_period_end: string | null;
-  current_period_start: string | null;
+  current_period_start: string;
+  current_period_end: string;
   created_at: string;
   companies: {
     name: string;
@@ -32,10 +32,9 @@ export const BillingManagement = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newBilling, setNewBilling] = useState({
     company_id: "",
-    subscription_id: "",
-    amount: "",
-    billing_cycle: "monthly",
-    currency: "USD"
+    plan_name: "",
+    plan_price: "",
+    billing_interval: "monthly"
   });
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -79,11 +78,10 @@ export const BillingManagement = () => {
         .from("billing_subscriptions")
         .insert([{
           company_id: billingData.company_id,
-          subscription_id: billingData.subscription_id,
-          plan_price: parseFloat(billingData.amount),
-          billing_interval: billingData.billing_cycle,
-          status: "active",
-          plan_name: "Admin Created Plan"
+          plan_name: billingData.plan_name,
+          plan_price: parseFloat(billingData.plan_price),
+          billing_interval: billingData.billing_interval,
+          status: "active"
         }])
         .select()
         .single();
@@ -93,7 +91,7 @@ export const BillingManagement = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-billing"] });
       setIsCreateDialogOpen(false);
-      setNewBilling({ company_id: "", subscription_id: "", amount: "", billing_cycle: "monthly", currency: "USD" });
+      setNewBilling({ company_id: "", plan_name: "", plan_price: "", billing_interval: "monthly" });
       toast({ title: "Billing information created successfully" });
     },
     onError: (error: any) => {
@@ -185,31 +183,29 @@ export const BillingManagement = () => {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="subscription_id">Subscription ID</Label>
+                  <Label htmlFor="plan_name">Plan Name</Label>
                   <Input
-                    id="subscription_id"
-                    value={newBilling.subscription_id}
-                    onChange={(e) => setNewBilling(prev => ({ ...prev, subscription_id: e.target.value }))}
-                    placeholder="sub_1234567890"
+                    id="plan_name"
+                    value={newBilling.plan_name}
+                    onChange={(e) => setNewBilling(prev => ({ ...prev, plan_name: e.target.value }))}
+                    placeholder="Professional Plan"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="currency">Currency</Label>
-                    <Select value={newBilling.currency} onValueChange={(value) => setNewBilling(prev => ({ ...prev, currency: value }))}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="USD">USD</SelectItem>
-                        <SelectItem value="CAD">CAD</SelectItem>
-                        <SelectItem value="EUR">EUR</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label htmlFor="plan_price">Plan Price</Label>
+                    <Input
+                      id="plan_price"
+                      type="number"
+                      step="0.01"
+                      value={newBilling.plan_price}
+                      onChange={(e) => setNewBilling(prev => ({ ...prev, plan_price: e.target.value }))}
+                      placeholder="99.99"
+                    />
                   </div>
                   <div>
-                    <Label htmlFor="billing_cycle">Billing Cycle</Label>
-                    <Select value={newBilling.billing_cycle} onValueChange={(value) => setNewBilling(prev => ({ ...prev, billing_cycle: value }))}>
+                    <Label htmlFor="billing_interval">Billing Interval</Label>
+                    <Select value={newBilling.billing_interval} onValueChange={(value) => setNewBilling(prev => ({ ...prev, billing_interval: value }))}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -227,8 +223,8 @@ export const BillingManagement = () => {
                     id="amount"
                     type="number"
                     step="0.01"
-                    value={newBilling.amount}
-                    onChange={(e) => setNewBilling(prev => ({ ...prev, amount: e.target.value }))}
+                    value={newBilling.plan_price}
+                    onChange={(e) => setNewBilling(prev => ({ ...prev, plan_price: e.target.value }))}
                     placeholder="99.99"
                   />
                 </div>
@@ -236,7 +232,7 @@ export const BillingManagement = () => {
               <DialogFooter>
                 <Button
                   onClick={handleCreateBilling}
-                  disabled={createBillingMutation.isPending || !newBilling.company_id || !newBilling.subscription_id || !newBilling.amount}
+                  disabled={createBillingMutation.isPending || !newBilling.company_id || !newBilling.plan_name || !newBilling.plan_price}
                 >
                   {createBillingMutation.isPending ? "Creating..." : "Create Billing"}
                 </Button>
@@ -253,12 +249,12 @@ export const BillingManagement = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Company</TableHead>
-                <TableHead>Subscription</TableHead>
-                <TableHead>Currency</TableHead>
+                <TableHead>Plan</TableHead>
+                <TableHead>Price</TableHead>
                 <TableHead>Amount</TableHead>
-                <TableHead>Cycle</TableHead>
+                <TableHead>Interval</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Next Billing</TableHead>
+                <TableHead>Period End</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -271,24 +267,20 @@ export const BillingManagement = () => {
                       <span>{billing.companies.name}</span>
                     </div>
                   </TableCell>
+                  <TableCell>{billing.plan_name}</TableCell>
                   <TableCell>
-                    <code className="text-sm bg-muted px-1 py-0.5 rounded">
-                      {billing.subscription_id}
-                    </code>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{billing.currency}</Badge>
+                    <Badge variant="outline">${billing.plan_price}</Badge>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-1">
                       <DollarSign className="w-4 h-4" />
-                      <span>{formatCurrency(billing.amount)}</span>
+                      <span>{formatCurrency(billing.plan_price)}</span>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-1">
                       <Calendar className="w-4 h-4" />
-                      <span>{billing.billing_cycle}</span>
+                      <span>{billing.billing_interval}</span>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -297,8 +289,8 @@ export const BillingManagement = () => {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {billing.next_billing_date 
-                      ? new Date(billing.next_billing_date).toLocaleDateString()
+                    {billing.current_period_end 
+                      ? new Date(billing.current_period_end).toLocaleDateString()
                       : "—"
                     }
                   </TableCell>

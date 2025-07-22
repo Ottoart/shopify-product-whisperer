@@ -20,6 +20,10 @@ import {
   Settings
 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AdminUserManagement } from "@/components/admin/AdminUserManagement";
+import { CompanyManagement } from "@/components/admin/CompanyManagement";
+import { BillingManagement } from "@/components/admin/BillingManagement";
+import { SystemLogs } from "@/components/admin/SystemLogs";
 
 interface AdminUser {
   id: string;
@@ -325,149 +329,19 @@ export default function AdminDashboard() {
         </TabsList>
 
         <TabsContent value="users" className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold">Admin Users</h2>
-            {isMasterAdmin && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create Admin User
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Create New Admin User</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Create a new admin user with specified role and permissions.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={newAdminForm.email}
-                        onChange={(e) => setNewAdminForm({...newAdminForm, email: e.target.value})}
-                        placeholder="admin@prepfox.com"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="password">Password</Label>
-                      <Input
-                        id="password"
-                        type="password"
-                        value={newAdminForm.password}
-                        onChange={(e) => setNewAdminForm({...newAdminForm, password: e.target.value})}
-                        placeholder="Secure password"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="displayName">Display Name</Label>
-                      <Input
-                        id="displayName"
-                        value={newAdminForm.displayName}
-                        onChange={(e) => setNewAdminForm({...newAdminForm, displayName: e.target.value})}
-                        placeholder="Admin Name"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="role">Role</Label>
-                      <Select value={newAdminForm.role} onValueChange={(value) => setNewAdminForm({...newAdminForm, role: value})}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="admin">Admin</SelectItem>
-                          <SelectItem value="manager">Manager</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={createAdminUser}>Create Admin</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
-          </div>
-
-          <div className="grid gap-4">
-            {adminUsers.map((admin) => (
-              <Card key={admin.id}>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Shield className="h-5 w-5 text-primary" />
-                      <div>
-                        <p className="font-medium">{admin.profiles?.display_name || admin.user_id}</p>
-                        <p className="text-sm text-muted-foreground">User ID: {admin.user_id}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={getRoleBadgeVariant(admin.role)}>
-                        {admin.role.replace('_', ' ').toUpperCase()}
-                      </Badge>
-                      <Badge variant={admin.is_active ? "default" : "secondary"}>
-                        {admin.is_active ? "Active" : "Inactive"}
-                      </Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <AdminUserManagement />
         </TabsContent>
 
         <TabsContent value="companies" className="space-y-4">
-          <h2 className="text-xl font-semibold">Companies</h2>
-          <div className="grid gap-4">
-            {companies.map((company) => (
-              <Card key={company.id}>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Building2 className="h-5 w-5 text-primary" />
-                      <div>
-                        <p className="font-medium">{company.name}</p>
-                        <p className="text-sm text-muted-foreground">{company.domain}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline">{company.subscription_plan}</Badge>
-                      <Badge variant={company.subscription_status === 'active' ? "default" : "secondary"}>
-                        {company.subscription_status}
-                      </Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <CompanyManagement />
         </TabsContent>
 
         <TabsContent value="billing">
-          <Card>
-            <CardHeader>
-              <CardTitle>Billing Management</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">Billing management features will be implemented here.</p>
-            </CardContent>
-          </Card>
+          <BillingManagement />
         </TabsContent>
 
         <TabsContent value="logs">
-          <Card>
-            <CardHeader>
-              <CardTitle>System Logs</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">System activity logs will be displayed here.</p>
-            </CardContent>
-          </Card>
+          <SystemLogs />
         </TabsContent>
       </Tabs>
     </div>

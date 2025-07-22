@@ -21,10 +21,10 @@ interface AdminUser {
   permissions: any;
   created_by: string;
   updated_at: string;
-  auth_users?: {
-    email: string;
-    raw_user_meta_data?: any;
-  };
+  profiles?: {
+    display_name: string;
+    phone: string;
+  } | null;
 }
 
 export const AdminUserManagement = () => {
@@ -44,13 +44,7 @@ export const AdminUserManagement = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("admin_users")
-        .select(`
-          *,
-          auth_users:user_id (
-            email,
-            raw_user_meta_data
-          )
-        `)
+        .select("*")
         .order("created_at", { ascending: false });
       
       if (error) throw error;
@@ -200,22 +194,24 @@ export const AdminUserManagement = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Email</TableHead>
-                <TableHead>Full Name</TableHead>
+                <TableHead>User ID</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Last Login</TableHead>
+                <TableHead>Last Updated</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {adminUsers?.map((user) => (
                 <TableRow key={user.id}>
-                  <TableCell>{user.auth_users?.email || "—"}</TableCell>
-                  <TableCell>{user.auth_users?.raw_user_meta_data?.full_name || "—"}</TableCell>
+                  <TableCell>
+                    <code className="text-sm bg-muted px-1 py-0.5 rounded">
+                      {user.user_id.substring(0, 8)}...
+                    </code>
+                  </TableCell>
                   <TableCell>
                     <Badge variant={user.role === "master_admin" ? "default" : "secondary"}>
-                      {user.role}
+                      {user.role.replace('_', ' ')}
                     </Badge>
                   </TableCell>
                   <TableCell>
