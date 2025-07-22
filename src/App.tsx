@@ -27,7 +27,7 @@ import Inventory from "./pages/Inventory";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import { AboutUs } from "./pages/AboutUs";
 import NotFound from "./pages/NotFound";
-import { LearningDashboard } from "./components/LearningDashboard";
+
 import Logs from "./pages/Logs";
 import CanadaPostCallback from "./pages/CanadaPostCallback";
 import { CustomerTrackingPage as CustomerTracking } from "./pages/CustomerTracking";
@@ -60,7 +60,7 @@ const AppContent = () => {
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/dashboard" element={<PrepFoxDashboard />} />
-                <Route path="/ai-dashboard" element={<LearningDashboard />} />
+                
                 <Route path="/marketplace-gateway" element={<MarketplaceGateway />} />
         <Route path="/send-inventory" element={<SendInventory />} />
         <Route path="/receiving" element={<ReceivingDashboard />} />

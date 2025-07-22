@@ -1,22 +1,31 @@
-import { Settings as SettingsIcon, Store, Key, Database, Bell, Printer, FileText } from 'lucide-react';
+import { Settings as SettingsIcon, Store, Key, Database, Bell, Printer, FileText, Brain } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StoreConfig } from '@/components/StoreConfig';
 import { PrintingSettings } from '@/components/shipping/PrintingSettings';
+import { PatternManagement } from '@/components/patterns/PatternManagement';
+import { PatternAnalyzer } from '@/components/patterns/PatternAnalyzer';
+import { useState } from "react";
 import Logs from '@/pages/Logs';
 
 const Settings = () => {
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleAnalysisComplete = () => {
+    setRefreshKey(prev => prev + 1);
+  };
 
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground">Settings</h1>
-          <p className="text-muted-foreground">Configure your PrepFox application</p>
+          <p className="text-muted-foreground">Configure your PrepFox application and AI learning preferences</p>
         </div>
 
-        <Tabs defaultValue="store" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+        <Tabs defaultValue="ai-learning" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-7">
+            <TabsTrigger value="ai-learning">AI Learning</TabsTrigger>
             <TabsTrigger value="store">Store</TabsTrigger>
             <TabsTrigger value="printing">Printing</TabsTrigger>
             <TabsTrigger value="api">API Keys</TabsTrigger>
@@ -24,6 +33,24 @@ const Settings = () => {
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="logs">Logs</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="ai-learning" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Brain className="h-5 w-5" />
+                  AI Learning Patterns
+                </CardTitle>
+                <CardDescription>
+                  Manage how AI learns from your editing patterns and preferences
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <PatternAnalyzer onAnalysisComplete={handleAnalysisComplete} />
+                <PatternManagement key={refreshKey} />
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="store" className="space-y-6">
             <Card>
