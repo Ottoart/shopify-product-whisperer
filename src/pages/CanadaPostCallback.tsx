@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -5,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { DOMAINS } from '@/config/domains';
 
 export default function CanadaPostCallback() {
   const [searchParams] = useSearchParams();
@@ -33,7 +35,7 @@ export default function CanadaPostCallback() {
       try {
         // The callback function will handle the OAuth verification
         const response = await fetch(
-          `${window.location.origin}/canada-post-oauth-callback?state=${state}&code=${code || ''}`,
+          `${DOMAINS.SUPABASE_FUNCTIONS}/canada-post-oauth-callback?state=${state}&code=${code || ''}`,
           {
             method: 'GET',
             headers: {

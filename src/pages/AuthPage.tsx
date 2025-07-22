@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -9,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Eye, EyeOff, Mail, Lock, User as UserIcon, Phone, Building } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
+import { getAuthRedirectUrl } from '@/config/domains';
 import type { User, Session } from '@supabase/supabase-js';
 
 export default function AuthPage() {
@@ -48,7 +50,7 @@ export default function AuthPage() {
         // Show success message
         toast({
           title: 'Email confirmed!',
-          description: 'Your email has been confirmed successfully. Welcome to PrepFox!',
+          description: 'Your email has been confirmed successfully. Welcome to ProHair!',
         });
       }
     };
@@ -116,7 +118,7 @@ export default function AuthPage() {
     setLoading(true);
 
     try {
-      const redirectUrl = `${window.location.origin}/customer-portal`;
+      const redirectUrl = getAuthRedirectUrl('/customer-portal');
       
       const { error } = await supabase.auth.signUp({
         email: signupForm.email,
@@ -159,7 +161,7 @@ export default function AuthPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/customer-portal`
+          redirectTo: getAuthRedirectUrl('/customer-portal')
         }
       });
 
@@ -187,7 +189,7 @@ export default function AuthPage() {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(loginForm.email, {
-        redirectTo: `${window.location.origin}/auth?mode=reset`,
+        redirectTo: getAuthRedirectUrl('/auth?mode=reset'),
       });
 
       if (error) throw error;
@@ -210,7 +212,7 @@ export default function AuthPage() {
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-            PrepFox Customer Portal
+            ProHair Customer Portal
           </h1>
           <p className="text-muted-foreground">
             Track your orders, manage returns, and more

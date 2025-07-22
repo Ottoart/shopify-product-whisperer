@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3';
 
@@ -66,9 +67,8 @@ serve(async (req) => {
       );
     }
 
-    // Get the base URL for the callback
-    const baseUrl = req.headers.get('origin') || 'https://751c8744-5cc2-4126-b021-cefc67bc436e.lovableproject.com';
-    const callbackUrl = `${baseUrl}/canada-post-oauth-callback`;
+    // Use ProHair domain for callback
+    const callbackUrl = `https://prohair.ca/canada-post-oauth-callback`;
 
     // Canada Post login URL (matches ShipStation's exact approach)
     const canadaPostOAuthUrl = `https://sso-osu.canadapost-postescanada.ca/lfe-cap/en/login?` +

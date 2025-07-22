@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3';
 
@@ -122,9 +123,8 @@ serve(async (req) => {
 
     console.log(`Canada Post OAuth callback completed for user ${userId}`);
 
-    // Redirect back to the application with success
-    const baseUrl = req.headers.get('origin') || 'https://751c8744-5cc2-4126-b021-cefc67bc436e.lovableproject.com';
-    const redirectUrl = `${baseUrl}/settings?tab=carriers&canada-post=authorized`;
+    // Redirect back to ProHair domain
+    const redirectUrl = `https://prohair.ca/settings?tab=carriers&canada-post=authorized`;
 
     return new Response(null, {
       status: 302,
