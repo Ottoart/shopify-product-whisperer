@@ -1,8 +1,5 @@
-import React from 'npm:react@18.3.1'
 import { Webhook } from 'https://esm.sh/standardwebhooks@1.0.0'
 import { Resend } from 'npm:resend@4.0.0'
-import { renderAsync } from 'npm:@react-email/components@0.0.22'
-import { ConfirmationEmail } from './_templates/confirmation-email.tsx'
 
 const resend = new Resend(Deno.env.get('RESEND_API_KEY') as string)
 const hookSecret = Deno.env.get('SEND_EMAIL_HOOK_SECRET') as string
@@ -71,22 +68,62 @@ Deno.serve(async (req) => {
 
       let html
       try {
-        console.log('Rendering email template')
-        html = await renderAsync(
-          React.createElement(ConfirmationEmail, {
-            supabase_url: Deno.env.get('SUPABASE_URL') ?? '',
-            token,
-            token_hash,
-            redirect_to,
-            email_action_type,
-            user_email: user.email,
-            user_name: userName,
-          })
-        )
-        console.log('Email template rendered successfully')
+        console.log('Creating HTML email template')
+        const confirmationUrl = `${Deno.env.get('SUPABASE_URL')}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${redirect_to}`
+        
+        html = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to PrepFox</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f6f9fc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f6f9fc; padding: 20px 0;">
+        <tr>
+            <td align="center">
+                <table width="580" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    <tr>
+                        <td style="padding: 32px 40px; text-align: center; background-color: #ffffff; border-radius: 8px 8px 0 0;">
+                            <h1 style="color: #1a202c; font-size: 28px; font-weight: 700; margin: 0;">Welcome to PrepFox! 🚀</h1>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 0 40px 32px; background-color: #ffffff; border-radius: 0 0 8px 8px;">
+                            <p style="color: #4a5568; font-size: 16px; line-height: 1.6; margin: 16px 0;">
+                                Hi ${userName || 'there'},
+                            </p>
+                            <p style="color: #4a5568; font-size: 16px; line-height: 1.6; margin: 16px 0;">
+                                Thank you for signing up for PrepFox! We're excited to help you streamline your e-commerce operations.
+                            </p>
+                            <p style="color: #4a5568; font-size: 16px; line-height: 1.6; margin: 16px 0;">
+                                To get started, please confirm your email address by clicking the button below:
+                            </p>
+                            <div style="text-align: center; margin: 32px 0;">
+                                <a href="${confirmationUrl}" style="background-color: #3b82f6; color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-size: 16px; font-weight: 600; display: inline-block;">
+                                    Confirm Email Address
+                                </a>
+                            </div>
+                            <p style="color: #4a5568; font-size: 16px; line-height: 1.6; margin: 16px 0;">
+                                If you didn't create an account with PrepFox, you can safely ignore this email.
+                            </p>
+                            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;">
+                            <p style="color: #718096; font-size: 14px; text-align: center; margin: 8px 0;">
+                                PrepFox - Your Complete E-commerce Fulfillment Solution
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>`
+        console.log('HTML template created successfully')
       } catch (renderError) {
-        console.error('Email template rendering failed:', renderError)
-        throw new Error(`Email template rendering failed: ${renderError.message}`)
+        console.error('Email template creation failed:', renderError)
+        throw new Error(`Email template creation failed: ${renderError.message}`)
       }
 
       try {
@@ -113,17 +150,21 @@ Deno.serve(async (req) => {
       // For testing purposes - send a test email
       const testPayload = JSON.parse(payload)
       
-      const html = await renderAsync(
-        React.createElement(ConfirmationEmail, {
-          supabase_url: 'https://rtaomiqsnctigleqjojt.supabase.co',
-          token: 'test-token',
-          token_hash: 'test-hash',
-          redirect_to: 'https://your-app.com',
-          email_action_type: 'signup',
-          user_email: testPayload.email || 'test@example.com',
-          user_name: testPayload.name || 'Test User',
-        })
-      )
+      const html = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>PrepFox Test Email</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f6f9fc; font-family: Arial, sans-serif;">
+    <div style="max-width: 580px; margin: 20px auto; background: white; padding: 40px; border-radius: 8px;">
+        <h1 style="color: #1a202c;">PrepFox Test Email</h1>
+        <p>This is a test email from PrepFox.</p>
+        <p>User: ${testPayload.email || 'test@example.com'}</p>
+    </div>
+</body>
+</html>`
 
       const { error } = await resend.emails.send({
         from: 'PrepFox <noreply@resend.dev>',
