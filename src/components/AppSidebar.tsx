@@ -65,7 +65,6 @@ const fulfillmentItems = [
 const toolItems = [
   { title: "Product Activity", url: "/activity", icon: Activity, description: "Track product changes" },
   { title: "Bulk Editor", url: "/bulk-editor", icon: FileText, description: "Edit multiple products" },
-  { title: "Inventory Management", url: "/inventory", icon: Warehouse, description: "Manage duplicates and variations" },
 ];
 
 const repricingItems = [
