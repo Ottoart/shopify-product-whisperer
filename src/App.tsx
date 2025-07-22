@@ -48,7 +48,6 @@ import RepricingLanding from "./pages/RepricingLanding";
 import RepricingFeatures from "./pages/RepricingFeatures";
 import RepricingPricing from "./pages/RepricingPricing";
 import AdminDashboard from "./pages/AdminDashboard";
-import Products from "./pages/Products";
 
 // Create query client outside component to prevent recreating
 const queryClient = new QueryClient({
@@ -106,7 +105,6 @@ const AuthenticatedApp = () => {
               <Route path="/repricing-dashboard" element={<Repricing />} />
               <Route path="/strategies" element={<Strategies />} />
               <Route path="/inventory" element={<Inventory />} />
-              <Route path="/products" element={<Products />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/carriers" element={<Carriers />} />
               <Route path="/admin" element={<AdminDashboard />} />
