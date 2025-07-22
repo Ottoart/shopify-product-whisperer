@@ -222,21 +222,21 @@ export function AppSidebar() {
                           <span className="whitespace-nowrap">{item.title}</span>
                           <span className="text-xs text-muted-foreground whitespace-nowrap">{item.description}</span>
                         </div>
-                         {!collapsed && stores.length > 0 && (
-                           <div className="ml-auto">
-                             {activeAccordionSection === `catalogue-${item.title}` ? (
-                               <ChevronDown className="h-3 w-3 animate-fade-in" />
-                             ) : (
-                               <ChevronRight className="h-3 w-3 animate-fade-in" />
-                             )}
-                           </div>
-                         )}
-                       </NavLink>
-                     </SidebarMenuButton>
-                   </SidebarMenuItem>
+                        {!collapsed && stores.length > 0 && (
+                          <div className="ml-auto">
+                            {activeAccordionSection === `catalogue-${item.title}` ? (
+                              <ChevronDown className="h-3 w-3 animate-fade-in" />
+                            ) : (
+                              <ChevronRight className="h-3 w-3 animate-fade-in" />
+                            )}
+                          </div>
+                        )}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
 
-                   {/* Expandable Store Subcategories */}
-                   {!collapsed && activeAccordionSection === `catalogue-${item.title}` && stores.map((store) => (
+                  {/* Expandable Store Subcategories */}
+                  {!collapsed && activeAccordionSection === `catalogue-${item.title}` && stores.map((store) => (
                     <SidebarMenuItem key={`${item.title}-${store.id}`} className="animate-accordion-down">
                       <SidebarMenuButton asChild>
                         <NavLink 
@@ -325,35 +325,35 @@ export function AppSidebar() {
                     <NavLink 
                       to="/shipping" 
                       end
-                       onClick={() => !collapsed && toggleAccordionSection("shipping-Awaiting Shipments")}
-                       className={getNavCls}
-                       title={collapsed ? "View all orders awaiting shipment" : undefined}
-                       >
-                         <Package className="h-4 w-4 flex-shrink-0" />
-                          <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col flex-1 transition-all duration-300 overflow-hidden ml-2`}>
-                            <span className="whitespace-nowrap">Awaiting Shipments</span>
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">All stores awaiting shipment</span>
-                          </div>
-                          {!collapsed && getOrderCount('awaiting') > 0 && (
-                            <Badge variant="secondary" className="text-xs ml-auto mr-1">
-                              {getOrderCount('awaiting')}
-                            </Badge>
-                          )}
-                          {!collapsed && stores.length > 0 && (
-                            <div className="ml-auto">
-                              {activeAccordionSection === "shipping-Awaiting Shipments" ? (
-                                <ChevronDown className="h-3 w-3 animate-fade-in" />
-                              ) : (
-                                <ChevronRight className="h-3 w-3 animate-fade-in" />
-                              )}
-                            </div>
-                          )}
-                       </NavLink>
-                   </SidebarMenuButton>
-                 </SidebarMenuItem>
+                      onClick={() => !collapsed && toggleAccordionSection("shipping-Awaiting Shipments")}
+                      className={getNavCls}
+                      title={collapsed ? "View all orders awaiting shipment" : undefined}
+                      >
+                        <Package className="h-4 w-4 flex-shrink-0" />
+                         <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col flex-1 transition-all duration-300 overflow-hidden ml-2`}>
+                           <span className="whitespace-nowrap">Awaiting Shipments</span>
+                           <span className="text-xs text-muted-foreground whitespace-nowrap">All stores awaiting shipment</span>
+                         </div>
+                         {!collapsed && getOrderCount('awaiting') > 0 && (
+                           <Badge variant="secondary" className="text-xs ml-auto mr-1">
+                             {getOrderCount('awaiting')}
+                           </Badge>
+                         )}
+                         {!collapsed && stores.length > 0 && (
+                           <div className="ml-auto">
+                             {activeAccordionSection === "shipping-Awaiting Shipments" ? (
+                               <ChevronDown className="h-3 w-3 animate-fade-in" />
+                             ) : (
+                               <ChevronRight className="h-3 w-3 animate-fade-in" />
+                             )}
+                           </div>
+                         )}
+                      </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
 
-                 {/* Store Subcategories for Awaiting Shipments */}
-                 {!collapsed && activeAccordionSection === "shipping-Awaiting Shipments" && stores.map((store) => (
+                {/* Store Subcategories for Awaiting Shipments */}
+                {!collapsed && activeAccordionSection === "shipping-Awaiting Shipments" && stores.map((store) => (
                   <SidebarMenuItem key={`awaiting-${store.id}`} className="animate-accordion-down">
                     <SidebarMenuButton asChild>
                       <NavLink 
@@ -377,460 +377,24 @@ export function AppSidebar() {
                 ))}
               </div>
 
-              {/* Awaiting Payment */}
-              <div>
-                <SidebarMenuItem>
+              {/* Regular shipping items */}
+              {shippingItems.slice(1).map((item) => (
+                <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink 
-                      to="/shipping?status=awaiting_payment" 
-                       onClick={() => !collapsed && toggleAccordionSection("shipping-Awaiting Payment")}
-                       className={getNavCls}
-                       title={collapsed ? "Orders awaiting payment" : undefined}
-                       >
-                         <CreditCard className="h-4 w-4 flex-shrink-0" />
-                          <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col flex-1 transition-all duration-300 overflow-hidden ml-2`}>
-                            <span className="whitespace-nowrap">Awaiting Payment</span>
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">Payment pending orders</span>
-                          </div>
-                          {!collapsed && getOrderCount('awaiting_payment') > 0 && (
-                            <Badge variant="secondary" className="text-xs ml-auto mr-1">
-                              {getOrderCount('awaiting_payment')}
-                            </Badge>
-                          )}
-                          {!collapsed && stores.length > 0 && (
-                            <div className="ml-auto">
-                              {activeAccordionSection === "shipping-Awaiting Payment" ? (
-                                <ChevronDown className="h-3 w-3 animate-fade-in" />
-                              ) : (
-                                <ChevronRight className="h-3 w-3 animate-fade-in" />
-                              )}
-                            </div>
-                          )}
-                       </NavLink>
-                   </SidebarMenuButton>
-                 </SidebarMenuItem>
-
-                 {/* Store Subcategories for Awaiting Payment */}
-                 {!collapsed && activeAccordionSection === "shipping-Awaiting Payment" && stores.map((store) => (
-                  <SidebarMenuItem key={`payment-${store.id}`} className="animate-accordion-down">
-                    <SidebarMenuButton asChild>
-                      <NavLink 
-                        to={`/shipping?store=${encodeURIComponent(store.store_name)}&status=awaiting_payment`}
-                        className={getNavCls}
-                        title={`Awaiting payment from ${store.store_name}`}
-                        >
-                          <Store className="h-4 w-4 flex-shrink-0 ml-8" />
-                          <div className="flex flex-col transition-all duration-300 overflow-hidden">
-                            <span className="whitespace-nowrap">{store.store_name}</span>
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">{store.platform} store</span>
-                          </div>
-                          {getOrderCount('awaiting_payment', store.store_name) > 0 && (
-                            <Badge variant="secondary" className="text-xs ml-auto">
-                              {getOrderCount('awaiting_payment', store.store_name)}
-                            </Badge>
-                          )}
-                        </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </div>
-
-              {/* On Hold */}
-              <div>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <NavLink 
-                      to="/shipping?status=on_hold" 
-                      onClick={() => !collapsed && toggleAccordionSection("shipping-On Hold")}
+                      to={item.url} 
                       className={getNavCls}
-                      title={collapsed ? "Orders on hold" : undefined}
+                      title={collapsed ? item.description : undefined}
                       >
-                        <Clock className="h-4 w-4 flex-shrink-0" />
-                         <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col flex-1 transition-all duration-300 overflow-hidden ml-2`}>
-                           <span className="whitespace-nowrap">On Hold</span>
-                           <span className="text-xs text-muted-foreground whitespace-nowrap">Orders temporarily paused</span>
-                         </div>
-                         {!collapsed && getOrderCount('on_hold') > 0 && (
-                           <Badge variant="secondary" className="text-xs ml-auto mr-1">
-                             {getOrderCount('on_hold')}
-                           </Badge>
-                         )}
-                         {!collapsed && stores.length > 0 && (
-                           <div className="ml-auto">
-                             {activeAccordionSection === "shipping-On Hold" ? (
-                               <ChevronDown className="h-3 w-3 animate-fade-in" />
-                             ) : (
-                               <ChevronRight className="h-3 w-3 animate-fade-in" />
-                             )}
-                           </div>
-                         )}
+                        <item.icon className="h-4 w-4 flex-shrink-0" />
+                        <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col transition-all duration-300 overflow-hidden`}>
+                          <span className="whitespace-nowrap">{item.title}</span>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">{item.description}</span>
+                        </div>
                       </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-
-                {/* Store Subcategories for On Hold */}
-                {!collapsed && activeAccordionSection === "shipping-On Hold" && stores.map((store) => (
-                  <SidebarMenuItem key={`hold-${store.id}`} className="animate-accordion-down">
-                    <SidebarMenuButton asChild>
-                      <NavLink 
-                        to={`/shipping?store=${encodeURIComponent(store.store_name)}&status=on_hold`}
-                        className={getNavCls}
-                        title={`Orders on hold from ${store.store_name}`}
-                        >
-                          <Store className="h-4 w-4 flex-shrink-0 ml-8" />
-                          <div className="flex flex-col transition-all duration-300 overflow-hidden">
-                            <span className="whitespace-nowrap">{store.store_name}</span>
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">{store.platform} store</span>
-                          </div>
-                          {getOrderCount('on_hold', store.store_name) > 0 && (
-                            <Badge variant="secondary" className="text-xs ml-auto">
-                              {getOrderCount('on_hold', store.store_name)}
-                            </Badge>
-                          )}
-                        </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </div>
-
-              {/* Manual Orders */}
-              <div>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <NavLink 
-                      to="/shipping?status=manual" 
-                      onClick={() => !collapsed && toggleAccordionSection("shipping-Manual Orders")}
-                      className={getNavCls}
-                      title={collapsed ? "Manually created orders" : undefined}
-                      >
-                        <FileX className="h-4 w-4 flex-shrink-0" />
-                         <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col flex-1 transition-all duration-300 overflow-hidden ml-2`}>
-                           <span className="whitespace-nowrap">Manual Orders</span>
-                           <span className="text-xs text-muted-foreground whitespace-nowrap">Manually created orders</span>
-                         </div>
-                         {!collapsed && getOrderCount('manual') > 0 && (
-                           <Badge variant="secondary" className="text-xs ml-auto mr-1">
-                             {getOrderCount('manual')}
-                           </Badge>
-                         )}
-                         {!collapsed && stores.length > 0 && (
-                           <div className="ml-auto">
-                             {activeAccordionSection === "shipping-Manual Orders" ? (
-                               <ChevronDown className="h-3 w-3 animate-fade-in" />
-                             ) : (
-                               <ChevronRight className="h-3 w-3 animate-fade-in" />
-                             )}
-                           </div>
-                         )}
-                      </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-
-                {/* Store Subcategories for Manual Orders */}
-                {!collapsed && activeAccordionSection === "shipping-Manual Orders" && stores.map((store) => (
-                  <SidebarMenuItem key={`manual-${store.id}`} className="animate-accordion-down">
-                    <SidebarMenuButton asChild>
-                      <NavLink 
-                        to={`/shipping?store=${encodeURIComponent(store.store_name)}&status=manual`}
-                        className={getNavCls}
-                        title={`Manual orders from ${store.store_name}`}
-                        >
-                          <Store className="h-4 w-4 flex-shrink-0 ml-8" />
-                          <div className="flex flex-col transition-all duration-300 overflow-hidden">
-                            <span className="whitespace-nowrap">{store.store_name}</span>
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">{store.platform} store</span>
-                          </div>
-                          {getOrderCount('manual', store.store_name) > 0 && (
-                            <Badge variant="secondary" className="text-xs ml-auto">
-                              {getOrderCount('manual', store.store_name)}
-                            </Badge>
-                          )}
-                        </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </div>
-
-              {/* Rejected Fulfillment */}
-              <div>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <NavLink 
-                      to="/shipping?status=rejected" 
-                      onClick={() => !collapsed && toggleAccordionSection("shipping-Rejected Fulfillment")}
-                      className={getNavCls}
-                      title={collapsed ? "Orders rejected for fulfillment" : undefined}
-                      >
-                        <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-                         <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col flex-1 transition-all duration-300 overflow-hidden ml-2`}>
-                           <span className="whitespace-nowrap">Rejected Fulfillment</span>
-                           <span className="text-xs text-muted-foreground whitespace-nowrap">Fulfillment rejected orders</span>
-                         </div>
-                         {!collapsed && getOrderCount('rejected') > 0 && (
-                           <Badge variant="secondary" className="text-xs ml-auto mr-1">
-                             {getOrderCount('rejected')}
-                           </Badge>
-                         )}
-                         {!collapsed && stores.length > 0 && (
-                           <div className="ml-auto">
-                             {activeAccordionSection === "shipping-Rejected Fulfillment" ? (
-                               <ChevronDown className="h-3 w-3 animate-fade-in" />
-                             ) : (
-                               <ChevronRight className="h-3 w-3 animate-fade-in" />
-                             )}
-                           </div>
-                         )}
-                      </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-
-                {/* Store Subcategories for Rejected Fulfillment */}
-                {!collapsed && activeAccordionSection === "shipping-Rejected Fulfillment" && stores.map((store) => (
-                  <SidebarMenuItem key={`rejected-${store.id}`} className="animate-accordion-down">
-                    <SidebarMenuButton asChild>
-                      <NavLink 
-                        to={`/shipping?store=${encodeURIComponent(store.store_name)}&status=rejected`}
-                        className={getNavCls}
-                        title={`Rejected orders from ${store.store_name}`}
-                        >
-                          <Store className="h-4 w-4 flex-shrink-0 ml-8" />
-                          <div className="flex flex-col transition-all duration-300 overflow-hidden">
-                            <span className="whitespace-nowrap">{store.store_name}</span>
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">{store.platform} store</span>
-                          </div>
-                          {getOrderCount('rejected', store.store_name) > 0 && (
-                            <Badge variant="secondary" className="text-xs ml-auto">
-                              {getOrderCount('rejected', store.store_name)}
-                            </Badge>
-                          )}
-                        </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </div>
-
-              {/* Shipped */}
-              <div>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <NavLink 
-                      to="/shipping?status=shipped" 
-                      onClick={() => !collapsed && toggleAccordionSection("shipping-Shipped")}
-                      className={getNavCls}
-                      title={collapsed ? "Shipped orders" : undefined}
-                      >
-                        <Truck className="h-4 w-4 flex-shrink-0" />
-                         <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col flex-1 transition-all duration-300 overflow-hidden ml-2`}>
-                           <span className="whitespace-nowrap">Shipped</span>
-                           <span className="text-xs text-muted-foreground whitespace-nowrap">Orders in transit</span>
-                         </div>
-                         {!collapsed && getOrderCount('shipped') > 0 && (
-                           <Badge variant="secondary" className="text-xs ml-auto mr-1">
-                             {getOrderCount('shipped')}
-                           </Badge>
-                         )}
-                         {!collapsed && stores.length > 0 && (
-                           <div className="ml-auto">
-                             {activeAccordionSection === "shipping-Shipped" ? (
-                               <ChevronDown className="h-3 w-3 animate-fade-in" />
-                             ) : (
-                               <ChevronRight className="h-3 w-3 animate-fade-in" />
-                             )}
-                           </div>
-                         )}
-                      </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-
-                {/* Store Subcategories for Shipped */}
-                {!collapsed && activeAccordionSection === "shipping-Shipped" && stores.map((store) => (
-                  <SidebarMenuItem key={`shipped-${store.id}`} className="animate-accordion-down">
-                    <SidebarMenuButton asChild>
-                      <NavLink 
-                        to={`/shipping?store=${encodeURIComponent(store.store_name)}&status=shipped`}
-                        className={getNavCls}
-                        title={`Shipped orders from ${store.store_name}`}
-                        >
-                          <Store className="h-4 w-4 flex-shrink-0 ml-8" />
-                          <div className="flex flex-col transition-all duration-300 overflow-hidden">
-                            <span className="whitespace-nowrap">{store.store_name}</span>
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">{store.platform} store</span>
-                          </div>
-                          {getOrderCount('shipped', store.store_name) > 0 && (
-                            <Badge variant="secondary" className="text-xs ml-auto">
-                              {getOrderCount('shipped', store.store_name)}
-                            </Badge>
-                          )}
-                        </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </div>
-
-              {/* Delivered */}
-              <div>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <NavLink 
-                      to="/shipping?status=delivered" 
-                      onClick={() => !collapsed && toggleAccordionSection("shipping-Delivered")}
-                      className={getNavCls}
-                      title={collapsed ? "Delivered orders" : undefined}
-                      >
-                        <CheckCircle className="h-4 w-4 flex-shrink-0" />
-                         <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col flex-1 transition-all duration-300 overflow-hidden ml-2`}>
-                           <span className="whitespace-nowrap">Delivered</span>
-                           <span className="text-xs text-muted-foreground whitespace-nowrap">Successfully delivered orders</span>
-                         </div>
-                         {!collapsed && getOrderCount('delivered') > 0 && (
-                           <Badge variant="secondary" className="text-xs ml-auto mr-1">
-                             {getOrderCount('delivered')}
-                           </Badge>
-                         )}
-                         {!collapsed && stores.length > 0 && (
-                           <div className="ml-auto">
-                             {activeAccordionSection === "shipping-Delivered" ? (
-                               <ChevronDown className="h-3 w-3 animate-fade-in" />
-                             ) : (
-                               <ChevronRight className="h-3 w-3 animate-fade-in" />
-                             )}
-                           </div>
-                         )}
-                      </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-
-                {/* Store Subcategories for Delivered */}
-                {!collapsed && activeAccordionSection === "shipping-Delivered" && stores.map((store) => (
-                  <SidebarMenuItem key={`delivered-${store.id}`} className="animate-accordion-down">
-                    <SidebarMenuButton asChild>
-                      <NavLink 
-                        to={`/shipping?store=${encodeURIComponent(store.store_name)}&status=delivered`}
-                        className={getNavCls}
-                        title={`Delivered orders from ${store.store_name}`}
-                        >
-                          <Store className="h-4 w-4 flex-shrink-0 ml-8" />
-                          <div className="flex flex-col transition-all duration-300 overflow-hidden">
-                            <span className="whitespace-nowrap">{store.store_name}</span>
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">{store.platform} store</span>
-                          </div>
-                          {getOrderCount('delivered', store.store_name) > 0 && (
-                            <Badge variant="secondary" className="text-xs ml-auto">
-                              {getOrderCount('delivered', store.store_name)}
-                            </Badge>
-                          )}
-                        </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </div>
-
-              {/* Cancelled */}
-              <div>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <NavLink 
-                      to="/shipping?status=cancelled" 
-                      onClick={() => !collapsed && toggleAccordionSection("shipping-Cancelled")}
-                      className={getNavCls}
-                      title={collapsed ? "Cancelled orders" : undefined}
-                      >
-                        <XCircle className="h-4 w-4 flex-shrink-0" />
-                         <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col flex-1 transition-all duration-300 overflow-hidden ml-2`}>
-                           <span className="whitespace-nowrap">Cancelled</span>
-                           <span className="text-xs text-muted-foreground whitespace-nowrap">Cancelled orders</span>
-                         </div>
-                         {!collapsed && getOrderCount('cancelled') > 0 && (
-                           <Badge variant="secondary" className="text-xs ml-auto mr-1">
-                             {getOrderCount('cancelled')}
-                           </Badge>
-                         )}
-                         {!collapsed && stores.length > 0 && (
-                           <div className="ml-auto">
-                             {activeAccordionSection === "shipping-Cancelled" ? (
-                               <ChevronDown className="h-3 w-3 animate-fade-in" />
-                             ) : (
-                               <ChevronRight className="h-3 w-3 animate-fade-in" />
-                             )}
-                           </div>
-                         )}
-                      </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-
-                {/* Store Subcategories for Cancelled */}
-                {!collapsed && activeAccordionSection === "shipping-Cancelled" && stores.map((store) => (
-                  <SidebarMenuItem key={`cancelled-${store.id}`} className="animate-accordion-down">
-                    <SidebarMenuButton asChild>
-                      <NavLink 
-                        to={`/shipping?store=${encodeURIComponent(store.store_name)}&status=cancelled`}
-                        className={getNavCls}
-                        title={`Cancelled orders from ${store.store_name}`}
-                        >
-                          <Store className="h-4 w-4 flex-shrink-0 ml-8" />
-                          <div className="flex flex-col transition-all duration-300 overflow-hidden">
-                            <span className="whitespace-nowrap">{store.store_name}</span>
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">{store.platform} store</span>
-                          </div>
-                          {getOrderCount('cancelled', store.store_name) > 0 && (
-                            <Badge variant="secondary" className="text-xs ml-auto">
-                              {getOrderCount('cancelled', store.store_name)}
-                            </Badge>
-                          )}
-                        </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </div>
-
-              {/* Other Shipping Tools */}
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <NavLink 
-                    to="/shipping/tracking" 
-                    className={getNavCls}
-                    title={collapsed ? "Track shipment status" : undefined}
-                    >
-                      <MapPin className="h-4 w-4 flex-shrink-0" />
-                      <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col transition-all duration-300 overflow-hidden`}>
-                        <span className="whitespace-nowrap">Tracking Center</span>
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">Track shipment status</span>
-                      </div>
-                    </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <NavLink 
-                    to="/shipping/returns" 
-                    className={getNavCls}
-                    title={collapsed ? "Handle returns and refunds" : undefined}
-                    >
-                      <RotateCcw className="h-4 w-4 flex-shrink-0" />
-                      <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col transition-all duration-300 overflow-hidden`}>
-                        <span className="whitespace-nowrap">Returns Portal</span>
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">Handle returns and refunds</span>
-                      </div>
-                    </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <NavLink 
-                    to="/shipping/rates" 
-                    className={getNavCls}
-                    title={collapsed ? "Calculate shipping costs" : undefined}
-                    >
-                      <Calculator className="h-4 w-4 flex-shrink-0" />
-                      <div className={`${collapsed ? "group-hover:flex hidden" : "flex"} flex-col transition-all duration-300 overflow-hidden`}>
-                        <span className="whitespace-nowrap">Rate Calculator</span>
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">Calculate shipping costs</span>
-                      </div>
-                    </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
