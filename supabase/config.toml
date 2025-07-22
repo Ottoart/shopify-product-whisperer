@@ -90,3 +90,9 @@ verify_jwt = true
 
 [functions.canada-post-setup]
 verify_jwt = true
+
+[functions.create-master-admin]
+verify_jwt = false
+
+[functions.create-admin-user]
+verify_jwt = true

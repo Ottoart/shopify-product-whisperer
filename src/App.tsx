@@ -47,6 +47,7 @@ import ShippingResources from "./pages/ShippingResources";
 import RepricingLanding from "./pages/RepricingLanding";
 import RepricingFeatures from "./pages/RepricingFeatures";
 import RepricingPricing from "./pages/RepricingPricing";
+import AdminDashboard from "./pages/AdminDashboard";
 
 const queryClient = new QueryClient();
 
@@ -98,6 +99,7 @@ const AuthenticatedApp = () => {
               <Route path="/inventory" element={<Inventory />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/carriers" element={<Carriers />} />
+              <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/sync-status" element={<SyncStatus />} />
               <Route path="/logs" element={<Logs />} />
               <Route path="/canada-post-oauth-callback" element={<CanadaPostCallback />} />
