@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { supabase } from "../send-confirmation-email/index.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
