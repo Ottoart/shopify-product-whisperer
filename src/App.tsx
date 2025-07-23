@@ -141,7 +141,7 @@ const PublicApp = () => {
         <Route path="/customer-tracking" element={<CustomerTracking />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/about" element={<AboutUs />} />
-        <Route path="*" element={<NotFound />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </main>
   );
