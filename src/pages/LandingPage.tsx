@@ -93,25 +93,25 @@ const LandingPage = () => {
   const repricingMenuItems = [
     {
       title: "AI Repricer",
-      href: "/repricing-features",
+      href: "/repricing/features",
       description: "Intelligent pricing with machine learning algorithms",
       icon: Brain,
     },
     {
       title: "Business Repricing",
-      href: "/repricing-features",
+      href: "/repricing/features",
       description: "Advanced repricing strategies for enterprise sellers",
       icon: TrendingUp,
     },
     {
       title: "Strategy Automation",
-      href: "/repricing-features",
+      href: "/repricing/features",
       description: "Automated rule-based pricing optimization",
       icon: Target,
     },
     {
       title: "Analytics Dashboard",
-      href: "/repricing-features",
+      href: "/repricing/features",
       description: "Real-time insights and performance metrics",
       icon: BarChart3,
     },
@@ -120,25 +120,25 @@ const LandingPage = () => {
   const repricingSolutionsItems = [
     {
       title: "FBA Sellers",
-      href: "/repricing-features",
+      href: "/repricing/features",
       description: "Optimize Buy Box winning strategies",
       icon: Store,
     },
     {
       title: "Retail Arbitrage",
-      href: "/repricing-features",
+      href: "/repricing/features",
       description: "Maximize margins on resale products",
       icon: DollarSign,
     },
     {
       title: "Private Label",
-      href: "/repricing-features",
+      href: "/repricing/features",
       description: "Protect brand pricing and market position",
       icon: Layers,
     },
     {
       title: "Dropshippers",
-      href: "/repricing-features",
+      href: "/repricing/features",
       description: "Competitive pricing for dropshipping business",
       icon: Globe,
     },
@@ -230,7 +230,7 @@ const LandingPage = () => {
                     Shipping
                   </NavigationMenuTrigger>
                   <NavigationMenuContent>
-                    <div className="w-[800px] p-6">
+                    <div className="w-[800px] min-h-[400px] p-6 bg-background border rounded-lg shadow-lg">
                       <div className="grid grid-cols-3 gap-6">
                         <div>
                           <h4 className="text-sm font-medium text-foreground mb-3">Product</h4>
@@ -306,7 +306,7 @@ const LandingPage = () => {
                     Repricing
                   </NavigationMenuTrigger>
                   <NavigationMenuContent>
-                    <div className="w-[800px] p-6">
+                    <div className="w-[800px] min-h-[400px] p-6 bg-background border rounded-lg shadow-lg">
                       <div className="grid grid-cols-3 gap-6">
                         <div>
                           <h4 className="text-sm font-medium text-foreground mb-3">Product</h4>
@@ -358,8 +358,8 @@ const LandingPage = () => {
                           <div>
                             <h4 className="text-sm font-medium text-foreground mb-3">Quick Links</h4>
                             <div className="space-y-2">
-                              <Link to="/repricing-features" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Features</Link>
-                              <Link to="/repricing-pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Pricing</Link>
+                              <Link to="/repricing/features" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Features</Link>
+                              <Link to="/repricing/pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Pricing</Link>
                               <Link to="/repricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Dashboard</Link>
                             </div>
                           </div>
