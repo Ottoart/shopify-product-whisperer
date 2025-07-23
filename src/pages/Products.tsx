@@ -361,7 +361,7 @@ export default function Products() {
       </div>
 
       {/* No stores connected state */}
-      {stores.length === 0 && (
+      {stores.length === 0 && !loading && (
         <Card className="text-center py-12">
           <CardContent>
             <Store className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
@@ -375,9 +375,9 @@ export default function Products() {
       )}
 
       {/* Products with Advanced Filtering */}
-      {stores.length > 0 && (
+      {stores.length > 0 && !loading && (
         <>
-          {products.length === 0 ? (
+          {products.length === 0 && !loading ? (
             <Card className="text-center py-12">
               <CardContent>
                 <Plus className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
@@ -503,6 +503,7 @@ export default function Products() {
           fetchProducts();
         }}
         syncFunction={syncAllStores}
+        stores={stores.map(s => ({ store_name: s.store_name, id: s.id }))}
       />
     </div>
   );

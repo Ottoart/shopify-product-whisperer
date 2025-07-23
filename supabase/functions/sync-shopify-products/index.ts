@@ -36,12 +36,30 @@ serve(async (req) => {
       throw new Error('Store URL and access token are required');
     }
 
-    // Clean the access token - remove any extra text and whitespace
+    // Handle JSON-formatted access tokens and clean thoroughly
     let cleanAccessToken = accessToken.toString().trim();
     
-    // If token contains extra text after the actual token, extract just the token part
-    if (cleanAccessToken.includes(' ')) {
-      cleanAccessToken = cleanAccessToken.split(' ')[0];
+    console.log('Original token:', cleanAccessToken);
+    
+    // Try to parse as JSON first (for JSON-formatted tokens)
+    try {
+      const parsed = JSON.parse(cleanAccessToken);
+      if (parsed.access_token) {
+        cleanAccessToken = parsed.access_token;
+      } else if (parsed.accessToken) {
+        cleanAccessToken = parsed.accessToken;
+      }
+    } catch (e) {
+      // Not JSON, continue with string cleaning
+    }
+    
+    // Remove any whitespace, newlines, and non-alphanumeric characters except underscores
+    cleanAccessToken = cleanAccessToken.replace(/[\s\n\r\t]/g, '').split(' ')[0];
+    
+    // Remove any trailing text like "Shopify" or other descriptions
+    const shpatMatch = cleanAccessToken.match(/shpat_[a-zA-Z0-9]+/);
+    if (shpatMatch) {
+      cleanAccessToken = shpatMatch[0];
     }
     
     // Ensure token starts with 'shpat_' for Shopify
@@ -49,8 +67,8 @@ serve(async (req) => {
       throw new Error('Invalid Shopify access token format');
     }
     
-    console.log('Cleaned token length:', cleanAccessToken.length);
-    console.log('Token starts with:', cleanAccessToken.substring(0, 10));
+    console.log('Cleaned token:', cleanAccessToken);
+    console.log('Token length:', cleanAccessToken.length);
 
     const shopifyDomain = storeUrl.replace(/^https?:\/\//, '').replace(/\/$/, '').split('_')[0];
     const baseUrl = `https://${shopifyDomain}/admin/api/2023-10`;
