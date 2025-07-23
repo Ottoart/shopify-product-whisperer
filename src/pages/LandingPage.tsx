@@ -1,6 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from "@/components/ui/navigation-menu";
 import { 
   Truck, 
   Package, 
@@ -16,12 +24,126 @@ import {
   DollarSign,
   Warehouse,
   ShoppingCart,
-  Play
+  Play,
+  Settings,
+  Box,
+  Store,
+  Brain,
+  Layers
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { TestEmailButton } from "@/components/TestEmailButton";
+import { cn } from "@/lib/utils";
 
 const LandingPage = () => {
+  const shippingMenuItems = [
+    {
+      title: "Order Management",
+      href: "/shipping-features",
+      description: "Centralize and automate order processing across all channels",
+      icon: Package,
+    },
+    {
+      title: "Multi-Carrier Shipping",
+      href: "/shipping-features",
+      description: "Compare rates and ship with UPS, Canada Post, and more",
+      icon: Truck,
+    },
+    {
+      title: "Shipping Automation",
+      href: "/shipping-features",
+      description: "Automated label generation and fulfillment workflows",
+      icon: Zap,
+    },
+    {
+      title: "Inventory Sync",
+      href: "/shipping-features",
+      description: "Real-time inventory synchronization across platforms",
+      icon: Box,
+    },
+  ];
+
+  const shippingSolutionsItems = [
+    {
+      title: "E-commerce Sellers",
+      href: "/shipping-features",
+      description: "Complete shipping solution for online stores",
+      icon: ShoppingCart,
+    },
+    {
+      title: "Amazon FBA Sellers",
+      href: "/shipping-features", 
+      description: "Optimize your FBA shipping and prep operations",
+      icon: Store,
+    },
+    {
+      title: "Shopify Merchants",
+      href: "/shipping-features",
+      description: "Native Shopify integration for seamless shipping",
+      icon: Settings,
+    },
+    {
+      title: "Multi-Channel Retailers",
+      href: "/shipping-features",
+      description: "Unified shipping across all sales channels",
+      icon: BarChart3,
+    },
+  ];
+
+  const repricingMenuItems = [
+    {
+      title: "AI Repricer",
+      href: "/repricing-features",
+      description: "Intelligent pricing with machine learning algorithms",
+      icon: Brain,
+    },
+    {
+      title: "Business Repricing",
+      href: "/repricing-features",
+      description: "Advanced repricing strategies for enterprise sellers",
+      icon: TrendingUp,
+    },
+    {
+      title: "Strategy Automation",
+      href: "/repricing-features",
+      description: "Automated rule-based pricing optimization",
+      icon: Target,
+    },
+    {
+      title: "Analytics Dashboard",
+      href: "/repricing-features",
+      description: "Real-time insights and performance metrics",
+      icon: BarChart3,
+    },
+  ];
+
+  const repricingSolutionsItems = [
+    {
+      title: "FBA Sellers",
+      href: "/repricing-features",
+      description: "Optimize Buy Box winning strategies",
+      icon: Store,
+    },
+    {
+      title: "Retail Arbitrage",
+      href: "/repricing-features",
+      description: "Maximize margins on resale products",
+      icon: DollarSign,
+    },
+    {
+      title: "Private Label",
+      href: "/repricing-features",
+      description: "Protect brand pricing and market position",
+      icon: Layers,
+    },
+    {
+      title: "Dropshippers",
+      href: "/repricing-features",
+      description: "Competitive pricing for dropshipping business",
+      icon: Globe,
+    },
+  ];
+
   const features = [
     {
       icon: Truck,
@@ -100,11 +222,174 @@ const LandingPage = () => {
             <span className="text-xl font-bold text-primary">PrepFox</span>
           </div>
           
-          <div className="hidden md:flex items-center space-x-8">
-            <Link to="/shipping-landing" className="text-muted-foreground hover:text-foreground transition-colors">Shipping</Link>
-            <Link to="/repricing-landing" className="text-muted-foreground hover:text-foreground transition-colors">Repricing</Link>
-            <Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors">About</Link>
-            <Link to="/privacy-policy" className="text-muted-foreground hover:text-foreground transition-colors">Resources</Link>
+          <div className="hidden md:flex items-center space-x-2">
+            <NavigationMenu>
+              <NavigationMenuList>
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger className="bg-transparent data-[state=open]:bg-accent/50">
+                    Shipping
+                  </NavigationMenuTrigger>
+                  <NavigationMenuContent>
+                    <div className="w-[800px] p-6">
+                      <div className="grid grid-cols-3 gap-6">
+                        <div>
+                          <h4 className="text-sm font-medium text-foreground mb-3">Product</h4>
+                          <div className="space-y-2">
+                            {shippingMenuItems.map((item) => (
+                              <NavigationMenuLink asChild key={item.title}>
+                                <Link
+                                  to={item.href}
+                                  className={cn(
+                                    "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                                  )}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <item.icon className="h-4 w-4" />
+                                    <div className="text-sm font-medium leading-none">{item.title}</div>
+                                  </div>
+                                  <p className="line-clamp-2 text-xs leading-snug text-muted-foreground">
+                                    {item.description}
+                                  </p>
+                                </Link>
+                              </NavigationMenuLink>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-medium text-foreground mb-3">Solutions</h4>
+                          <div className="space-y-2">
+                            {shippingSolutionsItems.map((item) => (
+                              <NavigationMenuLink asChild key={item.title}>
+                                <Link
+                                  to={item.href}
+                                  className={cn(
+                                    "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                                  )}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <item.icon className="h-4 w-4" />
+                                    <div className="text-sm font-medium leading-none">{item.title}</div>
+                                  </div>
+                                  <p className="line-clamp-2 text-xs leading-snug text-muted-foreground">
+                                    {item.description}
+                                  </p>
+                                </Link>
+                              </NavigationMenuLink>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="space-y-4">
+                          <div>
+                            <h4 className="text-sm font-medium text-foreground mb-3">Quick Links</h4>
+                            <div className="space-y-2">
+                              <Link to="/shipping-features" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Features</Link>
+                              <Link to="/shipping-pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Pricing</Link>
+                              <Link to="/shipping" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Dashboard</Link>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Button size="sm" className="w-full" asChild>
+                              <Link to="/auth">Start Free Trial</Link>
+                            </Button>
+                            <Button size="sm" variant="outline" className="w-full" asChild>
+                              <Link to="/shipping-landing">Learn More</Link>
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger className="bg-transparent data-[state=open]:bg-accent/50">
+                    Repricing
+                  </NavigationMenuTrigger>
+                  <NavigationMenuContent>
+                    <div className="w-[800px] p-6">
+                      <div className="grid grid-cols-3 gap-6">
+                        <div>
+                          <h4 className="text-sm font-medium text-foreground mb-3">Product</h4>
+                          <div className="space-y-2">
+                            {repricingMenuItems.map((item) => (
+                              <NavigationMenuLink asChild key={item.title}>
+                                <Link
+                                  to={item.href}
+                                  className={cn(
+                                    "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                                  )}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <item.icon className="h-4 w-4" />
+                                    <div className="text-sm font-medium leading-none">{item.title}</div>
+                                  </div>
+                                  <p className="line-clamp-2 text-xs leading-snug text-muted-foreground">
+                                    {item.description}
+                                  </p>
+                                </Link>
+                              </NavigationMenuLink>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-medium text-foreground mb-3">Solutions</h4>
+                          <div className="space-y-2">
+                            {repricingSolutionsItems.map((item) => (
+                              <NavigationMenuLink asChild key={item.title}>
+                                <Link
+                                  to={item.href}
+                                  className={cn(
+                                    "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                                  )}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <item.icon className="h-4 w-4" />
+                                    <div className="text-sm font-medium leading-none">{item.title}</div>
+                                  </div>
+                                  <p className="line-clamp-2 text-xs leading-snug text-muted-foreground">
+                                    {item.description}
+                                  </p>
+                                </Link>
+                              </NavigationMenuLink>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="space-y-4">
+                          <div>
+                            <h4 className="text-sm font-medium text-foreground mb-3">Quick Links</h4>
+                            <div className="space-y-2">
+                              <Link to="/repricing-features" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Features</Link>
+                              <Link to="/repricing-pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Pricing</Link>
+                              <Link to="/repricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Dashboard</Link>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Button size="sm" className="w-full" asChild>
+                              <Link to="/auth">Start Free Trial</Link>
+                            </Button>
+                            <Button size="sm" variant="outline" className="w-full" asChild>
+                              <Link to="/repricing-landing">Learn More</Link>
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+
+                <NavigationMenuItem>
+                  <Link to="/about" className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-transparent px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50">
+                    About
+                  </Link>
+                </NavigationMenuItem>
+
+                <NavigationMenuItem>
+                  <Link to="/privacy-policy" className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-transparent px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50">
+                    Resources
+                  </Link>
+                </NavigationMenuItem>
+              </NavigationMenuList>
+            </NavigationMenu>
           </div>
 
           <div className="flex items-center space-x-4">
