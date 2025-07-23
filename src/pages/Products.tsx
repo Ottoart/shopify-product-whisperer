@@ -360,61 +360,59 @@ export default function Products() {
               </CardContent>
             </Card>
           ) : (
-            <Card>
-              <ProductList
-                products={products.map(p => ({
-                  id: p.id,
-                  title: p.title || '',
-                  handle: p.handle,
-                  type: p.product_type || '',
-                  vendor: p.vendor || '',
-                  category: p.category || '',
-                  tags: p.tags || '',
-                  published: p.status === 'active',
-                  option1Name: 'Title',
-                  option1Value: 'Default Title',
-                  variantSku: p.sku || '',
-                  variantGrams: 0,
-                  variantInventoryTracker: 'shopify',
-                  variantInventoryQty: p.inventory_quantity || 0,
-                  variantInventoryPolicy: 'deny',
-                  variantFulfillmentService: 'manual',
-                  variantPrice: p.price || 0,
-                  variantCompareAtPrice: 0,
-                  variantRequiresShipping: true,
-                  variantTaxable: true,
-                  variantBarcode: '',
-                  imagePosition: 1,
-                  imageSrc: p.images?.[0] || '',
-                  bodyHtml: p.body_html || '',
-                  seoTitle: p.title || '',
-                  seoDescription: '',
-                  googleShoppingCondition: p.google_shopping_condition || 'new',
-                  googleShoppingGender: p.google_shopping_gender || 'unisex',
-                  googleShoppingAgeGroup: p.google_shopping_age_group || 'adult',
-                  updatedAt: p.updated_at || '',
-                  shopifySyncStatus: p.shopify_sync_status,
-                  shopifySyncedAt: p.shopify_synced_at
-                }))}
-                selectedProducts={selectedProducts}
-                onSelectionChange={setSelectedProducts}
-                onAddToQueue={(productIds) => {
-                  toast({
-                    title: "Products added to queue",
-                    description: `${productIds.length} products added to optimization queue`,
-                  });
-                }}
-                onProductsUpdated={fetchProducts}
-                onProductUpdated={(productId, updatedData) => {
-                  toast({
-                    title: "Product updated",
-                    description: "Product has been successfully updated",
-                  });
-                  fetchProducts();
-                }}
-                storeUrl={stores.find(s => s.platform === 'shopify')?.domain || ''}
-              />
-            </Card>
+            <ProductList
+              products={products.map(p => ({
+                id: p.id,
+                title: p.title || '',
+                handle: p.handle,
+                type: p.product_type || '',
+                vendor: p.vendor || '',
+                category: p.category || '',
+                tags: p.tags || '',
+                published: p.status === 'active',
+                option1Name: 'Title',
+                option1Value: 'Default Title',
+                variantSku: p.sku || '',
+                variantGrams: 0,
+                variantInventoryTracker: 'shopify',
+                variantInventoryQty: p.inventory_quantity || 0,
+                variantInventoryPolicy: 'deny',
+                variantFulfillmentService: 'manual',
+                variantPrice: p.price || 0,
+                variantCompareAtPrice: 0,
+                variantRequiresShipping: true,
+                variantTaxable: true,
+                variantBarcode: '',
+                imagePosition: 1,
+                imageSrc: p.images?.[0] || '',
+                bodyHtml: p.body_html || '',
+                seoTitle: p.title || '',
+                seoDescription: '',
+                googleShoppingCondition: p.google_shopping_condition || 'new',
+                googleShoppingGender: p.google_shopping_gender || 'unisex',
+                googleShoppingAgeGroup: p.google_shopping_age_group || 'adult',
+                updatedAt: p.updated_at || '',
+                shopifySyncStatus: p.shopify_sync_status,
+                shopifySyncedAt: p.shopify_synced_at
+              }))}
+              selectedProducts={selectedProducts}
+              onSelectionChange={setSelectedProducts}
+              onAddToQueue={(productIds) => {
+                toast({
+                  title: "Products added to queue",
+                  description: `${productIds.length} products added to optimization queue`,
+                });
+              }}
+              onProductsUpdated={fetchProducts}
+              onProductUpdated={(productId, updatedData) => {
+                toast({
+                  title: "Product updated",
+                  description: "Product has been successfully updated",
+                });
+                fetchProducts();
+              }}
+              storeUrl={stores.find(s => s.platform === 'shopify')?.domain || ''}
+            />
           )}
         </>
       )}
