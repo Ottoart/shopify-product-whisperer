@@ -34,6 +34,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ConnectStoreButton } from "@/components/ConnectStoreButton";
 import { ProductComparison } from "@/components/ProductComparison";
 import { ProductList } from "@/components/ProductList";
+import { SyncProgressDialog } from "@/components/SyncProgressDialog";
 
 interface Product {
   id: string;
@@ -94,6 +95,7 @@ export default function Products() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [optimizedData, setOptimizedData] = useState<any>(null);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
+  const [showSyncProgress, setShowSyncProgress] = useState(false);
 
   useEffect(() => {
     if (session?.user) {
@@ -145,68 +147,45 @@ export default function Products() {
   };
 
   const syncProducts = async (storeId?: string) => {
+    if (storeId) {
+      // Single store sync - use direct method
+      await syncSingleStore(storeId);
+    } else {
+      // Multi-store sync - show progress dialog
+      setShowSyncProgress(true);
+    }
+  };
+
+  const syncSingleStore = async (storeId: string) => {
     try {
       setSyncLoading(true);
-      
-      if (storeId) {
-        // Sync specific store
-        const store = stores.find(s => s.id === storeId);
-        if (store && store.platform === 'shopify') {
-          // Parse access token if it's JSON and clean it
-          let accessToken = store.access_token;
-          try {
-            const parsed = JSON.parse(accessToken);
-            accessToken = (parsed.access_token || parsed.accessToken || accessToken).trim().split(' ')[0];
-          } catch {
-            // If parsing fails, clean the token anyway
-            accessToken = accessToken.trim().split(' ')[0];
-          }
-
-          const { error } = await supabase.functions.invoke('sync-shopify-products', {
-            body: { 
-              storeUrl: store.domain,
-              accessToken: accessToken 
-            }
-          });
-          if (error) throw error;
+      const store = stores.find(s => s.id === storeId);
+      if (store && store.platform === 'shopify') {
+        // Parse access token if it's JSON and clean it
+        let accessToken = store.access_token;
+        try {
+          const parsed = JSON.parse(accessToken);
+          accessToken = (parsed.access_token || parsed.accessToken || accessToken).trim().split(' ')[0];
+        } catch {
+          // If parsing fails, clean the token anyway
+          accessToken = accessToken.trim().split(' ')[0];
         }
-      } else {
-        // Sync all Shopify stores
-        const shopifyStores = stores.filter(s => s.platform === 'shopify');
-        for (const store of shopifyStores) {
-          // Parse access token if it's JSON and clean it
-          let accessToken = store.access_token;
-          try {
-            const parsed = JSON.parse(accessToken);
-            accessToken = (parsed.access_token || parsed.accessToken || accessToken).trim().split(' ')[0];
-          } catch {
-            // If parsing fails, clean the token anyway
-            accessToken = accessToken.trim().split(' ')[0];
-          }
 
-          const { error } = await supabase.functions.invoke('sync-shopify-products', {
-            body: { 
-              storeUrl: store.domain,
-              accessToken: accessToken 
-            }
-          });
-          if (error) {
-            console.error(`Sync failed for store ${store.store_name}:`, error);
+        const { error } = await supabase.functions.invoke('sync-shopify-products', {
+          body: { 
+            storeUrl: store.domain,
+            accessToken: accessToken 
           }
-        }
+        });
+        if (error) throw error;
+        
+        toast({
+          title: "Sync completed",
+          description: `Products synced from ${store.store_name}`,
+        });
       }
-
-      toast({
-        title: "Sync started",
-        description: "Product sync is running in the background",
-      });
-
-      // Refresh products after a short delay
-      setTimeout(() => {
-        fetchProducts();
-      }, 2000);
     } catch (error) {
-      console.error('Error syncing products:', error);
+      console.error('Error syncing store:', error);
       toast({
         title: "Sync failed",
         description: "Failed to sync products from store",
@@ -214,6 +193,34 @@ export default function Products() {
       });
     } finally {
       setSyncLoading(false);
+      fetchProducts();
+    }
+  };
+
+  const syncAllStores = async () => {
+    // This function is called from the progress dialog
+    const shopifyStores = stores.filter(s => s.platform === 'shopify');
+    
+    for (const store of shopifyStores) {
+      // Parse access token if it's JSON and clean it
+      let accessToken = store.access_token;
+      try {
+        const parsed = JSON.parse(accessToken);
+        accessToken = (parsed.access_token || parsed.accessToken || accessToken).trim().split(' ')[0];
+      } catch {
+        // If parsing fails, clean the token anyway
+        accessToken = accessToken.trim().split(' ')[0];
+      }
+
+      const { error } = await supabase.functions.invoke('sync-shopify-products', {
+        body: { 
+          storeUrl: store.domain,
+          accessToken: accessToken 
+        }
+      });
+      if (error) {
+        throw new Error(`Failed to sync ${store.store_name}: ${error.message}`);
+      }
     }
   };
 
@@ -486,6 +493,17 @@ export default function Products() {
           }}
         />
       )}
+
+      {/* Sync Progress Dialog */}
+      <SyncProgressDialog
+        isOpen={showSyncProgress}
+        onClose={() => setShowSyncProgress(false)}
+        onSyncComplete={() => {
+          setShowSyncProgress(false);
+          fetchProducts();
+        }}
+        syncFunction={syncAllStores}
+      />
     </div>
   );
 }

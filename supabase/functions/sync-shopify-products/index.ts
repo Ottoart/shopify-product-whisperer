@@ -37,9 +37,20 @@ serve(async (req) => {
     }
 
     // Clean the access token - remove any extra text and whitespace
-    const cleanAccessToken = accessToken.toString().trim().split(' ')[0];
-    console.log('Original token:', accessToken);
-    console.log('Cleaned token:', cleanAccessToken);
+    let cleanAccessToken = accessToken.toString().trim();
+    
+    // If token contains extra text after the actual token, extract just the token part
+    if (cleanAccessToken.includes(' ')) {
+      cleanAccessToken = cleanAccessToken.split(' ')[0];
+    }
+    
+    // Ensure token starts with 'shpat_' for Shopify
+    if (!cleanAccessToken.startsWith('shpat_')) {
+      throw new Error('Invalid Shopify access token format');
+    }
+    
+    console.log('Cleaned token length:', cleanAccessToken.length);
+    console.log('Token starts with:', cleanAccessToken.substring(0, 10));
 
     const shopifyDomain = storeUrl.replace(/^https?:\/\//, '').replace(/\/$/, '').split('_')[0];
     const baseUrl = `https://${shopifyDomain}/admin/api/2023-10`;
@@ -68,7 +79,8 @@ serve(async (req) => {
       headers: {
         'X-Shopify-Access-Token': cleanAccessToken,
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'User-Agent': 'Supabase-Edge-Function/1.0'
       },
     });
 
