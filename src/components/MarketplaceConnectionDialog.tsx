@@ -128,13 +128,51 @@ export function MarketplaceConnectionDialog({
         return;
       }
 
-      // Create store configuration
+      // Create store configuration with standardized data format
+      let cleanDomain = credentials.shopDomain || credentials.sellerId || marketplace.name.toLowerCase();
+      let cleanAccessToken = credentials.accessToken || credentials.clientSecret || credentials.secretKey || "";
+      
+      // Clean domain - remove any timestamp suffixes and normalize
+      if (cleanDomain.includes('_')) {
+        cleanDomain = cleanDomain.split('_')[0];
+      }
+      cleanDomain = cleanDomain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+      
+      // Clean access token - ensure it's a clean string, not JSON
+      cleanAccessToken = cleanAccessToken.toString().trim();
+      
+      // If it's a JSON object, extract the actual token
+      try {
+        const parsed = JSON.parse(cleanAccessToken);
+        if (parsed.access_token) {
+          cleanAccessToken = parsed.access_token;
+        } else if (parsed.accessToken) {
+          cleanAccessToken = parsed.accessToken;
+        }
+      } catch (e) {
+        // Not JSON, continue with string cleaning
+      }
+      
+      // Remove any extra text and keep only the clean token
+      cleanAccessToken = cleanAccessToken
+        .replace(/[\s\n\r\t\u2028\u2029]/g, '') // Remove whitespace and line separators
+        .split(/\s+/)[0] // Take first part if there are spaces
+        .replace(/[^\w-]/g, ''); // Keep only alphanumeric, underscore, and hyphen
+      
+      // Extract specific token format if present (e.g., shpat_ for Shopify)
+      if (marketplace.platform === 'shopify') {
+        const shpatMatch = cleanAccessToken.match(/shpat_[a-zA-Z0-9]+/);
+        if (shpatMatch) {
+          cleanAccessToken = shpatMatch[0];
+        }
+      }
+
       const storeData = {
         user_id: user.id,
         store_name: credentials.storeName || `${marketplace.name} Store`,
         platform: marketplace.platform,
-        domain: credentials.shopDomain || credentials.sellerId || marketplace.name.toLowerCase(),
-        access_token: credentials.accessToken || credentials.clientSecret || credentials.secretKey || "",
+        domain: cleanDomain,
+        access_token: cleanAccessToken,
         is_active: true
       };
 

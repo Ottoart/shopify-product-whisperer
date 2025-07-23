@@ -74,7 +74,11 @@ serve(async (req) => {
     console.log('Cleaned token:', cleanAccessToken);
     console.log('Token length:', cleanAccessToken.length);
 
-    const shopifyDomain = storeUrl.replace(/^https?:\/\//, '').replace(/\/$/, '').split('_')[0];
+    // Clean domain - remove timestamp suffixes and normalize
+    let shopifyDomain = storeUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    if (shopifyDomain.includes('_')) {
+      shopifyDomain = shopifyDomain.split('_')[0];
+    }
     const baseUrl = `https://${shopifyDomain}/admin/api/2023-10`;
 
     console.log(`Starting batch sync for user ${user.id}, page ${startPage}, batch size ${batchSize}`);
