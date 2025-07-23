@@ -101,10 +101,10 @@ const LandingPage = () => {
           </div>
           
           <div className="hidden md:flex items-center space-x-8">
-            <Link to="/features" className="text-muted-foreground hover:text-foreground transition-colors">Features</Link>
-            <Link to="/about-us" className="text-muted-foreground hover:text-foreground transition-colors">About</Link>
-            <Link to="/pricing" className="text-muted-foreground hover:text-foreground transition-colors">Pricing</Link>
-            <Link to="/resources" className="text-muted-foreground hover:text-foreground transition-colors">Resources</Link>
+            <Link to="/shipping-landing" className="text-muted-foreground hover:text-foreground transition-colors">Shipping</Link>
+            <Link to="/repricing-landing" className="text-muted-foreground hover:text-foreground transition-colors">Repricing</Link>
+            <Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors">About</Link>
+            <Link to="/privacy-policy" className="text-muted-foreground hover:text-foreground transition-colors">Resources</Link>
           </div>
 
           <div className="flex items-center space-x-4">
@@ -135,13 +135,17 @@ const LandingPage = () => {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <Button size="lg" className="bg-gradient-primary hover:shadow-glow transition-smooth text-lg px-8 py-6">
-              <Play className="mr-2 h-5 w-5" />
-              Start Free 30-Day Trial
+            <Button size="lg" className="bg-gradient-primary hover:shadow-glow transition-smooth text-lg px-8 py-6" asChild>
+              <Link to="/auth">
+                <Play className="mr-2 h-5 w-5" />
+                Start Free 30-Day Trial
+              </Link>
             </Button>
-            <Button size="lg" variant="outline" className="text-lg px-8 py-6 border-primary/20 hover:bg-primary/5">
-              Watch Demo
-              <ArrowRight className="ml-2 h-5 w-5" />
+            <Button size="lg" variant="outline" className="text-lg px-8 py-6 border-primary/20 hover:bg-primary/5" asChild>
+              <Link to="/shipping-landing">
+                Watch Demo
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
             </Button>
           </div>
 
@@ -195,7 +199,7 @@ const LandingPage = () => {
                       </div>
                       <div className="mt-4">
                         <Button variant="ghost" className="text-primary p-0 hover:bg-transparent hover:text-primary/90" asChild>
-                          <Link to="/auth">
+                          <Link to={index === 0 ? "/shipping-landing" : index === 1 ? "/repricing-landing" : "/auth"}>
                             Learn more <ArrowRight className="ml-1 h-4 w-4" />
                           </Link>
                         </Button>
@@ -282,13 +286,17 @@ const LandingPage = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" variant="secondary" className="text-lg px-8 py-6">
-              <Play className="mr-2 h-5 w-5" />
-              Start Free 30-Day Trial
+            <Button size="lg" variant="secondary" className="text-lg px-8 py-6" asChild>
+              <Link to="/auth">
+                <Play className="mr-2 h-5 w-5" />
+                Start Free 30-Day Trial
+              </Link>
             </Button>
-            <Button size="lg" variant="outline" className="text-lg px-8 py-6 border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10">
-              Schedule Demo
-              <Users className="ml-2 h-5 w-5" />
+            <Button size="lg" variant="outline" className="text-lg px-8 py-6 border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10" asChild>
+              <Link to="/repricing-landing">
+                Schedule Demo
+                <Users className="ml-2 h-5 w-5" />
+              </Link>
             </Button>
           </div>
 
