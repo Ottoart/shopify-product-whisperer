@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import MainLayout from "@/components/MainLayout";
 import { 
   Truck, 
   Package, 
@@ -176,33 +177,7 @@ const ShippingFeatures = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-              <Truck className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-bold text-primary">PrepFox Ship</span>
-          </div>
-          
-          <div className="hidden md:flex items-center space-x-8">
-            <Link to="/shipping" className="text-muted-foreground hover:text-foreground transition-colors">Home</Link>
-            <Link to="/shipping-features" className="text-foreground font-medium">Features</Link>
-            <Link to="/shipping-pricing" className="text-muted-foreground hover:text-foreground transition-colors">Pricing</Link>
-            <Link to="/shipping-integrations" className="text-muted-foreground hover:text-foreground transition-colors">Integrations</Link>
-            <Link to="/shipping-resources" className="text-muted-foreground hover:text-foreground transition-colors">Resources</Link>
-          </div>
-
-          <div className="flex items-center space-x-4">
-            <Link to="/auth" className="text-muted-foreground hover:text-foreground transition-colors">Sign In</Link>
-            <Button asChild className="bg-gradient-primary hover:shadow-glow transition-smooth">
-              <Link to="/auth">Start Free Trial</Link>
-            </Button>
-          </div>
-        </div>
-      </nav>
+    <MainLayout>
 
       {/* Hero Section */}
       <section className="py-20 px-4 bg-gradient-to-br from-background via-secondary/20 to-accent/10">
@@ -396,7 +371,7 @@ const ShippingFeatures = () => {
           </div>
         </div>
       </footer>
-    </div>
+    </MainLayout>
   );
 };
 
