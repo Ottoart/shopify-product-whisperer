@@ -152,13 +152,14 @@ export default function Products() {
         // Sync specific store
         const store = stores.find(s => s.id === storeId);
         if (store && store.platform === 'shopify') {
-          // Parse access token if it's JSON
+          // Parse access token if it's JSON and clean it
           let accessToken = store.access_token;
           try {
             const parsed = JSON.parse(accessToken);
-            accessToken = parsed.access_token || parsed.accessToken || accessToken;
+            accessToken = (parsed.access_token || parsed.accessToken || accessToken).trim().split(' ')[0];
           } catch {
-            // If parsing fails, use as-is (likely already a string)
+            // If parsing fails, clean the token anyway
+            accessToken = accessToken.trim().split(' ')[0];
           }
 
           const { error } = await supabase.functions.invoke('sync-shopify-products', {
@@ -173,13 +174,14 @@ export default function Products() {
         // Sync all Shopify stores
         const shopifyStores = stores.filter(s => s.platform === 'shopify');
         for (const store of shopifyStores) {
-          // Parse access token if it's JSON
+          // Parse access token if it's JSON and clean it
           let accessToken = store.access_token;
           try {
             const parsed = JSON.parse(accessToken);
-            accessToken = parsed.access_token || parsed.accessToken || accessToken;
+            accessToken = (parsed.access_token || parsed.accessToken || accessToken).trim().split(' ')[0];
           } catch {
-            // If parsing fails, use as-is (likely already a string)
+            // If parsing fails, clean the token anyway
+            accessToken = accessToken.trim().split(' ')[0];
           }
 
           const { error } = await supabase.functions.invoke('sync-shopify-products', {

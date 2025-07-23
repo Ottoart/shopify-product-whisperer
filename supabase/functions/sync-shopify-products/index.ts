@@ -36,7 +36,12 @@ serve(async (req) => {
       throw new Error('Store URL and access token are required');
     }
 
-    const shopifyDomain = storeUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    // Clean the access token - remove any extra text and whitespace
+    const cleanAccessToken = accessToken.toString().trim().split(' ')[0];
+    console.log('Original token:', accessToken);
+    console.log('Cleaned token:', cleanAccessToken);
+
+    const shopifyDomain = storeUrl.replace(/^https?:\/\//, '').replace(/\/$/, '').split('_')[0];
     const baseUrl = `https://${shopifyDomain}/admin/api/2023-10`;
 
     console.log(`Starting batch sync for user ${user.id}, page ${startPage}, batch size ${batchSize}`);
@@ -61,7 +66,7 @@ serve(async (req) => {
 
     const response = await fetch(url, {
       headers: {
-        'X-Shopify-Access-Token': accessToken.toString(),
+        'X-Shopify-Access-Token': cleanAccessToken,
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },

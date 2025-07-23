@@ -41,12 +41,13 @@ export const useShopifyProductSync = () => {
     const store = stores[0];
     let accessToken = store.access_token;
     
-    // Parse access token if it's JSON
+    // Parse access token if it's JSON and clean it
     try {
       const parsed = JSON.parse(accessToken);
-      accessToken = parsed.access_token || parsed.accessToken || accessToken;
+      accessToken = (parsed.access_token || parsed.accessToken || accessToken).trim().split(' ')[0];
     } catch {
-      // If parsing fails, use as-is (likely already a string)
+      // If parsing fails, clean the token anyway
+      accessToken = accessToken.trim().split(' ')[0];
     }
     
     return { storeUrl: store.domain, accessToken };
