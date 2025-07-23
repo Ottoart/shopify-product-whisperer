@@ -56,11 +56,13 @@ interface Product {
   user_id?: string;
   vendor?: string;
   product_type?: string;
+  type?: string;
   tags?: string;
   shopify_product_id?: string;
   shopify_synced_at?: string;
   shopify_sync_status?: string;
   published_at?: string;
+  published?: boolean;
   template_suffix?: string;
   published_scope?: string;
   admin_graphql_api_id?: string;
@@ -69,6 +71,24 @@ interface Product {
   google_shopping_condition?: string;
   google_shopping_gender?: string;
   google_shopping_product_category?: string;
+  // Database snake_case fields
+  option1_name?: string;
+  option1_value?: string;
+  variant_sku?: string;
+  variant_grams?: number;
+  variant_inventory_tracker?: string;
+  variant_inventory_qty?: number;
+  variant_inventory_policy?: string;
+  variant_fulfillment_service?: string;
+  variant_price?: number;
+  variant_compare_at_price?: number;
+  variant_requires_shipping?: boolean;
+  variant_taxable?: boolean;
+  variant_barcode?: string;
+  image_position?: number;
+  image_src?: string;
+  seo_title?: string;
+  seo_description?: string;
 }
 
 interface StoreConfig {
@@ -416,32 +436,32 @@ export default function Products() {
           ) : (
             <ProductList
               products={products.map(p => ({
-                id: p.id,
+                id: p.handle,
                 title: p.title || '',
                 handle: p.handle,
-                type: p.product_type || '',
+                type: p.type || '',
                 vendor: p.vendor || '',
                 category: p.category || '',
                 tags: p.tags || '',
-                published: p.status === 'active',
-                option1Name: 'Title',
-                option1Value: 'Default Title',
-                variantSku: p.sku || '',
-                variantGrams: 0,
-                variantInventoryTracker: 'shopify',
-                variantInventoryQty: p.inventory_quantity || 0,
-                variantInventoryPolicy: 'deny',
-                variantFulfillmentService: 'manual',
-                variantPrice: p.price || 0,
-                variantCompareAtPrice: 0,
-                variantRequiresShipping: true,
-                variantTaxable: true,
-                variantBarcode: '',
-                imagePosition: 1,
-                imageSrc: p.images?.[0] || '',
+                published: p.published || false,
+                option1Name: p.option1_name || '',
+                option1Value: p.option1_value || '',
+                variantSku: p.variant_sku || '',
+                variantGrams: p.variant_grams || 0,
+                variantInventoryTracker: p.variant_inventory_tracker || '',
+                variantInventoryQty: p.variant_inventory_qty || 0,
+                variantInventoryPolicy: p.variant_inventory_policy || '',
+                variantFulfillmentService: p.variant_fulfillment_service || '',
+                variantPrice: p.variant_price || 0,
+                variantCompareAtPrice: p.variant_compare_at_price || 0,
+                variantRequiresShipping: p.variant_requires_shipping || true,
+                variantTaxable: p.variant_taxable || true,
+                variantBarcode: p.variant_barcode || '',
+                imagePosition: p.image_position || 0,
+                imageSrc: p.image_src || '',
                 bodyHtml: p.body_html || '',
-                seoTitle: p.title || '',
-                seoDescription: '',
+                seoTitle: p.seo_title || '',
+                seoDescription: p.seo_description || '',
                 googleShoppingCondition: p.google_shopping_condition || 'new',
                 googleShoppingGender: p.google_shopping_gender || 'unisex',
                 googleShoppingAgeGroup: p.google_shopping_age_group || 'adult',
