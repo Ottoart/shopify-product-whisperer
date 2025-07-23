@@ -61,8 +61,9 @@ serve(async (req) => {
 
     const response = await fetch(url, {
       headers: {
-        'X-Shopify-Access-Token': accessToken,
+        'X-Shopify-Access-Token': accessToken.toString(),
         'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
     });
 
