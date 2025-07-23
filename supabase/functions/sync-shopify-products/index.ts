@@ -53,10 +53,13 @@ serve(async (req) => {
       // Not JSON, continue with string cleaning
     }
     
-    // Remove any whitespace, newlines, and non-alphanumeric characters except underscores
-    cleanAccessToken = cleanAccessToken.replace(/[\s\n\r\t]/g, '').split(' ')[0];
+    // Remove any whitespace, newlines, control characters, and extra text
+    cleanAccessToken = cleanAccessToken
+      .replace(/[\s\n\r\t\u2028\u2029]/g, '') // Remove all whitespace and line separators
+      .split(/\s+/)[0] // Take first part if there are spaces
+      .replace(/[^\w-]/g, ''); // Keep only alphanumeric, underscore, and hyphen
     
-    // Remove any trailing text like "Shopify" or other descriptions
+    // Extract shpat token if it exists in the string
     const shpatMatch = cleanAccessToken.match(/shpat_[a-zA-Z0-9]+/);
     if (shpatMatch) {
       cleanAccessToken = shpatMatch[0];
@@ -64,7 +67,8 @@ serve(async (req) => {
     
     // Ensure token starts with 'shpat_' for Shopify
     if (!cleanAccessToken.startsWith('shpat_')) {
-      throw new Error('Invalid Shopify access token format');
+      console.error('Invalid token format. Token should start with shpat_ but got:', cleanAccessToken.substring(0, 20));
+      throw new Error('Invalid Shopify access token format. Please check your store configuration.');
     }
     
     console.log('Cleaned token:', cleanAccessToken);

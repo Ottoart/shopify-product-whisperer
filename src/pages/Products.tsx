@@ -161,15 +161,20 @@ export default function Products() {
       setSyncLoading(true);
       const store = stores.find(s => s.id === storeId);
       if (store && store.platform === 'shopify') {
-        // Parse access token if it's JSON and clean it
+        // Parse access token if it's JSON and clean it robustly
         let accessToken = store.access_token;
         try {
           const parsed = JSON.parse(accessToken);
-          accessToken = (parsed.access_token || parsed.accessToken || accessToken).trim().split(' ')[0];
+          accessToken = (parsed.access_token || parsed.accessToken || accessToken);
         } catch {
-          // If parsing fails, clean the token anyway
-          accessToken = accessToken.trim().split(' ')[0];
+          // If parsing fails, use as-is
         }
+        
+        // Clean token more thoroughly
+        accessToken = accessToken.toString().trim()
+          .replace(/[\s\n\r\t\u2028\u2029]/g, '') // Remove all whitespace including line separators
+          .split(/\s+/)[0] // Take first part
+          .replace(/[^\w-]/g, ''); // Keep only alphanumeric, underscore, and hyphen
 
         const { error } = await supabase.functions.invoke('sync-shopify-products', {
           body: { 
@@ -202,15 +207,20 @@ export default function Products() {
     const shopifyStores = stores.filter(s => s.platform === 'shopify');
     
     for (const store of shopifyStores) {
-      // Parse access token if it's JSON and clean it
+      // Parse access token if it's JSON and clean it robustly
       let accessToken = store.access_token;
       try {
         const parsed = JSON.parse(accessToken);
-        accessToken = (parsed.access_token || parsed.accessToken || accessToken).trim().split(' ')[0];
+        accessToken = (parsed.access_token || parsed.accessToken || accessToken);
       } catch {
-        // If parsing fails, clean the token anyway
-        accessToken = accessToken.trim().split(' ')[0];
+        // If parsing fails, use as-is
       }
+      
+      // Clean token more thoroughly
+      accessToken = accessToken.toString().trim()
+        .replace(/[\s\n\r\t\u2028\u2029]/g, '') // Remove all whitespace including line separators
+        .split(/\s+/)[0] // Take first part
+        .replace(/[^\w-]/g, ''); // Keep only alphanumeric, underscore, and hyphen
 
       const { error } = await supabase.functions.invoke('sync-shopify-products', {
         body: { 
@@ -314,16 +324,27 @@ export default function Products() {
     return matchesSearch && matchesStore && matchesStatus;
   });
 
-  // Show loading only during initial page load
-  if (initialLoad || !session) {
+  // Show consistent loading for both users
+  if (initialLoad) {
     return (
       <div className="p-6">
-        <div className="space-y-4">
-          <div className="h-8 bg-muted rounded w-1/3 animate-pulse" />
-          <div className="h-4 bg-muted rounded w-2/3 animate-pulse" />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="space-y-6">
+          {/* Header skeleton */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="space-y-2">
+              <div className="h-8 bg-muted rounded w-48 animate-pulse" />
+              <div className="h-4 bg-muted rounded w-96 animate-pulse" />
+            </div>
+            <div className="flex gap-2">
+              <div className="h-10 w-32 bg-muted rounded animate-pulse" />
+              <div className="h-10 w-32 bg-muted rounded animate-pulse" />
+            </div>
+          </div>
+          
+          {/* Content skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="h-64 bg-muted rounded animate-pulse" />
+              <div key={i} className="h-64 bg-muted rounded-lg animate-pulse" />
             ))}
           </div>
         </div>
