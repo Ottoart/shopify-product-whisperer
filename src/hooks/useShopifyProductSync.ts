@@ -22,11 +22,34 @@ export const useShopifyProductSync = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncProgress, setSyncProgress] = useState({ current: 0, total: 0 });
 
-  // Get Shopify credentials
-  const getShopifyCredentials = () => {
-    const storeUrl = localStorage.getItem('shopify_domain');
-    const accessToken = localStorage.getItem('shopify_access_token');
-    return { storeUrl, accessToken };
+  // Get Shopify credentials from stores table instead of localStorage
+  const getShopifyCredentials = async () => {
+    if (!session?.user?.id) return { storeUrl: null, accessToken: null };
+    
+    const { data: stores } = await supabase
+      .from('store_configurations')
+      .select('domain, access_token')
+      .eq('user_id', session.user.id)
+      .eq('platform', 'shopify')
+      .eq('is_active', true)
+      .limit(1);
+    
+    if (!stores || stores.length === 0) {
+      return { storeUrl: null, accessToken: null };
+    }
+    
+    const store = stores[0];
+    let accessToken = store.access_token;
+    
+    // Parse access token if it's JSON
+    try {
+      const parsed = JSON.parse(accessToken);
+      accessToken = parsed.access_token || parsed.accessToken || accessToken;
+    } catch {
+      // If parsing fails, use as-is (likely already a string)
+    }
+    
+    return { storeUrl: store.domain, accessToken };
   };
 
   // Get sync status
@@ -112,7 +135,7 @@ export const useShopifyProductSync = () => {
   // Sync batch mutation
   const syncBatchMutation = useMutation({
     mutationFn: async ({ batchSize = 250, startPage = 1, silent = false }: { batchSize?: number; startPage?: number; silent?: boolean }) => {
-      const { storeUrl, accessToken } = getShopifyCredentials();
+      const { storeUrl, accessToken } = await getShopifyCredentials();
       
       if (!storeUrl || !accessToken) {
         throw new Error('Shopify credentials not found. Please configure your store settings first.');
@@ -159,7 +182,7 @@ export const useShopifyProductSync = () => {
     
     try {
       // Get initial count from Shopify to estimate progress
-      const { storeUrl, accessToken } = getShopifyCredentials();
+      const { storeUrl, accessToken } = await getShopifyCredentials();
       
       let page = 1;
       let hasMorePages = true;
@@ -232,8 +255,8 @@ export const useShopifyProductSync = () => {
     syncBatch,
     
     // Helpers
-    hasCredentials: () => {
-      const { storeUrl, accessToken } = getShopifyCredentials();
+    hasCredentials: async () => {
+      const { storeUrl, accessToken } = await getShopifyCredentials();
       return Boolean(storeUrl && accessToken);
     },
     

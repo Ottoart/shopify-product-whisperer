@@ -85,6 +85,7 @@ export default function Products() {
   const [products, setProducts] = useState<Product[]>([]);
   const [stores, setStores] = useState<StoreConfig[]>([]);
   const [loading, setLoading] = useState(true);
+  const [initialLoad, setInitialLoad] = useState(true);
   const [syncLoading, setSyncLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStore, setSelectedStore] = useState<string>("all");
@@ -96,8 +97,12 @@ export default function Products() {
 
   useEffect(() => {
     if (session?.user) {
-      fetchStores();
-      fetchProducts();
+      Promise.all([fetchStores(), fetchProducts()]).finally(() => {
+        setInitialLoad(false);
+      });
+    } else if (session === null) {
+      // Session is definitely null (not loading)
+      setInitialLoad(false);
     }
   }, [session]);
 
@@ -147,10 +152,19 @@ export default function Products() {
         // Sync specific store
         const store = stores.find(s => s.id === storeId);
         if (store && store.platform === 'shopify') {
+          // Parse access token if it's JSON
+          let accessToken = store.access_token;
+          try {
+            const parsed = JSON.parse(accessToken);
+            accessToken = parsed.access_token || parsed.accessToken || accessToken;
+          } catch {
+            // If parsing fails, use as-is (likely already a string)
+          }
+
           const { error } = await supabase.functions.invoke('sync-shopify-products', {
             body: { 
               storeUrl: store.domain,
-              accessToken: store.access_token 
+              accessToken: accessToken 
             }
           });
           if (error) throw error;
@@ -159,10 +173,19 @@ export default function Products() {
         // Sync all Shopify stores
         const shopifyStores = stores.filter(s => s.platform === 'shopify');
         for (const store of shopifyStores) {
+          // Parse access token if it's JSON
+          let accessToken = store.access_token;
+          try {
+            const parsed = JSON.parse(accessToken);
+            accessToken = parsed.access_token || parsed.accessToken || accessToken;
+          } catch {
+            // If parsing fails, use as-is (likely already a string)
+          }
+
           const { error } = await supabase.functions.invoke('sync-shopify-products', {
             body: { 
               storeUrl: store.domain,
-              accessToken: store.access_token 
+              accessToken: accessToken 
             }
           });
           if (error) {
@@ -282,7 +305,8 @@ export default function Products() {
     return matchesSearch && matchesStore && matchesStatus;
   });
 
-  if (loading) {
+  // Show loading only during initial page load
+  if (initialLoad || !session) {
     return (
       <div className="p-6">
         <div className="space-y-4">
