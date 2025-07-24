@@ -51,8 +51,6 @@ interface RateResponse {
   estimated_days?: string;
   estimated_delivery?: string;
   zone?: string;
-  markup?: number;
-  total_rate?: number;
 }
 
 // UPS Carrier Implementation
@@ -60,11 +58,9 @@ class UPSCarrier {
   private credentials: any;
   private accessToken: string | null = null;
   private baseUrl = 'https://wwwcie.ups.com';
-  private markup: number = 0;
 
-  constructor(credentials: any, markup: number = 0) {
+  constructor(credentials: any) {
     this.credentials = credentials;
-    this.markup = markup;
   }
 
   private async authenticate(): Promise<void> {
@@ -206,9 +202,6 @@ class UPSCarrier {
           ? parseFloat(shipment.NegotiatedRateCharges.TotalCharge.MonetaryValue)
           : parseFloat(shipment.TotalCharges.MonetaryValue);
 
-        const markup = (rate * this.markup) / 100;
-        const totalRate = rate + markup;
-
         rates.push({
           id: `ups_${shipment.Service.Code}`,
           service_code: shipment.Service.Code,
@@ -216,9 +209,7 @@ class UPSCarrier {
           carrier: 'UPS',
           rate: rate,
           currency: shipment.TotalCharges.CurrencyCode,
-          estimated_days: shipment.GuaranteedDelivery?.BusinessDaysInTransit,
-          markup: markup,
-          total_rate: totalRate
+          estimated_days: shipment.GuaranteedDelivery?.BusinessDaysInTransit
         });
       }
     }
@@ -244,11 +235,9 @@ class UPSCarrier {
 class CanadaPostCarrier {
   private credentials: any;
   private baseUrl: string;
-  private markup: number = 0;
 
-  constructor(credentials: any, markup: number = 0) {
+  constructor(credentials: any) {
     this.credentials = credentials;
-    this.markup = markup;
     this.baseUrl = credentials.is_production 
       ? 'https://soa-gw.canadapost.ca'
       : 'https://ct.soa-gw.canadapost.ca';
@@ -304,8 +293,6 @@ class CanadaPostCarrier {
     
     while ((match = serviceRegex.exec(xmlResponse)) !== null) {
       const rate = parseFloat(match[3]);
-      const markup = (rate * this.markup) / 100;
-      const totalRate = rate + markup;
 
       rates.push({
         id: `cp_${match[1]}`,
@@ -313,9 +300,7 @@ class CanadaPostCarrier {
         service_name: match[2],
         carrier: 'Canada Post',
         rate: rate,
-        currency: 'CAD',
-        markup: markup,
-        total_rate: totalRate
+        currency: 'CAD'
       });
     }
 
@@ -335,11 +320,11 @@ class CarrierService {
 
       switch (config.carrier_name.toLowerCase()) {
         case 'ups':
-          carrier = new UPSCarrier(config.credentials, config.markup || 0);
+          carrier = new UPSCarrier(config.credentials);
           break;
         case 'canada_post':
         case 'canadapost':
-          carrier = new CanadaPostCarrier(config.credentials, config.markup || 0);
+          carrier = new CanadaPostCarrier(config.credentials);
           break;
         default:
           console.warn(`Unknown carrier: ${config.carrier_name}`);
@@ -372,7 +357,7 @@ class CarrierService {
       allRates.push(...rates);
     }
 
-    return allRates.sort((a, b) => (a.total_rate || a.rate) - (b.total_rate || b.rate));
+    return allRates.sort((a, b) => a.rate - b.rate);
   }
 }
 
@@ -420,22 +405,20 @@ serve(async (req) => {
       {
         carrier_name: 'UPS',
         is_active: true,
-        markup: 15, // Our markup for UPS
         credentials: {
           client_id: Deno.env.get('UPS_CLIENT_ID'),
           client_secret: Deno.env.get('UPS_CLIENT_SECRET'),
-          account_number: 'PREPFOX_UPS_ACCOUNT', // Our UPS account
+          account_number: 'PREPFOX_UPS_ACCOUNT',
           enable_negotiated_rates: true
         }
       },
       {
         carrier_name: 'canada_post',
         is_active: true,
-        markup: 15, // Our markup for Canada Post
         credentials: {
           api_key: Deno.env.get('CANADA_POST_PROD_API_KEY'),
           api_secret: Deno.env.get('CANADA_POST_PROD_API_SECRET'),
-          customer_number: 'PREPFOX_CP_CUSTOMER', // Our Canada Post customer number
+          customer_number: 'PREPFOX_CP_CUSTOMER',
           is_production: true
         }
       }
@@ -451,7 +434,6 @@ serve(async (req) => {
       carrierService.addCarrier({
         carrier_name: config.carrier_name,
         credentials: config.api_credentials,
-        markup: 0, // No markup on user's own accounts
         is_active: config.is_active
       });
     }

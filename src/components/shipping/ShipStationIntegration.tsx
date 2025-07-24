@@ -21,7 +21,6 @@ interface ShippingRate {
   currency: string;
   estimated_days: string;
   estimated_delivery?: string;
-  total_rate: number;
 }
 
 interface ShipmentDetails {
@@ -465,7 +464,7 @@ export function ShipStationIntegration() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="font-bold">${rate.total_rate.toFixed(2)}</div>
+                        <div className="font-bold">${rate.rate.toFixed(2)}</div>
                         <div className="text-sm text-muted-foreground">{rate.currency}</div>
                       </div>
                     </div>
@@ -481,7 +480,7 @@ export function ShipStationIntegration() {
                 className="w-full"
               >
                 {loading ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Printer className="h-4 w-4 mr-2" />}
-                Create Shipping Label - ${selectedRateData.total_rate.toFixed(2)}
+                Create Shipping Label - ${selectedRateData.rate.toFixed(2)}
               </Button>
             )}
           </CardContent>

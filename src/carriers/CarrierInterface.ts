@@ -43,8 +43,6 @@ export interface RateResponse {
   estimated_days?: string;
   estimated_delivery?: string;
   zone?: string;
-  markup?: number;
-  total_rate?: number; // rate + markup
 }
 
 export interface ShipmentResponse {

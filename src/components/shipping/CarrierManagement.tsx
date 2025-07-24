@@ -25,7 +25,6 @@ interface CarrierService {
   id: string;
   name: string;
   enabled: boolean;
-  markup?: number;
 }
 
 interface Carrier {
@@ -37,7 +36,6 @@ interface Carrier {
   services: CarrierService[];
   lastSync?: string;
   discounted_rates?: boolean;
-  markup: number;
   adminControlled: boolean;
 }
 
@@ -96,7 +94,6 @@ export function CarrierManagement() {
   const canManageServices = !!user;
   
   const [selectedCarrier, setSelectedCarrier] = useState<Carrier | null>(null);
-  const [showMarkupSettings, setShowMarkupSettings] = useState(false);
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
   const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
   const [isPlanComparisonOpen, setIsPlanComparisonOpen] = useState(false);
@@ -141,15 +138,13 @@ export function CarrierManagement() {
           logo: getCarrierLogo(config.carrier_name),
           connected: config.is_active,
           status: config.is_active ? 'connected' : 'disconnected',
-          services: config.shipping_services?.map((service: any) => ({
-            id: service.id,
-            name: service.service_name,
-            enabled: service.is_available,
-            markup: 0
-          })) || [],
+            services: config.shipping_services?.map((service: any) => ({
+              id: service.id,
+              name: service.service_name,
+              enabled: service.is_available
+            })) || [],
           lastSync: config.updated_at,
           discounted_rates: true,
-          markup: 0,
           adminControlled: false
         })) || [];
 
@@ -211,7 +206,6 @@ export function CarrierManagement() {
             setup_required: false,
             connected: true,
             discounted_rates: true,
-            markup: 15,
             adminControlled: true
           },
           {
@@ -229,7 +223,6 @@ export function CarrierManagement() {
             setup_required: false,
             connected: true,
             discounted_rates: true,
-            markup: 12,
             adminControlled: true
           }
         ];
@@ -254,7 +247,6 @@ export function CarrierManagement() {
             setup_required: false,
             connected: upsConfig.is_active,
             discounted_rates: true,
-            markup: 10,
             adminControlled: true
           };
           
@@ -271,7 +263,6 @@ export function CarrierManagement() {
             setup_required: true,
             connected: false,
             discounted_rates: true,
-            markup: 10,
             adminControlled: true
           };
           
@@ -434,19 +425,6 @@ export function CarrierManagement() {
     }
   };
 
-  const handleMarkupChange = (carrierId: string, newMarkup: number) => {
-    if (canManageServices) {
-      setPrepfoxCarriers(prev => prev.map(carrier => 
-        carrier.id === carrierId 
-          ? { ...carrier, markup: newMarkup }
-          : carrier
-      ));
-      toast({
-        title: "Markup Updated",
-        description: `Carrier markup set to ${newMarkup}%`,
-      });
-    }
-  };
 
   // Service Management Modal Component
   const ServiceManagementModal = () => (
@@ -458,42 +436,12 @@ export function CarrierManagement() {
             {selectedCarrier?.name} Services
           </DialogTitle>
           <DialogDescription>
-            Manage services and markup for this carrier
+            Manage services for this carrier
           </DialogDescription>
         </DialogHeader>
         
         {selectedCarrier && (
           <div className="space-y-6">
-            {/* Markup Control */}
-            {canManageServices && (
-              <Card className="border-amber-200 bg-amber-50">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Percent className="h-4 w-4" />
-                    Markup Control
-                  </CardTitle>
-                  <CardDescription className="text-sm">
-                    Set percentage markup for this carrier
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-3">
-                    <Input
-                      type="number"
-                      placeholder="0"
-                      value={selectedCarrier.markup}
-                      onChange={(e) => {
-                        const newMarkup = parseInt(e.target.value) || 0;
-                        handleMarkupChange(selectedCarrier.id, newMarkup);
-                      }}
-                      className="w-24"
-                    />
-                    <span className="text-sm font-medium">% markup</span>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
             {/* Services List */}
             <div className="space-y-4">
               <h4 className="font-medium">Available Services</h4>
@@ -574,11 +522,6 @@ export function CarrierManagement() {
                     <Badge variant={service.enabled ? "default" : "secondary"}>
                       {service.enabled ? "Active" : "Disabled"}
                     </Badge>
-                    {canManageServices && service.markup !== undefined && (
-                      <Badge variant="outline">
-                        +{service.markup}%
-                      </Badge>
-                    )}
                   </div>
                 </div>
               ))}
@@ -1067,17 +1010,6 @@ export function CarrierManagement() {
                               PrepFox {carrier.name.includes("PrepFox") ? "" : "Partner"}
                             </Badge>
                           )}
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <Badge variant="outline" className="text-xs">
-                                <Percent className="h-3 w-3 mr-1" />
-                                +{carrier.markup}%
-                              </Badge>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              Hidden markup applied to all rates
-                            </TooltipContent>
-                          </Tooltip>
                         </div>
                         <p className="text-sm text-muted-foreground mt-1">
                           {carrier.name === 'UPS' && upsServices ? 
