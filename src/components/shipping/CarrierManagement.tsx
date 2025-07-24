@@ -12,6 +12,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
+import { useShippingServices } from "@/hooks/useShippingServices";
 
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -56,17 +57,43 @@ interface SubscriptionPlan {
 
 export function CarrierManagement() {
   const { toast } = useToast();
-  const user = { id: 'demo-user-id', email: 'user@example.com' };
+  const { 
+    services, 
+    carriers, 
+    loading, 
+    error, 
+    refreshServices 
+  } = useShippingServices();
   
-  // Check if user is admin
-  const isAdmin = user?.email === 'ottman1@gmail.com';
+  const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
   
-  // Debug logging
-  console.log('Current user:', user?.email);
-  console.log('Is Admin:', isAdmin);
+  // Get authenticated user
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) {
+        console.error('Error getting user:', error);
+        setUser(null);
+      } else {
+        setUser(user);
+      }
+    };
+    
+    getUser();
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        setUser(session.user);
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
   
-  // Show admin status in UI for debugging
-  const [showAdminInfo, setShowAdminInfo] = useState(true);
+  // Allow all authenticated users to manage services
+  const canManageServices = !!user;
   
   const [selectedCarrier, setSelectedCarrier] = useState<Carrier | null>(null);
   const [showMarkupSettings, setShowMarkupSettings] = useState(false);
@@ -76,7 +103,7 @@ export function CarrierManagement() {
   const [isAddCarrierOpen, setIsAddCarrierOpen] = useState(false);
   const [isCanadaPostConfigOpen, setIsCanadaPostConfigOpen] = useState(false);
   const [connectedUserCarriers, setConnectedUserCarriers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [carrierLoading, setCarrierLoading] = useState(true);
   
   // Canada Post configuration state
   const [canadaPostConfig, setCanadaPostConfig] = useState({
@@ -101,43 +128,30 @@ export function CarrierManagement() {
             shipping_services(*)
           `)
           .eq('user_id', user.id)
-          .eq('is_active', true);
+          .order('created_at', { ascending: false });
 
         if (error) {
           console.error('Error fetching carrier configurations:', error);
           return;
         }
 
-        const formattedCarriers = carrierConfigs.map(config => {
-          const getCarrierLogo = (name: string) => {
-            switch (name.toLowerCase()) {
-              case 'ups': return '📦';
-              case 'fedex': return '🚚';
-              case 'usps': return '📮';
-              case 'dhl': return '✈️';
-              default: return '🚛';
-            }
-          };
-
-          return {
-            id: config.id,
-            name: config.carrier_name,
-            logo: getCarrierLogo(config.carrier_name),
-            connected: true,
-            status: 'connected' as const,
-            services: config.shipping_services.map((service: any) => ({
-              id: service.id,
-              name: service.service_name,
-              enabled: service.is_available,
-              markup: 0
-            })),
-            lastSync: new Date(config.updated_at).toLocaleDateString(),
-            markup: 0,
-            adminControlled: false,
-            credentials: config.api_credentials,
-            settings: config.settings
-          };
-        });
+        const formattedCarriers = carrierConfigs?.map((config: any) => ({
+          id: config.id,
+          name: config.carrier_name,
+          logo: getCarrierLogo(config.carrier_name),
+          connected: config.is_active,
+          status: config.is_active ? 'connected' : 'disconnected',
+          services: config.shipping_services?.map((service: any) => ({
+            id: service.id,
+            name: service.service_name,
+            enabled: service.is_available,
+            markup: 0
+          })) || [],
+          lastSync: config.updated_at,
+          discounted_rates: true,
+          markup: 0,
+          adminControlled: false
+        })) || [];
 
         // Filter out UPS from user carriers since it goes in PrepFox tab
         const nonUpsCarriers = formattedCarriers.filter(carrier => carrier.name.toLowerCase() !== 'ups');
@@ -145,7 +159,7 @@ export function CarrierManagement() {
       } catch (error) {
         console.error('Error fetching carriers:', error);
       } finally {
-        setLoading(false);
+        setCarrierLoading(false);
       }
     };
 
@@ -170,6 +184,7 @@ export function CarrierManagement() {
             *,
             shipping_services(*)
           `)
+          .eq('user_id', user.id)
           .eq('carrier_name', 'UPS')
           .order('created_at', { ascending: false })
           .limit(1);
@@ -202,14 +217,16 @@ export function CarrierManagement() {
           {
             id: "shipstation-internal",
             name: "ShipStation",
-            logo: "📦",
+            logo: "🚢",
             status: "connected" as const,
-            description: "ShipStation multi-carrier platform",
+            description: "Multi-carrier shipping platform",
             services: [
-              { id: "multiple", name: "Multiple carriers", enabled: true }
+              { id: "ups-ground", name: "UPS Ground", enabled: true },
+              { id: "fedex-ground", name: "FedEx Ground", enabled: true },
+              { id: "usps-priority", name: "USPS Priority", enabled: true }
             ],
             integration_status: "available",
-            setup_required: true,
+            setup_required: false,
             connected: true,
             discounted_rates: true,
             markup: 12,
@@ -217,83 +234,104 @@ export function CarrierManagement() {
           }
         ];
 
-        console.log('UPS carrier configs found:', carrierConfigs);
-        console.log('Number of UPS configs:', carrierConfigs?.length || 0);
-        
         if (carrierConfigs && carrierConfigs.length > 0) {
-          const realUpsCarrier = carrierConfigs[0];
-          console.log('Using UPS carrier:', realUpsCarrier);
+          const upsConfig = carrierConfigs[0];
+          setUpsCarrier(upsConfig);
+          setUpsServices(upsConfig.shipping_services || []);
           
-          // Set the UPS carrier data for display in configuration
-          setUpsCarrier(realUpsCarrier);
-          setUpsServices(realUpsCarrier.shipping_services || []);
-          
-          // Create services array from real database data - only set once to prevent flashing
-          const upsServices = (realUpsCarrier.shipping_services || []).map((service: any) => ({
-            id: service.service_code,
-            name: service.service_name,
-            enabled: service.is_available
-          }));
-          
-          console.log('UPS services from DB:', upsServices);
-          
-          // Use real UPS data from database
-          const upsConfig = {
-            id: "ups-internal",
+          const upsCarrier = {
+            id: upsConfig.id,
             name: "UPS",
-            logo: "🟤",
-            status: "connected" as const,
-            description: "UPS shipping services",
-            services: upsServices, // Use real services from database
-            integration_status: "available",
-            setup_required: true,
-            connected: true,
+            logo: "🤎",
+            status: upsConfig.is_active ? "connected" as const : "disconnected" as const,
+            description: "United Parcel Service - Connected",
+            services: upsConfig.shipping_services?.map((service: any) => ({
+              id: service.id,
+              name: service.service_name,
+              enabled: service.is_available
+            })) || [],
+            integration_status: "connected",
+            setup_required: false,
+            connected: upsConfig.is_active,
             discounted_rates: true,
-            markup: 15,
+            markup: 10,
             adminControlled: true
           };
           
-          // Only update if the data is actually different to prevent flashing
-          setPrepfoxCarriers(prev => {
-            const upsExists = prev.find(c => c.id === "ups-internal");
-            if (!upsExists || JSON.stringify(upsExists.services) !== JSON.stringify(upsServices)) {
-              console.log('Set PrepFox carriers with real UPS config:', [upsConfig, ...defaultCarriers]);
-              return [upsConfig, ...defaultCarriers];
-            }
-            return prev;
-          });
+          setPrepfoxCarriers([...defaultCarriers, upsCarrier]);
         } else {
-          // Show default placeholder only if no UPS data exists
-          setPrepfoxCarriers(prev => {
-            if (prev.length === 0) {
-              const defaultUps = {
-                id: "ups-internal",
-                name: "UPS",
-                logo: "🟤",
-                status: "disconnected" as const,
-                description: "UPS shipping services - Not configured",
-                services: [],
-                integration_status: "setup_required",
-                setup_required: true,
-                connected: false,
-                discounted_rates: false,
-                markup: 15,
-                adminControlled: true
-              };
-              return [defaultUps, ...defaultCarriers];
-            }
-            return prev;
-          });
+          const upsCarrier = {
+            id: "ups-internal",
+            name: "UPS",
+            logo: "🤎",
+            status: "disconnected" as const,
+            description: "United Parcel Service - Not Connected",
+            services: [],
+            integration_status: "available",
+            setup_required: true,
+            connected: false,
+            discounted_rates: true,
+            markup: 10,
+            adminControlled: true
+          };
+          
+          setPrepfoxCarriers([...defaultCarriers, upsCarrier]);
         }
       } catch (error) {
-        console.error('Error fetching UPS configuration:', error);
+        console.error('Error setting up PrepFox carriers:', error);
       }
     };
 
     fetchUpsData();
-  }, [user?.id]); // Only depend on user.id, not the entire user object
+  }, [user, carriers]);
 
-  // Subscription plans
+  const getCarrierLogo = (carrierName: string) => {
+    const logos: { [key: string]: string } = {
+      'UPS': '🤎',
+      'FedEx': '🟣',
+      'USPS': '📮',
+      'Canada Post': '🇨🇦',
+      'DHL': '🟨',
+      'Purolator': '🟦',
+      'ShipStation': '🚢'
+    };
+    return logos[carrierName] || '📦';
+  };
+
+  // Re-sync functionality
+  const handleResync = async (carrier: Carrier) => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to sync carrier data.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      toast({
+        title: "Syncing...",
+        description: `Refreshing ${carrier.name} services and rates.`,
+      });
+
+      // Use the refreshServices function from useShippingServices hook
+      await refreshServices();
+
+      toast({
+        title: "Sync Complete",
+        description: `${carrier.name} services have been updated.`,
+      });
+    } catch (error) {
+      console.error('Error syncing carrier:', error);
+      toast({
+        title: "Sync Failed",
+        description: `Failed to sync ${carrier.name}. Please try again.`,
+        variant: "destructive",
+      });
+    }
+  };
+
   const subscriptionPlans: SubscriptionPlan[] = [
     {
       id: "parcel-lite",
@@ -380,7 +418,7 @@ export function CarrierManagement() {
   ];
 
   const handleServiceToggle = (carrierId: string, serviceId: string) => {
-    if (isAdmin) {
+    if (canManageServices) {
       setPrepfoxCarriers(prev => prev.map(carrier => 
         carrier.id === carrierId 
           ? {
@@ -397,7 +435,7 @@ export function CarrierManagement() {
   };
 
   const handleMarkupChange = (carrierId: string, newMarkup: number) => {
-    if (isAdmin) {
+    if (canManageServices) {
       setPrepfoxCarriers(prev => prev.map(carrier => 
         carrier.id === carrierId 
           ? { ...carrier, markup: newMarkup }
@@ -410,168 +448,143 @@ export function CarrierManagement() {
     }
   };
 
-  const ServiceManagementModal = () => {
-    if (!selectedCarrier) return null;
-
-    return (
-      <Dialog open={isServiceModalOpen} onOpenChange={setIsServiceModalOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <span className="text-2xl">{selectedCarrier.logo}</span>
-              {selectedCarrier.name} Services
-              {isAdmin && (
-                <Badge variant="destructive" className="ml-2">
-                  <Shield className="h-3 w-3 mr-1" />
-                  Admin
-                </Badge>
-              )}
-            </DialogTitle>
-            <DialogDescription>
-              {isAdmin 
-                ? "Manage services and markup for this carrier (admin only)"
-                : "View available services for this carrier"
-              }
-            </DialogDescription>
-          </DialogHeader>
-
+  // Service Management Modal Component
+  const ServiceManagementModal = () => (
+    <Dialog open={isServiceModalOpen} onOpenChange={setIsServiceModalOpen}>
+      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <span className="text-2xl">{selectedCarrier?.logo}</span>
+            {selectedCarrier?.name} Services
+          </DialogTitle>
+          <DialogDescription>
+            Manage services and markup for this carrier
+          </DialogDescription>
+        </DialogHeader>
+        
+        {selectedCarrier && (
           <div className="space-y-6">
-            {/* Admin Markup Control */}
-            {isAdmin && (
+            {/* Markup Control */}
+            {canManageServices && (
               <Card className="border-amber-200 bg-amber-50">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <DollarSign className="h-4 w-4" />
-                    Rate Markup Control
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowMarkupSettings(!showMarkupSettings)}
-                    >
-                      {showMarkupSettings ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Percent className="h-4 w-4" />
+                    Markup Control
                   </CardTitle>
+                  <CardDescription className="text-sm">
+                    Set percentage markup for this carrier
+                  </CardDescription>
                 </CardHeader>
-                {showMarkupSettings && (
-                  <CardContent className="pt-0">
-                    <div className="flex items-center gap-4">
-                      <Label>Hidden Markup %:</Label>
-                      <Input
-                        type="number"
-                        value={selectedCarrier.markup}
-                        onChange={(e) => handleMarkupChange(selectedCarrier.id, Number(e.target.value))}
-                        className="w-24"
-                        min="0"
-                        max="50"
-                      />
-                      <span className="text-sm text-muted-foreground">
-                        All rates shown to users include this markup
-                      </span>
-                    </div>
-                  </CardContent>
-                )}
+                <CardContent>
+                  <div className="flex items-center gap-3">
+                    <Input
+                      type="number"
+                      placeholder="0"
+                      value={selectedCarrier.markup}
+                      onChange={(e) => {
+                        const newMarkup = parseInt(e.target.value) || 0;
+                        handleMarkupChange(selectedCarrier.id, newMarkup);
+                      }}
+                      className="w-24"
+                    />
+                    <span className="text-sm font-medium">% markup</span>
+                  </div>
+                </CardContent>
               </Card>
             )}
 
             {/* Services List */}
-            <div className="space-y-3">
-              <h3 className="font-medium">Available Services ({selectedCarrier.services.length} total)</h3>
-              {selectedCarrier.services.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p>No services found for this carrier.</p>
-                  <p className="text-sm">Try clicking "Re-Sync" to refresh services.</p>
-                </div>
-              ) : (
-                selectedCarrier.services.map((service) => (
-                  <div key={service.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <Checkbox
-                        checked={service.enabled}
-                        onCheckedChange={async (checked: boolean) => {
-                          if (isAdmin && selectedCarrier.name === 'UPS') {
-                            try {
-                              // Find the real service ID from upsServices
-                              const realService = upsServices?.find(s => s.service_code === service.id);
-                              if (!realService) {
-                                console.error('Service not found:', service.id);
-                                return;
-                              }
-
+            <div className="space-y-4">
+              <h4 className="font-medium">Available Services</h4>
+              {selectedCarrier.services.map((service) => (
+                <div key={service.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Checkbox
+                      checked={service.enabled}
+                      onCheckedChange={async (checked: boolean) => {
+                        if (canManageServices && selectedCarrier.name === 'UPS') {
+                          try {
+                            // Find the real service ID from upsServices
+                            const realService = upsServices.find(s => s.service_name === service.name);
+                            if (realService) {
                               const { error } = await supabase
                                 .from('shipping_services')
                                 .update({ is_available: checked })
                                 .eq('id', realService.id);
-                                
-                              if (error) throw error;
-                              
-                              // Update local state without causing re-render loops
-                              setUpsServices(prev => prev?.map(s => 
-                                s.id === realService.id 
-                                  ? { ...s, is_available: checked }
-                                  : s
-                              ));
-                              
-                              // Update prepfox carriers state
-                              setPrepfoxCarriers(prev => prev.map(c => 
-                                c.id === "ups-internal" 
+
+                              if (error) {
+                                console.error('Error updating service:', error);
+                                toast({
+                                  title: "Update Failed",
+                                  description: "Failed to update service status",
+                                  variant: "destructive",
+                                });
+                                return;
+                              }
+
+                              // Update local state
+                              setPrepfoxCarriers(prev => prev.map(carrier => 
+                                carrier.id === selectedCarrier.id 
                                   ? {
-                                      ...c,
-                                      services: c.services.map(svc =>
-                                        svc.id === service.id
-                                          ? { ...svc, enabled: checked }
-                                          : svc
+                                      ...carrier,
+                                      services: carrier.services.map(s =>
+                                        s.id === service.id 
+                                          ? { ...s, enabled: checked }
+                                          : s
                                       )
                                     }
-                                  : c
+                                  : carrier
                               ));
-                              
+
+                              // Also update the selected carrier
+                              setSelectedCarrier(prev => prev ? {
+                                ...prev,
+                                services: prev.services.map(s =>
+                                  s.id === service.id 
+                                    ? { ...s, enabled: checked }
+                                    : s
+                                )
+                              } : null);
+
                               toast({
                                 title: "Service Updated",
                                 description: `${service.name} ${checked ? 'enabled' : 'disabled'}`,
                               });
-                            } catch (error) {
-                              console.error('Service toggle error:', error);
-                              toast({
-                                title: "Update Failed",
-                                description: "Failed to update service status",
-                                variant: "destructive",
-                              });
                             }
-                          } else if (isAdmin) {
-                            handleServiceToggle(selectedCarrier.id, service.id);
+                          } catch (error) {
+                            console.error('Error updating UPS service:', error);
+                            toast({
+                              title: "Update Failed",
+                              description: "Failed to update service status",
+                              variant: "destructive",
+                            });
                           }
-                        }}
-                        disabled={!isAdmin}
-                      />
-                      <div>
-                        <div className="font-medium">{service.name}</div>
-                        <div className="text-sm text-muted-foreground">
-                          Service Code: {service.id}
-                        </div>
-                        {service.enabled && (
-                          <div className="text-sm text-green-600">
-                            ✓ Available to users
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={service.enabled ? "default" : "secondary"}>
-                        {service.enabled ? "Active" : "Disabled"}
-                      </Badge>
-                      {isAdmin && service.markup !== undefined && (
-                        <Badge variant="outline">
-                          +{service.markup}%
-                        </Badge>
-                      )}
+                        } else if (canManageServices) {
+                          handleServiceToggle(selectedCarrier.id, service.id);
+                        }
+                      }}
+                      disabled={!canManageServices}
+                    />
+                    <div>
+                      <p className="font-medium">{service.name}</p>
                     </div>
                   </div>
-                ))
-              )}
+                  <div className="flex items-center gap-2">
+                    <Badge variant={service.enabled ? "default" : "secondary"}>
+                      {service.enabled ? "Active" : "Disabled"}
+                    </Badge>
+                    {canManageServices && service.markup !== undefined && (
+                      <Badge variant="outline">
+                        +{service.markup}%
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
 
-            {!isAdmin && (
+            {!canManageServices && (
               <div className="p-3 bg-blue-50 rounded-lg">
                 <p className="text-sm text-blue-800">
                   <Lock className="h-4 w-4 inline mr-1" />
@@ -580,16 +593,16 @@ export function CarrierManagement() {
               </div>
             )}
           </div>
-
-          <DialogFooter>
-            <Button onClick={() => setIsServiceModalOpen(false)}>
-              {isAdmin ? "Save Changes" : "Close"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    );
-  };
+        )}
+        
+        <DialogFooter>
+          <Button onClick={() => setIsServiceModalOpen(false)}>
+            {canManageServices ? "Save Changes" : "Close"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 
   const SubscriptionModal = () => (
     <Dialog open={isSubscriptionModalOpen} onOpenChange={setIsSubscriptionModalOpen}>
@@ -843,7 +856,7 @@ export function CarrierManagement() {
             <button
               key={carrier.id}
               className="p-4 border rounded-lg hover:bg-muted transition-colors text-center space-y-2 disabled:opacity-50"
-              disabled={!isAdmin && carrier.id !== 'canada-post'}
+              disabled={carrier.id !== 'canada-post'}
               onClick={() => {
                 if (carrier.id === 'canada-post') {
                   // Open Canada Post configuration modal
@@ -852,78 +865,76 @@ export function CarrierManagement() {
                   return;
                 }
                 
-                if (isAdmin) {
-                  // Check if there's an internal version of this carrier
-                  const internalCarrier = prepfoxCarriers.find(c => 
-                    c.name.toLowerCase().includes(carrier.name.toLowerCase()) || 
-                    c.id.includes(carrier.id)
-                  );
+                // Check if there's an internal version of this carrier
+                const internalCarrier = prepfoxCarriers.find(c => 
+                  c.name.toLowerCase().includes(carrier.name.toLowerCase()) || 
+                  c.id.includes(carrier.id)
+                );
+                
+                if (internalCarrier) {
+                  // Connect to internal system
+                  toast({
+                    title: "Connecting to Internal System",
+                    description: `Connecting to ${carrier.name} internal system...`,
+                  });
                   
-                  if (internalCarrier) {
-                    // Connect to internal system
+                  setTimeout(() => {
+                    // Enable the internal carrier if it's not already enabled
+                    setPrepfoxCarriers(prev => prev.map(c => 
+                      c.id === internalCarrier.id 
+                        ? { ...c, connected: true, status: 'connected' as const }
+                        : c
+                    ));
+                    
                     toast({
-                      title: "Connecting to Internal System",
-                      description: `Connecting to ${carrier.name} internal system...`,
+                      title: "Connected to Internal System",
+                      description: `${carrier.name} is now connected to the internal PrepFox system with discounted rates.`,
                     });
-                    
-                    setTimeout(() => {
-                      // Enable the internal carrier if it's not already enabled
-                      setPrepfoxCarriers(prev => prev.map(c => 
-                        c.id === internalCarrier.id 
-                          ? { ...c, connected: true, status: 'connected' as const }
-                          : c
-                      ));
-                      
-                      toast({
-                        title: "Connected to Internal System",
-                        description: `${carrier.name} is now connected to the internal PrepFox system with discounted rates.`,
-                      });
-                      setIsAddCarrierOpen(false);
-                    }, 2000);
-                  } else {
-                    // Check if carrier is already connected as personal account
-                    const isAlreadyConnected = connectedUserCarriers.some(c => c.id === carrier.id);
-                    
-                    if (isAlreadyConnected) {
-                      toast({
-                        title: "Carrier Already Connected",
-                        description: `${carrier.name} is already connected to your account.`,
-                      });
-                      return;
-                    }
-                    
-                    // Add as personal account
+                    setIsAddCarrierOpen(false);
+                  }, 2000);
+                } else {
+                  // Check if carrier is already connected as personal account
+                  const isAlreadyConnected = connectedUserCarriers.some(c => c.id === carrier.id);
+                  
+                  if (isAlreadyConnected) {
                     toast({
-                      title: "Carrier Connection Started",
-                      description: `Setting up ${carrier.name} connection...`,
+                      title: "Carrier Already Connected",
+                      description: `${carrier.name} is already connected to your account.`,
                     });
-                    
-                    setTimeout(() => {
-                      const newConnectedCarrier = {
-                        id: carrier.id,
-                        name: carrier.name,
-                        logo: carrier.logo,
-                        connected: true,
-                        status: 'connected',
-                        services: [
-                          { id: `${carrier.id}-standard`, name: "Standard Service", enabled: true },
-                          { id: `${carrier.id}-express`, name: "Express Service", enabled: true }
-                        ],
-                        lastSync: "Just now",
-                        
-                        markup: 0,
-                        adminControlled: false
-                      };
-                      
-                      setConnectedUserCarriers(prev => [...prev, newConnectedCarrier]);
-                      
-                      toast({
-                        title: "Carrier Connected",
-                        description: `${carrier.name} has been successfully connected to your account.`,
-                      });
-                      setIsAddCarrierOpen(false);
-                    }, 2000);
+                    return;
                   }
+                  
+                  // Add as personal account
+                  toast({
+                    title: "Carrier Connection Started",
+                    description: `Setting up ${carrier.name} connection...`,
+                  });
+                  
+                  setTimeout(() => {
+                    const newConnectedCarrier = {
+                      id: carrier.id,
+                      name: carrier.name,
+                      logo: carrier.logo,
+                      connected: true,
+                      status: 'connected',
+                      services: [
+                        { id: `${carrier.id}-standard`, name: "Standard Service", enabled: true },
+                        { id: `${carrier.id}-express`, name: "Express Service", enabled: true }
+                      ],
+                      lastSync: "Just now",
+                      
+                      markup: 0,
+                      adminControlled: false
+                    };
+                    
+                    setConnectedUserCarriers(prev => [...prev, newConnectedCarrier]);
+                    
+                    toast({
+                      title: "Carrier Connected",
+                      description: `${carrier.name} has been successfully connected to your account.`,
+                    });
+                    setIsAddCarrierOpen(false);
+                  }, 2000);
                 }
               }}
             >
@@ -933,8 +944,8 @@ export function CarrierManagement() {
               {carrier.id === 'canada-post' && (
                 <Badge variant="secondary" className="mt-2">Available to All</Badge>
               )}
-              {!isAdmin && carrier.id !== 'canada-post' && (
-                <Badge variant="outline" className="mt-2">Admin Only</Badge>
+              {carrier.id !== 'canada-post' && (
+                <Badge variant="outline" className="mt-2">Coming Soon</Badge>
               )}
             </button>
           ))}
@@ -952,465 +963,288 @@ export function CarrierManagement() {
     </Dialog>
   );
 
-  return (
-    <div>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">PrepFox Shipping & Carriers</h1>
+  if (!user) {
+    return (
+      <div className="p-6 space-y-6">
+        <Card>
+          <CardContent className="p-6 text-center">
+            <AlertCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-lg font-semibold mb-2">Authentication Required</h3>
             <p className="text-muted-foreground">
-              Multi-tiered shipping carrier management {isAdmin && "(Administrator View)"}
+              Please log in to manage your shipping carriers.
             </p>
-          </div>
-          <div className="flex gap-2">
-            <Button onClick={() => setIsSubscriptionModalOpen(true)} variant="outline">
-              <CreditCard className="h-4 w-4 mr-2" />
-              View Plans
-            </Button>
-            <Button onClick={() => setIsAddCarrierOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Carrier
-            </Button>
-          </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">PrepFox Shipping & Carriers</h1>
+          <p className="text-muted-foreground">
+            Multi-tiered shipping carrier management
+          </p>
         </div>
+        <div className="flex gap-2">
+          <Button onClick={() => setIsSubscriptionModalOpen(true)} variant="outline">
+            <CreditCard className="h-4 w-4 mr-2" />
+            View Plans
+          </Button>
+          <Button onClick={() => setIsAddCarrierOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Carrier
+          </Button>
+        </div>
+      </div>
 
-        {/* Admin Controls Banner */}
-        {isAdmin && showAdminInfo && (
-          <Card className="border-red-200 bg-red-50">
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-3">
-                  <Shield className="h-5 w-5 text-red-600 mt-0.5" />
-                  <div>
-                    <h3 className="font-medium text-red-900">🔐 Administrator Access Active</h3>
-                    <div className="text-sm text-red-800 space-y-1 mt-2">
-                      <p><strong>✅ What you can see/do as admin:</strong></p>
-                      <ul className="list-disc ml-4 space-y-1">
-                        <li>Manage carrier accounts & adjust hidden markup (default 15%)</li>
-                        <li>Enable/disable shipping services for users</li>
-                        <li>View real UPS configuration with OAuth status</li>
-                        <li>Access rate markup controls (click eye icon in service modals)</li>
-                        <li>Connect new carriers to the system</li>
-                        <li>View admin badges and controls throughout the interface</li>
-                      </ul>
-                      <p className="mt-2"><strong>🎯 Try this:</strong> Click "Manage Services" on UPS (Native) to see admin markup controls!</p>
-                    </div>
-                  </div>
-                </div>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => setShowAdminInfo(false)}
-                  className="text-red-700 hover:bg-red-100"
-                >
-                  ✕
-                </Button>
+      {/* Subscription CTA */}
+      <Card className="border-l-4 border-l-blue-500 bg-blue-50/50">
+        <CardContent className="p-4">
+          <div className="flex items-start justify-between">
+            <div className="flex items-start gap-3">
+              <Truck className="h-5 w-5 text-blue-600 mt-0.5" />
+              <div>
+                <h3 className="font-medium text-blue-900">🚀 Unlock more shipping tools with a PrepFox subscription</h3>
+                <p className="text-sm text-blue-800 mt-1">
+                  Access more carriers, higher shipping volumes, and premium features. 10% cheaper than ShipStation.
+                </p>
               </div>
-            </CardContent>
-          </Card>
-        )}
+            </div>
+            <Button 
+              onClick={() => window.open('/billing', '_blank')}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Go to Payment & Subscription Settings
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
-        {/* Subscription CTA for Non-Admin */}
-        {!isAdmin && (
-          <Card className="border-l-4 border-l-blue-500 bg-blue-50/50">
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-3">
-                  <Truck className="h-5 w-5 text-blue-600 mt-0.5" />
-                  <div>
-                    <h3 className="font-medium text-blue-900">🚀 Unlock more shipping tools with a PrepFox subscription</h3>
-                    <p className="text-sm text-blue-800 mt-1">
-                      Access more carriers, higher shipping volumes, and premium features. 10% cheaper than ShipStation.
-                    </p>
-                  </div>
-                </div>
-                <Button 
-                  onClick={() => window.open('/billing', '_blank')}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  Go to Payment & Subscription Settings
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+      {/* Carrier Tabs */}
+      <Tabs defaultValue="prepfox" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="prepfox">PrepFox Carriers</TabsTrigger>
+          <TabsTrigger value="user-carriers">Your Carrier Accounts</TabsTrigger>
+        </TabsList>
 
-        {/* Carrier Tabs */}
-        <Tabs defaultValue="prepfox" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="prepfox">PrepFox Carriers</TabsTrigger>
-            <TabsTrigger value="user-carriers">Your Carrier Accounts</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="prepfox" className="space-y-4">
-            <div className="grid gap-4">
-              <h2 className="text-xl font-semibold">PrepFox Managed Carriers</h2>
-              {prepfoxCarriers.map((carrier) => (
-                <Card key={carrier.id}>
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="text-3xl">{carrier.logo}</div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-semibold text-lg">{carrier.name}</h3>
-                            {/* Check if carrier is actually active in database */}
-                            {carrier.name === 'UPS' && upsCarrier ? (
-                              upsCarrier.is_active ? (
-                                <Badge variant="default" className="bg-green-100 text-green-800">
-                                  <CheckCircle className="h-3 w-3 mr-1" />
-                                  Active
-                                </Badge>
-                              ) : (
-                                <Badge variant="destructive" className="bg-orange-100 text-orange-800">
-                                  <AlertCircle className="h-3 w-3 mr-1" />
-                                  Inactive
-                                </Badge>
-                              )
-                            ) : (
+        <TabsContent value="prepfox" className="space-y-4">
+          <div className="grid gap-4">
+            <h2 className="text-xl font-semibold">PrepFox Managed Carriers</h2>
+            {prepfoxCarriers.map((carrier) => (
+              <Card key={carrier.id}>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="text-3xl">{carrier.logo}</div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-lg">{carrier.name}</h3>
+                          {/* Check if carrier is actually active in database */}
+                          {carrier.name === 'UPS' && upsCarrier ? (
+                            upsCarrier.is_active ? (
                               <Badge variant="default" className="bg-green-100 text-green-800">
                                 <CheckCircle className="h-3 w-3 mr-1" />
-                                Connected
+                                Active
                               </Badge>
-                            )}
-                            {carrier.discounted_rates && (
-                              <Badge variant="secondary">
-                                PrepFox {carrier.name.includes("PrepFox") ? "" : "Partner"}
+                            ) : (
+                              <Badge variant="destructive" className="bg-orange-100 text-orange-800">
+                                <AlertCircle className="h-3 w-3 mr-1" />
+                                Inactive
                               </Badge>
-                            )}
-                            {isAdmin && (
-                              <Tooltip>
-                                <TooltipTrigger>
-                                  <Badge variant="outline" className="text-xs">
-                                    <Percent className="h-3 w-3 mr-1" />
-                                    +{carrier.markup}%
-                                  </Badge>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  Hidden markup applied to all rates
-                                </TooltipContent>
-                              </Tooltip>
-                            )}
-                          </div>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {carrier.name === 'UPS' && upsServices ? 
-                              `${upsServices.filter(s => s.is_available).length} of ${upsServices.length} services enabled` :
-                              `${carrier.services.filter(s => s.enabled).length} of ${carrier.services.length} services enabled`
-                            }
-                            • Last sync: {carrier.lastSync || 'Never'}
-                          </p>
-                          
-                          {/* Show UPS configuration details if this is UPS */}
-                          {carrier.name === 'UPS' && upsCarrier && (
-                            <div className="mt-3 p-3 bg-gray-50 rounded-md border">
-                               <div className="font-medium text-gray-900 mb-2 text-sm">Account Configuration:</div>
-                               <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
-                                 <div>Account: <span className="font-mono">{upsCarrier.account_number || 'Not set'}</span></div>
-                                 <div>Country: <span className="font-mono">{upsCarrier.api_credentials?.country_code || 'Not set'}</span></div>
-                                 <div>Postal Code: <span className="font-mono">{upsCarrier.api_credentials?.postal_code || 'Not set'}</span></div>
-                                 <div>Negotiated Rates: <span className={upsCarrier.api_credentials?.enable_negotiated_rates ? 'text-green-600' : 'text-red-600'}>{upsCarrier.api_credentials?.enable_negotiated_rates ? 'Enabled' : 'Disabled'}</span></div>
-                                 <div>Services: <span className="font-semibold">{upsServices?.length || 0}</span></div>
-                                 <div>Last Updated: <span className="font-mono">{upsCarrier.updated_at ? new Date(upsCarrier.updated_at).toLocaleDateString() : 'Never'}</span></div>
-                               </div>
-                            </div>
+                            )
+                          ) : (
+                            <Badge variant="default" className="bg-green-100 text-green-800">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Connected
+                            </Badge>
                           )}
+                          {carrier.discounted_rates && (
+                            <Badge variant="secondary">
+                              PrepFox {carrier.name.includes("PrepFox") ? "" : "Partner"}
+                            </Badge>
+                          )}
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Badge variant="outline" className="text-xs">
+                                <Percent className="h-3 w-3 mr-1" />
+                                +{carrier.markup}%
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              Hidden markup applied to all rates
+                            </TooltipContent>
+                          </Tooltip>
                         </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        {/* Add activation button for inactive UPS */}
-                        {carrier.name === 'UPS' && upsCarrier && !upsCarrier.is_active && (
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={async () => {
-                              try {
-                                const { data, error } = await supabase.functions.invoke('activate-carrier', {
-                                  body: { 
-                                    user_id: user?.id, 
-                                    carrier_id: upsCarrier.id 
-                                  }
-                                });
-                                
-                                if (error) throw error;
-                                
-                                // Update local state
-                                setUpsCarrier(prev => ({ ...prev, is_active: true }));
-                                
-                                toast({
-                                  title: "UPS Activated",
-                                  description: "UPS carrier is now active and ready to use.",
-                                });
-                                
-                                // Refresh the page to reflect changes
-                                window.location.reload();
-                              } catch (error) {
-                                console.error('Activation error:', error);
-                                toast({
-                                  title: "Activation Failed",
-                                  description: "Failed to activate UPS carrier.",
-                                  variant: "destructive",
-                                });
-                              }
-                            }}
-                          >
-                            <Zap className="h-4 w-4 mr-1" />
-                            Activate UPS
-                          </Button>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {carrier.name === 'UPS' && upsServices ? 
+                            `${upsServices.filter(s => s.is_available).length} of ${upsServices.length} services enabled` :
+                            `${carrier.services.filter(s => s.enabled).length} of ${carrier.services.length} services enabled`
+                          }
+                          • Last sync: {carrier.lastSync || 'Never'}
+                        </p>
+                        
+                        {/* Show UPS configuration details if this is UPS */}
+                        {carrier.name === 'UPS' && upsCarrier && (
+                          <div className="mt-3 p-3 bg-gray-50 rounded-md border">
+                             <div className="font-medium text-gray-900 mb-2 text-sm">Account Configuration:</div>
+                             <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                               <div>Account: <span className="font-mono">{upsCarrier.account_number || 'Not set'}</span></div>
+                               <div>Country: <span className="font-mono">{upsCarrier.api_credentials?.country_code || 'Not set'}</span></div>
+                               <div>Postal Code: <span className="font-mono">{upsCarrier.api_credentials?.postal_code || 'Not set'}</span></div>
+                               <div>Negotiated Rates: <span className={upsCarrier.api_credentials?.enable_negotiated_rates ? 'text-green-600' : 'text-red-600'}>{upsCarrier.api_credentials?.enable_negotiated_rates ? 'Enabled' : 'Disabled'}</span></div>
+                               <div>Services: <span className="font-semibold">{upsServices?.length || 0}</span></div>
+                               <div>Last Updated: <span className="font-mono">{upsCarrier.updated_at ? new Date(upsCarrier.updated_at).toLocaleDateString() : 'Never'}</span></div>
+                             </div>
+                          </div>
                         )}
-                         <Button
-                           variant="outline"
-                           size="sm"
-                          onClick={() => {
-                            // For UPS, use real services data from database  
-                            if (carrier.name === 'UPS' && upsCarrier && upsServices) {
-                              const upsCarrierWithServices = {
-                                ...carrier,
-                                id: upsCarrier.id,
-                                services: upsServices.map((service: any) => ({
-                                  id: service.service_code,
-                                  name: service.service_name,
-                                  enabled: service.is_available !== false,
-                                  markup: 0,
-                                  service_id: service.id
-                                }))
-                              };
-                              setSelectedCarrier(upsCarrierWithServices);
-                              setIsServiceModalOpen(true);
-                            } else {
-                              setSelectedCarrier(carrier);
-                              setIsServiceModalOpen(true);
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      {/* Add activation button for inactive UPS */}
+                      {carrier.name === 'UPS' && upsCarrier && !upsCarrier.is_active && (
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={async () => {
+                            try {
+                              const { data, error } = await supabase.functions.invoke('activate-carrier', {
+                                body: { 
+                                  user_id: user?.id, 
+                                  carrier_id: upsCarrier.id 
+                                }
+                              });
+                              
+                              if (error) throw error;
+                              
+                              // Update local state
+                              setUpsCarrier(prev => ({ ...prev, is_active: true }));
+                              
+                              toast({
+                                title: "UPS Activated",
+                                description: "UPS carrier is now active and ready to use.",
+                              });
+                              
+                              // Refresh the page to reflect changes
+                              window.location.reload();
+                            } catch (error) {
+                              console.error('Activation error:', error);
+                              toast({
+                                title: "Activation Failed",
+                                description: "Failed to activate UPS carrier.",
+                                variant: "destructive",
+                              });
                             }
                           }}
-                         >
-                           <Settings className="h-4 w-4 mr-1" />
-                           Manage Services
-                         </Button>
-                         <Button
-                           variant="outline"
-                           size="sm"
-                           onClick={async () => {
-                             try {
-                               if (carrier.name === 'UPS' && user) {
-                                 // Resync UPS services
-                                 const { data, error } = await supabase.functions.invoke('fetch-shipping-services', {
-                                   body: { 
-                                     user_id: user.id, 
-                                     force_refresh: true 
-                                   }
-                                 });
-                                 
-                                 if (error) throw error;
-                                 
-                                 // Update local state with fresh UPS services
-                                  if (data?.services) {
-                                    const upsServicesList = data.services.filter((s: any) => s.carrier_configuration_id === upsCarrier?.id);
-                                    setUpsServices(upsServicesList);
-                                    
-                                    // Update PrepFox carrier services count
-                                    setPrepfoxCarriers(prev => prev.map(c => 
-                                      c.name === 'UPS' 
-                                        ? { ...c, services: upsServicesList.map(s => ({ id: s.service_code, name: s.service_name, enabled: s.is_available })) }
-                                        : c
-                                    ));
-                                    
-                                    toast({
-                                      title: "Services Resynced", 
-                                      description: `Found ${upsServicesList.length} UPS services`,
-                                    });
-                                  }
-                               } else {
-                                 toast({
-                                   title: "Resync Completed",
-                                   description: "Carrier services updated successfully",
-                                 });
-                               }
-                             } catch (error) {
-                               console.error('Resync error:', error);
-                               toast({
-                                 title: "Resync Failed",
-                                 description: "Failed to refresh carrier services",
-                                 variant: "destructive",
-                               });
-                             }
-                           }}
-                         >
-                           <RefreshCw className="h-4 w-4 mr-1" />
-                           Re-Sync
-                         </Button>
-                      </div>
-                    </div>
-
-                    {/* Service Preview */}
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {carrier.name === 'UPS' && upsServices ? (
-                        <>
-                          {upsServices.filter(s => s.is_available).slice(0, 4).map((service: any) => (
-                            <Badge key={service.service_code} variant="secondary" className="text-xs">
-                              {service.service_name}
-                            </Badge>
-                          ))}
-                          {upsServices.filter(s => s.is_available).length > 4 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{upsServices.filter(s => s.is_available).length - 4} more
-                            </Badge>
-                          )}
-                        </>
-                      ) : (
-                        <>
-                          {carrier.services.filter((s: any) => s.enabled).slice(0, 4).map((service: any) => (
-                            <Badge key={service.id} variant="secondary" className="text-xs">
-                              {service.name}
-                            </Badge>
-                          ))}
-                          {carrier.services.filter((s: any) => s.enabled).length > 4 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{carrier.services.filter((s: any) => s.enabled).length - 4} more
-                            </Badge>
-                          )}
-                        </>
+                        >
+                          <Zap className="h-4 w-4 mr-1" />
+                          Activate UPS
+                        </Button>
                       )}
-                    </div>
-                  </CardContent>
-                </Card>
-               ))}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="user-carriers" className="space-y-4">
-            <div className="grid gap-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold">Your Connected Carrier Accounts</h2>
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline"
-                    onClick={() => setIsCanadaPostConfigOpen(true)}
-                    className="gap-2 border-orange-200 hover:bg-orange-50"
-                  >
-                    🇨🇦 Connect Canada Post
-                  </Button>
-                  <Button onClick={() => setIsAddCarrierOpen(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Your Carrier Account
-                  </Button>
-                </div>
-              </div>
-              
-              {loading ? (
-                <Card>
-                  <CardContent className="p-12 text-center">
-                    <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-                    <p className="text-muted-foreground">Loading your carrier accounts...</p>
-                  </CardContent>
-                </Card>
-              ) : connectedUserCarriers.length === 0 ? (
-                <Card className="border-dashed">
-                  <CardContent className="p-12 text-center">
-                    <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-medium mb-2">No Personal Carriers Connected</h3>
-                    <p className="text-muted-foreground mb-4">
-                      Connect your own carrier accounts for custom rates and services
-                    </p>
-                    <div className="flex gap-2">
-                      <Button 
-                        variant="outline"
-                        onClick={() => setIsCanadaPostConfigOpen(true)}
-                        className="gap-2 border-orange-200 hover:bg-orange-50"
-                      >
-                        🇨🇦 Connect Canada Post
-                      </Button>
-                      <Button onClick={() => setIsAddCarrierOpen(true)}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Your Carrier Account
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ) : (
-                connectedUserCarriers.map((carrier) => (
-                  <Card key={carrier.id}>
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className="text-3xl">{carrier.logo}</div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-semibold text-lg">{carrier.name}</h3>
-                              <Badge variant="default" className="bg-green-100 text-green-800">
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                Connected
-                              </Badge>
-                              <Badge variant="outline">
-                                Personal Account
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {carrier.services.filter((s: any) => s.enabled).length} of {carrier.services.length} services enabled
-                              • Last sync: {carrier.lastSync}
-                            </p>
-                            {carrier.credentials && (
-                              <div className="text-xs text-muted-foreground mt-1">
-                                Account: {carrier.credentials.account_number || 'API Connected'} 
-                                {carrier.credentials.access_token ? ' • OAuth Active' : ' • OAuth Needed'}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-2">
-                          {!carrier.credentials?.access_token && carrier.name === 'UPS' && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={async () => {
-                                try {
-                                  const { data, error } = await supabase.functions.invoke('ups-oauth-url');
-                                  if (error) throw error;
-                                  if (data?.authUrl) {
-                                    window.open(data.authUrl, '_blank');
-                                    toast({
-                                      title: "OAuth Authorization",
-                                      description: "Complete UPS authorization in the new window to enable real rates.",
-                                    });
-                                  }
-                                } catch (error) {
-                                  console.error('OAuth error:', error);
+                       <Button
+                         variant="outline"
+                         size="sm"
+                        onClick={() => {
+                          // For UPS, use real services data from database  
+                          if (carrier.name === 'UPS' && upsCarrier && upsServices) {
+                            const upsCarrierWithServices = {
+                              ...carrier,
+                              id: upsCarrier.id,
+                              services: upsServices.map((service: any) => ({
+                                id: service.service_code,
+                                name: service.service_name,
+                                enabled: service.is_available !== false,
+                                markup: 0,
+                                service_id: service.id
+                              }))
+                            };
+                            setSelectedCarrier(upsCarrierWithServices);
+                            setIsServiceModalOpen(true);
+                          } else {
+                            setSelectedCarrier(carrier);
+                            setIsServiceModalOpen(true);
+                          }
+                        }}
+                       >
+                         <Settings className="h-4 w-4 mr-1" />
+                         Manage Services
+                       </Button>
+                       <Button
+                         variant="outline"
+                         size="sm"
+                         onClick={async () => {
+                           try {
+                             if (carrier.name === 'UPS' && user) {
+                               // Resync UPS services
+                               const { data, error } = await supabase.functions.invoke('fetch-shipping-services', {
+                                 body: { 
+                                   user_id: user.id, 
+                                   force_refresh: true 
+                                 }
+                               });
+                               
+                               if (error) throw error;
+                               
+                               // Update local state with fresh UPS services
+                                if (data?.services) {
+                                  const upsServicesList = data.services.filter((s: any) => s.carrier_configuration_id === upsCarrier?.id);
+                                  setUpsServices(upsServicesList);
+                                  
+                                  // Update PrepFox carrier services count
+                                  setPrepfoxCarriers(prev => prev.map(c => 
+                                    c.name === 'UPS' 
+                                      ? { ...c, services: upsServicesList.map(s => ({ id: s.service_code, name: s.service_name, enabled: s.is_available })) }
+                                      : c
+                                  ));
+                                  
                                   toast({
-                                    title: "OAuth Error",
-                                    description: "Failed to generate OAuth URL",
-                                    variant: "destructive",
+                                    title: "Services Resynced", 
+                                    description: `Found ${upsServicesList.length} UPS services`,
                                   });
                                 }
-                              }}
-                            >
-                              <Lock className="h-4 w-4 mr-1" />
-                              Authorize OAuth
-                            </Button>
-                          )}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedCarrier(carrier);
-                              setIsServiceModalOpen(true);
-                            }}
-                          >
-                            <Settings className="h-4 w-4 mr-1" />
-                            Manage Services
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                          >
-                            <RefreshCw className="h-4 w-4 mr-1" />
-                            Re-Sync
-                          </Button>
-                        </div>
-                      </div>
+                             } else {
+                               toast({
+                                 title: "Resync Completed",
+                                 description: "Carrier services updated successfully",
+                               });
+                             }
+                           } catch (error) {
+                             console.error('Resync error:', error);
+                             toast({
+                               title: "Resync Failed",
+                               description: "Failed to refresh carrier services",
+                               variant: "destructive",
+                             });
+                           }
+                         }}
+                       >
+                         <RefreshCw className="h-4 w-4 mr-1" />
+                         Re-Sync
+                       </Button>
+                    </div>
+                  </div>
 
-                      {/* Service Preview */}
-                      <div className="mt-4 flex flex-wrap gap-2">
+                  {/* Service Preview */}
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {carrier.name === 'UPS' && upsServices ? (
+                      <>
+                        {upsServices.filter(s => s.is_available).slice(0, 4).map((service: any) => (
+                          <Badge key={service.service_code} variant="secondary" className="text-xs">
+                            {service.service_name}
+                          </Badge>
+                        ))}
+                        {upsServices.filter(s => s.is_available).length > 4 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{upsServices.filter(s => s.is_available).length - 4} more
+                          </Badge>
+                        )}
+                      </>
+                    ) : (
+                      <>
                         {carrier.services.filter((s: any) => s.enabled).slice(0, 4).map((service: any) => (
                           <Badge key={service.id} variant="secondary" className="text-xs">
                             {service.name}
@@ -1421,22 +1255,173 @@ export function CarrierManagement() {
                             +{carrier.services.filter((s: any) => s.enabled).length - 4} more
                           </Badge>
                         )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
+                      </>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+             ))}
+          </div>
+        </TabsContent>
 
-        {/* Modals */}
-        <ServiceManagementModal />
-        <SubscriptionModal />
-        <PlanComparisonModal />
-        <CanadaPostConfigModal />
-        <AddCarrierModal />
-      </div>
+        <TabsContent value="user-carriers" className="space-y-4">
+          <div className="grid gap-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold">Your Connected Carrier Accounts</h2>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline"
+                  onClick={() => setIsCanadaPostConfigOpen(true)}
+                  className="gap-2 border-orange-200 hover:bg-orange-50"
+                >
+                  🇨🇦 Connect Canada Post
+                </Button>
+                <Button onClick={() => setIsAddCarrierOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Your Carrier Account
+                </Button>
+              </div>
+            </div>
+            
+            {carrierLoading ? (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+                  <p className="text-muted-foreground">Loading your carrier accounts...</p>
+                </CardContent>
+              </Card>
+            ) : connectedUserCarriers.length === 0 ? (
+              <Card className="border-dashed">
+                <CardContent className="p-12 text-center">
+                  <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No Personal Carriers Connected</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Connect your own carrier accounts for custom rates and services
+                  </p>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline"
+                      onClick={() => setIsCanadaPostConfigOpen(true)}
+                      className="gap-2 border-orange-200 hover:bg-orange-50"
+                    >
+                      🇨🇦 Connect Canada Post
+                    </Button>
+                    <Button onClick={() => setIsAddCarrierOpen(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Your Carrier Account
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              connectedUserCarriers.map((carrier) => (
+                <Card key={carrier.id}>
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="text-3xl">{carrier.logo}</div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold text-lg">{carrier.name}</h3>
+                            <Badge variant="default" className="bg-green-100 text-green-800">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Connected
+                            </Badge>
+                            <Badge variant="outline">
+                              Personal Account
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {carrier.services.filter((s: any) => s.enabled).length} of {carrier.services.length} services enabled
+                            • Last sync: {carrier.lastSync}
+                          </p>
+                          {carrier.credentials && (
+                            <div className="text-xs text-muted-foreground mt-1">
+                              Account: {carrier.credentials.account_number || 'API Connected'} 
+                              {carrier.credentials.access_token ? ' • OAuth Active' : ' • OAuth Needed'}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        {!carrier.credentials?.access_token && carrier.name === 'UPS' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={async () => {
+                              try {
+                                const { data, error } = await supabase.functions.invoke('ups-oauth-url');
+                                if (error) throw error;
+                                if (data?.authUrl) {
+                                  window.open(data.authUrl, '_blank');
+                                  toast({
+                                    title: "OAuth Authorization",
+                                    description: "Complete UPS authorization in the new window to enable real rates.",
+                                  });
+                                }
+                              } catch (error) {
+                                console.error('OAuth error:', error);
+                                toast({
+                                  title: "OAuth Error",
+                                  description: "Failed to generate OAuth URL",
+                                  variant: "destructive",
+                                });
+                              }
+                            }}
+                          >
+                            <Lock className="h-4 w-4 mr-1" />
+                            Authorize OAuth
+                          </Button>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedCarrier(carrier);
+                            setIsServiceModalOpen(true);
+                          }}
+                        >
+                          <Settings className="h-4 w-4 mr-1" />
+                          Manage Services
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                        >
+                          <RefreshCw className="h-4 w-4 mr-1" />
+                          Re-Sync
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Service Preview */}
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {carrier.services.filter((s: any) => s.enabled).slice(0, 4).map((service: any) => (
+                        <Badge key={service.id} variant="secondary" className="text-xs">
+                          {service.name}
+                        </Badge>
+                      ))}
+                      {carrier.services.filter((s: any) => s.enabled).length > 4 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{carrier.services.filter((s: any) => s.enabled).length - 4} more
+                        </Badge>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      {/* Modals */}
+      <ServiceManagementModal />
+      <SubscriptionModal />
+      <PlanComparisonModal />
+      <CanadaPostConfigModal />
+      <AddCarrierModal />
     </div>
   );
 }
