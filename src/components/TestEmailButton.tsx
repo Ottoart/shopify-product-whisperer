@@ -20,7 +20,7 @@ export const TestEmailButton = () => {
 
       toast({
         title: "Test Email Sent!",
-        description: "Check ottman1@gmail.com for the test email",
+        description: "Test email sent successfully",
       });
       
       console.log('Test email response:', data);

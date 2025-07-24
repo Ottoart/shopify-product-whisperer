@@ -1,5 +1,5 @@
 import React from 'react';
-import { usePermission, PermissionType } from '@/hooks/usePermissions';
+import { usePermission, useUserRole, PermissionType } from '@/hooks/usePermissions';
 
 interface PermissionGateProps {
   permission: PermissionType;
@@ -50,13 +50,15 @@ export const RoleGate: React.FC<RoleGateProps> = ({
   fallback = null,
   loading = null
 }) => {
-  const { data: hasPermission, isLoading } = usePermission('admin', 'system');
+  const { data: userRole, isLoading } = useUserRole();
   
   if (isLoading) {
     return <>{loading}</>;
   }
 
-  if (!hasPermission) {
+  const roleString = typeof userRole === 'object' ? userRole.role : userRole;
+  
+  if (!roleString || !allowedRoles.includes(roleString)) {
     return <>{fallback}</>;
   }
 
