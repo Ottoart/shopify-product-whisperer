@@ -405,8 +405,8 @@ const Index = () => {
                             <CardContent className="p-0">
                               <ProductList
                                 products={storeProducts}
-                                selectedProducts={Array.from(selectedProducts)}
-                                onSelectionChange={(productIds) => setSelectedProducts(new Set(productIds))}
+                                selectedProducts={selectedProducts}
+                                onSelectionChange={setSelectedProducts}
                                 onAddToQueue={addToQueue}
                                 onProductsUpdated={handleProductsUpdated}
                                 onProductUpdated={handleUpdateProduct}

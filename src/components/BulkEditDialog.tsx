@@ -154,11 +154,9 @@ export const BulkEditDialog = ({ selectedProducts, products, onComplete, childre
         }
       }
 
-      // Show success dialog that requires user acknowledgment
       toast({
         title: "Bulk Edit Complete",
-        description: `Successfully updated ${selectedProducts.length} products. Changes have been saved.`,
-        duration: 10000,
+        description: `Successfully updated ${selectedProducts.length} products`,
       });
 
       onComplete();
