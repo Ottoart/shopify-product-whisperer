@@ -1163,54 +1163,55 @@ export function CarrierManagement() {
                          <Settings className="h-4 w-4 mr-1" />
                          Manage Services
                        </Button>
-                       <Button
-                         variant="outline"
-                         size="sm"
-                         onClick={async () => {
-                           try {
-                             if (carrier.name === 'UPS' && user) {
-                               // Resync UPS services
-                               const { data, error } = await supabase.functions.invoke('fetch-shipping-services', {
-                                 body: { 
-                                   user_id: user.id, 
-                                   force_refresh: true 
-                                 }
-                               });
-                               
-                               if (error) throw error;
-                               
-                               // Update local state with fresh UPS services
-                                if (data?.services) {
-                                  const upsServicesList = data.services.filter((s: any) => s.carrier_configuration_id === upsCarrier?.id);
-                                  setUpsServices(upsServicesList);
-                                  
-                                  // Update PrepFox carrier services count
-                                  setPrepfoxCarriers(prev => prev.map(c => 
-                                    c.name === 'UPS' 
-                                      ? { ...c, services: upsServicesList.map(s => ({ id: s.service_code, name: s.service_name, enabled: s.is_available })) }
-                                      : c
-                                  ));
-                                  
-                                  toast({
-                                    title: "Services Resynced", 
-                                    description: `Found ${upsServicesList.length} UPS services`,
-                                  });
-                                }
-                             } else {
-                               toast({
-                                 title: "Resync Completed",
-                                 description: "Carrier services updated successfully",
-                               });
-                             }
-                           } catch (error) {
-                             console.error('Resync error:', error);
-                             toast({
-                               title: "Resync Failed",
-                               description: "Failed to refresh carrier services",
-                               variant: "destructive",
-                             });
-                           }
-                         }}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            try {
+                              if (carrier.name === 'UPS') {
+                                console.log('Resyncing UPS services...');
+                                
+                                // Use the proper hook method for consistency
+                                await refreshServices();
+                                
+                                // Get updated UPS services using the hook
+                                const updatedUpsServices = getServicesByCarrier('UPS');
+                                console.log('UPS services after refresh:', updatedUpsServices);
+                                
+                                // Update local state
+                                setUpsServices(updatedUpsServices);
+                                   
+                                // Update PrepFox carrier services count
+                                setPrepfoxCarriers(prev => prev.map(c => 
+                                  c.name === 'UPS' 
+                                    ? { ...c, services: updatedUpsServices.map(s => ({ 
+                                        id: s.service_code, 
+                                        name: s.service_name, 
+                                        enabled: s.is_available !== false 
+                                      })) }
+                                    : c
+                                ));
+                                   
+                                toast({
+                                  title: "Services Resynced", 
+                                  description: `Found ${updatedUpsServices.length} UPS services`,
+                                });
+                              } else {
+                                await refreshServices();
+                                toast({
+                                  title: "Resync Completed",
+                                  description: "Carrier services updated successfully",
+                                });
+                              }
+                            } catch (error) {
+                              console.error('Resync error:', error);
+                              toast({
+                                title: "Resync Failed",
+                                description: "Failed to refresh carrier services",
+                                variant: "destructive",
+                              });
+                            }
+                          }}
                        >
                          <RefreshCw className="h-4 w-4 mr-1" />
                          Re-Sync
