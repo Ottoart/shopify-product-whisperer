@@ -88,7 +88,23 @@ export const ProductList = ({
                          product.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.tags.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStore = !storeFilter || product.vendor?.toLowerCase().includes(storeFilter.toLowerCase());
+    // Improved store filtering to handle eBay Store -> eBay mapping
+    const matchesStore = !storeFilter || (() => {
+      const normalizedStoreFilter = storeFilter.toLowerCase();
+      const productVendor = product.vendor?.toLowerCase() || '';
+      
+      // Direct match
+      if (productVendor.includes(normalizedStoreFilter)) return true;
+      
+      // Handle "eBay Store" -> "eBay" mapping
+      if (normalizedStoreFilter.includes('ebay') && productVendor === 'ebay') return true;
+      if (normalizedStoreFilter.includes('shopify') && productVendor.includes('shopify')) return true;
+      
+      // Bidirectional check - store name contains vendor or vendor contains store name
+      if (normalizedStoreFilter.includes(productVendor) || productVendor.includes(normalizedStoreFilter.replace(' store', ''))) return true;
+      
+      return false;
+    })();
     const matchesType = selectedTypes.size === 0 || selectedTypes.has(product.type);
     const matchesVendor = selectedVendors.size === 0 || selectedVendors.has(product.vendor);
     const matchesCategory = selectedCategories.size === 0 || selectedCategories.has(product.category || '');

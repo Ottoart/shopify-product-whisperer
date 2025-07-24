@@ -1058,47 +1058,62 @@ export type Database = {
       }
       marketplace_sync_status: {
         Row: {
+          active_listings: number | null
           active_products_synced: number | null
           created_at: string
+          draft_listings: number | null
+          ended_listings: number | null
           error_message: string | null
           id: string
           inactive_products_skipped: number | null
           last_sync_at: string | null
           marketplace: string
           products_synced: number | null
+          scheduled_listings: number | null
           sync_settings: Json | null
           sync_status: string
           total_products_found: number | null
+          unsold_listings: number | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          active_listings?: number | null
           active_products_synced?: number | null
           created_at?: string
+          draft_listings?: number | null
+          ended_listings?: number | null
           error_message?: string | null
           id?: string
           inactive_products_skipped?: number | null
           last_sync_at?: string | null
           marketplace: string
           products_synced?: number | null
+          scheduled_listings?: number | null
           sync_settings?: Json | null
           sync_status?: string
           total_products_found?: number | null
+          unsold_listings?: number | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          active_listings?: number | null
           active_products_synced?: number | null
           created_at?: string
+          draft_listings?: number | null
+          ended_listings?: number | null
           error_message?: string | null
           id?: string
           inactive_products_skipped?: number | null
           last_sync_at?: string | null
           marketplace?: string
           products_synced?: number | null
+          scheduled_listings?: number | null
           sync_settings?: Json | null
           sync_status?: string
           total_products_found?: number | null
+          unsold_listings?: number | null
           updated_at?: string
           user_id?: string
         }
@@ -1943,6 +1958,8 @@ export type Database = {
           body_html: string | null
           category: string | null
           created_at: string
+          ebay_listing_id: string | null
+          end_time: string | null
           google_shopping_age_group: string | null
           google_shopping_condition: string | null
           google_shopping_gender: string | null
@@ -1950,15 +1967,21 @@ export type Database = {
           id: string
           image_position: number | null
           image_src: string | null
+          listing_status: string | null
+          listing_type: string | null
           marketplace: string | null
           option1_name: string | null
           option1_value: string | null
+          parent_listing_id: string | null
           published: boolean | null
+          quantity_available: number | null
+          quantity_sold: number | null
           seo_description: string | null
           seo_title: string | null
           shopify_product_id: string | null
           shopify_sync_status: string | null
           shopify_synced_at: string | null
+          start_time: string | null
           tags: string | null
           title: string
           type: string | null
@@ -1981,6 +2004,8 @@ export type Database = {
           body_html?: string | null
           category?: string | null
           created_at?: string
+          ebay_listing_id?: string | null
+          end_time?: string | null
           google_shopping_age_group?: string | null
           google_shopping_condition?: string | null
           google_shopping_gender?: string | null
@@ -1988,15 +2013,21 @@ export type Database = {
           id?: string
           image_position?: number | null
           image_src?: string | null
+          listing_status?: string | null
+          listing_type?: string | null
           marketplace?: string | null
           option1_name?: string | null
           option1_value?: string | null
+          parent_listing_id?: string | null
           published?: boolean | null
+          quantity_available?: number | null
+          quantity_sold?: number | null
           seo_description?: string | null
           seo_title?: string | null
           shopify_product_id?: string | null
           shopify_sync_status?: string | null
           shopify_synced_at?: string | null
+          start_time?: string | null
           tags?: string | null
           title: string
           type?: string | null
@@ -2019,6 +2050,8 @@ export type Database = {
           body_html?: string | null
           category?: string | null
           created_at?: string
+          ebay_listing_id?: string | null
+          end_time?: string | null
           google_shopping_age_group?: string | null
           google_shopping_condition?: string | null
           google_shopping_gender?: string | null
@@ -2026,15 +2059,21 @@ export type Database = {
           id?: string
           image_position?: number | null
           image_src?: string | null
+          listing_status?: string | null
+          listing_type?: string | null
           marketplace?: string | null
           option1_name?: string | null
           option1_value?: string | null
+          parent_listing_id?: string | null
           published?: boolean | null
+          quantity_available?: number | null
+          quantity_sold?: number | null
           seo_description?: string | null
           seo_title?: string | null
           shopify_product_id?: string | null
           shopify_sync_status?: string | null
           shopify_synced_at?: string | null
+          start_time?: string | null
           tags?: string | null
           title?: string
           type?: string | null

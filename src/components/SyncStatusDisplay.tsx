@@ -17,6 +17,11 @@ interface SyncStatus {
   total_products_found?: number;
   active_products_synced?: number;
   inactive_products_skipped?: number;
+  active_listings?: number;
+  ended_listings?: number;
+  draft_listings?: number;
+  unsold_listings?: number;
+  scheduled_listings?: number;
   sync_settings?: {
     active_only?: boolean;
     sync_timestamp?: string;
@@ -203,6 +208,48 @@ export const SyncStatusDisplay = () => {
                         </span>
                       )}
                     </p>
+                  </div>
+                )}
+
+                {/* eBay listing status breakdown */}
+                {status.marketplace === 'ebay' && (
+                  status.active_listings || status.ended_listings || status.draft_listings || 
+                  status.unsold_listings || status.scheduled_listings
+                ) && (
+                  <div className="mt-3 pt-3 border-t border-border">
+                    <h4 className="text-sm font-medium mb-2">Listing Status Breakdown:</h4>
+                    <div className="space-y-1">
+                      {status.active_listings > 0 && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">Active listings:</span>
+                          <span className="text-xs font-medium text-green-600">{status.active_listings}</span>
+                        </div>
+                      )}
+                      {status.unsold_listings > 0 && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">Unsold listings:</span>
+                          <span className="text-xs font-medium text-yellow-600">{status.unsold_listings}</span>
+                        </div>
+                      )}
+                      {status.draft_listings > 0 && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">Draft listings:</span>
+                          <span className="text-xs font-medium text-gray-600">{status.draft_listings}</span>
+                        </div>
+                      )}
+                      {status.ended_listings > 0 && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">Ended listings:</span>
+                          <span className="text-xs font-medium text-red-600">{status.ended_listings}</span>
+                        </div>
+                      )}
+                      {status.scheduled_listings > 0 && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">Scheduled listings:</span>
+                          <span className="text-xs font-medium text-blue-600">{status.scheduled_listings}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>

@@ -262,53 +262,100 @@ serve(async (req) => {
       console.log(`Syncing all ${allItems.length} eBay items (including inactive ones)`);
     }
 
-    // Transform eBay items to our product format
-    const productRecords = itemsToSync.map((item: any) => {
-      // Handle different API response formats
+    // Group items by listing and track status counts
+    const listingGroups = new Map();
+    const statusCounts = {
+      active: 0,
+      ended: 0,
+      draft: 0,
+      unsold: 0,
+      scheduled: 0
+    };
+
+    // Process each item to group by parent listing
+    itemsToSync.forEach((item: any) => {
+      // Determine listing status
+      let listingStatus = 'unknown';
+      if (item.product) {
+        // Inventory API - check availability for status
+        const quantity = item.availability?.shipToLocationAvailability?.quantity || 0;
+        listingStatus = quantity > 0 ? 'active' : 'unsold';
+      } else if (item.itemId) {
+        // Browse API - if item appears in browse, it's likely active
+        listingStatus = item.buyingOptions && item.buyingOptions.length > 0 ? 'active' : 'ended';
+      }
+
+      // Count by status
+      if (listingStatus === 'active') statusCounts.active++;
+      else if (listingStatus === 'ended') statusCounts.ended++;
+      else if (listingStatus.includes('draft')) statusCounts.draft++;
+      else if (listingStatus.includes('unsold')) statusCounts.unsold++;
+      else if (listingStatus.includes('scheduled')) statusCounts.scheduled++;
+
+      // Use SKU or item ID as grouping key - eBay variants typically share the same base SKU
+      const listingId = item.sku || item.itemId || `ebay-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+      const parentId = listingId.split('-')[0]; // Group variants that share base SKU
+      
+      if (!listingGroups.has(parentId)) {
+        listingGroups.set(parentId, {
+          parentListing: item,
+          variants: [],
+          status: listingStatus
+        });
+      }
+      
+      listingGroups.get(parentId).variants.push({...item, determinedStatus: listingStatus});
+    });
+
+    console.log(`eBay listing status counts:`, statusCounts);
+
+    // Transform grouped listings into product records
+    const productRecords = Array.from(listingGroups.values()).map(({ parentListing, variants, status }) => {
+      // Handle different API response formats for the parent listing
       let itemData: any = {};
       
-      if (item.product) {
+      if (parentListing.product) {
         // Inventory API format - most comprehensive data
         itemData = {
-          sku: item.sku,
-          title: item.product.title,
-          description: item.product.description,
-          imageUrls: item.product.imageUrls,
-          price: item.product.aspects?.Price?.[0],
-          condition: item.product.condition || item.product.aspects?.Condition?.[0],
-          brand: item.product.brand,
-          category: item.product.aspects?.Category?.[0],
-          quantity: item.availability?.shipToLocationAvailability?.quantity || 0,
-          weight: item.product.weight?.value,
-          weightUnit: item.product.weight?.unit,
-          packageType: item.packageWeightAndSize?.packageType,
+          sku: parentListing.sku,
+          title: parentListing.product.title,
+          description: parentListing.product.description,
+          imageUrls: parentListing.product.imageUrls,
+          price: parentListing.product.aspects?.Price?.[0],
+          condition: parentListing.product.condition || parentListing.product.aspects?.Condition?.[0],
+          brand: parentListing.product.brand,
+          category: parentListing.product.aspects?.Category?.[0],
+          quantity: parentListing.availability?.shipToLocationAvailability?.quantity || 0,
+          weight: parentListing.product.weight?.value,
+          weightUnit: parentListing.product.weight?.unit,
+          packageType: parentListing.packageWeightAndSize?.packageType,
         };
-      } else if (item.itemId) {
+      } else if (parentListing.itemId) {
         // Browse API format - fallback format
         itemData = {
-          sku: item.itemId,
-          title: item.title,
-          description: item.shortDescription,
-          imageUrls: item.image ? [item.image.imageUrl] : [],
-          price: item.price?.value,
-          condition: item.condition,
-          brand: item.brand,
-          category: item.categories?.[0]?.categoryName,
+          sku: parentListing.itemId,
+          title: parentListing.title,
+          description: parentListing.shortDescription,
+          imageUrls: parentListing.image ? [parentListing.image.imageUrl] : [],
+          price: parentListing.price?.value,
+          condition: parentListing.condition,
+          brand: parentListing.brand,
+          category: parentListing.categories?.[0]?.categoryName,
           quantity: 1, // Browse API doesn't provide quantity
-          categoryId: item.categories?.[0]?.categoryId,
+          categoryId: parentListing.categories?.[0]?.categoryId,
         };
       } else {
         // Legacy or other format
         itemData = {
-          sku: item.sku || item.itemId || `ebay-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-          title: item.title || item.name || 'Untitled eBay Product',
-          description: item.description,
-          imageUrls: item.imageUrls || [item.imageUrl],
-          price: item.price?.value || item.currentPrice?.value,
-          condition: item.condition,
-          brand: item.brand,
-          category: item.categoryPath,
-          quantity: item.quantity || 1,
+          sku: parentListing.sku || parentListing.itemId || `ebay-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+          title: parentListing.title || parentListing.name || 'Untitled eBay Product',
+          description: parentListing.description,
+          imageUrls: parentListing.imageUrls || [parentListing.imageUrl],
+          price: parentListing.price?.value || parentListing.currentPrice?.value,
+          condition: parentListing.condition,
+          brand: parentListing.brand,
+          category: parentListing.categoryPath,
+          quantity: parentListing.quantity || 1,
         };
       }
       
@@ -333,6 +380,16 @@ serve(async (req) => {
         }
       }
 
+      // Calculate total quantity across all variants
+      const totalQuantity = variants.reduce((sum: number, variant: any) => {
+        if (variant.product) {
+          return sum + (variant.availability?.shipToLocationAvailability?.quantity || 0);
+        } else if (variant.itemId) {
+          return sum + 1; // Browse API doesn't provide quantity
+        }
+        return sum + (variant.quantity || 1);
+      }, 0);
+
       return {
         user_id: user.id,
         handle: handle,
@@ -340,7 +397,7 @@ serve(async (req) => {
         vendor: 'eBay',
         type: itemData.brand || 'eBay Item',
         tags: ['eBay', itemData.condition || 'Used', itemData.category].filter(Boolean).join(', '),
-        published: true,
+        published: status === 'active',
         body_html: itemData.description || `<p>${itemData.title || 'eBay Product'}</p>`,
         category: itemData.category || null,
         
@@ -374,6 +431,16 @@ serve(async (req) => {
         shopify_synced_at: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+
+        // New eBay-specific listing fields
+        listing_status: status,
+        parent_listing_id: itemData.sku || handle,
+        listing_type: variants.length > 1 ? 'variant' : 'single',
+        ebay_listing_id: itemData.sku || handle,
+        quantity_available: totalQuantity,
+        quantity_sold: 0, // Would need separate API call to get sales data
+        start_time: null, // Would need listing details API call
+        end_time: null    // Would need listing details API call
       };
     });
 
@@ -392,7 +459,7 @@ serve(async (req) => {
       }
     }
 
-    // Update marketplace sync status with detailed information
+    // Update marketplace sync status with detailed information including listing status counts
     await supabase
       .from('marketplace_sync_status')
       .upsert({
@@ -402,8 +469,13 @@ serve(async (req) => {
         last_sync_at: new Date().toISOString(),
         products_synced: productRecords.length,
         total_products_found: allItems.length,
-        active_products_synced: shouldSyncActiveOnly ? productRecords.length : undefined,
+        active_products_synced: shouldSyncActiveOnly ? productRecords.length : statusCounts.active,
         inactive_products_skipped: shouldSyncActiveOnly ? skippedCount : undefined,
+        active_listings: statusCounts.active,
+        ended_listings: statusCounts.ended,
+        draft_listings: statusCounts.draft,
+        unsold_listings: statusCounts.unsold,
+        scheduled_listings: statusCounts.scheduled,
         sync_settings: {
           active_only: shouldSyncActiveOnly,
           sync_timestamp: new Date().toISOString()
