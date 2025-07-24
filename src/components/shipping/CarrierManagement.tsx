@@ -254,12 +254,14 @@ export function CarrierManagement() {
           setUpsCarrier(realUpsCarrier);
           setUpsServices(realUpsCarrier.shipping_services || []);
           
-          // Create services array in the expected format
+          // Create services array from real database data
           const upsServices = (realUpsCarrier.shipping_services || []).map((service: any) => ({
             id: service.service_code,
             name: service.service_name,
             enabled: service.is_available
           }));
+          
+          console.log('UPS services from DB:', upsServices);
           
           // Use real UPS data from database
           const upsConfig = {
@@ -268,11 +270,7 @@ export function CarrierManagement() {
             logo: "🟤",
             status: "connected" as const,
             description: "UPS shipping services",
-            services: [
-              { id: "ground", name: "Ground", enabled: true },
-              { id: "next-day", name: "Next Day Air", enabled: true },
-              { id: "2nd-day", name: "2nd Day Air", enabled: true }
-            ],
+            services: upsServices, // Use real services from database
             integration_status: "available",
             setup_required: true,
             connected: true,
@@ -1092,8 +1090,11 @@ export function CarrierManagement() {
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground mt-1">
-                            {carrier.services.filter(s => s.enabled).length} of {carrier.services.length} services enabled
-                            • Last sync: {carrier.lastSync}
+                            {carrier.name === 'UPS' && upsServices ? 
+                              `${upsServices.filter(s => s.is_available).length} of ${upsServices.length} services enabled` :
+                              `${carrier.services.filter(s => s.enabled).length} of ${carrier.services.length} services enabled`
+                            }
+                            • Last sync: {carrier.lastSync || 'Never'}
                           </p>
                           
                           {/* Show UPS configuration details if this is UPS */}
@@ -1239,15 +1240,32 @@ export function CarrierManagement() {
 
                     {/* Service Preview */}
                     <div className="mt-4 flex flex-wrap gap-2">
-                      {carrier.services.filter((s: any) => s.enabled).slice(0, 4).map((service: any) => (
-                        <Badge key={service.id} variant="secondary" className="text-xs">
-                          {service.name}
-                        </Badge>
-                      ))}
-                      {carrier.services.filter((s: any) => s.enabled).length > 4 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{carrier.services.filter((s: any) => s.enabled).length - 4} more
-                        </Badge>
+                      {carrier.name === 'UPS' && upsServices ? (
+                        <>
+                          {upsServices.filter(s => s.is_available).slice(0, 4).map((service: any) => (
+                            <Badge key={service.service_code} variant="secondary" className="text-xs">
+                              {service.service_name}
+                            </Badge>
+                          ))}
+                          {upsServices.filter(s => s.is_available).length > 4 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{upsServices.filter(s => s.is_available).length - 4} more
+                            </Badge>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          {carrier.services.filter((s: any) => s.enabled).slice(0, 4).map((service: any) => (
+                            <Badge key={service.id} variant="secondary" className="text-xs">
+                              {service.name}
+                            </Badge>
+                          ))}
+                          {carrier.services.filter((s: any) => s.enabled).length > 4 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{carrier.services.filter((s: any) => s.enabled).length - 4} more
+                            </Badge>
+                          )}
+                        </>
                       )}
                     </div>
                   </CardContent>
