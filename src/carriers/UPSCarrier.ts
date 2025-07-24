@@ -71,6 +71,15 @@ export class UPSCarrier implements CarrierInterface {
   async getRates(shipmentDetails: ShipmentDetails): Promise<RateResponse[]> {
     await this.authenticate();
 
+    // Validate we have required account details
+    if (!this.credentials.account_number) {
+      throw new Error('UPS account number is required for rating');
+    }
+    
+    if (!this.credentials.postal_code || !this.credentials.country_code) {
+      throw new Error('UPS account postal code and country code are required for rating');
+    }
+
     const ratingRequest = {
       RateRequest: {
         Request: {

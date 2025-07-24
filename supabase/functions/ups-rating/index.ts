@@ -136,12 +136,8 @@ async function processUPSRating(requestData: RatingRequest, credentials: any, ac
       console.error('❌ Missing required fields:', requestData);
       return new Response(
         JSON.stringify({ 
-          error: 'Missing required fields', 
-          details: {
-            shipFrom: requestData.shipFrom,
-            shipTo: requestData.shipTo,
-            package: requestData.package
-          }
+          error: 'Missing required shipping information', 
+          details: 'Please ensure you have provided complete shipping addresses and package weight'
         }),
         { 
           status: 400, 
@@ -150,22 +146,50 @@ async function processUPSRating(requestData: RatingRequest, credentials: any, ac
       );
     }
 
-    // Log shipping countries for debugging
-    console.log('🌍 Shipping details:');
-    console.log('Ship From Country:', requestData.shipFrom.country);
-    console.log('Ship To Country:', requestData.shipTo.country);
-    console.log('Account Number:', accountNumber);
-
+    // Validate account configuration
     if (!accountNumber) {
       console.error('❌ Missing UPS account number');
       return new Response(
-        JSON.stringify({ error: 'UPS account number not configured' }),
+        JSON.stringify({ 
+          error: 'UPS account not configured properly', 
+          details: 'Please contact support to configure your UPS account settings'
+        }),
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
     }
+
+    // Check for required account details from carrier configuration
+    const accountPostalCode = credentials.postal_code;
+    const accountCountryCode = credentials.country_code;
+    
+    if (!accountPostalCode || !accountCountryCode) {
+      console.error('❌ Missing UPS account address details:', {
+        hasPostalCode: Boolean(accountPostalCode),
+        hasCountryCode: Boolean(accountCountryCode)
+      });
+      return new Response(
+        JSON.stringify({ 
+          error: 'UPS account address not configured', 
+          details: 'Please configure your UPS account postal code and country in carrier settings'
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Log shipping details for debugging
+    console.log('🌍 Shipping details:');
+    console.log('Ship From Country:', requestData.shipFrom.country);
+    console.log('Ship To Country:', requestData.shipTo.country);
+    console.log('Account Number:', accountNumber);
+    console.log('Account Postal Code:', accountPostalCode);
+    console.log('Account Country:', accountCountryCode);
+    console.log('Negotiated Rates Enabled:', credentials.enable_negotiated_rates);
 
     // Force sandbox environment for consistency with token endpoint
     const ratingApiUrl = 'https://wwwcie.ups.com/api/rating/v1/rate';
@@ -237,6 +261,14 @@ async function processUPSRating(requestData: RatingRequest, credentials: any, ac
         }
       }
     };
+
+    // Add negotiated rates if enabled in carrier configuration
+    if (credentials.enable_negotiated_rates) {
+      console.log('✅ Adding negotiated rates indicator');
+      upsRequest.RateRequest.Shipment['RateInformation'] = {
+        NegotiatedRatesIndicator: ''
+      };
+    }
 
     console.log('📦 Final UPS API Request:', JSON.stringify(upsRequest, null, 2));
 
@@ -330,8 +362,14 @@ async function processUPSRating(requestData: RatingRequest, credentials: any, ac
         const serviceType = getUPSServiceType(serviceCode);
         const estimatedDays = getUPSEstimatedDays(serviceCode);
         
-        const totalCharges = shipment.TotalCharges?.MonetaryValue || '0';
+        // Use negotiated rates if available and enabled, otherwise use published rates
+        const totalCharges = (credentials.enable_negotiated_rates && shipment.NegotiatedRateCharges) 
+          ? shipment.NegotiatedRateCharges.TotalCharge.MonetaryValue 
+          : shipment.TotalCharges?.MonetaryValue || '0';
+        
         const currency = shipment.TotalCharges?.CurrencyCode || 'USD';
+
+        console.log(`📊 Rate for ${serviceName}: ${totalCharges} ${currency} ${credentials.enable_negotiated_rates && shipment.NegotiatedRateCharges ? '(Negotiated)' : '(Published)'}`);
 
         rates.push({
           carrier: 'UPS',
