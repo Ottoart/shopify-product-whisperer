@@ -18,9 +18,9 @@ interface ShippingService {
 }
 
 // Sample services for different carriers
-const carrierServices: Record<string, ShippingService[]> = {
-  ups: [
-    // International UPS services - these work for Canada to US shipping
+// UPS services by region
+const upsServices = {
+  international: [
     {
       service_code: '07',
       service_name: 'UPS Worldwide Express',
@@ -70,8 +70,9 @@ const carrierServices: Record<string, ShippingService[]> = {
       supports_tracking: true,
       supports_insurance: true,
       supports_signature: true
-    },
-    // Some domestic US services for reference (may work in certain cases)
+    }
+  ],
+  domestic: [
     {
       service_code: '01',
       service_name: 'UPS Next Day Air',
@@ -91,8 +92,21 @@ const carrierServices: Record<string, ShippingService[]> = {
       supports_tracking: true,
       supports_insurance: true,
       supports_signature: true
+    },
+    {
+      service_code: '03',
+      service_name: 'UPS Ground',
+      service_type: 'standard',
+      estimated_days: '1-5 business days',
+      max_weight_lbs: 150,
+      supports_tracking: true,
+      supports_insurance: true,
+      supports_signature: true
     }
-  ],
+  ]
+};
+
+const carrierServices: Record<string, ShippingService[]> = {
   fedex: [
     {
       service_code: 'FEDEX_GROUND',
@@ -236,8 +250,23 @@ const carrierServices: Record<string, ShippingService[]> = {
 async function fetchCarrierServices(carrierName: string, credentials: any): Promise<ShippingService[]> {
   console.log(`Fetching services for carrier: ${carrierName}`);
   
-  // For now, return predefined services
-  // In the future, this would make actual API calls to carrier services
+  // Special handling for UPS - only return appropriate services based on account country
+  if (carrierName.toLowerCase() === 'ups') {
+    const countryCode = credentials?.country_code || 'US';
+    console.log(`UPS account country: ${countryCode}`);
+    
+    if (countryCode === 'CA') {
+      // Canadian UPS accounts - only international services work for Canada to US shipping
+      console.log('Using international UPS services for Canadian account');
+      return upsServices.international;
+    } else {
+      // US UPS accounts - can use both domestic and international services  
+      console.log('Using all UPS services for US account');
+      return [...upsServices.domestic, ...upsServices.international];
+    }
+  }
+  
+  // For other carriers, return predefined services
   const services = carrierServices[carrierName.toLowerCase()] || [];
   
   // Simulate API delay
@@ -293,6 +322,26 @@ Deno.serve(async (req) => {
     for (const carrier of carriers) {
       try {
         console.log(`Processing carrier: ${carrier.carrier_name}`);
+        
+        // For UPS carriers, clean up invalid services first
+        if (carrier.carrier_name.toLowerCase() === 'ups') {
+          const countryCode = carrier.api_credentials?.country_code || 'US';
+          
+          if (countryCode === 'CA') {
+            // Remove domestic US services for Canadian UPS accounts (they don't work)
+            console.log('Cleaning up invalid domestic services for Canadian UPS account');
+            const { error: deleteError } = await supabase
+              .from('shipping_services')
+              .delete()
+              .eq('user_id', user_id)
+              .eq('carrier_configuration_id', carrier.id)
+              .in('service_code', ['01', '02', '03']); // Domestic US services
+              
+            if (deleteError) {
+              console.error('Error deleting invalid services:', deleteError);
+            }
+          }
+        }
         
         const services = await fetchCarrierServices(carrier.carrier_name, carrier.api_credentials);
         

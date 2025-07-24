@@ -174,7 +174,12 @@ serve(async (req) => {
         switch (carrier.carrier_name.toUpperCase()) {
           case 'UPS':
             console.log('🔄 About to call getUPSRates with auth header:', authHeader ? 'PRESENT' : 'MISSING');
-            carrierRates = await getUPSRates(carrier, shipFrom, shipTo, packageDetails, rateRequest.additional_services, authHeader);
+            
+            // Filter services to only valid ones based on shipping route
+            const validServices = getValidUPSServices(carrier, shipFrom, shipTo);
+            console.log(`📦 Valid UPS services for this route: ${validServices.map(s => s.service_code).join(', ')}`);
+            
+            carrierRates = await getUPSRates(carrier, shipFrom, shipTo, packageDetails, rateRequest.additional_services, authHeader, validServices);
             console.log(`📦 UPS returned ${carrierRates.length} rates`);
             break;
           case 'FEDEX':
@@ -241,7 +246,31 @@ serve(async (req) => {
   }
 });
 
-async function getUPSRates(carrier: any, shipFrom: any, shipTo: any, packageDetails: any, additionalServices?: any, authHeader?: string): Promise<ShippingRate[]> {
+function getValidUPSServices(carrier: any, shipFrom: any, shipTo: any): any[] {
+  const countryCode = carrier.api_credentials?.country_code || 'US';
+  const fromCountry = shipFrom?.country || 'US';
+  const toCountry = shipTo?.country || 'US';
+  
+  console.log(`🌍 UPS service validation - Account: ${countryCode}, From: ${fromCountry}, To: ${toCountry}`);
+  
+  // Get all services for this carrier
+  const allServices = carrier.shipping_services || [];
+  
+  // If shipping from Canada, only allow international services
+  if (fromCountry === 'CA' || countryCode === 'CA') {
+    const validServices = allServices.filter((service: any) => 
+      ['07', '08', '11', '54', '65'].includes(service.service_code)
+    );
+    console.log(`🇨🇦 Canadian route - filtered to ${validServices.length} international services`);
+    return validServices;
+  }
+  
+  // For US routes, allow all services
+  console.log(`🇺🇸 US route - allowing all ${allServices.length} services`);
+  return allServices;
+}
+
+async function getUPSRates(carrier: any, shipFrom: any, shipTo: any, packageDetails: any, additionalServices?: any, authHeader?: string, validServices?: any[]): Promise<ShippingRate[]> {
   // Use existing UPS rating function
   try {
     console.log('🔄 Calling UPS rating function with:', {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { RefreshUPSTokenButton } from "./RefreshUPSTokenButton";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1084,9 +1084,6 @@ export function EnhancedShippingConfiguration({
               )}
             </SelectContent>
           </Select>
-          <div className="mt-2">
-            <RefreshUPSTokenButton />
-          </div>
         </CardContent>
       </Card>
 
