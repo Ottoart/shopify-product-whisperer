@@ -1002,12 +1002,15 @@ export type Database = {
           external_user_id: string
           id: string
           is_active: boolean
+          last_token_refresh: string | null
           metadata: Json | null
           platform: string
           refresh_token: string | null
           store_name: string | null
           store_url: string | null
           token_expires_at: string | null
+          token_expires_warning_sent: boolean | null
+          token_refresh_count: number | null
           updated_at: string
           user_id: string
         }
@@ -1019,12 +1022,15 @@ export type Database = {
           external_user_id: string
           id?: string
           is_active?: boolean
+          last_token_refresh?: string | null
           metadata?: Json | null
           platform: string
           refresh_token?: string | null
           store_name?: string | null
           store_url?: string | null
           token_expires_at?: string | null
+          token_expires_warning_sent?: boolean | null
+          token_refresh_count?: number | null
           updated_at?: string
           user_id: string
         }
@@ -1036,12 +1042,15 @@ export type Database = {
           external_user_id?: string
           id?: string
           is_active?: boolean
+          last_token_refresh?: string | null
           metadata?: Json | null
           platform?: string
           refresh_token?: string | null
           store_name?: string | null
           store_url?: string | null
           token_expires_at?: string | null
+          token_expires_warning_sent?: boolean | null
+          token_refresh_count?: number | null
           updated_at?: string
           user_id?: string
         }
@@ -1049,35 +1058,47 @@ export type Database = {
       }
       marketplace_sync_status: {
         Row: {
+          active_products_synced: number | null
           created_at: string
           error_message: string | null
           id: string
+          inactive_products_skipped: number | null
           last_sync_at: string | null
           marketplace: string
           products_synced: number | null
+          sync_settings: Json | null
           sync_status: string
+          total_products_found: number | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          active_products_synced?: number | null
           created_at?: string
           error_message?: string | null
           id?: string
+          inactive_products_skipped?: number | null
           last_sync_at?: string | null
           marketplace: string
           products_synced?: number | null
+          sync_settings?: Json | null
           sync_status?: string
+          total_products_found?: number | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          active_products_synced?: number | null
           created_at?: string
           error_message?: string | null
           id?: string
+          inactive_products_skipped?: number | null
           last_sync_at?: string | null
           marketplace?: string
           products_synced?: number | null
+          sync_settings?: Json | null
           sync_status?: string
+          total_products_found?: number | null
           updated_at?: string
           user_id?: string
         }
@@ -1929,11 +1950,13 @@ export type Database = {
           id: string
           image_position: number | null
           image_src: string | null
+          marketplace: string | null
           option1_name: string | null
           option1_value: string | null
           published: boolean | null
           seo_description: string | null
           seo_title: string | null
+          shopify_product_id: string | null
           shopify_sync_status: string | null
           shopify_synced_at: string | null
           tags: string | null
@@ -1965,11 +1988,13 @@ export type Database = {
           id?: string
           image_position?: number | null
           image_src?: string | null
+          marketplace?: string | null
           option1_name?: string | null
           option1_value?: string | null
           published?: boolean | null
           seo_description?: string | null
           seo_title?: string | null
+          shopify_product_id?: string | null
           shopify_sync_status?: string | null
           shopify_synced_at?: string | null
           tags?: string | null
@@ -2001,11 +2026,13 @@ export type Database = {
           id?: string
           image_position?: number | null
           image_src?: string | null
+          marketplace?: string | null
           option1_name?: string | null
           option1_value?: string | null
           published?: boolean | null
           seo_description?: string | null
           seo_title?: string | null
+          shopify_product_id?: string | null
           shopify_sync_status?: string | null
           shopify_synced_at?: string | null
           tags?: string | null
@@ -3082,6 +3109,42 @@ export type Database = {
           ticket_number?: string
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      sync_settings: {
+        Row: {
+          auto_sync_enabled: boolean
+          created_at: string
+          id: string
+          last_preference_update: string | null
+          platform: string
+          sync_active_only: boolean
+          sync_frequency_hours: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_sync_enabled?: boolean
+          created_at?: string
+          id?: string
+          last_preference_update?: string | null
+          platform: string
+          sync_active_only?: boolean
+          sync_frequency_hours?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_sync_enabled?: boolean
+          created_at?: string
+          id?: string
+          last_preference_update?: string | null
+          platform?: string
+          sync_active_only?: boolean
+          sync_frequency_hours?: number | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

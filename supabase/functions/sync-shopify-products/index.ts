@@ -30,7 +30,18 @@ serve(async (req) => {
       throw new Error('Authentication failed');
     }
 
-    const { storeUrl, accessToken, batchSize = 250, startPage = 1 } = await req.json();
+    const { storeUrl, accessToken, batchSize = 250, startPage = 1, syncActiveOnly = true } = await req.json();
+    
+    // Load user sync settings from database
+    const { data: syncSettings } = await supabase
+      .from('sync_settings')
+      .select('sync_active_only')
+      .eq('user_id', user.id)
+      .eq('platform', 'shopify')
+      .maybeSingle();
+    
+    const shouldSyncActiveOnly = syncSettings?.sync_active_only ?? syncActiveOnly;
+    console.log('Sync settings - Active only:', shouldSyncActiveOnly);
     
     if (!storeUrl || !accessToken) {
       throw new Error('Store URL and access token are required');
@@ -86,6 +97,11 @@ serve(async (req) => {
     // Fetch products for this batch with cursor-based pagination
     let url = `${baseUrl}/products.json?limit=${batchSize}&fields=id,title,handle,vendor,product_type,tags,published_at,created_at,updated_at,status,variants,images,body_html,seo_title,seo_description`;
     
+    // Add status filter for active-only sync
+    if (shouldSyncActiveOnly) {
+      url += `&status=active`;
+    }
+    
     // Use cursor-based pagination instead of page numbers
     if (startPage > 1) {
       const { data: lastSync } = await supabase
@@ -127,9 +143,30 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const products = data.products || [];
+    const allProducts = data.products || [];
+    
+    // Filter products based on user preference (additional filtering if needed)
+    let products = allProducts;
+    let skippedCount = 0;
+    
+    if (shouldSyncActiveOnly) {
+      // Filter for active products with inventory if not already filtered by API
+      const activeProducts = allProducts.filter(product => {
+        const hasInventory = product.variants?.some(variant => 
+          variant.inventory_quantity > 0 || variant.inventory_policy === 'continue'
+        );
+        return product.status === 'active' && (hasInventory || product.status === 'active');
+      });
+      
+      products = activeProducts;
+      skippedCount = allProducts.length - activeProducts.length;
+      
+      if (skippedCount > 0) {
+        console.log(`Filtered ${skippedCount} inactive products, keeping ${products.length} active products`);
+      }
+    }
 
-    console.log(`Fetched ${products.length} products for batch ${startPage}`);
+    console.log(`Processing ${products.length} products for batch ${startPage}`);
 
     // Transform and upsert products to database
     const productRecords = products.map(product => {
@@ -208,7 +245,7 @@ serve(async (req) => {
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id);
 
-    // Update sync status
+    // Update sync status with detailed information
     await supabase
       .from('shopify_sync_status')
       .upsert({
@@ -219,6 +256,27 @@ serve(async (req) => {
         sync_status: nextPageInfo ? 'in_progress' : 'completed'
       }, {
         onConflict: 'user_id'
+      });
+
+    // Also update marketplace sync status
+    await supabase
+      .from('marketplace_sync_status')
+      .upsert({
+        user_id: user.id,
+        marketplace: 'shopify',
+        sync_status: nextPageInfo ? 'in_progress' : 'completed',
+        last_sync_at: new Date().toISOString(),
+        products_synced: products.length,
+        total_products_found: allProducts.length,
+        active_products_synced: shouldSyncActiveOnly ? products.length : undefined,
+        inactive_products_skipped: shouldSyncActiveOnly ? skippedCount : undefined,
+        sync_settings: {
+          active_only: shouldSyncActiveOnly,
+          sync_timestamp: new Date().toISOString()
+        },
+        error_message: null
+      }, {
+        onConflict: 'user_id,marketplace'
       });
 
     console.log(`Batch ${startPage} completed. Total synced: ${totalSynced}`);

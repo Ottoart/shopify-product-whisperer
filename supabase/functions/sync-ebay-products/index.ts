@@ -49,6 +49,21 @@ serve(async (req) => {
 
     console.log(`Starting eBay product sync for user ${user.id}`);
 
+    // Get request body to check sync preferences
+    const body = await req.json().catch(() => ({}));
+    const syncActiveOnly = body.syncActiveOnly !== undefined ? body.syncActiveOnly : true;
+    
+    // Load user sync settings from database
+    const { data: syncSettings } = await supabase
+      .from('sync_settings')
+      .select('sync_active_only')
+      .eq('user_id', user.id)
+      .eq('platform', 'ebay')
+      .maybeSingle();
+    
+    const shouldSyncActiveOnly = syncSettings?.sync_active_only ?? syncActiveOnly;
+    console.log('Sync settings - Active only:', shouldSyncActiveOnly);
+
     // Parse access token from stored credentials
     let accessToken = ebayConfig.access_token;
     let ebayUserId: string | null = null;
@@ -221,25 +236,34 @@ serve(async (req) => {
 
     console.log(`Found ${allItems.length} eBay items`);
 
-    // Filter for active products only (products with available quantity)
-    const activeItems = allItems.filter((item: any) => {
-      if (item.product) {
-        // Inventory API format - check availability
-        const quantity = item.availability?.shipToLocationAvailability?.quantity || 0;
-        return quantity > 0;
-      } else if (item.itemId) {
-        // Browse API format - check if item has buying options
-        return item.buyingOptions && item.buyingOptions.length > 0;
-      } else {
-        // Legacy format - check quantity
-        return (item.quantity || 0) > 0;
-      }
-    });
-
-    console.log(`Filtered to ${activeItems.length} active eBay items (${allItems.length - activeItems.length} inactive items excluded)`);
+    // Filter products based on user preference
+    let itemsToSync = allItems;
+    let skippedCount = 0;
+    
+    if (shouldSyncActiveOnly) {
+      const activeItems = allItems.filter((item: any) => {
+        if (item.product) {
+          // Inventory API format - check availability
+          const quantity = item.availability?.shipToLocationAvailability?.quantity || 0;
+          return quantity > 0;
+        } else if (item.itemId) {
+          // Browse API format - check if item has buying options
+          return item.buyingOptions && item.buyingOptions.length > 0;
+        } else {
+          // Legacy format - check quantity
+          return (item.quantity || 0) > 0;
+        }
+      });
+      
+      itemsToSync = activeItems;
+      skippedCount = allItems.length - activeItems.length;
+      console.log(`Filtered to ${activeItems.length} active eBay items (${skippedCount} inactive items excluded)`);
+    } else {
+      console.log(`Syncing all ${allItems.length} eBay items (including inactive ones)`);
+    }
 
     // Transform eBay items to our product format
-    const productRecords = activeItems.map((item: any) => {
+    const productRecords = itemsToSync.map((item: any) => {
       // Handle different API response formats
       let itemData: any = {};
       
@@ -368,26 +392,38 @@ serve(async (req) => {
       }
     }
 
-    // Update marketplace sync status
+    // Update marketplace sync status with detailed information
     await supabase
       .from('marketplace_sync_status')
       .upsert({
         user_id: user.id,
         marketplace: 'ebay',
+        sync_status: 'completed',
         last_sync_at: new Date().toISOString(),
         products_synced: productRecords.length,
-        sync_status: 'completed',
+        total_products_found: allItems.length,
+        active_products_synced: shouldSyncActiveOnly ? productRecords.length : undefined,
+        inactive_products_skipped: shouldSyncActiveOnly ? skippedCount : undefined,
+        sync_settings: {
+          active_only: shouldSyncActiveOnly,
+          sync_timestamp: new Date().toISOString()
+        },
         error_message: null
       }, {
         onConflict: 'user_id,marketplace'
       });
 
-    console.log(`eBay sync completed. Synced ${productRecords.length} products`);
+    console.log(`eBay sync completed for user ${user.id}. Synced ${productRecords.length} products (${allItems.length} total found, ${skippedCount} skipped).`);
 
+    const filterMessage = shouldSyncActiveOnly ? ' (active products only)' : ' (all products)';
+    
     return new Response(JSON.stringify({
       success: true,
       productsSynced: productRecords.length,
-      message: `Successfully synced ${productRecords.length} products from eBay`
+      totalFound: allItems.length,
+      skippedCount: skippedCount,
+      activeOnly: shouldSyncActiveOnly,
+      message: `Successfully synced ${productRecords.length} products from eBay${filterMessage}`
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

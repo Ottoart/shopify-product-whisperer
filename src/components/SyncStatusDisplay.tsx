@@ -14,6 +14,13 @@ interface SyncStatus {
   last_sync_at: string | null;
   products_synced: number;
   error_message: string | null;
+  total_products_found?: number;
+  active_products_synced?: number;
+  inactive_products_skipped?: number;
+  sync_settings?: {
+    active_only?: boolean;
+    sync_timestamp?: string;
+  };
 }
 
 export const SyncStatusDisplay = () => {
@@ -33,7 +40,16 @@ export const SyncStatusDisplay = () => {
         .order('last_sync_at', { ascending: false });
 
       if (error) throw error;
-      setSyncStatuses(data || []);
+      
+      // Transform the data to properly type sync_settings
+      const transformedData = (data || []).map(status => ({
+        ...status,
+        sync_settings: typeof status.sync_settings === 'object' && status.sync_settings !== null 
+          ? status.sync_settings as { active_only?: boolean; sync_timestamp?: string; }
+          : undefined
+      }));
+      
+      setSyncStatuses(transformedData);
     } catch (error) {
       console.error('Error fetching sync statuses:', error);
     }
@@ -131,12 +147,33 @@ export const SyncStatusDisplay = () => {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Products synced:</span>
-                  <span className="font-medium">{status.products_synced}</span>
+                  <span className="font-medium">
+                    {status.products_synced}
+                    {status.total_products_found && status.total_products_found > (status.products_synced || 0) && (
+                      <span className="text-xs text-muted-foreground/70 ml-1">
+                        (of {status.total_products_found})
+                      </span>
+                    )}
+                  </span>
                 </div>
                 
-                <div className="flex justify-between text-sm">
+                {status.sync_settings?.active_only && status.inactive_products_skipped && status.inactive_products_skipped > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Skipped:</span>
+                    <span className="font-medium text-orange-600">{status.inactive_products_skipped} inactive</span>
+                  </div>
+                )}
+                
+                <div className="flex justify-between text-sm items-center">
                   <span className="text-muted-foreground">Last sync:</span>
-                  <span className="font-medium">{formatLastSync(status.last_sync_at)}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{formatLastSync(status.last_sync_at)}</span>
+                    {status.sync_settings?.active_only && (
+                      <Badge variant="outline" className="text-xs px-1 py-0">
+                        Active only
+                      </Badge>
+                    )}
+                  </div>
                 </div>
 
                 {status.sync_status === 'in_progress' && (
@@ -159,6 +196,12 @@ export const SyncStatusDisplay = () => {
                   <div className="p-2 bg-green-50 border border-green-200 rounded">
                     <p className="text-sm text-green-600">
                       Successfully synced {status.products_synced} products
+                      {status.sync_settings?.active_only ? ' (active only)' : ''}
+                      {status.inactive_products_skipped && status.inactive_products_skipped > 0 && (
+                        <span className="block text-xs mt-1">
+                          {status.inactive_products_skipped} inactive products skipped
+                        </span>
+                      )}
                     </p>
                   </div>
                 )}

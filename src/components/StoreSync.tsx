@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,6 +35,30 @@ export const StoreSync = ({ onSyncComplete }: StoreSyncProps) => {
   const { toast } = useToast();
   const [syncStatuses, setSyncStatuses] = useState<Record<string, SyncStatus>>({});
   const [isAllSyncing, setIsAllSyncing] = useState(false);
+  const [syncSettings, setSyncSettings] = useState<Record<string, boolean>>({});
+
+  // Load sync settings for all platforms
+  useEffect(() => {
+    loadAllSyncSettings();
+  }, []);
+
+  const loadAllSyncSettings = async () => {
+    try {
+      const { data: settings } = await supabase
+        .from('sync_settings')
+        .select('platform, sync_active_only');
+      
+      if (settings) {
+        const settingsMap = settings.reduce((acc, setting) => {
+          acc[setting.platform] = setting.sync_active_only;
+          return acc;
+        }, {} as Record<string, boolean>);
+        setSyncSettings(settingsMap);
+      }
+    } catch (error) {
+      console.error('Error loading sync settings:', error);
+    }
+  };
 
   const initializeSyncStatus = (storeId: string, storeName: string): SyncStatus => ({
     storeId,
@@ -78,13 +102,15 @@ export const StoreSync = ({ onSyncComplete }: StoreSyncProps) => {
     try {
       if (store.platform === 'shopify') {
         const accessToken = cleanAccessToken(store.access_token);
+        const activeOnly = syncSettings['shopify'] ?? true;
         
         updateSyncStatus(statusKey, { progress: 30 });
 
         const { data, error } = await supabase.functions.invoke('sync-shopify-products', {
           body: { 
             storeUrl: store.domain,
-            accessToken: accessToken 
+            accessToken: accessToken,
+            syncActiveOnly: activeOnly
           }
         });
 
@@ -96,15 +122,20 @@ export const StoreSync = ({ onSyncComplete }: StoreSyncProps) => {
           productsCount: data?.totalSynced || 0
         });
 
+        const filterMsg = activeOnly ? ' (active products only)' : ' (all products)';
         toast({
           title: "Sync completed",
-          description: `Successfully synced ${data?.totalSynced || 0} products from ${store.store_name}`,
+          description: `Successfully synced ${data?.totalSynced || 0} products from ${store.store_name}${filterMsg}`,
         });
       } else if (store.platform === 'ebay') {
+        const activeOnly = syncSettings['ebay'] ?? true;
+        
         updateSyncStatus(statusKey, { progress: 30 });
 
         const { data, error } = await supabase.functions.invoke('sync-ebay-products', {
-          body: {}
+          body: { 
+            syncActiveOnly: activeOnly 
+          }
         });
 
         if (error) throw error;
@@ -115,9 +146,10 @@ export const StoreSync = ({ onSyncComplete }: StoreSyncProps) => {
           productsCount: data?.productsSynced || 0
         });
 
+        const filterMsg = activeOnly ? ' (active products only)' : ' (all products)';
         toast({
           title: "eBay Sync completed",
-          description: `Successfully synced ${data?.productsSynced || 0} products from ${store.store_name}`,
+          description: `Successfully synced ${data?.productsSynced || 0} products from ${store.store_name}${filterMsg}`,
         });
       } else {
         throw new Error(`Platform ${store.platform} not supported for sync`);
