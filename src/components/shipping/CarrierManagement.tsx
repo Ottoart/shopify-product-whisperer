@@ -434,7 +434,7 @@ export function CarrierManagement() {
 
     return (
       <Dialog open={isServiceModalOpen} onOpenChange={setIsServiceModalOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <span className="text-2xl">{selectedCarrier.logo}</span>
@@ -494,29 +494,51 @@ export function CarrierManagement() {
 
             {/* Services List */}
             <div className="space-y-3">
-              <h3 className="font-medium">Available Services</h3>
-              {selectedCarrier.services.map((service) => (
-                <div key={service.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Checkbox
-                      checked={service.enabled}
-                      onCheckedChange={() => isAdmin && handleServiceToggle(selectedCarrier.id, service.id)}
-                      disabled={!isAdmin}
-                    />
-                    <div>
-                      <div className="font-medium">{service.name}</div>
-                      {service.enabled && (
-                        <div className="text-sm text-green-600">
-                          ✓ Available to users
+              <h3 className="font-medium">Available Services ({selectedCarrier.services.length} total)</h3>
+              {selectedCarrier.services.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p>No services found for this carrier.</p>
+                  <p className="text-sm">Try clicking "Re-Sync" to refresh services.</p>
+                </div>
+              ) : (
+                selectedCarrier.services.map((service) => (
+                  <div key={service.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <Checkbox
+                        checked={service.enabled}
+                        onCheckedChange={(checked) => {
+                          if (isAdmin) {
+                            handleServiceToggle(selectedCarrier.id, service.id);
+                          }
+                        }}
+                        disabled={!isAdmin}
+                      />
+                      <div>
+                        <div className="font-medium">{service.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          Service Code: {service.id}
                         </div>
+                        {service.enabled && (
+                          <div className="text-sm text-green-600">
+                            ✓ Available to users
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={service.enabled ? "default" : "secondary"}>
+                        {service.enabled ? "Active" : "Disabled"}
+                      </Badge>
+                      {isAdmin && service.markup !== undefined && (
+                        <Badge variant="outline">
+                          +{service.markup}%
+                        </Badge>
                       )}
                     </div>
                   </div>
-                  {service.enabled && (
-                    <Badge variant="secondary">Active</Badge>
-                  )}
-                </div>
-              ))}
+                ))
+              )}
             </div>
 
             {!isAdmin && (
@@ -1049,15 +1071,15 @@ export function CarrierManagement() {
                           {/* Show UPS configuration details if this is UPS */}
                           {carrier.name === 'UPS' && upsCarrier && (
                             <div className="mt-3 p-3 bg-gray-50 rounded-md border">
-                              <div className="font-medium text-gray-900 mb-2 text-sm">Account Configuration:</div>
-                              <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
-                                <div>Account: <span className="font-mono">{upsCarrier.api_credentials?.account_number || 'Not set'}</span></div>
-                                <div>Country: <span className="font-mono">{upsCarrier.api_credentials?.country_code || 'Not set'}</span></div>
-                                <div>Postal Code: <span className="font-mono">{upsCarrier.api_credentials?.postal_code || 'Not set'}</span></div>
-                                <div>Negotiated Rates: <span className={upsCarrier.api_credentials?.enable_negotiated_rates ? 'text-green-600' : 'text-red-600'}>{upsCarrier.api_credentials?.enable_negotiated_rates ? 'Enabled' : 'Disabled'}</span></div>
-                                <div>Services: <span className="font-semibold">{upsServices?.length || 0}</span></div>
-                                <div>Last Updated: <span className="font-mono">{upsCarrier.updated_at ? new Date(upsCarrier.updated_at).toLocaleDateString() : 'Never'}</span></div>
-                              </div>
+                               <div className="font-medium text-gray-900 mb-2 text-sm">Account Configuration:</div>
+                               <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                                 <div>Account: <span className="font-mono">{upsCarrier.account_number || 'Not set'}</span></div>
+                                 <div>Country: <span className="font-mono">{upsCarrier.api_credentials?.country_code || 'Not set'}</span></div>
+                                 <div>Postal Code: <span className="font-mono">{upsCarrier.api_credentials?.postal_code || 'Not set'}</span></div>
+                                 <div>Negotiated Rates: <span className={upsCarrier.api_credentials?.enable_negotiated_rates ? 'text-green-600' : 'text-red-600'}>{upsCarrier.api_credentials?.enable_negotiated_rates ? 'Enabled' : 'Disabled'}</span></div>
+                                 <div>Services: <span className="font-semibold">{upsServices?.length || 0}</span></div>
+                                 <div>Last Updated: <span className="font-mono">{upsCarrier.updated_at ? new Date(upsCarrier.updated_at).toLocaleDateString() : 'Never'}</span></div>
+                               </div>
                             </div>
                           )}
                         </div>
@@ -1104,24 +1126,76 @@ export function CarrierManagement() {
                             Activate UPS
                           </Button>
                         )}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedCarrier(carrier);
-                            setIsServiceModalOpen(true);
-                          }}
-                        >
-                          <Settings className="h-4 w-4 mr-1" />
-                          Manage Services
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                        >
-                          <RefreshCw className="h-4 w-4 mr-1" />
-                          Re-Sync
-                        </Button>
+                         <Button
+                           variant="outline"
+                           size="sm"
+                           onClick={() => {
+                             // For UPS, use real services data from database
+                             if (carrier.name === 'UPS' && upsCarrier) {
+                               const upsCarrierWithServices = {
+                                 ...carrier,
+                                 services: (upsServices || []).map((service: any) => ({
+                                   id: service.service_code || service.id,
+                                   name: service.service_name || service.name,
+                                   enabled: service.is_available !== false,
+                                   markup: 0
+                                 }))
+                               };
+                               setSelectedCarrier(upsCarrierWithServices);
+                             } else {
+                               setSelectedCarrier(carrier);
+                             }
+                             setIsServiceModalOpen(true);
+                           }}
+                         >
+                           <Settings className="h-4 w-4 mr-1" />
+                           Manage Services
+                         </Button>
+                         <Button
+                           variant="outline"
+                           size="sm"
+                           onClick={async () => {
+                             try {
+                               if (carrier.name === 'UPS' && user) {
+                                 // Resync UPS services
+                                 const { data, error } = await supabase.functions.invoke('fetch-shipping-services', {
+                                   body: { 
+                                     user_id: user.id, 
+                                     force_refresh: true 
+                                   }
+                                 });
+                                 
+                                 if (error) throw error;
+                                 
+                                 // Update local state with fresh UPS services
+                                 if (data?.services) {
+                                   const upsServicesList = data.services.filter((s: any) => s.carrier_name === 'UPS');
+                                   setUpsServices(upsServicesList);
+                                   
+                                   toast({
+                                     title: "Services Resynced", 
+                                     description: `Found ${upsServicesList.length} UPS services`,
+                                   });
+                                 }
+                               } else {
+                                 toast({
+                                   title: "Resync Completed",
+                                   description: "Carrier services updated successfully",
+                                 });
+                               }
+                             } catch (error) {
+                               console.error('Resync error:', error);
+                               toast({
+                                 title: "Resync Failed",
+                                 description: "Failed to refresh carrier services",
+                                 variant: "destructive",
+                               });
+                             }
+                           }}
+                         >
+                           <RefreshCw className="h-4 w-4 mr-1" />
+                           Re-Sync
+                         </Button>
                       </div>
                     </div>
 

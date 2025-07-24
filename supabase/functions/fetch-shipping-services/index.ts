@@ -21,7 +21,7 @@ interface ShippingService {
 const carrierServices: Record<string, ShippingService[]> = {
   ups: [
     {
-      service_code: 'UPS_GROUND',
+      service_code: '03',
       service_name: 'UPS Ground',
       service_type: 'standard',
       estimated_days: '1-5 business days',
@@ -31,7 +31,7 @@ const carrierServices: Record<string, ShippingService[]> = {
       supports_signature: true
     },
     {
-      service_code: 'UPS_3_DAY_SELECT',
+      service_code: '12',
       service_name: 'UPS 3 Day Select',
       service_type: 'expedited',
       estimated_days: '3 business days',
@@ -41,7 +41,7 @@ const carrierServices: Record<string, ShippingService[]> = {
       supports_signature: true
     },
     {
-      service_code: 'UPS_2ND_DAY_AIR',
+      service_code: '02',
       service_name: 'UPS 2nd Day Air',
       service_type: 'expedited',
       estimated_days: '2 business days',
@@ -51,10 +51,40 @@ const carrierServices: Record<string, ShippingService[]> = {
       supports_signature: true
     },
     {
-      service_code: 'UPS_NEXT_DAY_AIR',
+      service_code: '01',
       service_name: 'UPS Next Day Air',
       service_type: 'overnight',
       estimated_days: '1 business day',
+      max_weight_lbs: 150,
+      supports_tracking: true,
+      supports_insurance: true,
+      supports_signature: true
+    },
+    {
+      service_code: '13',
+      service_name: 'UPS Next Day Air Saver',
+      service_type: 'overnight',
+      estimated_days: '1 business day',
+      max_weight_lbs: 150,
+      supports_tracking: true,
+      supports_insurance: true,
+      supports_signature: true
+    },
+    {
+      service_code: '14',
+      service_name: 'UPS Next Day Air Early',
+      service_type: 'overnight',
+      estimated_days: '1 business day',
+      max_weight_lbs: 150,
+      supports_tracking: true,
+      supports_insurance: true,
+      supports_signature: true
+    },
+    {
+      service_code: '59',
+      service_name: 'UPS 2nd Day Air A.M.',
+      service_type: 'expedited',
+      estimated_days: '2 business days',
       max_weight_lbs: 150,
       supports_tracking: true,
       supports_insurance: true,
