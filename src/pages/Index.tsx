@@ -52,6 +52,7 @@ export interface Product {
   updatedAt: string;
   shopifySyncStatus?: string;
   shopifySyncedAt?: string;
+  listingStatus?: string;
 }
 
 export interface UpdatedProduct {

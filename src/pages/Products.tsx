@@ -92,6 +92,7 @@ interface Product {
   image_src?: string;
   seo_title?: string;
   seo_description?: string;
+  listing_status?: string;
 }
 
 interface StoreConfig {
@@ -388,7 +389,8 @@ export default function Products() {
                 googleShoppingAgeGroup: p.google_shopping_age_group || 'adult',
                 updatedAt: p.updated_at || '',
                 shopifySyncStatus: p.shopify_sync_status,
-                shopifySyncedAt: p.shopify_synced_at
+                shopifySyncedAt: p.shopify_synced_at,
+                listingStatus: p.listing_status
               }))}
               selectedProducts={selectedProducts}
               onSelectionChange={setSelectedProducts}

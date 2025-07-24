@@ -12,7 +12,7 @@ import { BulkEditDialog } from '@/components/BulkEditDialog';
 import { ChangeHistoryDialog } from '@/components/ChangeHistoryDialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Search, Package, ExternalLink, Zap, CheckSquare, Square, Edit3, Filter, ChevronDown, ChevronRight, History } from 'lucide-react';
+import { Search, Package, ExternalLink, Zap, CheckSquare, Square, Edit3, Filter, ChevronDown, ChevronRight, History, Store } from 'lucide-react';
 import { Product, UpdatedProduct } from '@/pages/Index';
 
 interface ProductListProps {
@@ -44,6 +44,7 @@ export const ProductList = ({
   const [selectedVendors, setSelectedVendors] = useState<Set<string>>(new Set());
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
+  const [selectedListingStatus, setSelectedListingStatus] = useState<Set<string>>(new Set());
 
   // Handle URL parameters for store filtering
   const [storeFilter, setStoreFilter] = useState<string>('');
@@ -64,11 +65,33 @@ export const ProductList = ({
   const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [tagsOpen, setTagsOpen] = useState(false);
 
-  // Extract unique values for filters
-  const uniqueTypes = [...new Set(products.map(p => p.type).filter(Boolean))];
-  const uniqueVendors = [...new Set(products.map(p => p.vendor).filter(Boolean))];
-  const uniqueCategories = [...new Set(products.map(p => p.category).filter(Boolean))];
-  const uniqueTags = [...new Set(products.flatMap(p => p.tags?.split(',').map(tag => tag.trim())).filter(Boolean))];
+  // Filter products first by store to ensure accurate filter counts
+  const storeFilteredProducts = products.filter(product => {
+    // Improved store filtering to handle eBay Store -> eBay mapping
+    if (!storeFilter) return true;
+    
+    const normalizedStoreFilter = storeFilter.toLowerCase();
+    const productVendor = product.vendor?.toLowerCase() || '';
+    
+    // Direct match
+    if (productVendor.includes(normalizedStoreFilter)) return true;
+    
+    // Handle "eBay Store" -> "eBay" mapping
+    if (normalizedStoreFilter.includes('ebay') && productVendor === 'ebay') return true;
+    if (normalizedStoreFilter.includes('shopify') && productVendor.includes('shopify')) return true;
+    
+    // Bidirectional check - store name contains vendor or vendor contains store name
+    if (normalizedStoreFilter.includes(productVendor) || productVendor.includes(normalizedStoreFilter.replace(' store', ''))) return true;
+    
+    return false;
+  });
+
+  // Extract unique values for filters FROM STORE-FILTERED PRODUCTS ONLY
+  const uniqueTypes = [...new Set(storeFilteredProducts.map(p => p.type).filter(Boolean))];
+  const uniqueVendors = [...new Set(storeFilteredProducts.map(p => p.vendor).filter(Boolean))];
+  const uniqueCategories = [...new Set(storeFilteredProducts.map(p => p.category).filter(Boolean))];
+  const uniqueTags = [...new Set(storeFilteredProducts.flatMap(p => p.tags?.split(',').map(tag => tag.trim())).filter(Boolean))];
+  const uniqueListingStatuses = [...new Set(storeFilteredProducts.map(p => p.listingStatus).filter(Boolean))];
 
   const toggleFilter = (selectedSet: Set<string>, setter: (set: Set<string>) => void, value: string) => {
     const newSet = new Set(selectedSet);
@@ -81,36 +104,20 @@ export const ProductList = ({
   };
 
   // Filter products based on search and selected filters
-  const filteredProducts = products.filter(product => {
+  const filteredProducts = storeFilteredProducts.filter(product => {
     const matchesSearch = product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.vendor.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.tags.toLowerCase().includes(searchTerm.toLowerCase());
     
-    // Improved store filtering to handle eBay Store -> eBay mapping
-    const matchesStore = !storeFilter || (() => {
-      const normalizedStoreFilter = storeFilter.toLowerCase();
-      const productVendor = product.vendor?.toLowerCase() || '';
-      
-      // Direct match
-      if (productVendor.includes(normalizedStoreFilter)) return true;
-      
-      // Handle "eBay Store" -> "eBay" mapping
-      if (normalizedStoreFilter.includes('ebay') && productVendor === 'ebay') return true;
-      if (normalizedStoreFilter.includes('shopify') && productVendor.includes('shopify')) return true;
-      
-      // Bidirectional check - store name contains vendor or vendor contains store name
-      if (normalizedStoreFilter.includes(productVendor) || productVendor.includes(normalizedStoreFilter.replace(' store', ''))) return true;
-      
-      return false;
-    })();
     const matchesType = selectedTypes.size === 0 || selectedTypes.has(product.type);
     const matchesVendor = selectedVendors.size === 0 || selectedVendors.has(product.vendor);
     const matchesCategory = selectedCategories.size === 0 || selectedCategories.has(product.category || '');
     const matchesTag = selectedTags.size === 0 || product.tags?.split(',').some(tag => selectedTags.has(tag.trim()));
+    const matchesListingStatus = selectedListingStatus.size === 0 || selectedListingStatus.has(product.listingStatus || '');
     
-    return matchesSearch && matchesStore && matchesType && matchesVendor && matchesCategory && matchesTag;
+    return matchesSearch && matchesType && matchesVendor && matchesCategory && matchesTag && matchesListingStatus;
   });
 
   const paginatedProducts = filteredProducts.slice(
@@ -157,8 +164,17 @@ export const ProductList = ({
 
   return (
     <div className="space-y-4">
-        {/* Search and Controls */}
+      {/* Search and Controls */}
       <div className="p-6 border-b space-y-4">
+        {/* Store Context Header */}
+        {storeFilter && (
+          <div className="flex items-center gap-2 text-sm bg-primary/5 p-3 rounded-lg">
+            <Store className="h-4 w-4 text-primary" />
+            <span className="font-medium">Viewing products from: {storeFilter}</span>
+            <Badge variant="secondary">{storeFilteredProducts.length} products</Badge>
+          </div>
+        )}
+        
         {/* Search and Actions Bar */}
         <div className="flex items-center gap-2 flex-wrap">
           <div className="relative flex-1 min-w-64">
@@ -268,7 +284,7 @@ export const ProductList = ({
               High Value
             </Badge>
             
-            {(selectedTypes.size > 0 || selectedVendors.size > 0 || selectedCategories.size > 0 || selectedTags.size > 0) && (
+            {(selectedTypes.size > 0 || selectedVendors.size > 0 || selectedCategories.size > 0 || selectedTags.size > 0 || selectedListingStatus.size > 0) && (
               <Button
                 variant="outline"
                 size="sm"
@@ -277,6 +293,7 @@ export const ProductList = ({
                   setSelectedVendors(new Set());
                   setSelectedCategories(new Set());
                   setSelectedTags(new Set());
+                  setSelectedListingStatus(new Set());
                 }}
               >
                 Clear All Filters
@@ -371,6 +388,30 @@ export const ProductList = ({
               </div>
             </CollapsibleContent>
           </Collapsible>
+
+          {/* Listing Status Filter for eBay */}
+          {storeFilter && storeFilter.toLowerCase().includes('ebay') && uniqueListingStatuses.length > 0 && (
+            <Collapsible open={tagsOpen} onOpenChange={setTagsOpen}>
+              <CollapsibleTrigger className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground">
+                {tagsOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                Listing Status ({uniqueListingStatuses.length}) {selectedListingStatus.size > 0 && `- ${selectedListingStatus.size} selected`}
+              </CollapsibleTrigger>
+              <CollapsibleContent className="pt-2">
+                <div className="flex flex-wrap gap-1">
+                  {uniqueListingStatuses.map((status) => (
+                    <Badge
+                      key={status}
+                      variant={selectedListingStatus.has(status) ? "default" : "outline"}
+                      className="cursor-pointer hover:bg-primary/80 text-xs"
+                      onClick={() => toggleFilter(selectedListingStatus, setSelectedListingStatus, status)}
+                    >
+                      {status}
+                    </Badge>
+                  ))}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          )}
         </div>
 
         {/* Results Summary and Select All */}
@@ -388,9 +429,9 @@ export const ProductList = ({
             <span className="font-medium">
               Showing {paginatedProducts.length} of {filteredProducts.length} products
             </span>
-            {products.length > filteredProducts.length && (
+            {storeFilteredProducts.length > filteredProducts.length && (
               <span className="text-muted-foreground ml-2">
-                ({products.length} total products)
+                ({storeFilteredProducts.length} in {storeFilter || 'all stores'})
               </span>
             )}
           </div>
