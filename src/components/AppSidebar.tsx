@@ -47,6 +47,37 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
+// Hook to handle auto-retract behavior
+const useAutoRetract = () => {
+  const [autoRetract, setAutoRetract] = useState(() => {
+    const saved = localStorage.getItem('sidebar-auto-retract');
+    return saved ? JSON.parse(saved) : true;
+  });
+
+  const [lastActivity, setLastActivity] = useState(Date.now());
+
+  useEffect(() => {
+    localStorage.setItem('sidebar-auto-retract', JSON.stringify(autoRetract));
+  }, [autoRetract]);
+
+  useEffect(() => {
+    if (!autoRetract) return;
+
+    const handleActivity = () => setLastActivity(Date.now());
+    
+    // Track mouse movements and clicks
+    document.addEventListener('mousemove', handleActivity);
+    document.addEventListener('click', handleActivity);
+    
+    return () => {
+      document.removeEventListener('mousemove', handleActivity);
+      document.removeEventListener('click', handleActivity);
+    };
+  }, [autoRetract]);
+
+  return { autoRetract, setAutoRetract, lastActivity };
+};
+
 const mainItems = [
   { title: "Marketplace Gateway", url: "/marketplace-gateway", icon: Globe, description: "Central connection hub" },
   { title: "PrepFox Dashboard", url: "/dashboard", icon: TrendingUp, description: "Modules & subscriptions pricing" },
@@ -92,13 +123,15 @@ const settingsItems = [
 
 export function AppSidebar() {
   const { data: userRole } = useUserRole();
-  const { state } = useSidebar();
+  const { state, setOpenMobile, isMobile } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
   const currentPath = location.pathname;
   const [stores, setStores] = useState<Array<{id: string, store_name: string, platform: string}>>([]);
   const [activeAccordionSection, setActiveAccordionSection] = useState<string | null>(null);
   const [orderCounts, setOrderCounts] = useState<Record<string, number>>({});
+  const [isHovered, setIsHovered] = useState(false);
+  const { autoRetract, setAutoRetract } = useAutoRetract();
 
   useEffect(() => {
     const fetchStores = async () => {
@@ -168,8 +201,12 @@ export function AppSidebar() {
 
   return (
     <Sidebar
-      className={collapsed ? "w-14" : "w-64"}
+      className={`transition-all duration-300 ease-in-out ${
+        collapsed && !isHovered ? "w-14" : "w-64"
+      } ${collapsed && isHovered ? "shadow-lg z-50" : ""}`}
       collapsible="icon"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       <SidebarContent>
         {/* Main Navigation */}

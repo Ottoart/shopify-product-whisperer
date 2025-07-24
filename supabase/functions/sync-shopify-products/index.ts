@@ -83,10 +83,10 @@ serve(async (req) => {
 
     console.log(`Starting batch sync for user ${user.id}, page ${startPage}, batch size ${batchSize}`);
 
-    // Fetch products for this batch
+    // Fetch products for this batch with cursor-based pagination
     let url = `${baseUrl}/products.json?limit=${batchSize}&fields=id,title,handle,vendor,product_type,tags,published_at,created_at,updated_at,status,variants,images,body_html,seo_title,seo_description`;
     
-    // If not the first page, get page info from last sync
+    // Use cursor-based pagination instead of page numbers
     if (startPage > 1) {
       const { data: lastSync } = await supabase
         .from('shopify_sync_status')
@@ -96,6 +96,18 @@ serve(async (req) => {
       
       if (lastSync?.last_page_info) {
         url += `&page_info=${lastSync.last_page_info}`;
+      } else {
+        // If no cursor available, use since_id based on last sync
+        const { data: products, error } = await supabase
+          .from('products')
+          .select('shopify_product_id')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1);
+        
+        if (!error && products && products.length > 0 && products[0].shopify_product_id) {
+          url += `&since_id=${products[0].shopify_product_id}`;
+        }
       }
     }
 
@@ -135,6 +147,7 @@ serve(async (req) => {
         body_html: product.body_html || null,
         seo_title: product.seo_title || null,
         seo_description: product.seo_description || null,
+        shopify_product_id: product.id?.toString() || null,
         shopify_sync_status: 'synced',
         shopify_synced_at: new Date().toISOString(),
         created_at: product.created_at || new Date().toISOString(),

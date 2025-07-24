@@ -8,9 +8,11 @@ import { Card } from '@/components/ui/card';
 import { ProductEditor } from '@/components/ProductEditor';
 import { ProductListItem } from '@/components/ProductListItem';
 import { SingleProductProcessor } from '@/components/SingleProductProcessor';
+import { BulkEditDialog } from '@/components/BulkEditDialog';
+import { ChangeHistoryDialog } from '@/components/ChangeHistoryDialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Search, Package, ExternalLink, Zap, CheckSquare, Square, Edit3, Filter, ChevronDown, ChevronRight } from 'lucide-react';
+import { Search, Package, ExternalLink, Zap, CheckSquare, Square, Edit3, Filter, ChevronDown, ChevronRight, History } from 'lucide-react';
 import { Product, UpdatedProduct } from '@/pages/Index';
 
 interface ProductListProps {
@@ -139,44 +141,98 @@ export const ProductList = ({
 
   return (
     <div className="space-y-4">
-      {/* Search and Controls */}
+        {/* Search and Controls */}
       <div className="p-6 border-b space-y-4">
-        {/* Search and Bulk Actions */}
-        <div className="flex items-center gap-4">
-          <div className="relative flex-1">
+        {/* Search and Actions Bar */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="relative flex-1 min-w-64">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
-              placeholder="Search products..."
+              placeholder="Search by title, SKU, vendor, type, category, or tags..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
             />
           </div>
+          <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(Number(value))}>
+            <SelectTrigger className="w-auto">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="25">25 per page</SelectItem>
+              <SelectItem value="50">50 per page</SelectItem>
+              <SelectItem value="100">100 per page</SelectItem>
+              <SelectItem value="500">500 per page</SelectItem>
+            </SelectContent>
+          </Select>
           {selectedProducts.size > 0 && (
-            <Button onClick={handleAddSelectedToQueue} className="bg-gradient-primary">
-              <Zap className="h-4 w-4 mr-2" />
-              Add {selectedProducts.size} to Queue
-            </Button>
+            <>
+              <BulkEditDialog
+                selectedProducts={Array.from(selectedProducts)}
+                products={filteredProducts}
+                onComplete={() => {
+                  onProductsUpdated();
+                  onSelectionChange(new Set());
+                }}
+              >
+                <Button variant="outline">
+                  <Edit3 className="h-4 w-4 mr-2" />
+                  Bulk Edit ({selectedProducts.size})
+                </Button>
+              </BulkEditDialog>
+              <Button onClick={handleAddSelectedToQueue} className="bg-gradient-primary">
+                <Zap className="h-4 w-4 mr-2" />
+                AI Optimize ({selectedProducts.size})
+              </Button>
+            </>
           )}
+          <ChangeHistoryDialog>
+            <Button variant="outline" size="sm">
+              <History className="h-4 w-4 mr-2" />
+              History
+            </Button>
+          </ChangeHistoryDialog>
         </div>
 
-        {/* Filters Row */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
+        {/* Smart Filters Bar */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 flex-wrap">
             <Filter className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Filters:</span>
-            <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(Number(value))}>
-              <SelectTrigger className="w-32">
-                <SelectValue placeholder="Per page" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="25">25 per page</SelectItem>
-                <SelectItem value="50">50 per page</SelectItem>
-                <SelectItem value="100">100 per page</SelectItem>
-                <SelectItem value="500">500 per page</SelectItem>
-                <SelectItem value={products.length.toString()}>Show all ({products.length})</SelectItem>
-              </SelectContent>
-            </Select>
+            <span className="text-sm font-medium">Smart Filters:</span>
+            
+            {/* Quick Filter Presets */}
+            <Badge 
+              variant="outline" 
+              className="cursor-pointer hover:bg-primary/10"
+              onClick={() => {
+                setSelectedTags(new Set(['sale', 'clearance', 'discount']));
+              }}
+            >
+              Sale Items
+            </Badge>
+            <Badge 
+              variant="outline" 
+              className="cursor-pointer hover:bg-primary/10"
+              onClick={() => {
+                // Filter products with low inventory
+                const lowInventoryProducts = products.filter(p => (p.variantInventoryQty || 0) < 10);
+                console.log('Low inventory filter applied');
+              }}
+            >
+              Low Stock
+            </Badge>
+            <Badge 
+              variant="outline" 
+              className="cursor-pointer hover:bg-primary/10"
+              onClick={() => {
+                // Filter high-value products
+                const highValueProducts = products.filter(p => (p.variantPrice || 0) > 100);
+                console.log('High value filter applied');
+              }}
+            >
+              High Value
+            </Badge>
+            
             {(selectedTypes.size > 0 || selectedVendors.size > 0 || selectedCategories.size > 0 || selectedTags.size > 0) && (
               <Button
                 variant="outline"

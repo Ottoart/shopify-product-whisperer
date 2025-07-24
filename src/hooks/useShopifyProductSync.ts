@@ -20,7 +20,7 @@ export const useShopifyProductSync = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isSyncing, setIsSyncing] = useState(false);
-  const [syncProgress, setSyncProgress] = useState({ current: 0, total: 0 });
+  const [syncProgress, setSyncProgress] = useState<{ current: number; total: number; message?: string }>({ current: 0, total: 0 });
 
   // Get Shopify credentials from stores table instead of localStorage
   const getShopifyCredentials = async () => {
@@ -190,7 +190,8 @@ export const useShopifyProductSync = () => {
       let totalSynced = 0;
       let productsSyncedThisSession = 0;
 
-      while (hasMorePages && page <= 50) { // Increased to 50 batches (12,500 products)
+      // Continuous sync until no more pages
+      while (hasMorePages && page <= 200) { // Increased limit to handle larger stores
         const result = await syncBatchMutation.mutateAsync({ 
           batchSize: 250, 
           startPage: page,
@@ -201,14 +202,26 @@ export const useShopifyProductSync = () => {
         productsSyncedThisSession += result.productsSynced;
         hasMorePages = result.hasMorePages;
         
-        // Update progress - show percentage based on batch progress
-        const progressPercent = hasMorePages ? (page / 50) * 90 : 100; // Reserve 10% for completion
-        setSyncProgress({ current: Math.round(progressPercent), total: 100 });
+        // Dynamic progress calculation based on products synced
+        const estimatedTotal = Math.max(totalSynced * 1.2, 1000); // Estimate total
+        const progressPercent = Math.min((totalSynced / estimatedTotal) * 90, 90);
+        setSyncProgress({ 
+          current: Math.round(progressPercent), 
+          total: 100,
+          message: `Synced ${totalSynced} products...`
+        });
         
         page++;
         
-        // Small delay to avoid rate limiting
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Adaptive delay based on page number to avoid rate limiting
+        const delay = Math.min(page * 100, 2000); // Increase delay as we sync more
+        await new Promise(resolve => setTimeout(resolve, delay));
+        
+        // Break if we're not getting any new products for several pages
+        if (result.productsSynced === 0 && page > 5) {
+          console.log('No new products found, ending sync');
+          break;
+        }
       }
 
       // Final progress update
