@@ -60,7 +60,8 @@ export function CarrierManagement() {
     carriers, 
     loading, 
     error, 
-    refreshServices 
+    refreshServices,
+    getServicesByCarrier
   } = useShippingServices();
   
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
@@ -166,6 +167,11 @@ export function CarrierManagement() {
   const [upsCarrier, setUpsCarrier] = useState<any>(null);
   const [upsServices, setUpsServices] = useState<any[]>([]);
 
+  // Get UPS services from the hook
+  const upsServicesFromHook = getServicesByCarrier('UPS');
+  console.log('🔍 UPS services from hook:', upsServicesFromHook);
+  console.log('🔍 All services available:', services);
+
   // Update PrepFox carriers with real UPS data when available
   useEffect(() => {
     // Get UPS data from the full carrier list before filtering
@@ -237,17 +243,28 @@ export function CarrierManagement() {
           setUpsCarrier(upsConfig);
           setUpsServices(upsConfig.shipping_services || []);
           
+          // Use services from hook if available, otherwise fallback to database
+          const servicesForDisplay = upsServicesFromHook.length > 0 
+            ? upsServicesFromHook.map(service => ({
+                id: service.id,
+                name: service.service_name,
+                enabled: service.is_available
+              }))
+            : upsConfig.shipping_services?.map((service: any) => ({
+                id: service.id,
+                name: service.service_name,
+                enabled: service.is_available
+              })) || [];
+
+          console.log('🔍 Services for UPS display:', servicesForDisplay);
+          
           const upsCarrier = {
             id: upsConfig.id,
             name: "UPS",
             logo: "🤎",
             status: upsConfig.is_active ? "connected" as const : "disconnected" as const,
-            description: `United Parcel Service - ${upsConfig.is_active ? 'Connected' : 'Not Connected'}`,
-            services: upsConfig.shipping_services?.map((service: any) => ({
-              id: service.id,
-              name: service.service_name,
-              enabled: service.is_available
-            })) || [],
+            description: `United Parcel Service - ${upsConfig.is_active ? 'Connected' : 'Not Connected'} (${servicesForDisplay.length} services)`,
+            services: servicesForDisplay,
             integration_status: "connected",
             setup_required: false,
             connected: upsConfig.is_active,
@@ -322,42 +339,37 @@ export function CarrierManagement() {
 
       // If this is UPS, also refresh the local UPS data
       if (carrier.name === 'UPS') {
-        // Refetch UPS configuration
-        const { data: carrierConfigs, error } = await supabase
-          .from('carrier_configurations')
-          .select(`
-            *,
-            shipping_services(*)
-          `)
-          .eq('user_id', user.id)
-          .eq('carrier_name', 'UPS')
-          .order('created_at', { ascending: false })
-          .limit(1);
-
-        if (!error && carrierConfigs && carrierConfigs.length > 0) {
-          const upsConfig = carrierConfigs[0];
-          console.log('🔍 handleResync - Updated UPS config:', upsConfig);
-          setUpsCarrier(upsConfig);
-          setUpsServices(upsConfig.shipping_services || []);
+        console.log('🔍 Resyncing UPS - waiting for hook to update...');
+        
+        // Wait a moment for the hook to process the new data
+        setTimeout(() => {
+          const updatedServices = getServicesByCarrier('UPS');
+          console.log('🔍 Updated UPS services after resync:', updatedServices);
           
           // Update prepfoxCarriers state to reflect new service count
           setPrepfoxCarriers(prev => prev.map(c => 
             c.name === 'UPS' ? {
               ...c,
-              services: upsConfig.shipping_services?.map((service: any) => ({
+              services: updatedServices.map(service => ({
                 id: service.id,
                 name: service.service_name,
                 enabled: service.is_available
-              })) || [],
+              })),
+              description: `United Parcel Service - Connected (${updatedServices.length} services)`,
               lastSync: new Date().toISOString()
             } : c
           ));
-        }
+        }, 1000); // Give the hook time to update
       }
+
+      // Show specific service count for UPS
+      const carrierSpecificServices = carrier.name === 'UPS' 
+        ? getServicesByCarrier('UPS').length 
+        : freshServices?.length || 0;
 
       toast({
         title: "Sync Complete",
-        description: `${carrier.name} services have been updated. ${freshServices?.length || 0} services found.`,
+        description: `${carrier.name} services have been updated. ${carrierSpecificServices} services found.`,
       });
     } catch (error) {
       console.error('Error syncing carrier:', error);

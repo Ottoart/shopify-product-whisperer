@@ -163,7 +163,24 @@ export const useShippingServices = () => {
   };
 
   const getServicesByCarrier = (carrierName: string) => {
-    return services.filter(service => service.carrier_name === carrierName);
+    console.log('🔍 getServicesByCarrier called with:', carrierName);
+    console.log('🔍 Available services:', services);
+    
+    const filteredServices = services.filter(service => {
+      const serviceCarrier = service.carrier_name?.toLowerCase();
+      const targetCarrier = carrierName.toLowerCase();
+      console.log('🔍 Checking service:', serviceCarrier, 'against', targetCarrier);
+      
+      // Handle different carrier name formats
+      if (targetCarrier === 'ups') {
+        return serviceCarrier === 'ups' || serviceCarrier === 'united parcel service';
+      }
+      
+      return serviceCarrier === targetCarrier;
+    });
+    
+    console.log('🔍 Filtered services for', carrierName, ':', filteredServices);
+    return filteredServices;
   };
 
   const addCarrierConfiguration = async (carrierData: {
