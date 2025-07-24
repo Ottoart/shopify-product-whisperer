@@ -148,6 +148,7 @@ serve(async (req) => {
         seo_title: product.seo_title || null,
         seo_description: product.seo_description || null,
         shopify_product_id: product.id?.toString() || null,
+        marketplace: 'shopify',
         shopify_sync_status: 'synced',
         shopify_synced_at: new Date().toISOString(),
         created_at: product.created_at || new Date().toISOString(),

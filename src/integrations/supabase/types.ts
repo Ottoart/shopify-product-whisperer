@@ -1929,11 +1929,13 @@ export type Database = {
           id: string
           image_position: number | null
           image_src: string | null
+          marketplace: string | null
           option1_name: string | null
           option1_value: string | null
           published: boolean | null
           seo_description: string | null
           seo_title: string | null
+          shopify_product_id: string | null
           shopify_sync_status: string | null
           shopify_synced_at: string | null
           tags: string | null
@@ -1965,11 +1967,13 @@ export type Database = {
           id?: string
           image_position?: number | null
           image_src?: string | null
+          marketplace?: string | null
           option1_name?: string | null
           option1_value?: string | null
           published?: boolean | null
           seo_description?: string | null
           seo_title?: string | null
+          shopify_product_id?: string | null
           shopify_sync_status?: string | null
           shopify_synced_at?: string | null
           tags?: string | null
@@ -2001,11 +2005,13 @@ export type Database = {
           id?: string
           image_position?: number | null
           image_src?: string | null
+          marketplace?: string | null
           option1_name?: string | null
           option1_value?: string | null
           published?: boolean | null
           seo_description?: string | null
           seo_title?: string | null
+          shopify_product_id?: string | null
           shopify_sync_status?: string | null
           shopify_synced_at?: string | null
           tags?: string | null
