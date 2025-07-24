@@ -507,19 +507,19 @@ export function CarrierManagement() {
                     <div className="flex items-center gap-3">
                       <Checkbox
                         checked={service.enabled}
-                        onCheckedChange={async (checked) => {
+                        onCheckedChange={async (checked: boolean) => {
                           if (isAdmin && selectedCarrier.name === 'UPS') {
                             try {
                               const { error } = await supabase
                                 .from('shipping_services')
                                 .update({ is_available: checked })
-                                .eq('id', service.service_id || service.id);
+                                .eq('id', service.id);
                                 
                               if (error) throw error;
                               
                               // Update local state
                               setUpsServices(prev => prev?.map(s => 
-                                s.id === (service.service_id || service.id) 
+                                s.id === service.id 
                                   ? { ...s, is_available: checked }
                                   : s
                               ));
