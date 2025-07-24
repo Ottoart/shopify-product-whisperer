@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { shipmentDetails, apiKey, apiSecret } = await req.json()
+    const { shipmentDetails, apiKey = '1c4dd42add2a4963842dee2e1971ff35', apiSecret = '770f40d74b5c4bd5a4d87c7884750a6c' } = await req.json()
 
     // Create basic auth header
     const credentials = btoa(`${apiKey}:${apiSecret}`)

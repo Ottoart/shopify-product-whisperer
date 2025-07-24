@@ -5,6 +5,8 @@ import { Building2, Plus } from "lucide-react";
 import { CarrierManagement } from "@/components/shipping/CarrierManagement";
 import { CarrierConfigurationDialog } from "@/components/shipping/CarrierConfigurationDialog";
 import { CarrierCredentialValidator } from "@/components/shipping/CarrierCredentialValidator";
+import { ShipStationIntegration } from "@/components/shipping/ShipStationIntegration";
+import { ShipStationTracker } from "@/components/shipping/ShipStationTracker";
 
 
 export default function Carriers() {
@@ -58,6 +60,12 @@ export default function Carriers() {
           <CarrierCredentialValidator />
         </CardContent>
       </Card>
+
+      {/* ShipStation Integration */}
+      <ShipStationIntegration />
+      
+      {/* ShipStation Tracker */}
+      <ShipStationTracker />
     </div>
   );
 }
