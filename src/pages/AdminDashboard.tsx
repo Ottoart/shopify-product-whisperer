@@ -26,6 +26,7 @@ import { BillingManagement } from "@/components/admin/BillingManagement";
 import { SystemLogs } from "@/components/admin/SystemLogs";
 import { PermissionManagement } from "@/components/admin/PermissionManagement";
 import { RolePermissionsOverview } from "@/components/admin/RolePermissionsOverview";
+import { MasterAdminSetup } from "@/components/MasterAdminSetup";
 
 interface AdminUser {
   id: string;
@@ -54,6 +55,7 @@ export default function AdminDashboard() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [isMasterAdmin, setIsMasterAdmin] = useState(false);
+  const [hasAdminUsers, setHasAdminUsers] = useState(false);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [stats, setStats] = useState({
@@ -72,14 +74,19 @@ export default function AdminDashboard() {
   });
 
   useEffect(() => {
+    loadDashboardData();
     if (session?.user) {
       checkAdminAccess();
-      loadDashboardData();
     }
   }, [session]);
 
   const checkAdminAccess = async () => {
     try {
+      // Only check admin access if there are admin users in the system
+      if (!hasAdminUsers) {
+        return;
+      }
+
       const { data, error } = await supabase
         .from('admin_users')
         .select('role')
@@ -120,6 +127,7 @@ export default function AdminDashboard() {
           profiles: null
         }));
         setAdminUsers(transformedAdmins);
+        setHasAdminUsers(transformedAdmins.length > 0);
       }
 
       // Load companies
@@ -243,6 +251,17 @@ export default function AdminDashboard() {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
             <p className="mt-2 text-muted-foreground">Loading admin dashboard...</p>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show MasterAdminSetup if no admin users exist
+  if (!hasAdminUsers) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <MasterAdminSetup />
         </div>
       </div>
     );
