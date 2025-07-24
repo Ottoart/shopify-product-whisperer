@@ -39,7 +39,7 @@ export const ProductList = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [processingProduct, setProcessingProduct] = useState<Product | null>(null);
-  const [itemsPerPage, setItemsPerPage] = useState(50);
+  const [itemsPerPage, setItemsPerPage] = useState(500);
   const [selectedTypes, setSelectedTypes] = useState<Set<string>>(new Set());
   const [selectedVendors, setSelectedVendors] = useState<Set<string>>(new Set());
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
@@ -159,10 +159,11 @@ export const ProductList = ({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="25">25 per page</SelectItem>
               <SelectItem value="50">50 per page</SelectItem>
               <SelectItem value="100">100 per page</SelectItem>
               <SelectItem value="500">500 per page</SelectItem>
+              <SelectItem value="1000">1000 per page</SelectItem>
+              <SelectItem value="99999">Show All</SelectItem>
             </SelectContent>
           </Select>
           {selectedProducts.size > 0 && (
@@ -368,7 +369,14 @@ export const ProductList = ({
             </span>
           </div>
           <div className="text-sm text-muted-foreground">
-            Showing {paginatedProducts.length} of {filteredProducts.length} products
+            <span className="font-medium">
+              Showing {paginatedProducts.length} of {filteredProducts.length} products
+            </span>
+            {products.length > filteredProducts.length && (
+              <span className="text-muted-foreground ml-2">
+                ({products.length} total products)
+              </span>
+            )}
           </div>
         </div>
       </div>

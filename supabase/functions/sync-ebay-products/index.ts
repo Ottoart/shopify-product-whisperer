@@ -68,65 +68,142 @@ serve(async (req) => {
     let hasMore = true;
     
     try {
-      while (hasMore && offset < 1000) { // Safety limit to prevent infinite loops
-        console.log(`Fetching eBay inventory items, offset: ${offset}`);
+      // Add timeout to prevent infinite hanging
+      const timeout = 30000; // 30 seconds per API call
+      
+      while (hasMore && offset < 2000) { // Increased safety limit but still reasonable
+        console.log(`Fetching eBay inventory items, offset: ${offset}, limit: ${limit}`);
         
         const inventoryApiUrl = `https://api.ebay.com/sell/inventory/v1/inventory_item?limit=${limit}&offset=${offset}`;
         
-        const inventoryResponse = await fetch(inventoryApiUrl, {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Accept-Language': 'en-US',
-            'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
-          },
-        });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
         
-        if (!inventoryResponse.ok) {
-          const errorText = await inventoryResponse.text();
-          console.error('eBay Inventory API error:', inventoryResponse.status, errorText);
-          
-          // If Inventory API fails, try the Browse API as fallback
-          console.log('Inventory API failed, trying Browse API for seller items...');
-          const browseApiUrl = `https://api.ebay.com/buy/browse/v1/item_summary/search?filter=seller:${ebayConfig.external_user_id}&limit=${limit}&offset=${offset}`;
-          
-          const browseResponse = await fetch(browseApiUrl, {
+        try {
+          const inventoryResponse = await fetch(inventoryApiUrl, {
+            signal: controller.signal,
             headers: {
               'Authorization': `Bearer ${accessToken}`,
               'Content-Type': 'application/json',
               'Accept': 'application/json',
+              'Accept-Language': 'en-US',
               'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
             },
           });
           
-          if (!browseResponse.ok) {
-            const browseErrorText = await browseResponse.text();
-            console.error('eBay Browse API error:', browseResponse.status, browseErrorText);
-            throw new Error(`eBay API error: ${browseResponse.status} - ${browseErrorText}`);
+          clearTimeout(timeoutId);
+        
+          if (!inventoryResponse.ok) {
+            const errorText = await inventoryResponse.text();
+            console.error('eBay Inventory API error:', inventoryResponse.status, errorText);
+            
+            // If auth error, stop immediately
+            if (inventoryResponse.status === 401) {
+              throw new Error('eBay authentication failed. Please reconnect your eBay account.');
+            }
+            
+            // If rate limited, add delay and retry
+            if (inventoryResponse.status === 429) {
+              console.log('Rate limited, waiting 2 seconds...');
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              continue; // Retry same offset
+            }
+            
+            // If Inventory API fails with other errors, try the Browse API as fallback
+            console.log('Inventory API failed, trying Browse API for seller items...');
+            
+            if (!ebayConfig.external_user_id) {
+              throw new Error('No eBay user ID found. Cannot use Browse API fallback.');
+            }
+            
+            const browseApiUrl = `https://api.ebay.com/buy/browse/v1/item_summary/search?filter=seller:${ebayConfig.external_user_id}&limit=${limit}&offset=${offset}`;
+            
+            const browseController = new AbortController();
+            const browseTimeoutId = setTimeout(() => browseController.abort(), timeout);
+            
+            try {
+              const browseResponse = await fetch(browseApiUrl, {
+                signal: browseController.signal,
+                headers: {
+                  'Authorization': `Bearer ${accessToken}`,
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json',
+                  'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
+                },
+              });
+              
+              clearTimeout(browseTimeoutId);
+              
+              if (!browseResponse.ok) {
+                const browseErrorText = await browseResponse.text();
+                console.error('eBay Browse API error:', browseResponse.status, browseErrorText);
+                
+                // If both APIs fail, stop the sync
+                if (allItems.length === 0) {
+                  throw new Error(`Both eBay APIs failed: Inventory API (${inventoryResponse.status}), Browse API (${browseResponse.status})`);
+                } else {
+                  console.log(`Browse API failed but we have ${allItems.length} items, stopping sync here.`);
+                  hasMore = false;
+                  break;
+                }
+              }
+              
+              const browseData = await browseResponse.json();
+              console.log(`Browse API response (offset ${offset}):`, JSON.stringify(browseData, null, 2));
+              const browserItems = browseData.itemSummaries || [];
+              allItems.push(...browserItems);
+              hasMore = browseData.total > (offset + limit) && browserItems.length === limit;
+              
+            } catch (browseError) {
+              clearTimeout(browseTimeoutId);
+              console.error('Browse API timeout or error:', browseError);
+              
+              if (allItems.length === 0) {
+                throw new Error('Both eBay APIs failed or timed out');
+              } else {
+                console.log(`Continuing with ${allItems.length} items collected so far`);
+                hasMore = false;
+                break;
+              }
+            }
+            
+          } else {
+            const inventoryData = await inventoryResponse.json();
+            console.log(`Inventory API response (offset ${offset}): Found ${inventoryData.inventoryItems?.length || 0} items`);
+            
+            const inventoryItems = inventoryData.inventoryItems || [];
+            allItems.push(...inventoryItems);
+            
+            // Check if there are more items to fetch
+            hasMore = inventoryItems.length === limit;
+            
+            // Add small delay to be respectful to eBay's API
+            if (hasMore) {
+              await new Promise(resolve => setTimeout(resolve, 200));
+            }
           }
           
-          const browseData = await browseResponse.json();
-          console.log('Browse API response:', JSON.stringify(browseData, null, 2));
-          const browserItems = browseData.itemSummaries || [];
-          allItems.push(...browserItems);
-          hasMore = browseData.total > (offset + limit);
+        } catch (fetchError) {
+          clearTimeout(timeoutId);
           
-        } else {
-          const inventoryData = await inventoryResponse.json();
-          console.log(`Inventory API response (offset ${offset}):`, JSON.stringify(inventoryData, null, 2));
+          if (fetchError.name === 'AbortError') {
+            console.error(`API call timed out after ${timeout}ms`);
+            throw new Error(`eBay API request timed out. This may indicate connectivity issues.`);
+          }
           
-          const inventoryItems = inventoryData.inventoryItems || [];
-          allItems.push(...inventoryItems);
-          
-          // Check if there are more items to fetch
-          hasMore = inventoryItems.length === limit;
+          throw fetchError;
         }
         
         offset += limit;
+        
+        // Safety check to prevent infinite loops
+        if (offset > 10000) {
+          console.log('Safety limit reached, stopping sync to prevent infinite loop');
+          break;
+        }
       }
     } catch (error) {
-      console.error('API call failed:', error);
+      console.error('eBay API sync failed:', error);
       throw error;
     }
 

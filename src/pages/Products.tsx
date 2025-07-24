@@ -36,6 +36,7 @@ import { ProductComparison } from "@/components/ProductComparison";
 import { ProductList } from "@/components/ProductList";
 import { SyncProgressDialog } from "@/components/SyncProgressDialog";
 import { StoreSync } from "@/components/StoreSync";
+import { SyncStatusDisplay } from "@/components/SyncStatusDisplay";
 import { useStores } from "@/contexts/StoreContext";
 
 interface Product {
@@ -303,6 +304,14 @@ export default function Products() {
             <ConnectStoreButton />
           </CardContent>
         </Card>
+      )}
+
+      {/* Sync Status Display */}
+      {stores.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold">Sync Status</h2>
+          <SyncStatusDisplay />
+        </div>
       )}
 
       {/* Products with Advanced Filtering */}

@@ -13,6 +13,7 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useStores } from '@/contexts/StoreContext';
+import { useSession } from '@supabase/auth-helpers-react';
 import { RotateCcw, ChevronDown, CheckCircle, XCircle, Clock, AlertTriangle } from 'lucide-react';
 
 interface StoreSyncProps {
@@ -30,6 +31,7 @@ interface SyncStatus {
 
 export const StoreSync = ({ onSyncComplete }: StoreSyncProps) => {
   const { stores } = useStores();
+  const session = useSession();
   const { toast } = useToast();
   const [syncStatuses, setSyncStatuses] = useState<Record<string, SyncStatus>>({});
   const [isAllSyncing, setIsAllSyncing] = useState(false);
@@ -96,8 +98,29 @@ export const StoreSync = ({ onSyncComplete }: StoreSyncProps) => {
 
         toast({
           title: "Sync completed",
-          description: `Successfully synced products from ${store.store_name}`,
+          description: `Successfully synced ${data?.totalSynced || 0} products from ${store.store_name}`,
         });
+      } else if (store.platform === 'ebay') {
+        updateSyncStatus(statusKey, { progress: 30 });
+
+        const { data, error } = await supabase.functions.invoke('sync-ebay-products', {
+          body: {}
+        });
+
+        if (error) throw error;
+
+        updateSyncStatus(statusKey, { 
+          status: 'success', 
+          progress: 100,
+          productsCount: data?.productsSynced || 0
+        });
+
+        toast({
+          title: "eBay Sync completed",
+          description: `Successfully synced ${data?.productsSynced || 0} products from ${store.store_name}`,
+        });
+      } else {
+        throw new Error(`Platform ${store.platform} not supported for sync`);
       }
     } catch (error) {
       console.error('Error syncing store:', error);
@@ -117,17 +140,17 @@ export const StoreSync = ({ onSyncComplete }: StoreSyncProps) => {
 
   const syncAllStores = async () => {
     setIsAllSyncing(true);
-    const shopifyStores = stores.filter(s => s.platform === 'shopify');
+    const syncableStores = stores.filter(s => s.platform === 'shopify' || s.platform === 'ebay');
     
     // Initialize all store statuses
-    shopifyStores.forEach(store => {
+    syncableStores.forEach(store => {
       setSyncStatuses(prev => ({
         ...prev,
         [store.id]: initializeSyncStatus(store.id, store.store_name)
       }));
     });
 
-    const syncPromises = shopifyStores.map(store => syncSingleStore(store.id));
+    const syncPromises = syncableStores.map(store => syncSingleStore(store.id));
     
     try {
       await Promise.allSettled(syncPromises);
