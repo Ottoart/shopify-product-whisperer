@@ -400,18 +400,20 @@ async function processUPSRating(requestData: RatingRequest, credentials: any, ac
 // Helper functions for UPS service mapping
 function getUPSServiceName(code: string): string {
   const serviceNames: { [key: string]: string } = {
+    // International services for Canada to US
+    '07': 'UPS Worldwide Express',
+    '08': 'UPS Worldwide Expedited', 
+    '11': 'UPS Standard',
+    '54': 'UPS Worldwide Express Plus',
+    '65': 'UPS Worldwide Saver',
+    // Domestic US services (may work for some shipments)
     '01': 'UPS Next Day Air',
     '02': 'UPS 2nd Day Air',
     '03': 'UPS Ground',
-    '07': 'UPS Worldwide Express',
-    '08': 'UPS Worldwide Expedited',
-    '11': 'UPS Standard',
     '12': 'UPS 3 Day Select',
     '13': 'UPS Next Day Air Saver',
     '14': 'UPS Next Day Air Early A.M.',
-    '54': 'UPS Worldwide Express Plus',
-    '59': 'UPS 2nd Day Air A.M.',
-    '65': 'UPS Saver'
+    '59': 'UPS 2nd Day Air A.M.'
   };
   return serviceNames[code] || `UPS Service ${code}`;
 }

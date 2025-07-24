@@ -507,8 +507,36 @@ export function CarrierManagement() {
                     <div className="flex items-center gap-3">
                       <Checkbox
                         checked={service.enabled}
-                        onCheckedChange={(checked) => {
-                          if (isAdmin) {
+                        onCheckedChange={async (checked) => {
+                          if (isAdmin && selectedCarrier.name === 'UPS') {
+                            try {
+                              const { error } = await supabase
+                                .from('shipping_services')
+                                .update({ is_available: checked })
+                                .eq('id', service.service_id || service.id);
+                                
+                              if (error) throw error;
+                              
+                              // Update local state
+                              setUpsServices(prev => prev?.map(s => 
+                                s.id === (service.service_id || service.id) 
+                                  ? { ...s, is_available: checked }
+                                  : s
+                              ));
+                              
+                              toast({
+                                title: "Service Updated",
+                                description: `${service.name} ${checked ? 'enabled' : 'disabled'}`,
+                              });
+                            } catch (error) {
+                              console.error('Service toggle error:', error);
+                              toast({
+                                title: "Update Failed",
+                                description: "Failed to update service status",
+                                variant: "destructive",
+                              });
+                            }
+                          } else if (isAdmin) {
                             handleServiceToggle(selectedCarrier.id, service.id);
                           }
                         }}
@@ -1129,24 +1157,27 @@ export function CarrierManagement() {
                          <Button
                            variant="outline"
                            size="sm"
-                           onClick={() => {
-                             // For UPS, use real services data from database
-                             if (carrier.name === 'UPS' && upsCarrier) {
-                               const upsCarrierWithServices = {
-                                 ...carrier,
-                                 services: (upsServices || []).map((service: any) => ({
-                                   id: service.service_code || service.id,
-                                   name: service.service_name || service.name,
-                                   enabled: service.is_available !== false,
-                                   markup: 0
-                                 }))
-                               };
-                               setSelectedCarrier(upsCarrierWithServices);
-                             } else {
-                               setSelectedCarrier(carrier);
-                             }
-                             setIsServiceModalOpen(true);
-                           }}
+                          onClick={() => {
+                            // For UPS, use real services data from database  
+                            if (carrier.name === 'UPS' && upsCarrier && upsServices) {
+                              const upsCarrierWithServices = {
+                                ...carrier,
+                                id: upsCarrier.id,
+                                services: upsServices.map((service: any) => ({
+                                  id: service.service_code,
+                                  name: service.service_name,
+                                  enabled: service.is_available !== false,
+                                  markup: 0,
+                                  service_id: service.id
+                                }))
+                              };
+                              setSelectedCarrier(upsCarrierWithServices);
+                              setIsServiceModalOpen(true);
+                            } else {
+                              setSelectedCarrier(carrier);
+                              setIsServiceModalOpen(true);
+                            }
+                          }}
                          >
                            <Settings className="h-4 w-4 mr-1" />
                            Manage Services
@@ -1168,15 +1199,22 @@ export function CarrierManagement() {
                                  if (error) throw error;
                                  
                                  // Update local state with fresh UPS services
-                                 if (data?.services) {
-                                   const upsServicesList = data.services.filter((s: any) => s.carrier_name === 'UPS');
-                                   setUpsServices(upsServicesList);
-                                   
-                                   toast({
-                                     title: "Services Resynced", 
-                                     description: `Found ${upsServicesList.length} UPS services`,
-                                   });
-                                 }
+                                  if (data?.services) {
+                                    const upsServicesList = data.services.filter((s: any) => s.carrier_configuration_id === upsCarrier?.id);
+                                    setUpsServices(upsServicesList);
+                                    
+                                    // Update PrepFox carrier services count
+                                    setPrepfoxCarriers(prev => prev.map(c => 
+                                      c.name === 'UPS' 
+                                        ? { ...c, services: upsServicesList.map(s => ({ id: s.service_code, name: s.service_name, enabled: s.is_available })) }
+                                        : c
+                                    ));
+                                    
+                                    toast({
+                                      title: "Services Resynced", 
+                                      description: `Found ${upsServicesList.length} UPS services`,
+                                    });
+                                  }
                                } else {
                                  toast({
                                    title: "Resync Completed",
