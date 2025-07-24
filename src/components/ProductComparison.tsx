@@ -15,6 +15,7 @@ import { useProductDrafts } from "@/hooks/useProductDrafts";
 import { RefreshCw, Save, FolderOpen, Search, ExternalLink, Edit3, Check } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useSessionContext } from '@supabase/auth-helpers-react';
+import { createSanitizedHtml } from "@/utils/sanitizeHtml";
 
 interface ProductComparisonProps {
   isOpen: boolean;
@@ -588,10 +589,10 @@ export function ProductComparison({
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div>
                       <h4 className="text-md font-medium text-red-600 mb-2">Original Description:</h4>
-                      <div className="p-3 bg-red-50 border border-red-200 rounded-md max-h-60 overflow-y-auto">
-                        <div className="text-sm prose prose-sm max-w-none" 
-                             dangerouslySetInnerHTML={{ __html: originalProduct.body_html || 'No description' }} />
-                      </div>
+                       <div className="p-3 bg-red-50 border border-red-200 rounded-md max-h-60 overflow-y-auto">
+                         <div className="text-sm prose prose-sm max-w-none" 
+                              dangerouslySetInnerHTML={createSanitizedHtml(originalProduct.body_html || 'No description')} />
+                       </div>
                     </div>
                     
                      <div>
@@ -614,10 +615,10 @@ export function ProductComparison({
                               </span>
                             )}
                           </div>
-                          <div className={`p-4 border rounded-md max-h-60 overflow-y-auto ${isFieldModified('description', editedDescription) ? 'border-blue-300 bg-blue-50' : 'bg-green-50 border-green-200'}`}>
-                            <div className="prose prose-sm max-w-none" 
-                                 dangerouslySetInnerHTML={{ __html: editedDescription || 'No description' }} />
-                          </div>
+                           <div className={`p-4 border rounded-md max-h-60 overflow-y-auto ${isFieldModified('description', editedDescription) ? 'border-blue-300 bg-blue-50' : 'bg-green-50 border-green-200'}`}>
+                             <div className="prose prose-sm max-w-none" 
+                                  dangerouslySetInnerHTML={createSanitizedHtml(editedDescription || 'No description')} />
+                           </div>
                           <details className="mt-2">
                             <summary className="text-sm text-gray-600 cursor-pointer hover:text-gray-800">
                               Edit HTML Source

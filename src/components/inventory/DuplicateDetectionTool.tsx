@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 import { AlertTriangle, Copy, Trash2, Edit3, Eye, ExternalLink, RefreshCw, Info, HelpCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { createSanitizedHtml } from '@/utils/sanitizeHtml';
 
 interface Product {
   id: string;
@@ -503,11 +504,11 @@ export function DuplicateDetectionTool() {
                                       <p className="text-xs text-muted-foreground">SKU: {product.variant_sku || 'N/A'}</p>
                                       <p className="text-xs text-muted-foreground">Vendor: {product.vendor || 'N/A'}</p>
                                     </div>
-                                    {product.body_html && (
-                                      <div className="text-xs text-muted-foreground max-h-20 overflow-y-auto">
-                                        <div dangerouslySetInnerHTML={{ __html: product.body_html.substring(0, 200) + '...' }} />
-                                      </div>
-                                    )}
+                                     {product.body_html && (
+                                       <div className="text-xs text-muted-foreground max-h-20 overflow-y-auto">
+                                         <div dangerouslySetInnerHTML={createSanitizedHtml(product.body_html.substring(0, 200) + '...')} />
+                                       </div>
+                                     )}
                                   </CardContent>
                                 </Card>
                               ))}

@@ -34,7 +34,9 @@ serve(async (req) => {
       throw checkError;
     }
 
-    const masterAdminEmail = "ottman1@gmail.com";
+    const masterAdminEmail = Deno.env.get('MASTER_ADMIN_EMAIL') || "admin@prepfox.com";
+    const masterAdminPassword = Deno.env.get('MASTER_ADMIN_PASSWORD') || crypto.randomUUID();
+    
     let masterUser = existingAdmin.users.find(user => user.email === masterAdminEmail);
 
     if (!masterUser) {
@@ -42,13 +44,21 @@ serve(async (req) => {
       // Create the master admin user
       const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
         email: masterAdminEmail,
-        password: "Prepfox00@",
+        password: masterAdminPassword,
         email_confirm: true,
         user_metadata: {
           display_name: "Master Admin",
           role: "master_admin"
         }
       });
+      
+      // Log the generated password for the first setup only
+      if (authData?.user) {
+        console.log(`Master admin created with email: ${masterAdminEmail}`);
+        if (!Deno.env.get('MASTER_ADMIN_PASSWORD')) {
+          console.log(`Generated password: ${masterAdminPassword}`);
+        }
+      }
 
       if (authError) {
         console.error("Error creating master admin user:", authError);

@@ -205,22 +205,25 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Get test email from environment or use a default
+    const testEmail = Deno.env.get('TEST_EMAIL') || 'test@example.com';
+    
     // Send a test email directly using the email template
     const html = await renderAsync(
       React.createElement(ConfirmationEmail, {
-        supabase_url: 'https://rtaomiqsnctigleqjojt.supabase.co',
+        supabase_url: Deno.env.get('SUPABASE_URL') || 'https://rtaomiqsnctigleqjojt.supabase.co',
         token: 'test-token',
         token_hash: 'test-hash',
         redirect_to: 'https://your-app.com',
         email_action_type: 'signup',
-        user_email: 'ottman1@gmail.com',
+        user_email: testEmail,
         user_name: 'Test User',
       })
     )
 
     const { error } = await resend.emails.send({
       from: 'PrepFox <noreply@resend.dev>',
-      to: ['ottman1@gmail.com'],
+      to: [testEmail],
       subject: 'PrepFox Email Template Preview',
       html,
     })
