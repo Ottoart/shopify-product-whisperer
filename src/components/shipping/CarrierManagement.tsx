@@ -163,7 +163,7 @@ export function CarrierManagement() {
     const fetchUpsData = async () => {
       if (!user) return;
       
-        try {
+      try {
         const { data: carrierConfigs, error } = await supabase
           .from('carrier_configurations')
           .select(`
@@ -174,36 +174,10 @@ export function CarrierManagement() {
           .order('created_at', { ascending: false })
           .limit(1);
 
-        const upsCarrier = carrierConfigs?.[0] ? {
-          id: carrierConfigs[0].id,
-          name: carrierConfigs[0].carrier_name,
-          logo: '📦',
-          connected: true,
-          status: 'connected' as const,
-          services: carrierConfigs[0].shipping_services.map((service: any) => ({
-            id: service.id,
-            name: service.service_name,
-            enabled: service.is_available, // This should be true from DB
-            markup: 0
-          })),
-          lastSync: new Date(carrierConfigs[0].updated_at).toLocaleDateString(),
-          
-          markup: 15,
-          adminControlled: true, // Changed to true for admin control
-          credentials: carrierConfigs[0].api_credentials,
-          settings: carrierConfigs[0].settings
-        } : null;
-
-        console.log('UPS carrier object:', upsCarrier);
-        console.log('UPS services:', upsCarrier?.services);
-
         if (error) {
           console.error('Error fetching UPS configuration:', error);
+          return;
         }
-
-        console.log('UPS carrier configs found:', carrierConfigs);
-        console.log('Number of UPS configs:', carrierConfigs?.length || 0);
-        console.log('UPS carrier object:', upsCarrier);
 
         const defaultCarriers = [
           {
@@ -244,9 +218,9 @@ export function CarrierManagement() {
         ];
 
         console.log('UPS carrier configs found:', carrierConfigs);
-        console.log('Number of UPS configs:', carrierConfigs.length);
+        console.log('Number of UPS configs:', carrierConfigs?.length || 0);
         
-        if (carrierConfigs.length > 0) {
+        if (carrierConfigs && carrierConfigs.length > 0) {
           const realUpsCarrier = carrierConfigs[0];
           console.log('Using UPS carrier:', realUpsCarrier);
           
@@ -254,7 +228,7 @@ export function CarrierManagement() {
           setUpsCarrier(realUpsCarrier);
           setUpsServices(realUpsCarrier.shipping_services || []);
           
-          // Create services array from real database data
+          // Create services array from real database data - only set once to prevent flashing
           const upsServices = (realUpsCarrier.shipping_services || []).map((service: any) => ({
             id: service.service_code,
             name: service.service_name,
@@ -278,29 +252,38 @@ export function CarrierManagement() {
             markup: 15,
             adminControlled: true
           };
-          setPrepfoxCarriers([upsConfig, ...defaultCarriers]);
-          console.log('Set PrepFox carriers with real UPS config:', [upsConfig, ...defaultCarriers]);
+          
+          // Only update if the data is actually different to prevent flashing
+          setPrepfoxCarriers(prev => {
+            const upsExists = prev.find(c => c.id === "ups-internal");
+            if (!upsExists || JSON.stringify(upsExists.services) !== JSON.stringify(upsServices)) {
+              console.log('Set PrepFox carriers with real UPS config:', [upsConfig, ...defaultCarriers]);
+              return [upsConfig, ...defaultCarriers];
+            }
+            return prev;
+          });
         } else {
-          // Show default UPS placeholder
-          const defaultUps = {
-            id: "fedex-internal",
-            name: "FedEx",
-            logo: "🟣",
-            status: "disconnected" as const,
-            description: "FedEx shipping services",
-            services: [
-              { id: "ground", name: "Ground", enabled: true },
-              { id: "express", name: "Express", enabled: true },
-              { id: "overnight", name: "Overnight", enabled: true }
-            ],
-            integration_status: "coming_soon",
-            setup_required: true,
-            connected: false,
-            discounted_rates: false,
-            markup: 15,
-            adminControlled: true
-          };
-          setPrepfoxCarriers([defaultUps, ...defaultCarriers]);
+          // Show default placeholder only if no UPS data exists
+          setPrepfoxCarriers(prev => {
+            if (prev.length === 0) {
+              const defaultUps = {
+                id: "ups-internal",
+                name: "UPS",
+                logo: "🟤",
+                status: "disconnected" as const,
+                description: "UPS shipping services - Not configured",
+                services: [],
+                integration_status: "setup_required",
+                setup_required: true,
+                connected: false,
+                discounted_rates: false,
+                markup: 15,
+                adminControlled: true
+              };
+              return [defaultUps, ...defaultCarriers];
+            }
+            return prev;
+          });
         }
       } catch (error) {
         console.error('Error fetching UPS configuration:', error);
@@ -308,7 +291,7 @@ export function CarrierManagement() {
     };
 
     fetchUpsData();
-  }, [user]);
+  }, [user?.id]); // Only depend on user.id, not the entire user object
 
   // Subscription plans
   const subscriptionPlans: SubscriptionPlan[] = [
@@ -508,18 +491,39 @@ export function CarrierManagement() {
                         onCheckedChange={async (checked: boolean) => {
                           if (isAdmin && selectedCarrier.name === 'UPS') {
                             try {
+                              // Find the real service ID from upsServices
+                              const realService = upsServices?.find(s => s.service_code === service.id);
+                              if (!realService) {
+                                console.error('Service not found:', service.id);
+                                return;
+                              }
+
                               const { error } = await supabase
                                 .from('shipping_services')
                                 .update({ is_available: checked })
-                                .eq('id', service.id);
+                                .eq('id', realService.id);
                                 
                               if (error) throw error;
                               
-                              // Update local state
+                              // Update local state without causing re-render loops
                               setUpsServices(prev => prev?.map(s => 
-                                s.id === service.id 
+                                s.id === realService.id 
                                   ? { ...s, is_available: checked }
                                   : s
+                              ));
+                              
+                              // Update prepfox carriers state
+                              setPrepfoxCarriers(prev => prev.map(c => 
+                                c.id === "ups-internal" 
+                                  ? {
+                                      ...c,
+                                      services: c.services.map(svc =>
+                                        svc.id === service.id
+                                          ? { ...svc, enabled: checked }
+                                          : svc
+                                      )
+                                    }
+                                  : c
                               ));
                               
                               toast({
