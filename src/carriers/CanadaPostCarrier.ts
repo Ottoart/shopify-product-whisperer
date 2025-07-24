@@ -13,11 +13,8 @@ export interface CanadaPostCredentials {
 export class CanadaPostCarrier implements CarrierInterface {
   private credentials: CanadaPostCredentials;
   private baseUrl: string;
-  private markup: number = 0; // Markup percentage (0-100)
-
-  constructor(credentials: CanadaPostCredentials, markup: number = 0) {
+  constructor(credentials: CanadaPostCredentials) {
     this.credentials = credentials;
-    this.markup = markup;
     // Use production or development endpoint
     this.baseUrl = credentials.is_production 
       ? 'https://soa-gw.canadapost.ca'
@@ -120,8 +117,6 @@ export class CanadaPostCarrier implements CarrierInterface {
 
       for (const quote of quotes) {
         const rate = parseFloat(quote['price-details']['due']['#text']);
-        const markup = (rate * this.markup) / 100;
-        const totalRate = rate + markup;
 
         rates.push({
           id: `cp_${quote['service-code']['#text']}`,
@@ -130,9 +125,7 @@ export class CanadaPostCarrier implements CarrierInterface {
           carrier: 'Canada Post',
           rate: rate,
           currency: 'CAD',
-          estimated_days: quote['service-standard']?.['expected-transit-time']?.['#text'],
-          markup: markup,
-          total_rate: totalRate
+          estimated_days: quote['service-standard']?.['expected-transit-time']?.['#text']
         });
       }
     }

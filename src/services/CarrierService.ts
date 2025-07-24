@@ -11,7 +11,6 @@ export interface ShipStationCredentials {
 export interface CarrierConfig {
   carrier_name: string;
   credentials: UPSCredentials | CanadaPostCredentials | ShipStationCredentials;
-  markup?: number;
   is_active?: boolean;
 }
 
@@ -37,15 +36,13 @@ export class CarrierService {
       switch (config.carrier_name.toLowerCase()) {
         case 'ups':
           carrier = new UPSCarrier(
-            config.credentials as UPSCredentials, 
-            config.markup || 0
+            config.credentials as UPSCredentials
           );
           break;
         case 'canada_post':
         case 'canadapost':
           carrier = new CanadaPostCarrier(
-            config.credentials as CanadaPostCredentials,
-            config.markup || 0
+            config.credentials as CanadaPostCredentials
           );
           break;
         case 'shipstation':
@@ -112,8 +109,8 @@ export class CarrierService {
       allRates.push(...rates);
     }
 
-    // Sort by total rate (including markup)
-    return allRates.sort((a, b) => (a.total_rate || a.rate) - (b.total_rate || b.rate));
+    // Sort by rate
+    return allRates.sort((a, b) => a.rate - b.rate);
   }
 
   /**

@@ -16,11 +16,8 @@ export class UPSCarrier implements CarrierInterface {
   private credentials: UPSCredentials;
   private accessToken: string | null = null;
   private baseUrl = 'https://wwwcie.ups.com'; // Sandbox URL - change to onlinetools.ups.com for production
-  private markup: number = 0; // Markup percentage (0-100)
-
-  constructor(credentials: UPSCredentials, markup: number = 0) {
+  constructor(credentials: UPSCredentials) {
     this.credentials = credentials;
-    this.markup = markup;
   }
 
   private async authenticate(): Promise<void> {
@@ -182,9 +179,6 @@ export class UPSCarrier implements CarrierInterface {
           ? parseFloat(shipment.NegotiatedRateCharges.TotalCharge.MonetaryValue)
           : parseFloat(shipment.TotalCharges.MonetaryValue);
 
-        const markup = (rate * this.markup) / 100;
-        const totalRate = rate + markup;
-
         rates.push({
           id: `ups_${shipment.Service.Code}`,
           service_code: shipment.Service.Code,
@@ -192,9 +186,7 @@ export class UPSCarrier implements CarrierInterface {
           carrier: 'UPS',
           rate: rate,
           currency: shipment.TotalCharges.CurrencyCode,
-          estimated_days: shipment.GuaranteedDelivery?.BusinessDaysInTransit,
-          markup: markup,
-          total_rate: totalRate
+          estimated_days: shipment.GuaranteedDelivery?.BusinessDaysInTransit
         });
       }
     }
