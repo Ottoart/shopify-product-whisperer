@@ -301,17 +301,23 @@ export function CarrierManagement() {
     }
 
     try {
+      console.log('🔍 handleResync - Starting sync for:', carrier.name);
+      
       toast({
         title: "Syncing...",
         description: `Refreshing ${carrier.name} services and rates.`,
       });
 
       // Use the refreshServices function from useShippingServices hook
-      await refreshServices();
+      const freshServices = await refreshServices();
+      console.log('🔍 handleResync - Fresh services received:', freshServices?.length || 0);
+
+      // Force refresh the page data
+      window.location.reload();
 
       toast({
         title: "Sync Complete",
-        description: `${carrier.name} services have been updated.`,
+        description: `${carrier.name} services have been updated. ${freshServices?.length || 0} services found.`,
       });
     } catch (error) {
       console.error('Error syncing carrier:', error);

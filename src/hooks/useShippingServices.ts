@@ -60,8 +60,12 @@ export const useShippingServices = () => {
   }, []);
 
   const fetchServices = async (forceRefresh = false) => {
-    if (!user) return;
+    if (!user) {
+      console.log('🔍 fetchServices - No user found');
+      return;
+    }
     
+    console.log('🔍 fetchServices - Starting with user:', user.id, 'forceRefresh:', forceRefresh);
     setLoading(true);
     setError(null);
 
@@ -80,6 +84,9 @@ export const useShippingServices = () => {
         .eq('is_available', true)
         .eq('carrier_configurations.is_active', true);
 
+      console.log('🔍 fetchServices - DB services:', dbServices);
+      console.log('🔍 fetchServices - DB error:', dbError);
+
       if (dbError) {
         console.error('Error fetching services from database:', dbError);
         setError('Failed to fetch shipping services');
@@ -94,18 +101,21 @@ export const useShippingServices = () => {
         new Date(service.last_updated) > oneHourAgo
       );
 
+      console.log('🔍 fetchServices - Has recent services:', hasRecentServices, 'Force refresh:', forceRefresh);
+
       if (hasRecentServices && !forceRefresh) {
         const formattedServices = dbServices.map(service => ({
           ...service,
           carrier_name: service.carrier_configurations.carrier_name
         }));
+        console.log('🔍 fetchServices - Using cached services:', formattedServices.length);
         setServices(formattedServices);
         setLoading(false);
-        return;
+        return formattedServices;
       }
 
       // Fetch fresh services from carriers
-      console.log('Fetching fresh services from carriers...');
+      console.log('🔍 fetchServices - Fetching fresh services from carriers...');
       const { data: freshData, error: fetchError } = await supabase.functions.invoke(
         'fetch-shipping-services',
         {
@@ -116,6 +126,9 @@ export const useShippingServices = () => {
         }
       );
 
+      console.log('🔍 fetchServices - Fresh data response:', freshData);
+      console.log('🔍 fetchServices - Fetch error:', fetchError);
+
       if (fetchError) {
         console.error('Error fetching fresh services:', fetchError);
         setError('Failed to fetch services from carriers');
@@ -124,16 +137,22 @@ export const useShippingServices = () => {
 
       // Update local state with fresh data
       if (freshData?.services) {
+        console.log('🔍 fetchServices - Setting services:', freshData.services.length);
         setServices(freshData.services);
       }
       
       if (freshData?.carriers) {
+        console.log('🔍 fetchServices - Setting carriers:', freshData.carriers.length);
         setCarriers(freshData.carriers);
       }
+
+      // Return the fresh data for immediate use
+      return freshData?.services || [];
 
     } catch (err) {
       console.error('Error in fetchServices:', err);
       setError('Failed to fetch shipping services');
+      return [];
     } finally {
       setLoading(false);
     }
@@ -261,6 +280,11 @@ export const useShippingServices = () => {
     addCarrierConfiguration,
     updateCarrierConfiguration,
     toggleCarrierStatus,
-    refreshServices: () => fetchServices(true)
+    refreshServices: async () => {
+      console.log('🔍 refreshServices - Called');
+      const result = await fetchServices(true);
+      console.log('🔍 refreshServices - Result:', result?.length || 0, 'services');
+      return result;
+    }
   };
 };
