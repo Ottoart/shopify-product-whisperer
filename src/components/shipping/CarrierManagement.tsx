@@ -184,6 +184,8 @@ export function CarrierManagement() {
           .order('created_at', { ascending: false })
           .limit(1);
 
+        console.log('🔍 UPS fetch result:', carrierConfigs, error);
+
         if (error) {
           console.error('Error fetching UPS configuration:', error);
           return;
@@ -229,6 +231,9 @@ export function CarrierManagement() {
 
         if (carrierConfigs && carrierConfigs.length > 0) {
           const upsConfig = carrierConfigs[0];
+          console.log('🔍 Setting UPS carrier:', upsConfig);
+          console.log('🔍 UPS services:', upsConfig.shipping_services);
+          
           setUpsCarrier(upsConfig);
           setUpsServices(upsConfig.shipping_services || []);
           
@@ -237,7 +242,7 @@ export function CarrierManagement() {
             name: "UPS",
             logo: "🤎",
             status: upsConfig.is_active ? "connected" as const : "disconnected" as const,
-            description: "United Parcel Service - Connected",
+            description: `United Parcel Service - ${upsConfig.is_active ? 'Connected' : 'Not Connected'}`,
             services: upsConfig.shipping_services?.map((service: any) => ({
               id: service.id,
               name: service.service_name,
@@ -250,8 +255,10 @@ export function CarrierManagement() {
             adminControlled: true
           };
           
+          console.log('🔍 Formatted UPS carrier:', upsCarrier);
           setPrepfoxCarriers([...defaultCarriers, upsCarrier]);
         } else {
+          console.log('🔍 No UPS config found, setting default');
           const upsCarrier = {
             id: "ups-internal",
             name: "UPS",
@@ -267,6 +274,7 @@ export function CarrierManagement() {
           };
           
           setPrepfoxCarriers([...defaultCarriers, upsCarrier]);
+          setUpsServices([]);
         }
       } catch (error) {
         console.error('Error setting up PrepFox carriers:', error);
@@ -274,7 +282,7 @@ export function CarrierManagement() {
     };
 
     fetchUpsData();
-  }, [user, carriers]);
+  }, [user, carriers, services]); // Add services to dependencies
 
   const getCarrierLogo = (carrierName: string) => {
     const logos: { [key: string]: string } = {
@@ -312,8 +320,40 @@ export function CarrierManagement() {
       const freshServices = await refreshServices();
       console.log('🔍 handleResync - Fresh services received:', freshServices?.length || 0);
 
-      // Force refresh the page data
-      window.location.reload();
+      // If this is UPS, also refresh the local UPS data
+      if (carrier.name === 'UPS') {
+        // Refetch UPS configuration
+        const { data: carrierConfigs, error } = await supabase
+          .from('carrier_configurations')
+          .select(`
+            *,
+            shipping_services(*)
+          `)
+          .eq('user_id', user.id)
+          .eq('carrier_name', 'UPS')
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (!error && carrierConfigs && carrierConfigs.length > 0) {
+          const upsConfig = carrierConfigs[0];
+          console.log('🔍 handleResync - Updated UPS config:', upsConfig);
+          setUpsCarrier(upsConfig);
+          setUpsServices(upsConfig.shipping_services || []);
+          
+          // Update prepfoxCarriers state to reflect new service count
+          setPrepfoxCarriers(prev => prev.map(c => 
+            c.name === 'UPS' ? {
+              ...c,
+              services: upsConfig.shipping_services?.map((service: any) => ({
+                id: service.id,
+                name: service.service_name,
+                enabled: service.is_available
+              })) || [],
+              lastSync: new Date().toISOString()
+            } : c
+          ));
+        }
+      }
 
       toast({
         title: "Sync Complete",
