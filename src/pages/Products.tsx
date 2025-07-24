@@ -469,8 +469,8 @@ export default function Products() {
                 shopifySyncStatus: p.shopify_sync_status,
                 shopifySyncedAt: p.shopify_synced_at
               }))}
-              selectedProducts={selectedProducts}
-              onSelectionChange={setSelectedProducts}
+              selectedProducts={Array.from(selectedProducts)}
+              onSelectionChange={(productIds) => setSelectedProducts(new Set(productIds))}
               onAddToQueue={(productIds) => {
                 toast({
                   title: "Products added to queue",

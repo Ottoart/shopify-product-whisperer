@@ -1,28 +1,54 @@
 import React from 'react';
 import { ProductListItem } from './ProductListItem';
-import { Product } from '@/pages/Products';
+import { Product } from '@/pages/Index';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card } from '@/components/ui/card';
 
 interface ProductListProps {
   products: Product[];
-  onProductUpdate: () => void;
-  onOptimizeWithAI: (productId: string) => void;
-  selectedProducts: Product[];
-  onProductSelect: (product: Product, isSelected: boolean) => void;
-  onSelectAll: (isSelected: boolean) => void;
+  onProductUpdate?: () => void;
+  onOptimizeWithAI?: (productId: string) => void;
+  selectedProducts?: string[];
+  onSelectionChange?: (productIds: string[]) => void;
+  onAddToQueue?: (productIds: string[]) => void;
+  onProductsUpdated?: () => void;
+  onProductUpdated?: (productId: string, updatedData: any) => void;
+  storeUrl?: string;
 }
 
 export const ProductList: React.FC<ProductListProps> = ({ 
   products, 
-  onProductUpdate, 
+  onProductUpdate,
   onOptimizeWithAI,
-  selectedProducts,
-  onProductSelect,
-  onSelectAll
+  selectedProducts = [],
+  onSelectionChange,
+  onAddToQueue,
+  onProductsUpdated,
+  onProductUpdated,
+  storeUrl
 }) => {
   const isAllSelected = products.length > 0 && selectedProducts.length === products.length;
   const isIndeterminate = selectedProducts.length > 0 && selectedProducts.length < products.length;
+
+  const handleProductSelect = (product: Product, isSelected: boolean) => {
+    if (!onSelectionChange) return;
+    
+    if (isSelected) {
+      onSelectionChange([...selectedProducts, product.id]);
+    } else {
+      onSelectionChange(selectedProducts.filter(id => id !== product.id));
+    }
+  };
+
+  const handleSelectAll = (isSelected: boolean) => {
+    if (!onSelectionChange) return;
+    
+    if (isSelected) {
+      onSelectionChange(products.map(p => p.id));
+    } else {
+      onSelectionChange([]);
+    }
+  };
 
   if (products.length === 0) {
     return (
@@ -40,7 +66,7 @@ export const ProductList: React.FC<ProductListProps> = ({
           <Checkbox 
             checked={isAllSelected}
             {...(isIndeterminate ? { 'data-indeterminate': true } : {})}
-            onCheckedChange={(checked) => onSelectAll(!!checked)}
+            onCheckedChange={(checked) => handleSelectAll(!!checked)}
             id="select-all"
           />
           <label htmlFor="select-all" className="text-sm font-medium cursor-pointer">
@@ -57,10 +83,10 @@ export const ProductList: React.FC<ProductListProps> = ({
         <ProductListItem
           key={product.id}
           product={product}
-          onUpdate={onProductUpdate}
-          onOptimizeWithAI={onOptimizeWithAI}
-          isSelected={selectedProducts.some(p => p.id === product.id)}
-          onSelect={(isSelected) => onProductSelect(product, isSelected)}
+          onUpdate={onProductUpdate || (() => {})}
+          onOptimizeWithAI={onOptimizeWithAI || (() => {})}
+          isSelected={selectedProducts.includes(product.id)}
+          onSelect={(isSelected) => handleProductSelect(product, isSelected)}
         />
       ))}
     </div>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +21,7 @@ export const ProductListItem: React.FC<ProductListItemProps> = ({
   isSelected,
   onSelect
 }) => {
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const formatPrice = (price: number | string | null | undefined): string => {
     if (!price || price === 0) return 'N/A';
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
@@ -87,15 +88,17 @@ export const ProductListItem: React.FC<ProductListItemProps> = ({
         </div>
         
         <div className="flex items-center space-x-2">
+          <Button variant="outline" size="sm" onClick={() => setEditDialogOpen(true)}>
+            <Edit className="mr-2 h-4 w-4" />
+            Edit
+          </Button>
+          
           <ProductEditDialog 
             product={product} 
-            onUpdate={onUpdate}
-          >
-            <Button variant="outline" size="sm">
-              <Edit className="mr-2 h-4 w-4" />
-              Edit
-            </Button>
-          </ProductEditDialog>
+            open={editDialogOpen}
+            onOpenChange={setEditDialogOpen}
+            onProductUpdated={onUpdate}
+          />
           
           <Button 
             variant="outline" 
