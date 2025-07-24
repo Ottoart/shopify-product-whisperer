@@ -139,6 +139,7 @@ const PublicApp = () => {
         <Route path="/repricing/pricing" element={<RepricingPricing />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/customer-tracking" element={<CustomerTracking />} />
+        <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/about" element={<AboutUs />} />
         <Route path="*" element={<Navigate to="/" replace />} />

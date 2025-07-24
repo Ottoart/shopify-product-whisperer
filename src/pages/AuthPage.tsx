@@ -48,10 +48,10 @@ export default function AuthPage() {
         window.history.replaceState(null, '', window.location.pathname);
         
         // Show success message
-        toast({
-          title: 'Email confirmed!',
-          description: 'Your email has been confirmed successfully. Welcome to ProHair!',
-        });
+          toast({
+            title: 'Email confirmed!',
+            description: 'Your email has been confirmed successfully. Welcome to PrepFox!',
+          });
       }
     };
 
@@ -212,7 +212,7 @@ export default function AuthPage() {
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-            ProHair Customer Portal
+            FoxPortal
           </h1>
           <p className="text-muted-foreground">
             Track your orders, manage returns, and more

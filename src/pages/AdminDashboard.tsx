@@ -75,10 +75,13 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     loadDashboardData();
-    if (session?.user) {
+  }, []);
+
+  useEffect(() => {
+    if (session?.user && hasAdminUsers) {
       checkAdminAccess();
     }
-  }, [session]);
+  }, [session, hasAdminUsers]);
 
   const checkAdminAccess = async () => {
     try {
