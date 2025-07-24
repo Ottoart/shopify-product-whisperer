@@ -8,6 +8,7 @@ import { SessionContextProvider, useSession } from "@supabase/auth-helpers-react
 import { supabase } from "@/integrations/supabase/client";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
+import { StoreProvider } from "@/contexts/StoreContext";
 import Index from "./pages/Index";
 import MainDashboard from "./pages/MainDashboard";
 import PrepFoxDashboard from "./pages/PrepFoxDashboard";
@@ -167,7 +168,9 @@ function App() {
     <TooltipProvider delayDuration={0}>
       <QueryClientProvider client={queryClient}>
         <SessionContextProvider supabaseClient={supabase}>
-          <AppContent />
+          <StoreProvider>
+            <AppContent />
+          </StoreProvider>
         </SessionContextProvider>
       </QueryClientProvider>
       <Toaster />
