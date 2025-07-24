@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Product, UpdatedProduct } from "@/pages/Index";
 import { ProductComparison } from "@/components/ProductComparison";
+import { AIConnectionIndicator } from "./AIConnectionIndicator";
 
 interface SingleProductProcessorProps {
   product: Product | null;
@@ -204,7 +205,10 @@ export function SingleProductProcessor({
                 <Package className="h-5 w-5 text-primary-foreground" />
               </div>
               <div className="min-w-0 flex-1">
-                <div>Processing Product</div>
+                <div className="flex items-center gap-2">
+                  Processing Product
+                  <AIConnectionIndicator isOptimizing={isProcessing} />
+                </div>
                 <div className="text-sm font-normal text-muted-foreground">
                   AI optimization in progress
                 </div>

@@ -32,18 +32,28 @@ export const PatternAnalyzer = ({ onAnalysisComplete }: PatternAnalyzerProps) =>
 
       <CardContent className="space-y-4">
         <div className="text-center p-6 space-y-4">
-          <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900 dark:to-purple-900 flex items-center justify-center">
-            <Lightbulb className="h-8 w-8 text-blue-500" />
+          <div className="mx-auto w-16 h-16 rounded-full bg-gradient-primary flex items-center justify-center">
+            <Lightbulb className="h-8 w-8 text-primary-foreground" />
           </div>
           <div className="space-y-2">
             <h3 className="text-lg font-semibold">Discover Your Editing Patterns</h3>
             <p className="text-muted-foreground">
-              Our AI analyzes your manual edits to learn your preferences and improve future suggestions.
+              AI analyzes your manual edits to learn preferences and improve future product optimizations.
             </p>
           </div>
-          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-            <Zap className="h-4 w-4" />
-            <span>Advanced machine learning analysis</span>
+          <div className="grid grid-cols-3 gap-4 mt-4 text-center">
+            <div className="p-2 rounded-lg bg-muted/50">
+              <div className="text-2xl font-bold text-primary">📝</div>
+              <div className="text-xs text-muted-foreground">Manual Edits</div>
+            </div>
+            <div className="p-2 rounded-lg bg-muted/50">
+              <div className="text-2xl font-bold text-primary">🧠</div>
+              <div className="text-xs text-muted-foreground">AI Learning</div>
+            </div>
+            <div className="p-2 rounded-lg bg-muted/50">
+              <div className="text-2xl font-bold text-primary">⚡</div>
+              <div className="text-xs text-muted-foreground">Smart Suggestions</div>
+            </div>
           </div>
         </div>
 

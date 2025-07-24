@@ -5,6 +5,7 @@ import { StoreConfig } from '@/components/StoreConfig';
 import { PrintingSettings } from '@/components/shipping/PrintingSettings';
 import { PatternManagement } from '@/components/patterns/PatternManagement';
 import { PatternAnalyzer } from '@/components/patterns/PatternAnalyzer';
+import { AIPromptVisualizer } from '@/components/AIPromptVisualizer';
 import { useState } from "react";
 import Logs from '@/pages/Logs';
 
@@ -46,6 +47,7 @@ const Settings = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                <AIPromptVisualizer />
                 <PatternAnalyzer onAnalysisComplete={handleAnalysisComplete} />
                 <PatternManagement key={refreshKey} />
               </CardContent>
