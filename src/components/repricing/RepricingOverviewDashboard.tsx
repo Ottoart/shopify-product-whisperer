@@ -4,11 +4,37 @@ import { DashboardTab } from "./tabs/DashboardTab";
 import { CalendarDays } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+interface QueueItem {
+  productId: string;
+  status: 'pending' | 'processing' | 'completed' | 'error';
+  error?: string;
+}
+
 export function RepricingOverviewDashboard() {
   const [searchParams] = useSearchParams();
   const storeFilter = searchParams.get('store');
   
   const [dateRange, setDateRange] = useState("last30days");
+  const [queueItems, setQueueItems] = useState<QueueItem[]>([]);
+
+  // Queue management functions
+  const addToQueue = (productIds: string[]) => {
+    const newItems = productIds.map(id => ({
+      productId: id,
+      status: 'pending' as const
+    }));
+    setQueueItems(prev => [...prev, ...newItems]);
+  };
+
+  const updateQueueItemStatus = (productId: string, status: 'pending' | 'processing' | 'completed' | 'error', error?: string) => {
+    setQueueItems(prev => prev.map(item => 
+      item.productId === productId ? { ...item, status, error } : item
+    ));
+  };
+
+  const removeFromQueue = (productId: string) => {
+    setQueueItems(prev => prev.filter(item => item.productId !== productId));
+  };
 
   const getDateRangeLabel = () => {
     switch (dateRange) {
@@ -60,7 +86,11 @@ export function RepricingOverviewDashboard() {
       <DashboardTab 
         storeFilter={storeFilter} 
         dateRange={dateRange} 
-        dateRangeLabel={getDateRangeLabel()} 
+        dateRangeLabel={getDateRangeLabel()}
+        queueItems={queueItems}
+        onAddToQueue={addToQueue}
+        onUpdateQueueStatus={updateQueueItemStatus}
+        onRemoveFromQueue={removeFromQueue}
       />
     </div>
   );

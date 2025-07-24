@@ -60,7 +60,8 @@ export function RepricingListings() {
       <ListingsTab 
         storeFilter={storeFilter} 
         dateRange={dateRange} 
-        dateRangeLabel={getDateRangeLabel()} 
+        dateRangeLabel={getDateRangeLabel()}
+        onAddToQueue={(skus) => console.log('Adding to queue:', skus)}
       />
     </div>
   );

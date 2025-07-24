@@ -12,12 +12,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Info, Search, Filter, Download, Edit, Target, TrendingUp, Users, BarChart3 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Info, Search, Filter, Download, Edit, Target, TrendingUp, Users, BarChart3, Zap, CheckCircle } from "lucide-react";
 
 interface ListingsTabProps {
   storeFilter: string | null;
   dateRange: string;
   dateRangeLabel: string;
+  onAddToQueue?: (skus: string[]) => void;
 }
 
 interface Listing {
@@ -38,12 +40,13 @@ interface Listing {
   daysLive: number;
 }
 
-export function ListingsTab({ storeFilter, dateRange, dateRangeLabel }: ListingsTabProps) {
+export function ListingsTab({ storeFilter, dateRange, dateRangeLabel, onAddToQueue }: ListingsTabProps) {
   const [searchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [activeStoreFilter, setActiveStoreFilter] = useState<string>('');
+  const [selectedListings, setSelectedListings] = useState<Set<string>>(new Set());
   
   useEffect(() => {
     const storeParam = searchParams.get('store');
@@ -53,6 +56,32 @@ export function ListingsTab({ storeFilter, dateRange, dateRangeLabel }: Listings
       setActiveStoreFilter(storeFilter || '');
     }
   }, [searchParams, storeFilter]);
+
+  // Selection handlers
+  const handleSelectAll = () => {
+    if (selectedListings.size === filteredListings.length) {
+      setSelectedListings(new Set());
+    } else {
+      setSelectedListings(new Set(filteredListings.map(listing => listing.sku)));
+    }
+  };
+
+  const handleSelectListing = (sku: string) => {
+    const newSelection = new Set(selectedListings);
+    if (newSelection.has(sku)) {
+      newSelection.delete(sku);
+    } else {
+      newSelection.add(sku);
+    }
+    setSelectedListings(newSelection);
+  };
+
+  const handleAddToQueue = () => {
+    if (selectedListings.size > 0) {
+      onAddToQueue?.(Array.from(selectedListings));
+      setSelectedListings(new Set()); // Clear selection
+    }
+  };
 
   // Mock data - in real implementation, this would come from Supabase
   const listings: Listing[] = [
@@ -189,13 +218,48 @@ export function ListingsTab({ storeFilter, dateRange, dateRangeLabel }: Listings
             </CardTitle>
             <CardDescription>
               Manage pricing and strategies for all your listings
+              {selectedListings.size > 0 && (
+                <span className="ml-2 text-primary font-medium">
+                  ({selectedListings.size} selected)
+                </span>
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Selection Controls */}
+            {selectedListings.size > 0 && (
+              <div className="mb-4 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-primary font-medium">
+                    {selectedListings.size} listing{selectedListings.size > 1 ? 's' : ''} selected
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={handleAddToQueue} className="bg-primary">
+                      <Zap className="h-4 w-4 mr-1" />
+                      Optimize with AI
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => setSelectedListings(new Set())}
+                    >
+                      Clear Selection
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12">
+                      <Checkbox
+                        checked={selectedListings.size === filteredListings.length && filteredListings.length > 0}
+                        onCheckedChange={handleSelectAll}
+                        aria-label="Select all"
+                      />
+                    </TableHead>
                     <TableHead>SKU</TableHead>
                     <TableHead>Title</TableHead>
                     <TableHead>Strategy</TableHead>
@@ -213,6 +277,13 @@ export function ListingsTab({ storeFilter, dateRange, dateRangeLabel }: Listings
                 <TableBody>
                   {filteredListings.map((listing) => (
                     <TableRow key={listing.sku}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedListings.has(listing.sku)}
+                          onCheckedChange={() => handleSelectListing(listing.sku)}
+                          aria-label={`Select ${listing.sku}`}
+                        />
+                      </TableCell>
                       <TableCell className="font-mono text-sm">{listing.sku}</TableCell>
                       <TableCell className="max-w-xs truncate">{listing.title}</TableCell>
                       <TableCell>

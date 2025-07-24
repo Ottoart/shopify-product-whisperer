@@ -4,19 +4,28 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Info, TrendingUp, TrendingDown, Target, DollarSign, Package, AlertTriangle } from "lucide-react";
+import { Info, TrendingUp, TrendingDown, Target, DollarSign, Package, AlertTriangle, Zap } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { RepricingAIRecommendations } from "../components/RepricingAIRecommendations";
+import { QueueManager } from "@/components/QueueManager";
+import { useProducts } from "@/hooks/useProducts";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface DashboardTabProps {
   storeFilter: string | null;
   dateRange: string;
   dateRangeLabel: string;
+  queueItems: Array<{productId: string; status: 'pending' | 'processing' | 'completed' | 'error'; error?: string}>;
+  onAddToQueue: (productIds: string[]) => void;
+  onUpdateQueueStatus: (productId: string, status: 'pending' | 'processing' | 'completed' | 'error', error?: string) => void;
+  onRemoveFromQueue: (productId: string) => void;
 }
 
-export function DashboardTab({ storeFilter, dateRange, dateRangeLabel }: DashboardTabProps) {
+export function DashboardTab({ storeFilter, dateRange, dateRangeLabel, queueItems, onAddToQueue, onUpdateQueueStatus, onRemoveFromQueue }: DashboardTabProps) {
   const [searchParams] = useSearchParams();
   const [activeStoreFilter, setActiveStoreFilter] = useState<string>('');
+  const [bulkMode, setBulkMode] = useState(false);
   
   useEffect(() => {
     const storeParam = searchParams.get('store');
@@ -26,6 +35,17 @@ export function DashboardTab({ storeFilter, dateRange, dateRangeLabel }: Dashboa
       setActiveStoreFilter(storeFilter || '');
     }
   }, [searchParams, storeFilter]);
+
+  // Get products for the active store
+  const { products: allProducts } = useProducts();
+  const storeProducts = allProducts?.filter(product => 
+    !activeStoreFilter || product.vendor?.toLowerCase().includes(activeStoreFilter.toLowerCase())
+  ) || [];
+
+  const handleUpdateProduct = (productId: string, updatedData: any) => {
+    // Handle product updates after AI optimization
+    console.log('Product updated:', productId, updatedData);
+  };
   // Mock data - in real implementation, this would come from Supabase
   const buyBoxData = [
     { day: 'Mon', percentage: 85 },
@@ -312,6 +332,54 @@ export function DashboardTab({ storeFilter, dateRange, dateRangeLabel }: Dashboa
           {/* AI Recommendations */}
           <RepricingAIRecommendations />
         </div>
+
+        {/* Processing Queue Section */}
+        {queueItems.length > 0 && (
+          <Card className="shadow-card border-0">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-lg bg-gradient-to-r from-primary to-primary/80 flex items-center justify-center">
+                    <Zap className="h-5 w-5 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <CardTitle>AI Optimization Queue</CardTitle>
+                    <CardDescription>
+                      Track AI product optimization progress
+                      {activeStoreFilter && ` for ${activeStoreFilter}`}
+                    </CardDescription>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="bulk-mode-repricing" className="text-sm font-medium">
+                      Bulk Mode
+                    </Label>
+                    <Switch
+                      id="bulk-mode-repricing"
+                      checked={bulkMode}
+                      onCheckedChange={setBulkMode}
+                    />
+                    {bulkMode && (
+                      <AlertTriangle className="h-4 w-4 text-destructive" />
+                    )}
+                  </div>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <QueueManager
+                queueItems={queueItems}
+                products={storeProducts}
+                onUpdateStatus={onUpdateQueueStatus}
+                onUpdateProduct={handleUpdateProduct}
+                onRemoveFromQueue={onRemoveFromQueue}
+                bulkMode={bulkMode}
+              />
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
