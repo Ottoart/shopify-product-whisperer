@@ -1,10 +1,16 @@
 import { UPSCarrier, UPSCredentials } from '../carriers/UPSCarrier';
 import { CanadaPostCarrier, CanadaPostCredentials } from '../carriers/CanadaPostCarrier';
+import { ShipStationCarrier } from '../carriers/ShipStationCarrier';
 import { CarrierInterface, ShipmentDetails, RateResponse, ShipmentResponse } from '../carriers/CarrierInterface';
+
+export interface ShipStationCredentials {
+  apiKey: string;
+  apiSecret: string;
+}
 
 export interface CarrierConfig {
   carrier_name: string;
-  credentials: UPSCredentials | CanadaPostCredentials;
+  credentials: UPSCredentials | CanadaPostCredentials | ShipStationCredentials;
   markup?: number;
   is_active?: boolean;
 }
@@ -40,6 +46,13 @@ export class CarrierService {
           carrier = new CanadaPostCarrier(
             config.credentials as CanadaPostCredentials,
             config.markup || 0
+          );
+          break;
+        case 'shipstation':
+          const ssCredentials = config.credentials as ShipStationCredentials;
+          carrier = new ShipStationCarrier(
+            ssCredentials.apiKey,
+            ssCredentials.apiSecret
           );
           break;
         default:
