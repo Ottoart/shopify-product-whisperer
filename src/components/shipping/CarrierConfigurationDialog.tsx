@@ -49,6 +49,7 @@ const COUNTRY_CODES = [
 
 export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigurationDialogProps) {
   const [selectedCarrier, setSelectedCarrier] = useState('');
+  const [editingCarrier, setEditingCarrier] = useState<CarrierConfiguration | null>(null);
   const [upsConfig, setUpsConfig] = useState({
     account_number: '',
     client_id: '',
@@ -90,7 +91,8 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
   
   const { 
     carriers, 
-    addCarrierConfiguration, 
+    addCarrierConfiguration,
+    updateCarrierConfiguration,
     toggleCarrierStatus, 
     refreshServices,
     loading 
@@ -121,8 +123,8 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
     setShipstationConfig({ api_key: '', api_secret: '', store_id: '' });
   };
 
-  const handleAddCarrier = async () => {
-    if (!selectedCarrier) {
+  const handleAddOrUpdateCarrier = async () => {
+    if (!selectedCarrier && !editingCarrier) {
       toast({
         title: "Error",
         description: "Please select a carrier",
@@ -135,25 +137,42 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
 
     try {
       const config = getCarrierConfig();
-      await addCarrierConfiguration({
-        carrier_name: selectedCarrier,
-        api_credentials: config,
-        settings: {}
-      });
+      
+      if (editingCarrier) {
+        // Update existing carrier
+        await updateCarrierConfiguration(editingCarrier.id, {
+          api_credentials: config,
+          settings: editingCarrier.settings
+        });
 
-      toast({
-        title: "Success",
-        description: `${selectedCarrier.toUpperCase()} carrier has been added successfully`,
-      });
+        toast({
+          title: "Success",
+          description: `${editingCarrier.carrier_name.toUpperCase()} carrier has been updated successfully`,
+        });
+
+        setEditingCarrier(null);
+      } else {
+        // Add new carrier
+        await addCarrierConfiguration({
+          carrier_name: selectedCarrier,
+          api_credentials: config,
+          settings: {}
+        });
+
+        toast({
+          title: "Success",
+          description: `${selectedCarrier.toUpperCase()} carrier has been added successfully`,
+        });
+      }
 
       setSelectedCarrier('');
       resetCarrierConfig();
 
     } catch (error) {
-      console.error('Error adding carrier:', error);
+      console.error('Error saving carrier:', error);
       toast({
         title: "Error",
-        description: "Failed to add carrier configuration",
+        description: `Failed to ${editingCarrier ? 'update' : 'add'} carrier configuration`,
         variant: "destructive"
       });
     } finally {
@@ -242,6 +261,40 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
     setExpandedCarrier(prev => prev === carrierId ? null : carrierId);
   };
 
+  const handleEditCarrier = (carrier: CarrierConfiguration) => {
+    setEditingCarrier(carrier);
+    setSelectedCarrier(carrier.carrier_name);
+    
+    // Populate the form with existing data
+    if (carrier.carrier_name === 'ups') {
+      const creds = carrier.api_credentials as any;
+      setUpsConfig({
+        account_number: creds.account_number || '',
+        client_id: creds.client_id || '',
+        client_secret: creds.client_secret || '',
+        account_type: creds.account_type || '',
+        environment: creds.environment || 'sandbox',
+        mi_endorsement: creds.mi_endorsement || '',
+        mi_cost_center: creds.mi_cost_center || '',
+        mi_customer_id: creds.mi_customer_id || '',
+        mi_customer_guid: creds.mi_customer_guid || '',
+        postal_code: creds.postal_code || '',
+        country_code: creds.country_code || 'US',
+        enable_negotiated_rates: creds.enable_negotiated_rates || false,
+        enable_carbon_neutral: creds.enable_carbon_neutral || false,
+        enable_ground_freight: creds.enable_ground_freight || false,
+        enable_additional_services: creds.enable_additional_services || false,
+        enable_user_order_number: creds.enable_user_order_number || false
+      });
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingCarrier(null);
+    setSelectedCarrier('');
+    resetCarrierConfig();
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -257,31 +310,33 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Add New Carrier
+                {editingCarrier ? <Settings className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                {editingCarrier ? `Edit ${editingCarrier.carrier_name.toUpperCase()}` : 'Add New Carrier'}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="carrier">Select Carrier</Label>
-                <Select value={selectedCarrier} onValueChange={setSelectedCarrier}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose a carrier..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SUPPORTED_CARRIERS.map(carrier => (
-                      <SelectItem key={carrier.value} value={carrier.value}>
-                        <div>
-                          <div className="font-medium">{carrier.label}</div>
-                          <div className="text-sm text-muted-foreground">{carrier.description}</div>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {!editingCarrier && (
+                <div>
+                  <Label htmlFor="carrier">Select Carrier</Label>
+                  <Select value={selectedCarrier} onValueChange={setSelectedCarrier}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose a carrier..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SUPPORTED_CARRIERS.map(carrier => (
+                        <SelectItem key={carrier.value} value={carrier.value}>
+                          <div>
+                            <div className="font-medium">{carrier.label}</div>
+                            <div className="text-sm text-muted-foreground">{carrier.description}</div>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
-              {selectedCarrier === 'ups' && (
+              {(selectedCarrier === 'ups' || editingCarrier?.carrier_name === 'ups') && (
                 <div className="space-y-4">
                   <Separator />
                   <div className="flex items-center gap-2">
@@ -419,13 +474,24 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
                     </div>
                   </div>
 
-                  <Button 
-                    onClick={handleAddCarrier} 
-                    disabled={isSubmitting || loading}
-                    className="w-full"
-                  >
-                    {isSubmitting ? 'Adding...' : 'Add UPS Carrier'}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={handleAddOrUpdateCarrier} 
+                      disabled={isSubmitting || loading}
+                      className="flex-1"
+                    >
+                      {isSubmitting ? (editingCarrier ? 'Updating...' : 'Adding...') : (editingCarrier ? 'Update UPS' : 'Add UPS Carrier')}
+                    </Button>
+                    {editingCarrier && (
+                      <Button 
+                        variant="outline" 
+                        onClick={handleCancelEdit}
+                        disabled={isSubmitting}
+                      >
+                        Cancel
+                      </Button>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -487,7 +553,7 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
                   </div>
 
                   <Button 
-                    onClick={handleAddCarrier} 
+                    onClick={handleAddOrUpdateCarrier} 
                     disabled={isSubmitting || loading}
                     className="w-full"
                   >
@@ -533,7 +599,7 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
                   </div>
 
                   <Button 
-                    onClick={handleAddCarrier} 
+                    onClick={handleAddOrUpdateCarrier} 
                     disabled={isSubmitting || loading}
                     className="w-full"
                   >
@@ -580,7 +646,7 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
                   </div>
 
                   <Button 
-                    onClick={handleAddCarrier} 
+                    onClick={handleAddOrUpdateCarrier} 
                     disabled={isSubmitting || loading}
                     className="w-full"
                   >
@@ -674,6 +740,15 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
                             Test
                           </>
                         )}
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditCarrier(carrier)}
+                      >
+                        <Settings className="h-3 w-3 mr-1" />
+                        Edit
                       </Button>
 
                       <Button
