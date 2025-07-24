@@ -51,13 +51,22 @@ serve(async (req) => {
 
     // Parse access token from stored credentials
     let accessToken = ebayConfig.access_token;
+    let ebayUserId: string | null = null;
+    
     if (typeof accessToken === 'string' && accessToken.startsWith('{')) {
       try {
         const tokenData = JSON.parse(accessToken);
-        accessToken = tokenData.access_token;
+        accessToken = tokenData.access_token || accessToken;
+        ebayUserId = tokenData.external_user_id || tokenData.user_id;
+        console.log('Parsed eBay credentials, found user ID:', !!ebayUserId);
       } catch (e) {
         console.log('Access token is already a string, using directly');
       }
+    }
+
+    // Validate token
+    if (!accessToken || accessToken.length < 10) {
+      throw new Error('Invalid eBay access token. Please reconnect your eBay account.');
     }
 
     // eBay Sell Inventory API - Primary method for getting active listings
@@ -112,26 +121,14 @@ serve(async (req) => {
             // If Inventory API fails with other errors, try the Browse API as fallback
             console.log('Inventory API failed, trying Browse API for seller items...');
             
-            // For store_configurations, we might not have external_user_id
-            // Extract from access_token or use store name as fallback
-            let ebayUserId = ebayConfig.external_user_id || ebayConfig.store_name;
-            if (!ebayUserId) {
-              // Try to extract from access token metadata if it's a JSON object
-              try {
-                if (typeof ebayConfig.access_token === 'string' && ebayConfig.access_token.startsWith('{')) {
-                  const tokenData = JSON.parse(ebayConfig.access_token);
-                  ebayUserId = tokenData.external_user_id || tokenData.user_id;
-                }
-              } catch (e) {
-                console.log('Could not parse access token for user ID');
-              }
+            // Use parsed user ID or fallback to other sources
+            let fallbackUserId = ebayUserId || ebayConfig.external_user_id || ebayConfig.store_name;
+            
+            if (!fallbackUserId) {
+              throw new Error('No eBay user ID found for Browse API fallback. Please reconnect your eBay account.');
             }
             
-            if (!ebayUserId) {
-              throw new Error('No eBay user ID found. Cannot use Browse API fallback.');
-            }
-            
-            const browseApiUrl = `https://api.ebay.com/buy/browse/v1/item_summary/search?filter=seller:${ebayUserId}&limit=${limit}&offset=${offset}`;
+            const browseApiUrl = `https://api.ebay.com/buy/browse/v1/item_summary/search?filter=seller:${encodeURIComponent(fallbackUserId)}&limit=${limit}&offset=${offset}`;
             
             const browseController = new AbortController();
             const browseTimeoutId = setTimeout(() => browseController.abort(), timeout);
@@ -224,8 +221,25 @@ serve(async (req) => {
 
     console.log(`Found ${allItems.length} eBay items`);
 
+    // Filter for active products only (products with available quantity)
+    const activeItems = allItems.filter((item: any) => {
+      if (item.product) {
+        // Inventory API format - check availability
+        const quantity = item.availability?.shipToLocationAvailability?.quantity || 0;
+        return quantity > 0;
+      } else if (item.itemId) {
+        // Browse API format - check if item has buying options
+        return item.buyingOptions && item.buyingOptions.length > 0;
+      } else {
+        // Legacy format - check quantity
+        return (item.quantity || 0) > 0;
+      }
+    });
+
+    console.log(`Filtered to ${activeItems.length} active eBay items (${allItems.length - activeItems.length} inactive items excluded)`);
+
     // Transform eBay items to our product format
-    const productRecords = allItems.map((item: any) => {
+    const productRecords = activeItems.map((item: any) => {
       // Handle different API response formats
       let itemData: any = {};
       
