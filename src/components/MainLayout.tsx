@@ -8,6 +8,8 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
   Truck,
   Package,
@@ -25,6 +27,7 @@ import {
   Settings,
   ShoppingCart,
   Warehouse,
+  Menu,
 } from "lucide-react";
 
 interface MainLayoutProps {
@@ -328,11 +331,106 @@ export default function MainLayout({ children }: MainLayoutProps) {
             </NavigationMenuList>
           </NavigationMenu>
 
-          {/* Auth Buttons */}
-          <div className="flex items-center space-x-4">
+          {/* Mobile Menu */}
+          <Sheet>
+            <SheetTrigger asChild className="lg:hidden">
+              <Button variant="ghost" size="icon">
+                <Menu className="h-6 w-6" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[300px]">
+              <div className="flex flex-col space-y-4 mt-6">
+                <Accordion type="single" collapsible className="w-full">
+                  <AccordionItem value="shipping">
+                    <AccordionTrigger className="text-left">Shipping</AccordionTrigger>
+                    <AccordionContent>
+                      <div className="space-y-2 pl-4">
+                        <div className="text-sm font-medium text-muted-foreground mb-2">Product</div>
+                        {shippingMenuItems.map((item) => (
+                          <Link
+                            key={item.title}
+                            to={item.href}
+                            className="flex items-center space-x-2 p-2 rounded-lg hover:bg-accent/50 transition-colors"
+                          >
+                            <item.icon className="h-4 w-4 text-primary" />
+                            <span className="text-sm">{item.title}</span>
+                          </Link>
+                        ))}
+                        <div className="text-sm font-medium text-muted-foreground mb-2 mt-4">Solutions</div>
+                        {shippingSolutionsItems.map((item) => (
+                          <Link
+                            key={item.title}
+                            to={item.href}
+                            className="flex items-center space-x-2 p-2 rounded-lg hover:bg-accent/50 transition-colors"
+                          >
+                            <item.icon className="h-4 w-4 text-primary" />
+                            <span className="text-sm">{item.title}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                  
+                  <AccordionItem value="repricing">
+                    <AccordionTrigger className="text-left">Repricing</AccordionTrigger>
+                    <AccordionContent>
+                      <div className="space-y-2 pl-4">
+                        <div className="text-sm font-medium text-muted-foreground mb-2">Product</div>
+                        {repricingMenuItems.map((item) => (
+                          <Link
+                            key={item.title}
+                            to={item.href}
+                            className="flex items-center space-x-2 p-2 rounded-lg hover:bg-accent/50 transition-colors"
+                          >
+                            <item.icon className="h-4 w-4 text-primary" />
+                            <span className="text-sm">{item.title}</span>
+                          </Link>
+                        ))}
+                        <div className="text-sm font-medium text-muted-foreground mb-2 mt-4">Solutions</div>
+                        {repricingSolutionsItems.map((item) => (
+                          <Link
+                            key={item.title}
+                            to={item.href}
+                            className="flex items-center space-x-2 p-2 rounded-lg hover:bg-accent/50 transition-colors"
+                          >
+                            <item.icon className="h-4 w-4 text-primary" />
+                            <span className="text-sm">{item.title}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+                
+                <div className="space-y-2">
+                  <Link to="/features" className="block p-2 rounded-lg hover:bg-accent/50 transition-colors text-foreground">
+                    Features
+                  </Link>
+                  <Link to="/pricing" className="block p-2 rounded-lg hover:bg-accent/50 transition-colors text-foreground">
+                    Pricing
+                  </Link>
+                  <Link to="/dashboard" className="block p-2 rounded-lg hover:bg-accent/50 transition-colors text-foreground">
+                    Dashboard
+                  </Link>
+                </div>
+                
+                <div className="border-t pt-4 space-y-2">
+                  <Link to="/auth" className="block p-2 rounded-lg hover:bg-accent/50 transition-colors text-muted-foreground">
+                    Sign In
+                  </Link>
+                  <Button asChild className="w-full">
+                    <Link to="/auth">Sign Up</Link>
+                  </Button>
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+
+          {/* Auth Buttons - Desktop */}
+          <div className="hidden lg:flex items-center space-x-4">
             <Link
               to="/auth"
-              className="text-muted-foreground hover:text-foreground transition-colors hidden sm:inline-block"
+              className="text-muted-foreground hover:text-foreground transition-colors"
             >
               Sign In
             </Link>
