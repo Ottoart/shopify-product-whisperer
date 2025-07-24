@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/navigation-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { cn } from "@/lib/utils";
 import {
   Truck,
   Package,
@@ -334,11 +335,11 @@ export default function MainLayout({ children }: MainLayoutProps) {
           {/* Mobile Menu */}
           <Sheet>
             <SheetTrigger asChild className="lg:hidden">
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" className="relative z-10 border-2 border-primary/20">
                 <Menu className="h-6 w-6" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[300px]">
+            <SheetContent side="right" className="w-[300px] z-[100]">
               <div className="flex flex-col space-y-4 mt-6">
                 <Accordion type="single" collapsible className="w-full">
                   <AccordionItem value="shipping">
