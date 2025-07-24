@@ -214,9 +214,17 @@ export const ProductList = ({
               variant="outline" 
               className="cursor-pointer hover:bg-primary/10"
               onClick={() => {
-                // Filter products with low inventory
-                const lowInventoryProducts = products.filter(p => (p.variantInventoryQty || 0) < 10);
-                console.log('Low inventory filter applied');
+                // Show only products with low inventory (less than 10)
+                const currentProducts = products.filter(p => (p.variantInventoryQty || 0) < 10);
+                // Filter by setting search term that matches these products
+                if (currentProducts.length > 0) {
+                  setSearchTerm(''); // Clear search first
+                  // Find common tags or characteristics to filter by
+                  const lowStockTags = ['low-stock', 'reorder', 'out-of-stock'];
+                  setSelectedTags(new Set(lowStockTags.filter(tag => 
+                    currentProducts.some(p => p.tags?.includes(tag))
+                  )));
+                }
               }}
             >
               Low Stock
@@ -225,9 +233,19 @@ export const ProductList = ({
               variant="outline" 
               className="cursor-pointer hover:bg-primary/10"
               onClick={() => {
-                // Filter high-value products
-                const highValueProducts = products.filter(p => (p.variantPrice || 0) > 100);
-                console.log('High value filter applied');
+                // Clear other filters and show only high-value products
+                setSearchTerm('');
+                setSelectedTypes(new Set());
+                setSelectedVendors(new Set());
+                setSelectedCategories(new Set());
+                setSelectedTags(new Set());
+                // Set a minimum price filter - this would need additional state management
+                // For now, we'll use a workaround by filtering expensive types/categories
+                const expensiveTypes = products
+                  .filter(p => (p.variantPrice || 0) > 100)
+                  .map(p => p.type)
+                  .filter(Boolean);
+                setSelectedTypes(new Set(expensiveTypes.slice(0, 5))); // Limit to top 5
               }}
             >
               High Value

@@ -35,6 +35,8 @@ import { ConnectStoreButton } from "@/components/ConnectStoreButton";
 import { ProductComparison } from "@/components/ProductComparison";
 import { ProductList } from "@/components/ProductList";
 import { SyncProgressDialog } from "@/components/SyncProgressDialog";
+import { StoreSync } from "@/components/StoreSync";
+import { useStores } from "@/contexts/StoreContext";
 
 interface Product {
   id: string;
@@ -103,11 +105,10 @@ interface StoreConfig {
 export default function Products() {
   const session = useSession();
   const { toast } = useToast();
+  const { stores } = useStores();
   const [products, setProducts] = useState<Product[]>([]);
-  const [stores, setStores] = useState<StoreConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
-  const [syncLoading, setSyncLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStore, setSelectedStore] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
@@ -115,11 +116,10 @@ export default function Products() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [optimizedData, setOptimizedData] = useState<any>(null);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
-  const [showSyncProgress, setShowSyncProgress] = useState(false);
 
   useEffect(() => {
     if (session?.user) {
-      Promise.all([fetchStores(), fetchProducts()]).finally(() => {
+      fetchProducts().finally(() => {
         setInitialLoad(false);
       });
     } else if (session === null) {
@@ -127,21 +127,6 @@ export default function Products() {
       setInitialLoad(false);
     }
   }, [session]);
-
-  const fetchStores = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('store_configurations')
-        .select('*')
-        .eq('user_id', session?.user?.id)
-        .eq('is_active', true);
-
-      if (error) throw error;
-      setStores(data || []);
-    } catch (error) {
-      console.error('Error fetching stores:', error);
-    }
-  };
 
   const fetchProducts = async () => {
     try {
@@ -166,93 +151,6 @@ export default function Products() {
     }
   };
 
-  const syncProducts = async (storeId?: string) => {
-    if (storeId) {
-      // Single store sync - use direct method
-      await syncSingleStore(storeId);
-    } else {
-      // Multi-store sync - show progress dialog
-      setShowSyncProgress(true);
-    }
-  };
-
-  const syncSingleStore = async (storeId: string) => {
-    try {
-      setSyncLoading(true);
-      const store = stores.find(s => s.id === storeId);
-      if (store && store.platform === 'shopify') {
-        // Parse access token if it's JSON and clean it robustly
-        let accessToken = store.access_token;
-        try {
-          const parsed = JSON.parse(accessToken);
-          accessToken = (parsed.access_token || parsed.accessToken || accessToken);
-        } catch {
-          // If parsing fails, use as-is
-        }
-        
-        // Clean token more thoroughly
-        accessToken = accessToken.toString().trim()
-          .replace(/[\s\n\r\t\u2028\u2029]/g, '') // Remove all whitespace including line separators
-          .split(/\s+/)[0] // Take first part
-          .replace(/[^\w-]/g, ''); // Keep only alphanumeric, underscore, and hyphen
-
-        const { error } = await supabase.functions.invoke('sync-shopify-products', {
-          body: { 
-            storeUrl: store.domain,
-            accessToken: accessToken 
-          }
-        });
-        if (error) throw error;
-        
-        toast({
-          title: "Sync completed",
-          description: `Products synced from ${store.store_name}`,
-        });
-      }
-    } catch (error) {
-      console.error('Error syncing store:', error);
-      toast({
-        title: "Sync failed",
-        description: "Failed to sync products from store",
-        variant: "destructive",
-      });
-    } finally {
-      setSyncLoading(false);
-      fetchProducts();
-    }
-  };
-
-  const syncAllStores = async () => {
-    // This function is called from the progress dialog
-    const shopifyStores = stores.filter(s => s.platform === 'shopify');
-    
-    for (const store of shopifyStores) {
-      // Parse access token if it's JSON and clean it robustly
-      let accessToken = store.access_token;
-      try {
-        const parsed = JSON.parse(accessToken);
-        accessToken = (parsed.access_token || parsed.accessToken || accessToken);
-      } catch {
-        // If parsing fails, use as-is
-      }
-      
-      // Clean token more thoroughly
-      accessToken = accessToken.toString().trim()
-        .replace(/[\s\n\r\t\u2028\u2029]/g, '') // Remove all whitespace including line separators
-        .split(/\s+/)[0] // Take first part
-        .replace(/[^\w-]/g, ''); // Keep only alphanumeric, underscore, and hyphen
-
-      const { error } = await supabase.functions.invoke('sync-shopify-products', {
-        body: { 
-          storeUrl: store.domain,
-          accessToken: accessToken 
-        }
-      });
-      if (error) {
-        throw new Error(`Failed to sync ${store.store_name}: ${error.message}`);
-      }
-    }
-  };
 
   const optimizeWithAI = async (productId: string) => {
     try {
@@ -385,17 +283,9 @@ export default function Products() {
         
         <div className="flex gap-2">
           {stores.length > 0 && (
-            <Button 
-              onClick={() => syncProducts()} 
-              disabled={syncLoading}
-              variant="outline"
-            >
-              <Sync className={`w-4 h-4 mr-2 ${syncLoading ? 'animate-spin' : ''}`} />
-              Sync All Stores
-            </Button>
+            <StoreSync onSyncComplete={fetchProducts} />
           )}
           <ConnectStoreButton 
-            onStoreConnected={fetchStores}
             variant="default"
           />
         </div>
@@ -424,13 +314,7 @@ export default function Products() {
                 <Plus className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
                 <h3 className="text-xl font-semibold mb-2">No products yet</h3>
                 <p className="text-muted-foreground mb-4">Sync your store to import products</p>
-                <Button 
-                  onClick={() => syncProducts()}
-                  disabled={syncLoading}
-                >
-                  <Sync className={`w-4 h-4 mr-2 ${syncLoading ? 'animate-spin' : ''}`} />
-                  Sync Products
-                </Button>
+                <StoreSync onSyncComplete={fetchProducts} />
               </CardContent>
             </Card>
           ) : (
@@ -535,17 +419,6 @@ export default function Products() {
         />
       )}
 
-      {/* Sync Progress Dialog */}
-      <SyncProgressDialog
-        isOpen={showSyncProgress}
-        onClose={() => setShowSyncProgress(false)}
-        onSyncComplete={() => {
-          setShowSyncProgress(false);
-          fetchProducts();
-        }}
-        syncFunction={syncAllStores}
-        stores={stores.map(s => ({ store_name: s.store_name, id: s.id }))}
-      />
     </div>
   );
 }
