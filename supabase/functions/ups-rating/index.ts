@@ -199,7 +199,7 @@ async function processUPSRating(requestData: RatingRequest, credentials: any, ac
     const upsRequest = {
       RateRequest: {
         Request: {
-          RequestOption: "Shop",  // "Shop" returns all available services, "Rate" returns specific service
+          RequestOption: "Rate",  // "Rate" returns all available services for route
           TransactionReference: {
             CustomerContext: "Rating and Service Selection"
           }

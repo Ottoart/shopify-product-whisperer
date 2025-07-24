@@ -77,17 +77,27 @@ export class UPSCarrier implements CarrierInterface {
       throw new Error('UPS account postal code and country code are required for rating');
     }
 
+    // Check if services are available for this route
+    const availableServices = this.getAvailableServicesForRoute(
+      shipmentDetails.from.country,
+      shipmentDetails.to.country
+    );
+
+    if (availableServices.length === 0) {
+      throw new Error(`No UPS services available for shipping from ${shipmentDetails.from.country} to ${shipmentDetails.to.country}`);
+    }
+
     const ratingRequest = {
       RateRequest: {
         Request: {
-          RequestOption: 'Shop',
+          RequestOption: 'Rate',
           TransactionReference: {
-            CustomerContext: `Rating_${Date.now()}`
+            CustomerContext: 'Rating and Service Selection'
           }
         },
         Shipment: {
           Shipper: {
-            Name: shipmentDetails.from.name,
+            Name: shipmentDetails.from.name || 'Shipper',
             ShipperNumber: this.credentials.account_number,
             Address: {
               AddressLine: [shipmentDetails.from.address],
@@ -98,7 +108,7 @@ export class UPSCarrier implements CarrierInterface {
             }
           },
           ShipTo: {
-            Name: shipmentDetails.to.name,
+            Name: shipmentDetails.to.name || 'Consignee',
             Address: {
               AddressLine: [shipmentDetails.to.address],
               City: shipmentDetails.to.city,
@@ -108,7 +118,7 @@ export class UPSCarrier implements CarrierInterface {
             }
           },
           ShipFrom: {
-            Name: shipmentDetails.from.name,
+            Name: 'Ship From Location',
             Address: {
               AddressLine: [shipmentDetails.from.address],
               City: shipmentDetails.from.city,
@@ -150,48 +160,74 @@ export class UPSCarrier implements CarrierInterface {
       };
     }
 
-    const response = await fetch(`${this.baseUrl}/api/rating/v1/Shop`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.accessToken}`,
-        'Content-Type': 'application/json',
-        'transId': `Rating_${Date.now()}`,
-        'transactionSrc': 'PrepFox'
-      },
-      body: JSON.stringify(ratingRequest)
-    });
+    try {
+      const response = await fetch(`${this.baseUrl}/api/rating/v1/rate`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json',
+          'transId': `PrepFox-Rating-${Date.now()}`,
+          'transactionSrc': 'PrepFox'
+        },
+        body: JSON.stringify(ratingRequest)
+      });
 
-    if (!response.ok) {
-      const error = await response.text();
+      const responseText = await response.text();
+      
+      if (!response.ok) {
+        // Try to parse error response
+        try {
+          const errorData = JSON.parse(responseText);
+          if (errorData.response?.errors) {
+            const errors = errorData.response.errors.map((err: any) => `${err.code}: ${err.message}`).join(', ');
+            throw new Error(`UPS API Error: ${errors}`);
+          }
+        } catch (parseError) {
+          // If parsing fails, use the raw response
+          throw new Error(`UPS rating failed (${response.status}): ${responseText}`);
+        }
+      }
+
+      const data = JSON.parse(responseText);
+      const rates: RateResponse[] = [];
+
+      if (data.RateResponse && data.RateResponse.RatedShipment) {
+        const ratedShipments = Array.isArray(data.RateResponse.RatedShipment) 
+          ? data.RateResponse.RatedShipment 
+          : [data.RateResponse.RatedShipment];
+
+        for (const shipment of ratedShipments) {
+          const serviceCode = shipment.Service.Code;
+          
+          // Only include services that are valid for this route
+          if (!availableServices.find(s => s.code === serviceCode)) {
+            continue;
+          }
+
+          const rate = this.credentials.enable_negotiated_rates && shipment.NegotiatedRateCharges
+            ? parseFloat(shipment.NegotiatedRateCharges.TotalCharge.MonetaryValue)
+            : parseFloat(shipment.TotalCharges.MonetaryValue);
+
+          rates.push({
+            id: `ups_${serviceCode}`,
+            service_code: serviceCode,
+            service_name: this.getServiceName(serviceCode),
+            carrier: 'UPS',
+            rate: rate,
+            currency: shipment.TotalCharges.CurrencyCode,
+            estimated_days: this.getEstimatedDays(serviceCode),
+            zone: shipment.RatingMethod
+          });
+        }
+      }
+
+      return rates;
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
       throw new Error(`UPS rating failed: ${error}`);
     }
-
-    const data = await response.json();
-    const rates: RateResponse[] = [];
-
-    if (data.RateResponse && data.RateResponse.RatedShipment) {
-      const ratedShipments = Array.isArray(data.RateResponse.RatedShipment) 
-        ? data.RateResponse.RatedShipment 
-        : [data.RateResponse.RatedShipment];
-
-      for (const shipment of ratedShipments) {
-        const rate = this.credentials.enable_negotiated_rates && shipment.NegotiatedRateCharges
-          ? parseFloat(shipment.NegotiatedRateCharges.TotalCharge.MonetaryValue)
-          : parseFloat(shipment.TotalCharges.MonetaryValue);
-
-        rates.push({
-          id: `ups_${shipment.Service.Code}`,
-          service_code: shipment.Service.Code,
-          service_name: this.getServiceName(shipment.Service.Code),
-          carrier: 'UPS',
-          rate: rate,
-          currency: shipment.TotalCharges.CurrencyCode,
-          estimated_days: shipment.GuaranteedDelivery?.BusinessDaysInTransit
-        });
-      }
-    }
-
-    return rates;
   }
 
   async createShipment(shipmentDetails: ShipmentDetails, serviceCode: string): Promise<ShipmentResponse> {
@@ -350,27 +386,123 @@ export class UPSCarrier implements CarrierInterface {
   }
 
   async getServices(): Promise<{ code: string; name: string; description?: string }[]> {
+    // Return all possible UPS services - filtering happens at runtime based on origin/destination
     return [
-      { code: '03', name: 'UPS Ground', description: 'Ground delivery' },
-      { code: '12', name: 'UPS 3 Day Select', description: '3 business days' },
-      { code: '02', name: 'UPS 2nd Day Air', description: '2 business days' },
-      { code: '59', name: 'UPS 2nd Day Air A.M.', description: '2 business days AM' },
-      { code: '01', name: 'UPS Next Day Air', description: 'Next business day' },
-      { code: '13', name: 'UPS Next Day Air Saver', description: 'Next business day afternoon' },
-      { code: '14', name: 'UPS Next Day Air Early', description: 'Next business day morning' }
+      // Domestic US Services
+      { code: '03', name: 'UPS Ground', description: 'Ground delivery (US domestic)' },
+      { code: '12', name: 'UPS 3 Day Select', description: '3 business days (US domestic)' },
+      { code: '02', name: 'UPS 2nd Day Air', description: '2 business days (US domestic)' },
+      { code: '59', name: 'UPS 2nd Day Air A.M.', description: '2 business days AM (US domestic)' },
+      { code: '01', name: 'UPS Next Day Air', description: 'Next business day (US domestic)' },
+      { code: '13', name: 'UPS Next Day Air Saver', description: 'Next business day afternoon (US domestic)' },
+      { code: '14', name: 'UPS Next Day Air Early', description: 'Next business day morning (US domestic)' },
+      
+      // International Services
+      { code: '07', name: 'UPS Worldwide Express', description: 'Express international delivery' },
+      { code: '08', name: 'UPS Worldwide Expedited', description: 'Expedited international delivery' },
+      { code: '11', name: 'UPS Standard', description: 'Standard international delivery' },
+      { code: '54', name: 'UPS Worldwide Express Plus', description: 'Express Plus international delivery' },
+      { code: '65', name: 'UPS Saver', description: 'Saver international delivery' },
+      
+      // Canada Services
+      { code: '70', name: 'UPS Access Point Economy', description: 'Economy delivery to access point' }
     ];
+  }
+
+  /**
+   * Get available services based on origin and destination countries
+   */
+  private getAvailableServicesForRoute(fromCountry: string, toCountry: string): { code: string; name: string }[] {
+    const isInternational = fromCountry !== toCountry;
+    const isDomesticUS = fromCountry === 'US' && toCountry === 'US';
+    const isDomesticCA = fromCountry === 'CA' && toCountry === 'CA';
+    const isCanadaToUS = fromCountry === 'CA' && toCountry === 'US';
+    const isUSToCanada = fromCountry === 'US' && toCountry === 'CA';
+
+    if (isDomesticUS) {
+      return [
+        { code: '03', name: 'UPS Ground' },
+        { code: '12', name: 'UPS 3 Day Select' },
+        { code: '02', name: 'UPS 2nd Day Air' },
+        { code: '59', name: 'UPS 2nd Day Air A.M.' },
+        { code: '01', name: 'UPS Next Day Air' },
+        { code: '13', name: 'UPS Next Day Air Saver' },
+        { code: '14', name: 'UPS Next Day Air Early' }
+      ];
+    }
+
+    if (isDomesticCA) {
+      return [
+        { code: '11', name: 'UPS Standard' },
+        { code: '07', name: 'UPS Worldwide Express' },
+        { code: '54', name: 'UPS Worldwide Express Plus' }
+      ];
+    }
+
+    if (isCanadaToUS || isUSToCanada) {
+      return [
+        { code: '07', name: 'UPS Worldwide Express' },
+        { code: '08', name: 'UPS Worldwide Expedited' },
+        { code: '11', name: 'UPS Standard' },
+        { code: '54', name: 'UPS Worldwide Express Plus' },
+        { code: '65', name: 'UPS Saver' }
+      ];
+    }
+
+    if (isInternational) {
+      return [
+        { code: '07', name: 'UPS Worldwide Express' },
+        { code: '08', name: 'UPS Worldwide Expedited' },
+        { code: '11', name: 'UPS Standard' },
+        { code: '54', name: 'UPS Worldwide Express Plus' },
+        { code: '65', name: 'UPS Saver' }
+      ];
+    }
+
+    return [];
   }
 
   private getServiceName(serviceCode: string): string {
     const services: Record<string, string> = {
+      // Domestic US Services
       '01': 'UPS Next Day Air',
-      '02': 'UPS 2nd Day Air',
+      '02': 'UPS 2nd Day Air', 
       '03': 'UPS Ground',
       '12': 'UPS 3 Day Select',
       '13': 'UPS Next Day Air Saver',
       '14': 'UPS Next Day Air Early',
-      '59': 'UPS 2nd Day Air A.M.'
+      '59': 'UPS 2nd Day Air A.M.',
+      
+      // International Services
+      '07': 'UPS Worldwide Express',
+      '08': 'UPS Worldwide Expedited',
+      '11': 'UPS Standard',
+      '54': 'UPS Worldwide Express Plus',
+      '65': 'UPS Saver',
+      '70': 'UPS Access Point Economy'
     };
     return services[serviceCode] || `UPS Service ${serviceCode}`;
+  }
+
+  private getEstimatedDays(serviceCode: string): string {
+    const estimatedDays: Record<string, string> = {
+      // Domestic US Services
+      '01': '1',
+      '02': '2',
+      '03': '3-5',
+      '12': '3',
+      '13': '1',
+      '14': '1',
+      '59': '2',
+      
+      // International Services
+      '07': '1-3',
+      '08': '2-5',
+      '11': '6-10',
+      '54': '1-3',
+      '65': '1-3',
+      '70': '2-8'
+    };
+    return estimatedDays[serviceCode] || '1-5';
   }
 }
