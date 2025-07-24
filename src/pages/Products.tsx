@@ -132,14 +132,37 @@ export default function Products() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('user_id', session?.user?.id)
-        .order('updated_at', { ascending: false });
-
-      if (error) throw error;
-      setProducts(data || []);
+      console.log('Fetching ALL products for user:', session?.user?.id);
+      
+      let allProducts: any[] = [];
+      let hasMore = true;
+      let page = 0;
+      const pageSize = 1000; // Increased page size
+      
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .eq('user_id', session?.user?.id)
+          .order('updated_at', { ascending: false })
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+        
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          allProducts = [...allProducts, ...data];
+          console.log(`Fetched page ${page + 1}: ${data.length} products. Total so far: ${allProducts.length}`);
+          
+          // If we got less than pageSize, we've reached the end
+          hasMore = data.length === pageSize;
+          page++;
+        } else {
+          hasMore = false;
+        }
+      }
+      
+      console.log('Total products fetched:', allProducts.length);
+      setProducts(allProducts || []);
     } catch (error) {
       console.error('Error fetching products:', error);
       toast({
@@ -279,6 +302,11 @@ export default function Products() {
           <h1 className="text-3xl font-bold">Products</h1>
           <p className="text-muted-foreground">
             Manage and optimize your product listings across all stores
+            {products.length > 0 && (
+              <span className="block mt-1 text-sm font-medium">
+                Showing {filteredProducts.length} of {products.length} products
+              </span>
+            )}
           </p>
         </div>
         

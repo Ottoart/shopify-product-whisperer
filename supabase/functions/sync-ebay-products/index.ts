@@ -30,9 +30,9 @@ serve(async (req) => {
       throw new Error('Authentication failed');
     }
 
-    // Get the user's eBay marketplace configuration
+    // Get the user's eBay store configuration
     const { data: ebayConfig, error: configError } = await supabase
-      .from('marketplace_configurations')
+      .from('store_configurations')
       .select('*')
       .eq('user_id', user.id)
       .eq('platform', 'ebay')
@@ -40,7 +40,7 @@ serve(async (req) => {
       .single();
 
     if (configError || !ebayConfig) {
-      throw new Error('eBay marketplace configuration not found. Please connect your eBay account first.');
+      throw new Error('eBay store configuration not found. Please connect your eBay account first.');
     }
 
     if (!ebayConfig.access_token) {
@@ -112,11 +112,26 @@ serve(async (req) => {
             // If Inventory API fails with other errors, try the Browse API as fallback
             console.log('Inventory API failed, trying Browse API for seller items...');
             
-            if (!ebayConfig.external_user_id) {
+            // For store_configurations, we might not have external_user_id
+            // Extract from access_token or use store name as fallback
+            let ebayUserId = ebayConfig.external_user_id || ebayConfig.store_name;
+            if (!ebayUserId) {
+              // Try to extract from access token metadata if it's a JSON object
+              try {
+                if (typeof ebayConfig.access_token === 'string' && ebayConfig.access_token.startsWith('{')) {
+                  const tokenData = JSON.parse(ebayConfig.access_token);
+                  ebayUserId = tokenData.external_user_id || tokenData.user_id;
+                }
+              } catch (e) {
+                console.log('Could not parse access token for user ID');
+              }
+            }
+            
+            if (!ebayUserId) {
               throw new Error('No eBay user ID found. Cannot use Browse API fallback.');
             }
             
-            const browseApiUrl = `https://api.ebay.com/buy/browse/v1/item_summary/search?filter=seller:${ebayConfig.external_user_id}&limit=${limit}&offset=${offset}`;
+            const browseApiUrl = `https://api.ebay.com/buy/browse/v1/item_summary/search?filter=seller:${ebayUserId}&limit=${limit}&offset=${offset}`;
             
             const browseController = new AbortController();
             const browseTimeoutId = setTimeout(() => browseController.abort(), timeout);
