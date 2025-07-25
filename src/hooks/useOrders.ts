@@ -132,6 +132,24 @@ export const useOrders = () => {
         }, {} as Record<string, string>);
       }
 
+      // For eBay products, also try to match by handle as variant_sku
+      if (productHandles.length > 0) {
+        const { data: handleAsSkuData } = await supabase
+          .from('products')
+          .select('variant_sku, image_src')
+          .in('variant_sku', productHandles);
+        
+        const handleSkuImages = (handleAsSkuData || []).reduce((acc, product) => {
+          if (product.variant_sku && product.image_src) {
+            acc[product.variant_sku] = product.image_src;
+          }
+          return acc;
+        }, {} as Record<string, string>);
+        
+        // Merge with existing skuImages
+        skuImages = { ...skuImages, ...handleSkuImages };
+      }
+
       const formattedOrders: Order[] = (ordersData || []).map(order => ({
         id: order.id,
         orderNumber: order.order_number,
@@ -174,12 +192,20 @@ export const useOrders = () => {
         shippedDate: order.shipped_date,
         deliveredDate: order.delivered_date,
         items: order.order_items.map((item: any) => {
-          // Try to get image from handle first, then try SKU as handle
+          // Try multiple approaches to get the image
           let imageSrc = undefined;
+          
+          // 1. Try handle lookup
           if (item.product_handle && productImages[item.product_handle]) {
             imageSrc = productImages[item.product_handle];
-          } else if (item.sku && skuImages[item.sku]) {
+          }
+          // 2. Try SKU lookup  
+          else if (item.sku && skuImages[item.sku]) {
             imageSrc = skuImages[item.sku];
+          }
+          // 3. Try handle as SKU lookup (for eBay products)
+          else if (item.product_handle && skuImages[item.product_handle]) {
+            imageSrc = skuImages[item.product_handle];
           }
           
           return {
