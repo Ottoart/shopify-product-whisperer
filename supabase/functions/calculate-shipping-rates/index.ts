@@ -470,7 +470,7 @@ async function getCanadaPostRates(carrier: any, shipFrom: any, shipTo: any, pack
 
     if (error) {
       console.error('❌ Canada Post API error:', error);
-      return getFallbackCanadaPostRates(shipTo.country);
+      return getFallbackCanadaPostRates(shipTo.country, packageDetails.weight);
     }
 
     const canadaPostRates = data || [];
@@ -504,38 +504,42 @@ async function getCanadaPostRates(carrier: any, shipFrom: any, shipTo: any, pack
     
   } catch (error) {
     console.error('❌ Canada Post rating error:', error);
-    return getFallbackCanadaPostRates(shipTo.country);
+    return getFallbackCanadaPostRates(shipTo.country, packageDetails.weight);
   }
 }
 
-function getFallbackCanadaPostRates(destinationCountry?: string): ShippingRate[] {
-  console.log('🔄 Using fallback Canada Post rates for destination:', destinationCountry);
+function getFallbackCanadaPostRates(destinationCountry?: string, weight?: number): ShippingRate[] {
+  console.log(`🔄 Using fallback Canada Post rates for destination: ${destinationCountry}, weight: ${weight} lbs`);
+  
+  // Calculate rate multiplier based on weight (in lbs)
+  const weightMultiplier = weight ? Math.max(1, weight * 0.3 + 0.7) : 1;
+  console.log(`📊 Weight multiplier: ${weightMultiplier.toFixed(2)}`);
   
   // Return different fallback rates based on destination
   if (destinationCountry === 'US') {
     return [
       {
         carrier: 'Canada Post',
-        service_code: 'USA.TP',
-        service_name: 'Tracked Packet - USA',
+        service_code: 'USA.SP.AIR',
+        service_name: 'Small Packet - USA Air',
         service_type: 'standard',
-        cost: 12.99,
+        cost: Math.round((8.99 * weightMultiplier) * 100) / 100,
         currency: 'CAD',
-        estimated_days: '7-10 business days',
+        estimated_days: '7-14 business days',
         supports_tracking: true,
-        supports_insurance: false,
+        supports_insurance: true,
         supports_signature: false
       },
       {
         carrier: 'Canada Post',
-        service_code: 'USA.SP.AIR',
-        service_name: 'Small Packet - USA Air',
-        service_type: 'economy',
-        cost: 8.99,
+        service_code: 'USA.TP',
+        service_name: 'Tracked Packet - USA',
+        service_type: 'standard',
+        cost: Math.round((12.99 * weightMultiplier) * 100) / 100,
         currency: 'CAD',
-        estimated_days: '7-14 business days',
-        supports_tracking: false,
-        supports_insurance: false,
+        estimated_days: '7-10 business days',
+        supports_tracking: true,
+        supports_insurance: true,
         supports_signature: false
       },
       {
@@ -543,7 +547,7 @@ function getFallbackCanadaPostRates(destinationCountry?: string): ShippingRate[]
         service_code: 'USA.EP',
         service_name: 'Expedited Parcel - USA',
         service_type: 'expedited',
-        cost: 24.99,
+        cost: Math.round((24.99 * weightMultiplier) * 100) / 100,
         currency: 'CAD',
         estimated_days: '4-7 business days',
         supports_tracking: true,
@@ -555,7 +559,7 @@ function getFallbackCanadaPostRates(destinationCountry?: string): ShippingRate[]
         service_code: 'USA.XP',
         service_name: 'Xpresspost - USA',
         service_type: 'expedited',
-        cost: 32.99,
+        cost: Math.round((32.99 * weightMultiplier) * 100) / 100,
         currency: 'CAD',
         estimated_days: '2-3 business days',
         supports_tracking: true,
@@ -565,15 +569,17 @@ function getFallbackCanadaPostRates(destinationCountry?: string): ShippingRate[]
     ];
   }
 
-  // Default domestic rates
+  // Default domestic rates with weight-based pricing
   const baseRate = 12.50;
+  const adjustedBaseRate = Math.round((baseRate * weightMultiplier) * 100) / 100;
+  
   return [
     {
       carrier: 'Canada Post',
-      service_code: 'REG',
+      service_code: 'DOM.RP',
       service_name: 'Regular Parcel',
       service_type: 'standard',
-      cost: baseRate,
+      cost: adjustedBaseRate,
       currency: 'CAD',
       estimated_days: '5-7 business days',
       supports_tracking: true,
@@ -582,10 +588,10 @@ function getFallbackCanadaPostRates(destinationCountry?: string): ShippingRate[]
     },
     {
       carrier: 'Canada Post',
-      service_code: 'EXP',
+      service_code: 'DOM.EP',
       service_name: 'Expedited Parcel',
       service_type: 'expedited',
-      cost: Math.round((baseRate * 1.6) * 100) / 100,
+      cost: Math.round((adjustedBaseRate * 1.6) * 100) / 100,
       currency: 'CAD',
       estimated_days: '2-3 business days',
       supports_tracking: true,
@@ -594,10 +600,10 @@ function getFallbackCanadaPostRates(destinationCountry?: string): ShippingRate[]
     },
     {
       carrier: 'Canada Post',
-      service_code: 'PC',
+      service_code: 'DOM.PC',
       service_name: 'Priority Courier',
       service_type: 'overnight',
-      cost: Math.round((baseRate * 2.5) * 100) / 100,
+      cost: Math.round((adjustedBaseRate * 2.5) * 100) / 100,
       currency: 'CAD',
       estimated_days: '1 business day',
       supports_tracking: true,

@@ -147,7 +147,8 @@ Deno.serve(async (req) => {
 
     if (!apiKey || !apiSecret) {
       console.log('⚠️ No Canada Post credentials available, returning fallback rates');
-      return new Response(JSON.stringify(getFallbackRates(shipTo.country)), {
+      const weightInKg = pkg.weight_unit === 'LBS' ? pkg.weight * 0.453592 : pkg.weight;
+      return new Response(JSON.stringify(getFallbackRates(shipTo.country, weightInKg)), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       });
@@ -236,7 +237,8 @@ Deno.serve(async (req) => {
       
       // Return fallback rates on API error
       console.log('🔄 Returning fallback rates due to API error');
-      return new Response(JSON.stringify(getFallbackRates(shipTo.country)), {
+      const weightInKg = pkg.weight_unit === 'LBS' ? pkg.weight * 0.453592 : pkg.weight;
+      return new Response(JSON.stringify(getFallbackRates(shipTo.country, weightInKg)), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       });
@@ -246,7 +248,7 @@ Deno.serve(async (req) => {
     console.error('💥 Error in Canada Post rating:', error);
     
     // Return fallback rates on any error
-    return new Response(JSON.stringify(getFallbackRates('US')), {
+    return new Response(JSON.stringify(getFallbackRates('US', 1)), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
@@ -393,34 +395,37 @@ function parseCanadaPostXMLResponse(xml: string): CanadaPostRate[] {
     }
   }
   
-  return rates.length > 0 ? rates : getFallbackRates('US');
+  return rates.length > 0 ? rates : getFallbackRates('US', 1);
 }
 
-function getFallbackRates(destinationCountry?: string): CanadaPostRate[] {
+function getFallbackRates(destinationCountry?: string, weight?: number): CanadaPostRate[] {
+  // Calculate rate multiplier based on weight (in kg)
+  const weightMultiplier = weight ? Math.max(1, weight * 0.5 + 0.5) : 1;
+  
   // Return different fallback rates based on destination
   if (destinationCountry === 'US') {
     return [
       {
         carrier: 'Canada Post',
-        service: 'Tracked Packet - USA',
-        serviceCode: 'USA.TP',
-        cost: 12.99,
-        deliveryDays: '7-10 business days',
+        service: 'Small Packet - USA Air',
+        serviceCode: 'USA.SP.AIR',
+        cost: Math.round((8.99 * weightMultiplier) * 100) / 100,
+        deliveryDays: '7-14 business days',
         currency: 'CAD'
       },
       {
         carrier: 'Canada Post',
-        service: 'Small Packet - USA Air',
-        serviceCode: 'USA.SP.AIR',
-        cost: 8.99,
-        deliveryDays: '7-14 business days',
+        service: 'Tracked Packet - USA',
+        serviceCode: 'USA.TP',
+        cost: Math.round((12.99 * weightMultiplier) * 100) / 100,
+        deliveryDays: '7-10 business days',
         currency: 'CAD'
       },
       {
         carrier: 'Canada Post',
         service: 'Expedited Parcel - USA',
         serviceCode: 'USA.EP',
-        cost: 24.99,
+        cost: Math.round((24.99 * weightMultiplier) * 100) / 100,
         deliveryDays: '4-7 business days',
         currency: 'CAD'
       },
@@ -428,7 +433,7 @@ function getFallbackRates(destinationCountry?: string): CanadaPostRate[] {
         carrier: 'Canada Post',
         service: 'Xpresspost - USA',
         serviceCode: 'USA.XP',
-        cost: 32.99,
+        cost: Math.round((32.99 * weightMultiplier) * 100) / 100,
         deliveryDays: '2-3 business days',
         currency: 'CAD'
       }
@@ -441,7 +446,7 @@ function getFallbackRates(destinationCountry?: string): CanadaPostRate[] {
       carrier: 'Canada Post',
       service: 'Regular Parcel',
       serviceCode: 'DOM.RP',
-      cost: 15.99,
+      cost: Math.round((15.99 * weightMultiplier) * 100) / 100,
       deliveryDays: '5-7 business days',
       currency: 'CAD'
     },
@@ -449,7 +454,7 @@ function getFallbackRates(destinationCountry?: string): CanadaPostRate[] {
       carrier: 'Canada Post',
       service: 'Expedited Parcel',
       serviceCode: 'DOM.EP',
-      cost: 22.99,
+      cost: Math.round((22.99 * weightMultiplier) * 100) / 100,
       deliveryDays: '2-3 business days',
       currency: 'CAD'
     },
@@ -457,7 +462,7 @@ function getFallbackRates(destinationCountry?: string): CanadaPostRate[] {
       carrier: 'Canada Post',
       service: 'Priority Courier',
       serviceCode: 'DOM.PC',
-      cost: 35.99,
+      cost: Math.round((35.99 * weightMultiplier) * 100) / 100,
       deliveryDays: '1 business day',
       currency: 'CAD'
     }
