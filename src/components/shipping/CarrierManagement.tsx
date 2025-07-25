@@ -149,9 +149,8 @@ export function CarrierManagement() {
           adminControlled: false
         })) || [];
 
-        // Filter out UPS from user carriers since it goes in PrepFox tab
-        const nonUpsCarriers = formattedCarriers.filter(carrier => carrier.name.toLowerCase() !== 'ups');
-        setConnectedUserCarriers(nonUpsCarriers);
+        // Show all carriers for all users
+        setConnectedUserCarriers(formattedCarriers);
       } catch (error) {
         console.error('Error fetching carriers:', error);
       } finally {

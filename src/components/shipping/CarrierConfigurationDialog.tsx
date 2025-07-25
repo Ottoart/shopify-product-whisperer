@@ -88,6 +88,7 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
   const [testingCarrier, setTestingCarrier] = useState<string | null>(null);
   const [showCredentials, setShowCredentials] = useState<Record<string, boolean>>({});
   const [expandedCarrier, setExpandedCarrier] = useState<string | null>(null);
+  const [dialogLoading, setDialogLoading] = useState(false);
   
   const { 
     carriers, 
@@ -295,9 +296,17 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
     resetCarrierConfig();
   };
 
+  const handleDialogOpenChange = (open: boolean) => {
+    if (!open && !isSubmitting) {
+      onClose();
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+    <Dialog open={isOpen} onOpenChange={handleDialogOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto"
+        onPointerDownOutside={(e) => isSubmitting && e.preventDefault()}
+        onEscapeKeyDown={(e) => isSubmitting && e.preventDefault()}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Truck className="h-5 w-5" />
