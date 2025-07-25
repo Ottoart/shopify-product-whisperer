@@ -2606,6 +2606,66 @@ export type Database = {
         }
         Relationships: []
       }
+      shipment_labels: {
+        Row: {
+          carrier: string
+          cost: number | null
+          created_at: string
+          currency: string | null
+          id: string
+          label_data: string | null
+          label_format: string | null
+          label_url: string | null
+          metadata: Json | null
+          order_id: string | null
+          service_code: string
+          service_name: string
+          shipment_id: string | null
+          status: string | null
+          tracking_number: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          carrier: string
+          cost?: number | null
+          created_at?: string
+          currency?: string | null
+          id?: string
+          label_data?: string | null
+          label_format?: string | null
+          label_url?: string | null
+          metadata?: Json | null
+          order_id?: string | null
+          service_code: string
+          service_name: string
+          shipment_id?: string | null
+          status?: string | null
+          tracking_number: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          carrier?: string
+          cost?: number | null
+          created_at?: string
+          currency?: string | null
+          id?: string
+          label_data?: string | null
+          label_format?: string | null
+          label_url?: string | null
+          metadata?: Json | null
+          order_id?: string | null
+          service_code?: string
+          service_name?: string
+          shipment_id?: string | null
+          status?: string | null
+          tracking_number?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       shipping_analytics: {
         Row: {
           avg_pack_time_minutes: number | null

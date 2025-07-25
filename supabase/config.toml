@@ -117,3 +117,60 @@ verify_jwt = true
 
 [functions.shipstation-webhook]
 verify_jwt = false
+
+[functions.canada-post-shipment]
+verify_jwt = true
+
+[functions.canada-post-label-download]
+verify_jwt = true
+
+[functions.canada-post-rating]
+verify_jwt = true
+
+[functions.canada-post-oauth-callback]
+verify_jwt = false
+
+[functions.calculate-shipping-rates]
+verify_jwt = true
+
+[functions.send-test-email]
+verify_jwt = true
+
+[functions.activate-carrier]
+verify_jwt = true
+
+[functions.carrier-rates]
+verify_jwt = true
+
+[functions.carrier-shipment]
+verify_jwt = true
+
+[functions.fetch-shipping-services]
+verify_jwt = true
+
+[functions.shipping-rate-summary]
+verify_jwt = true
+
+[functions.bulk-update-order-statuses]
+verify_jwt = true
+
+[functions.update-order-statuses]
+verify_jwt = true
+
+[functions.ai-shipping-optimizer]
+verify_jwt = true
+
+[functions.ai-shipping-rules-generator]
+verify_jwt = true
+
+[functions.test-ups-negotiated-rates]
+verify_jwt = true
+
+[functions.refresh-ups-token-manual]
+verify_jwt = true
+
+[functions.setup-ups-credentials]
+verify_jwt = true
+
+[functions.test-shopify-connection]
+verify_jwt = true

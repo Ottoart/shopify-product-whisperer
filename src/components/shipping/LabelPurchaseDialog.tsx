@@ -313,6 +313,7 @@ export function LabelPurchaseDialog({
       const result = await purchaseLabel(
         order.id,
         selectedRate.serviceCode,
+        selectedRate.carrier, // Add carrier parameter for multi-carrier support
         shipFromConfig,
         {
           name: order.customerName,

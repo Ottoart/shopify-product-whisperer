@@ -6,6 +6,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { OrderManagement } from '../OrderManagement';
 import { ShippingLabelManager } from '../ShippingLabelManager';
+import { ShippingLabelsManager } from '../LabelManagement';
 import { 
   BarChart, 
   Bar, 
@@ -514,7 +515,10 @@ export function OperationsTab({ storeFilter, dateRange, dateRangeLabel }: Operat
       </TabsContent>
 
       <TabsContent value="labels">
-        <ShippingLabelManager />
+        <div className="space-y-6">
+          <ShippingLabelsManager />
+          <ShippingLabelManager />
+        </div>
       </TabsContent>
     </Tabs>
   );

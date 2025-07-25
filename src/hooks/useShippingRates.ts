@@ -119,6 +119,7 @@ export function useShippingRates() {
   const purchaseLabel = async (
     orderId: string,
     serviceCode: string,
+    carrier: string,
     shipFrom: any,
     shipTo: any,
     packageDetails: any,
@@ -128,52 +129,108 @@ export function useShippingRates() {
     setError(null);
 
     try {
-      // Get the account number from carrier configurations
-      const { data: carrierData, error: carrierError } = await supabase
-        .from('carrier_configurations')
-        .select('account_number')
-        .eq('carrier_name', 'UPS')
-        .eq('is_active', true)
-        .single();
+      let data;
+      
+      if (carrier === 'Canada Post') {
+        // Canada Post label purchase
+        const labelRequest = {
+          orderId,
+          serviceCode,
+          shipFrom: {
+            name: shipFrom.name || 'Shipper',
+            company: shipFrom.company || '',
+            address: shipFrom.address,
+            city: shipFrom.city,
+            state: shipFrom.state,
+            zip: shipFrom.zip,
+            country: shipFrom.country,
+            phone: shipFrom.phone || '514-555-0123'
+          },
+          shipTo: {
+            name: shipTo.name || 'Recipient',
+            company: shipTo.company || '',
+            address: shipTo.address,
+            city: shipTo.city,
+            state: shipTo.state,
+            zip: shipTo.zip,
+            country: shipTo.country,
+            phone: shipTo.phone || ''
+          },
+          package: {
+            weight: packageDetails.weight,
+            length: packageDetails.length,
+            width: packageDetails.width,
+            height: packageDetails.height,
+            value: packageDetails.value || 100
+          },
+          additionalServices: additionalServices || {}
+        };
 
-      if (carrierError || !carrierData?.account_number) {
-        throw new Error('UPS account not configured. Please configure UPS carrier first.');
-      }
+        const { data: labelData, error: labelError } = await supabase.functions.invoke('canada-post-shipment', {
+          body: labelRequest
+        });
 
-      const labelRequest = {
-        orderId,
-        serviceCode,
-        shipFrom,
-        shipTo,
-        package: {
-          weight: packageDetails.weight,
-          length: packageDetails.length,
-          width: packageDetails.width,
-          height: packageDetails.height,
-          packageType: packageDetails.packageType || "02"
-        },
-        paymentInfo: {
-          shipperAccountNumber: carrierData.account_number,
-          paymentType: "prepaid"
-        },
-        additionalServices: additionalServices || {}
-      };
+        if (labelError) {
+          throw new Error(labelError.message);
+        }
 
-      const { data, error: labelError } = await supabase.functions.invoke('ups-shipment', {
-        body: labelRequest
-      });
+        if (labelData?.error) {
+          throw new Error(labelData.error);
+        }
 
-      if (labelError) {
-        throw new Error(labelError.message);
-      }
+        data = labelData?.shipment;
+      } else if (carrier === 'UPS') {
+        // UPS label purchase (existing code)
+        const { data: carrierData, error: carrierError } = await supabase
+          .from('carrier_configurations')
+          .select('account_number')
+          .eq('carrier_name', 'UPS')
+          .eq('is_active', true)
+          .single();
 
-      if (data?.error) {
-        throw new Error(data.error);
+        if (carrierError || !carrierData?.account_number) {
+          throw new Error('UPS account not configured. Please configure UPS carrier first.');
+        }
+
+        const labelRequest = {
+          orderId,
+          serviceCode,
+          shipFrom,
+          shipTo,
+          package: {
+            weight: packageDetails.weight,
+            length: packageDetails.length,
+            width: packageDetails.width,
+            height: packageDetails.height,
+            packageType: packageDetails.packageType || "02"
+          },
+          paymentInfo: {
+            shipperAccountNumber: carrierData.account_number,
+            paymentType: "prepaid"
+          },
+          additionalServices: additionalServices || {}
+        };
+
+        const { data: labelData, error: labelError } = await supabase.functions.invoke('ups-shipment', {
+          body: labelRequest
+        });
+
+        if (labelError) {
+          throw new Error(labelError.message);
+        }
+
+        if (labelData?.error) {
+          throw new Error(labelData.error);
+        }
+
+        data = labelData;
+      } else {
+        throw new Error(`Unsupported carrier: ${carrier}`);
       }
 
       toast({
         title: "Label purchased successfully",
-        description: `Tracking number: ${data.trackingNumber}`,
+        description: `Tracking number: ${data.tracking_number || data.trackingNumber}`,
       });
 
       return data;
@@ -191,11 +248,58 @@ export function useShippingRates() {
     }
   };
 
+  const downloadLabel = async (labelId: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('canada-post-label-download', {
+        body: { labelId }
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      // If we get binary data, create a blob and download it
+      if (data && data instanceof ArrayBuffer) {
+        const blob = new Blob([data], { type: 'application/pdf' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `shipping-label-${labelId}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        
+        toast({
+          title: "Label downloaded",
+          description: "Shipping label has been downloaded successfully.",
+        });
+      } else if (data?.label_url) {
+        // If we get a URL, open it in a new window
+        window.open(data.label_url, '_blank');
+        
+        toast({
+          title: "Label opened",
+          description: "Shipping label has been opened in a new window.",
+        });
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to download label';
+      toast({
+        title: "Download failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      throw err;
+    }
+  };
+
   return {
     rates,
     loading,
     error,
     calculateRates,
-    purchaseLabel
+    purchaseLabel,
+    downloadLabel
   };
 }
