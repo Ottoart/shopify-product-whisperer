@@ -21,7 +21,8 @@ import {
   DollarSign,
   ArrowUpDown,
   Zap,
-  CheckCircle
+  CheckCircle,
+  Globe
 } from "lucide-react";
 
 interface ShippingRate {
@@ -1033,6 +1034,140 @@ export function EnhancedShippingConfiguration({
           </div>
         </CardContent>
       </Card>
+
+      {/* International Shipping - Customs Declarations */}
+      {selectedShipFrom && shipFromAddresses.find(addr => addr.id === selectedShipFrom)?.country !== selectedOrder?.shippingAddress?.country && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Globe className="h-4 w-4" />
+              Customs Declarations
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Select Contents*</label>
+                <Select defaultValue="merchandise">
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="merchandise">Merchandise</SelectItem>
+                    <SelectItem value="documents">Documents</SelectItem>
+                    <SelectItem value="gift">Gift</SelectItem>
+                    <SelectItem value="sample">Sample</SelectItem>
+                    <SelectItem value="return">Return</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium">If Undeliverable*</label>
+                <Select defaultValue="return">
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="return">Return To Sender</SelectItem>
+                    <SelectItem value="abandon">Abandon</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Duties Paid</label>
+                <div className="flex">
+                  <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">$</span>
+                  <Input type="number" step="0.01" placeholder="0.00" className="rounded-l-none" />
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Postage Paid</label>
+                <div className="flex">
+                  <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">$</span>
+                  <Input type="number" step="0.01" placeholder="0.00" className="rounded-l-none" />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Export Declaration Number</label>
+                <Input placeholder="Optional" />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Invoice Number</label>
+                <Input placeholder="Optional" />
+              </div>
+            </div>
+
+            {/* Customs Declaration Items */}
+            <div className="border rounded-lg p-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium">Declaration Items</h4>
+                <Button variant="outline" size="sm">
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Item
+                </Button>
+              </div>
+              
+              {/* Sample declaration item row - would be populated from order items */}
+              <div className="grid grid-cols-7 gap-2 items-end">
+                <div>
+                  <label className="text-xs text-muted-foreground">Description*</label>
+                  <Input defaultValue="Hair Product" className="text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">SKU</label>
+                  <Input className="text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Quantity*</label>
+                  <Input type="number" defaultValue="1" className="text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Item Value*</label>
+                  <div className="flex">
+                    <span className="inline-flex items-center px-2 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-xs">$</span>
+                    <Input type="number" step="0.01" defaultValue="69.99" className="rounded-l-none text-sm" />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Total Value*</label>
+                  <div className="flex">
+                    <span className="inline-flex items-center px-2 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-xs">$</span>
+                    <Input type="number" step="0.01" defaultValue="69.99" className="rounded-l-none text-sm" readOnly />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">HS Code*</label>
+                  <Input defaultValue="3305.90" className="text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Origin*</label>
+                  <Select defaultValue="CA">
+                    <SelectTrigger className="text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="US">United States</SelectItem>
+                      <SelectItem value="CA">Canada</SelectItem>
+                      <SelectItem value="MX">Mexico</SelectItem>
+                      <SelectItem value="GB">United Kingdom</SelectItem>
+                      <SelectItem value="DE">Germany</SelectItem>
+                      <SelectItem value="FR">France</SelectItem>
+                      <SelectItem value="JP">Japan</SelectItem>
+                      <SelectItem value="CN">China</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Smart Rate/Label Button */}
       <Button 
