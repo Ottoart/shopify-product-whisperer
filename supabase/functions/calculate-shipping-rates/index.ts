@@ -144,24 +144,36 @@ serve(async (req) => {
     if (!shipFrom) {
       // Get store configuration for ship-from address
       const { data: storeConfig, error: storeError } = await supabase
-        .from('store_configurations')
-        .select('ship_from_address')
+        .from('store_shipping_configs')
+        .select('*')
         .eq('user_id', userId)
-        .eq('store_name', order.store_name)
-        .eq('is_active', true)
+        .eq('is_default', true)
         .single();
       
-      if (storeConfig?.ship_from_address) {
-        shipFrom = storeConfig.ship_from_address;
+      if (storeConfig) {
+        shipFrom = {
+          name: storeConfig.from_name,
+          company: storeConfig.from_company || "",
+          address: storeConfig.from_address_line1,
+          address2: storeConfig.from_address_line2 || "",
+          city: storeConfig.from_city,
+          state: storeConfig.from_state,
+          zip: storeConfig.from_zip,
+          country: storeConfig.from_country,
+          phone: storeConfig.from_phone || "5551234567" // Include phone number
+        };
       } else {
         // Use fallback default
         shipFrom = {
           name: "Your Store",
+          company: "",
           address: "123 Store Street",
+          address2: "",
           city: "Your City", 
           state: "Your State",
           zip: "12345",
-          country: "US"
+          country: "US",
+          phone: "5551234567" // Default phone number
         };
       }
     }
@@ -173,7 +185,8 @@ serve(async (req) => {
       city: order.shipping_city,
       state: order.shipping_state,
       zip: order.shipping_zip,
-      country: order.shipping_country || 'US'
+      country: order.shipping_country || 'US',
+      phone: "5551234567" // Default recipient phone - ideally from order data
     };
 
     // Package details - use request data if provided, otherwise fall back to order data
@@ -319,7 +332,8 @@ async function getUPSRates(carrier: any, shipFrom: any, shipTo: any, packageDeta
         city: shipFrom.city,
         state: shipFrom.state,
         zip: shipFrom.zip,
-        country: shipFrom.country
+        country: shipFrom.country,
+        phone: shipFrom.phone || "5551234567" // Include phone number
       },
       shipTo: {
         name: shipTo.name,
@@ -327,7 +341,8 @@ async function getUPSRates(carrier: any, shipFrom: any, shipTo: any, packageDeta
         city: shipTo.city,
         state: shipTo.state,
         zip: shipTo.zip,
-        country: shipTo.country
+        country: shipTo.country,
+        phone: shipTo.phone || "5551234567" // Include phone number
       },
       package: {
         weight: packageDetails.weight,

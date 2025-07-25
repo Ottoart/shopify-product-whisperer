@@ -18,6 +18,7 @@ interface RatingRequest {
     state: string;
     zip: string;
     country: string;
+    phone?: string;
   };
   shipTo: {
     name: string;
@@ -26,6 +27,7 @@ interface RatingRequest {
     state: string;
     zip: string;
     country: string;
+    phone?: string;
   };
   package: {
     weight: number;
@@ -204,15 +206,38 @@ serve(async (req) => {
 });
 
 async function processUPSRating(requestData: RatingRequest, credentials: any, accountNumber: string, validServices: any[]) {
-    // Validate required fields
+    // Validate required fields for UPS API
     if (!requestData.shipFrom?.zip || !requestData.shipFrom?.country ||
+        !requestData.shipFrom?.city || !requestData.shipFrom?.state ||
+        !requestData.shipFrom?.address ||
         !requestData.shipTo?.zip || !requestData.shipTo?.country ||
+        !requestData.shipTo?.city || !requestData.shipTo?.state ||
+        !requestData.shipTo?.address || !requestData.shipTo?.name ||
         !requestData.package?.weight) {
-      console.error('❌ Missing required fields:', requestData);
+      console.error('❌ Missing required fields for UPS API:', {
+        shipFrom: {
+          hasAddress: Boolean(requestData.shipFrom?.address),
+          hasCity: Boolean(requestData.shipFrom?.city),
+          hasState: Boolean(requestData.shipFrom?.state),
+          hasZip: Boolean(requestData.shipFrom?.zip),
+          hasCountry: Boolean(requestData.shipFrom?.country)
+        },
+        shipTo: {
+          hasName: Boolean(requestData.shipTo?.name),
+          hasAddress: Boolean(requestData.shipTo?.address),
+          hasCity: Boolean(requestData.shipTo?.city),
+          hasState: Boolean(requestData.shipTo?.state),
+          hasZip: Boolean(requestData.shipTo?.zip),
+          hasCountry: Boolean(requestData.shipTo?.country)
+        },
+        package: {
+          hasWeight: Boolean(requestData.package?.weight)
+        }
+      });
       return new Response(
         JSON.stringify({ 
-          error: 'Missing required shipping information', 
-          details: 'Please ensure you have provided complete shipping addresses and package weight'
+          error: 'Missing required shipping information for UPS API', 
+          details: 'UPS requires complete shipping addresses including name, address, city, state, zip, and country for both shipper and recipient, plus package weight'
         }),
         { 
           status: 400, 
@@ -318,34 +343,42 @@ async function processUPSRating(requestData: RatingRequest, credentials: any, ac
               Description: service.service_name
             },
             Shipper: {
-              Name: requestData.shipFrom.name || "Shipper",
+              Name: requestData.shipFrom.name || requestData.shipFrom.company || "Shipper",
               ShipperNumber: accountNumber,
+              Phone: requestData.shipFrom.phone ? {
+                Number: requestData.shipFrom.phone.replace(/\D/g, ''),
+                Extension: ""
+              } : undefined,
               Address: {
-                AddressLine: [requestData.shipFrom.address || ""],
-                City: requestData.shipFrom.city || "",
-                StateProvinceCode: requestData.shipFrom.state || "",
-                PostalCode: requestData.shipFrom.zip || "",
-                CountryCode: requestData.shipFrom.country || "US"
+                AddressLine: [requestData.shipFrom.address],
+                City: requestData.shipFrom.city,
+                StateProvinceCode: requestData.shipFrom.state,
+                PostalCode: requestData.shipFrom.zip,
+                CountryCode: requestData.shipFrom.country
               }
             },
             ShipTo: {
-              Name: requestData.shipTo.name || "Consignee", 
+              Name: requestData.shipTo.name, 
+              Phone: requestData.shipTo.phone ? {
+                Number: requestData.shipTo.phone.replace(/\D/g, ''),
+                Extension: ""
+              } : undefined,
               Address: {
-                AddressLine: [requestData.shipTo.address || ""],
-                City: requestData.shipTo.city || "",
-                StateProvinceCode: requestData.shipTo.state || "",
-                PostalCode: requestData.shipTo.zip || "",
-                CountryCode: requestData.shipTo.country || "US"
+                AddressLine: [requestData.shipTo.address],
+                City: requestData.shipTo.city,
+                StateProvinceCode: requestData.shipTo.state,
+                PostalCode: requestData.shipTo.zip,
+                CountryCode: requestData.shipTo.country
               }
             },
             ShipFrom: {
-              Name: "Ship From Location",
+              Name: requestData.shipFrom.name || requestData.shipFrom.company || "Ship From Location",
               Address: {
-                AddressLine: [requestData.shipFrom.address || ""],
-                City: requestData.shipFrom.city || "",
-                StateProvinceCode: requestData.shipFrom.state || "",
-                PostalCode: requestData.shipFrom.zip || "",
-                CountryCode: requestData.shipFrom.country || "US"
+                AddressLine: [requestData.shipFrom.address],
+                City: requestData.shipFrom.city,
+                StateProvinceCode: requestData.shipFrom.state,
+                PostalCode: requestData.shipFrom.zip,
+                CountryCode: requestData.shipFrom.country
               }
             },
             Package: [{

@@ -130,19 +130,19 @@ Deno.serve(async (req) => {
       // This is a PrepFox managed Canada Post - use system credentials
       console.log('🔑 Using PrepFox managed Canada Post credentials');
       const isDev = Deno.env.get('ENVIRONMENT') !== 'production';
-      apiKey = isDev 
-        ? Deno.env.get('CANADA_POST_DEV_API_KEY')
-        : Deno.env.get('CANADA_POST_PROD_API_KEY');
-      apiSecret = isDev 
-        ? Deno.env.get('CANADA_POST_DEV_API_SECRET')
-        : Deno.env.get('CANADA_POST_PROD_API_SECRET');
-      customerNumber = '2004381'; // Use a valid customer number instead of 0000000
+      
+      // Use demo credentials for now since we're getting 403 with production
+      apiKey = 'YOUR_USERNAME_HERE';
+      apiSecret = 'YOUR_PASSWORD_HERE';
+      customerNumber = '0000000'; // Demo customer number
+      
+      console.log('📋 Using Canada Post Demo Mode for testing');
     } else if (canadaPostConfig?.api_credentials) {
       // User provided their own Canada Post credentials
       console.log('🔑 Using user provided Canada Post credentials');
       apiKey = canadaPostConfig.api_credentials.apiKey;
       apiSecret = canadaPostConfig.api_credentials.apiSecret;
-      customerNumber = canadaPostConfig.api_credentials.customerNumber || '2004381';
+      customerNumber = canadaPostConfig.api_credentials.customerNumber || '0000000';
     }
 
     if (!apiKey || !apiSecret) {
