@@ -2,29 +2,69 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3';
 import { corsHeaders } from '../_shared/cors.ts';
 
 interface RatingRequest {
-  shipFrom: {
-    postalCode: string;
+  order_id?: string;
+  shipFrom?: {
+    name: string;
+    company?: string;
+    address: string;
+    address2?: string;
+    city: string;
+    state: string;
+    zip: string;
+    country: string;
   };
-  shipTo: {
-    address: {
-      postalCode?: string;
-      countryCode: string;
-      stateProvinceCode?: string;
-    };
+  shipTo?: {
+    name: string;
+    address: string;
+    address2?: string;
+    city: string;
+    state: string;
+    zip: string;
+    country: string;
   };
-  package: {
-    weight: {
-      value: number;
-      units: 'LBS' | 'KG';
-    };
-    dimensions?: {
-      length: number;
-      width: number;
-      height: number;
-      units: 'IN' | 'CM';
-    };
+  package?: {
+    weight: number;
+    weight_unit?: string;
+    length: number;
+    width: number;
+    height: number;
+    dimension_unit?: string;
+    value?: number;
   };
-  additionalServices?: any[];
+  order?: {
+    orderNumber?: string;
+    currency?: string;
+    items?: Array<{
+      id: string;
+      sku: string;
+      product_title: string;
+      price: number;
+      quantity: number;
+      weight_lbs?: number;
+      origin_country?: string;
+      commodity_code?: string;
+    }>;
+  };
+  // Legacy format support for backward compatibility
+  ship_from?: {
+    name: string;
+    company?: string;
+    address: string;
+    address2?: string;
+    city: string;
+    state: string;
+    zip: string;
+    country: string;
+  };
+  ship_to?: {
+    name: string;
+    address: string;
+    address2?: string;
+    city: string;
+    state: string;
+    zip: string;
+    country: string;
+  };
 }
 
 interface CanadaPostRate {
@@ -46,8 +86,25 @@ Deno.serve(async (req) => {
   try {
     console.log('📦 Canada Post Rating API called');
     
-    const { shipFrom, shipTo, package: pkg }: RatingRequest = await req.json();
-    console.log('📍 Request details:', { shipFrom, shipTo, package: pkg });
+    const requestData: RatingRequest = await req.json();
+    console.log('📍 Full request data:', JSON.stringify(requestData, null, 2));
+
+    // Handle both new and legacy data formats
+    const shipFrom = requestData.shipFrom || requestData.ship_from;
+    const shipTo = requestData.shipTo || requestData.ship_to;
+    const pkg = requestData.package;
+    const order = requestData.order;
+
+    if (!shipFrom || !shipTo || !pkg) {
+      throw new Error('Missing required shipping data: shipFrom, shipTo, or package');
+    }
+
+    console.log('📍 Parsed shipping data:', { 
+      shipFrom: shipFrom.zip, 
+      shipTo: shipTo.zip, 
+      weight: pkg.weight,
+      items: order?.items?.length || 0
+    });
 
     // Get API credentials from environment or database
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -96,19 +153,45 @@ Deno.serve(async (req) => {
     console.log('🔑 Using Canada Post credentials');
 
     // Convert weight to kilograms if needed
-    let weightInKg = pkg.weight.value;
-    if (pkg.weight.units === 'LBS') {
-      weightInKg = pkg.weight.value * 0.453592;
+    let weightInKg = pkg.weight;
+    const weightUnit = pkg.weight_unit || 'LBS';
+    if (weightUnit === 'LBS') {
+      weightInKg = pkg.weight * 0.453592;
     }
+
+    // Ensure minimum weight (Canada Post requires at least 0.1 kg)
+    if (weightInKg < 0.1) {
+      weightInKg = 0.1;
+      console.log('⚖️ Adjusted weight to minimum 0.1 kg for Canada Post');
+    }
+
+    // Convert dimensions to centimeters if needed
+    const dimensionUnit = pkg.dimension_unit || 'IN';
+    let dimensions = null;
+    if (pkg.length && pkg.width && pkg.height) {
+      dimensions = {
+        length: dimensionUnit === 'IN' ? pkg.length * 2.54 : pkg.length,
+        width: dimensionUnit === 'IN' ? pkg.width * 2.54 : pkg.width,
+        height: dimensionUnit === 'IN' ? pkg.height * 2.54 : pkg.height,
+        units: 'CM'
+      };
+    }
+
+    console.log('📏 Package details:', { 
+      weight: `${weightInKg} kg`, 
+      dimensions: dimensions ? `${dimensions.length}x${dimensions.width}x${dimensions.height} cm` : 'none',
+      value: pkg.value || 'unknown'
+    });
 
     // Build XML request according to Canada Post API specification
     const xmlRequest = buildCanadaPostXMLRequest({
-      customerNumber: customerNumber || '0000000',
+      customerNumber: customerNumber || '2004381',
       weight: weightInKg,
-      originPostalCode: shipFrom.postalCode.replace(/\s+/g, '').toUpperCase(),
-      destinationPostalCode: shipTo.address.postalCode?.replace(/\s+/g, '').toUpperCase(),
-      destinationCountry: shipTo.address.countryCode,
-      dimensions: pkg.dimensions
+      originPostalCode: shipFrom.zip.replace(/\s+/g, '').toUpperCase(),
+      destinationPostalCode: shipTo.zip?.replace(/\s+/g, '').toUpperCase(),
+      destinationCountry: shipTo.country,
+      dimensions: dimensions,
+      orderItems: order?.items || []
     });
 
     console.log('📝 XML Request:', xmlRequest);
@@ -173,7 +256,8 @@ function buildCanadaPostXMLRequest({
   originPostalCode,
   destinationPostalCode,
   destinationCountry,
-  dimensions
+  dimensions,
+  orderItems = []
 }: {
   customerNumber: string;
   weight: number;
@@ -181,13 +265,35 @@ function buildCanadaPostXMLRequest({
   destinationPostalCode?: string;
   destinationCountry: string;
   dimensions?: any;
+  orderItems?: Array<{
+    id: string;
+    sku: string;
+    product_title: string;
+    price: number;
+    quantity: number;
+    weight_lbs?: number;
+    origin_country?: string;
+    commodity_code?: string;
+  }>;
 }) {
+  // Use dimensions if provided (already converted to CM)
   const dimensionsXml = dimensions ? `
     <dimensions>
-      <length>${dimensions.units === 'IN' ? dimensions.length * 2.54 : dimensions.length}</length>
-      <width>${dimensions.units === 'IN' ? dimensions.width * 2.54 : dimensions.width}</width>
-      <height>${dimensions.units === 'IN' ? dimensions.height * 2.54 : dimensions.height}</height>
+      <length>${dimensions.length.toFixed(2)}</length>
+      <width>${dimensions.width.toFixed(2)}</width>
+      <height>${dimensions.height.toFixed(2)}</height>
     </dimensions>` : '';
+
+  // Log order items for debugging
+  if (orderItems.length > 0) {
+    console.log('📋 Canada Post order items:', orderItems.map(item => ({
+      sku: item.sku,
+      title: item.product_title?.substring(0, 50) + '...',
+      price: item.price,
+      quantity: item.quantity,
+      origin: item.origin_country
+    })));
+  }
 
   // Determine destination type based on country
   let destinationXml = '';
