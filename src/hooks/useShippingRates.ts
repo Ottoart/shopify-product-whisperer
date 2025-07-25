@@ -195,8 +195,14 @@ export function useShippingRates() {
         const labelRequest = {
           orderId,
           serviceCode,
-          shipFrom,
-          shipTo,
+          shipFrom: {
+            ...shipFrom,
+            phone: shipFrom.phone || '514-555-0123'
+          },
+          shipTo: {
+            ...shipTo,
+            phone: shipTo.phone || '514-555-0123'
+          },
           package: {
             weight: packageDetails.weight,
             length: packageDetails.length,
