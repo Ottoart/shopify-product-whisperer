@@ -260,14 +260,14 @@ async function processUPSRating(requestData: RatingRequest, credentials: any, ac
     // Validate and normalize package weight (UPS minimum requirements)
     let packageWeightLbs = requestData.package.weight || 1.0; // Default to 1 lb if missing
     
-    // UPS minimum is 0.1 lbs, but we'll use 1.0 as safe minimum for international
+    // UPS minimum is 0.1 lbs, but for international shipments use 1.0 as safe minimum
     if (packageWeightLbs < 1.0) {
       packageWeightLbs = 1.0;
       console.log('⚖️ Adjusted weight to minimum 1.0 lbs for UPS international shipping');
     }
     
-    // Round to 1 decimal place for API consistency
-    packageWeightLbs = Math.round(packageWeightLbs * 10) / 10;
+    // UPS requires whole number weights for some services - round up to nearest whole number
+    packageWeightLbs = Math.ceil(packageWeightLbs);
     
     console.log(`📦 Weight validation: Original: ${requestData.package.weight}lbs, Normalized: ${packageWeightLbs}lbs`);
     
@@ -606,7 +606,8 @@ function buildProductDetails(requestData: RatingRequest, packageWeightLbs: numbe
     console.log('📦 Using real order item data for UPS Product details');
     
     return requestData.order.items.map((item, index) => {
-      const itemWeight = item.weight_lbs || (packageWeightLbs / requestData.order!.items.length);
+      // Ensure each product has minimum 1 lb weight for UPS
+      const itemWeight = Math.max(1.0, item.weight_lbs || (packageWeightLbs / requestData.order!.items.length));
       const itemValue = item.price || 10;
       
       return {
@@ -625,7 +626,7 @@ function buildProductDetails(requestData: RatingRequest, packageWeightLbs: numbe
             Code: "LBS", 
             Description: "Pounds"
           },
-          Weight: (Math.round(Math.max(0.1, itemWeight) * 10) / 10).toString() // UPS minimum weight, rounded
+          Weight: Math.ceil(Math.max(1.0, itemWeight)).toString() // UPS minimum 1 lb, rounded up
         },
         UnitValue: {
           CurrencyCode: requestData.order?.currency || "USD",
@@ -653,7 +654,7 @@ function buildProductDetails(requestData: RatingRequest, packageWeightLbs: numbe
           Code: "LBS",
           Description: "Pounds"
         },
-        Weight: (Math.round(Math.max(0.1, packageWeightLbs) * 10) / 10).toString()
+        Weight: Math.ceil(Math.max(1.0, packageWeightLbs)).toString()
       },
       UnitValue: {
         CurrencyCode: "USD",
