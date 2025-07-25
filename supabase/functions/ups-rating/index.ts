@@ -345,8 +345,8 @@ async function processUPSRating(requestData: RatingRequest, credentials: any, ac
         }
       };
 
-      // TEMPORARY: Revert to working RateInformation structure
-      // This was working before - we'll add negotiated rates back after confirming basic functionality
+      // CRITICAL: Always add RateInformation for negotiated rates
+      // This matches ShipStation's approach and is required for negotiated rates
       upsRequest.RateRequest.Shipment['RateInformation'] = {
         NegotiatedRatesIndicator: ''
       };
