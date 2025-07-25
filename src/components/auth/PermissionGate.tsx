@@ -12,6 +12,7 @@ interface PermissionGateProps {
 
 /**
  * Component that conditionally renders children based on user permissions
+ * Now accessible to all users - no permission checks
  */
 export const PermissionGate: React.FC<PermissionGateProps> = ({
   permission,
@@ -21,16 +22,7 @@ export const PermissionGate: React.FC<PermissionGateProps> = ({
   fallback = null,
   loading = null
 }) => {
-  const { data: hasPermission, isLoading } = usePermission(permission, resourceType, resourceId);
-
-  if (isLoading) {
-    return <>{loading}</>;
-  }
-
-  if (!hasPermission) {
-    return <>{fallback}</>;
-  }
-
+  // Always render children - no permission restrictions
   return <>{children}</>;
 };
 
@@ -43,6 +35,7 @@ interface RoleGateProps {
 
 /**
  * Component that conditionally renders children based on user role
+ * Now accessible to all users - no role restrictions
  */
 export const RoleGate: React.FC<RoleGateProps> = ({
   allowedRoles,
@@ -50,18 +43,7 @@ export const RoleGate: React.FC<RoleGateProps> = ({
   fallback = null,
   loading = null
 }) => {
-  const { data: userRole, isLoading } = useUserRole();
-  
-  if (isLoading) {
-    return <>{loading}</>;
-  }
-
-  const roleString = typeof userRole === 'object' ? userRole.role : userRole;
-  
-  if (!roleString || !allowedRoles.includes(roleString)) {
-    return <>{fallback}</>;
-  }
-
+  // Always render children - no role restrictions
   return <>{children}</>;
 };
 
@@ -73,22 +55,15 @@ interface AdminGateProps {
 
 /**
  * Component that only renders for admin users
+ * Now accessible to all users - no admin restrictions
  */
 export const AdminGate: React.FC<AdminGateProps> = ({
   children,
   fallback = null,
   loading = null
 }) => {
-  return (
-    <PermissionGate
-      permission="admin"
-      resourceType="system"
-      fallback={fallback}
-      loading={loading}
-    >
-      {children}
-    </PermissionGate>
-  );
+  // Always render children - no admin restrictions
+  return <>{children}</>;
 };
 
 /**
