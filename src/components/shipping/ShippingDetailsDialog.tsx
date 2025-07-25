@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Package, Printer, Eye, Edit, MapPin, DollarSign, User, Truck, Clock, AlertTriangle, Settings, Loader2, RefreshCw, AlertCircle, Lock } from "lucide-react";
+import { Calendar, Package, Printer, Eye, Edit, MapPin, DollarSign, User, Truck, Clock, AlertTriangle, Settings, Loader2, RefreshCw, AlertCircle, Lock, Globe, Plus } from "lucide-react";
 import { Order } from "@/hooks/useOrders";
 import { useShippingServices } from "@/hooks/useShippingServices";
 import { CarrierConfigurationDialog } from "./CarrierConfigurationDialog";
@@ -760,6 +760,141 @@ export function ShippingDetailsDialog({ isOpen, onClose, order, onUpdateOrder }:
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* International Shipping - Customs Declarations */}
+                {order.shippingAddress?.country !== 'US' && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Globe className="h-5 w-5" />
+                        Customs Declarations
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-sm font-medium">Select Contents*</Label>
+                          <Select defaultValue="merchandise">
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="merchandise">Merchandise</SelectItem>
+                              <SelectItem value="documents">Documents</SelectItem>
+                              <SelectItem value="gift">Gift</SelectItem>
+                              <SelectItem value="sample">Sample</SelectItem>
+                              <SelectItem value="return">Return</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium">If Undeliverable*</Label>
+                          <Select defaultValue="return">
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="return">Return To Sender</SelectItem>
+                              <SelectItem value="abandon">Abandon</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-sm font-medium">Duties Paid</Label>
+                          <div className="flex">
+                            <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">$</span>
+                            <Input type="number" step="0.01" placeholder="0.00" className="rounded-l-none" />
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium">Postage Paid</Label>
+                          <div className="flex">
+                            <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">$</span>
+                            <Input type="number" step="0.01" placeholder="0.00" className="rounded-l-none" />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-sm font-medium">Export Declaration Number</Label>
+                          <Input placeholder="Optional" />
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium">Invoice Number</Label>
+                          <Input placeholder="Optional" />
+                        </div>
+                      </div>
+
+                      {/* Customs Declaration Items - Linked to Order Items */}
+                      <div className="border rounded-lg p-4 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-medium">Declaration Items</h4>
+                          <Button variant="outline" size="sm">
+                            <Plus className="h-4 w-4 mr-1" />
+                            Add Item
+                          </Button>
+                        </div>
+                        
+                        {order.items.map((item, index) => (
+                          <div key={index} className="grid grid-cols-7 gap-2 items-end p-3 bg-muted/50 rounded-md">
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Description*</Label>
+                              <Input defaultValue={item.productTitle} className="text-sm" />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-muted-foreground">SKU</Label>
+                              <Input defaultValue={item.sku || ""} className="text-sm" />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Quantity*</Label>
+                              <Input type="number" defaultValue={item.quantity} className="text-sm" />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Item Value*</Label>
+                              <div className="flex">
+                                <span className="inline-flex items-center px-2 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-xs">$</span>
+                                <Input type="number" step="0.01" defaultValue={item.price} className="rounded-l-none text-sm" />
+                              </div>
+                            </div>
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Total Value*</Label>
+                              <div className="flex">
+                                <span className="inline-flex items-center px-2 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-xs">$</span>
+                                <Input type="number" step="0.01" defaultValue={(item.price * item.quantity).toFixed(2)} className="rounded-l-none text-sm" readOnly />
+                              </div>
+                            </div>
+                            <div>
+                              <Label className="text-xs text-muted-foreground">HS Code*</Label>
+                              <Input defaultValue="999999" className="text-sm" placeholder="Commodity code" />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Origin*</Label>
+                              <Select defaultValue="US">
+                                <SelectTrigger className="text-sm">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="US">United States</SelectItem>
+                                  <SelectItem value="CA">Canada</SelectItem>
+                                  <SelectItem value="MX">Mexico</SelectItem>
+                                  <SelectItem value="GB">United Kingdom</SelectItem>
+                                  <SelectItem value="DE">Germany</SelectItem>
+                                  <SelectItem value="FR">France</SelectItem>
+                                  <SelectItem value="JP">Japan</SelectItem>
+                                  <SelectItem value="CN">China</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </TabsContent>
 
               <TabsContent value="activity" className="space-y-4">
