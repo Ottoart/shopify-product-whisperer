@@ -187,8 +187,8 @@ Deno.serve(async (req) => {
     const xmlRequest = buildCanadaPostXMLRequest({
       customerNumber: customerNumber || '2004381',
       weight: weightInKg,
-      originPostalCode: shipFrom.zip.replace(/\s+/g, '').toUpperCase(),
-      destinationPostalCode: shipTo.zip?.replace(/\s+/g, '').toUpperCase(),
+      originPostalCode: (shipFrom.zip || '').replace(/\s+/g, '').toUpperCase(),
+      destinationPostalCode: (shipTo.zip || shipTo.postal_code || '').replace(/\s+/g, '').toUpperCase(),
       destinationCountry: shipTo.country,
       dimensions: dimensions,
       orderItems: order?.items || []

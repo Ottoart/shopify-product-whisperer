@@ -258,7 +258,13 @@ async function processUPSRating(requestData: RatingRequest, credentials: any, ac
     }
 
     // Validate and normalize package weight (UPS minimum requirements)
-    let packageWeightLbs = Math.max(0.1, requestData.package.weight); // UPS minimum 0.1 lbs
+    let packageWeightLbs = requestData.package.weight || 1.0; // Default to 1 lb if missing
+    
+    // UPS minimum is 0.1 lbs, but we'll use 1.0 as safe minimum for international
+    if (packageWeightLbs < 1.0) {
+      packageWeightLbs = 1.0;
+      console.log('⚖️ Adjusted weight to minimum 1.0 lbs for UPS international shipping');
+    }
     
     // Round to 1 decimal place for API consistency
     packageWeightLbs = Math.round(packageWeightLbs * 10) / 10;
