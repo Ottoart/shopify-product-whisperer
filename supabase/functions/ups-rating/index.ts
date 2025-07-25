@@ -265,7 +265,7 @@ async function processUPSRating(requestData: RatingRequest, credentials: any, ac
 
     // Use the proper negotiated rates endpoint structure
     const baseUrl = credentials.is_production ? 'https://apis.ups.com' : 'https://wwwcie.ups.com';
-    const ratingApiUrl = `${baseUrl}/api/rating/v1/rate?additionalinfo=timeintransit`;
+    const ratingApiUrl = `${baseUrl}/api/rating/v1/rate`;
     console.log('📍 Using Rating API URL with negotiated rates support:', ratingApiUrl);
 
     // Get rates for each valid service separately to avoid "invalid service" errors
