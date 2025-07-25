@@ -240,6 +240,15 @@ async function processUPSRating(requestData: RatingRequest, credentials: any, ac
       );
     }
 
+    // Convert package weight from lbs to grams if needed (to match ShipStation format)
+    const packageWeightLbs = requestData.package.weight;
+    const packageWeightGrams = Math.round(packageWeightLbs * 453.592); // Convert lbs to grams
+    
+    // Convert dimensions from inches to centimeters if needed
+    const lengthCm = Math.round((requestData.package.length || 12) * 2.54);
+    const widthCm = Math.round((requestData.package.width || 12) * 2.54);
+    const heightCm = Math.round((requestData.package.height || 6) * 2.54);
+
     // Log shipping details for debugging
     // Enhanced debugging information
     console.log('🌍 Shipping details:');
@@ -328,23 +337,29 @@ async function processUPSRating(requestData: RatingRequest, credentials: any, ac
                   Code: "LBS",
                   Description: "Pounds"
                 },
-                Weight: (requestData.package.weight || 1).toString()
+                Weight: packageWeightLbs.toString()
               }
             }]
           }
         }
       };
 
-      // Add negotiated rates if enabled in carrier configuration
-      if (credentials.enable_negotiated_rates) {
-        upsRequest.RateRequest.Shipment['RateInformation'] = {
-          NegotiatedRatesIndicator: ''
-        };
-      }
+      // CRITICAL: Always add RateInformation for negotiated rates
+      // This matches ShipStation's approach and is required for negotiated rates
+      upsRequest.RateRequest.Shipment['RateInformation'] = {
+        NegotiatedRatesIndicator: ''
+      };
+
+      // Debug: Log what ShipStation equivalent would be
+      console.log(`🔍 ShipStation Comparison - Service ${service.service_code}:`);
+      console.log(`Package Weight: ${packageWeightLbs}lbs (${packageWeightGrams}g)`);
+      console.log(`Dimensions: ${requestData.package.length || 12}"x${requestData.package.width || 12}"x${requestData.package.height || 6}" (${lengthCm}x${widthCm}x${heightCm}cm)`);
+      console.log(`Account: ${accountNumber} (${accountCountryCode})`);
+      console.log(`Negotiated Rates Flag: ${credentials.enable_negotiated_rates ? 'ENABLED' : 'DISABLED'}`);
 
       console.log(`📦 UPS API Request for ${service.service_code}:`, JSON.stringify(upsRequest, null, 2));
 
-      // Prepare headers for UPS API call - CRITICAL: Proper format per UPS documentation
+      // Prepare headers for UPS API call - Match ShipStation's approach
       const headers = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${credentials.access_token}`,
@@ -388,19 +403,31 @@ async function processUPSRating(requestData: RatingRequest, credentials: any, ac
               const serviceType = getUPSServiceType(serviceCode);
               const estimatedDays = getUPSEstimatedDays(serviceCode);
               
-              // Enhanced rate extraction logic with better error handling
+              // Enhanced rate extraction logic - CRITICAL: Check negotiated rates properly
               let totalCharges = '0';
               let currency = 'USD';
+              let rateType = 'Published';
               
-              // Try negotiated rates first if enabled
-              if (credentials.enable_negotiated_rates && shipment.NegotiatedRateCharges?.TotalCharge) {
+              // Debug: Log the entire shipment structure to understand response format
+              console.log(`🔍 Full UPS shipment response for ${serviceName}:`, JSON.stringify(shipment, null, 2));
+              
+              // Always try negotiated rates first (they should be returned when RateInformation is included)
+              if (shipment.NegotiatedRateCharges?.TotalCharge) {
                 totalCharges = shipment.NegotiatedRateCharges.TotalCharge.MonetaryValue || '0';
                 currency = shipment.NegotiatedRateCharges.TotalCharge.CurrencyCode || 'USD';
-                console.log(`📊 Rate for ${serviceName}: ${totalCharges} ${currency} (Negotiated)`);
+                rateType = 'Negotiated';
+                console.log(`💰 Negotiated Rate for ${serviceName}: ${totalCharges} ${currency}`);
               } else if (shipment.TotalCharges) {
                 totalCharges = shipment.TotalCharges.MonetaryValue || '0';
                 currency = shipment.TotalCharges.CurrencyCode || 'USD';
-                console.log(`📊 Rate for ${serviceName}: ${totalCharges} ${currency} (Published)`);
+                rateType = 'Published';
+                console.log(`📊 Published Rate for ${serviceName}: ${totalCharges} ${currency}`);
+                
+                // Log why we didn't get negotiated rates
+                if (credentials.enable_negotiated_rates) {
+                  console.log(`⚠️ Negotiated rates enabled but not returned. Check account setup.`);
+                  console.log(`🔍 NegotiatedRateCharges structure:`, shipment.NegotiatedRateCharges || 'NOT PRESENT');
+                }
               } else {
                 console.error(`❌ No rate data found for ${serviceName}. UPS Response:`, JSON.stringify(shipment, null, 2));
                 continue; // Skip this rate if no pricing data
