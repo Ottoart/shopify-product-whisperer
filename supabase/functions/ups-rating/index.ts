@@ -265,7 +265,7 @@ async function processUPSRating(requestData: RatingRequest, credentials: any, ac
 
     // Use the proper negotiated rates endpoint structure
     const baseUrl = credentials.is_production ? 'https://apis.ups.com' : 'https://wwwcie.ups.com';
-    const ratingApiUrl = `${baseUrl}/api/rating/v1/rate`;
+    const ratingApiUrl = `${baseUrl}/api/rating/v1/rate?additionalinfo=timeintransit`;
     console.log('📍 Using Rating API URL with negotiated rates support:', ratingApiUrl);
 
     // Get rates for each valid service separately to avoid "invalid service" errors
@@ -340,7 +340,13 @@ async function processUPSRating(requestData: RatingRequest, credentials: any, ac
                 },
                 Weight: packageWeightLbs.toString()
               }
-            }]
+            }],
+            DeliveryTimeInformation: {
+              PackageBillType: "03",
+              Pickup: {
+                Date: new Date().toISOString().split('T')[0].replace(/-/g, '')
+              }
+            }
           }
         }
       };
