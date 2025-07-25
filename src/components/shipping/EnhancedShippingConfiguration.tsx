@@ -113,7 +113,6 @@ export function EnhancedShippingConfiguration({
 }: EnhancedShippingConfigurationProps) {
   const [shipFromAddresses, setShipFromAddresses] = useState<ShipFromAddress[]>([]);
   const [packages, setPackages] = useState<PackageOption[]>([]);
-  const [availableServices, setAvailableServices] = useState<any[]>([]);
   const [selectedShipFrom, setSelectedShipFrom] = useState<string>("");
   const [selectedPackage, setSelectedPackage] = useState<string>("");
   const [customDimensions, setCustomDimensions] = useState({
@@ -158,7 +157,6 @@ export function EnhancedShippingConfiguration({
   useEffect(() => {
     fetchShipFromAddresses();
     fetchPackages();
-    fetchAvailableServices();
   }, []);
 
   // Auto-fetch rates when shipment details change
@@ -256,20 +254,6 @@ export function EnhancedShippingConfiguration({
     setSelectedPackage("custom");
   };
 
-  const fetchAvailableServices = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('shipping_services')
-        .select('*')
-        .eq('is_available', true);
-
-      if (error) throw error;
-
-      setAvailableServices(data || []);
-    } catch (error) {
-      console.error('Error fetching available services:', error);
-    }
-  };
 
   const addShipFromAddress = async () => {
     try {
@@ -1050,43 +1034,6 @@ export function EnhancedShippingConfiguration({
         </CardContent>
       </Card>
 
-      {/* Service Selection */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Package className="h-4 w-4" />
-            Service
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Select value={selectedService} onValueChange={setSelectedService}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select a service" />
-            </SelectTrigger>
-            <SelectContent>
-              {availableServices.length === 0 ? (
-                <SelectItem value="no-services" disabled>
-                  No services available - configure carriers first
-                </SelectItem>
-              ) : (
-                availableServices.map(service => (
-                  <SelectItem key={service.service_code} value={service.service_code}>
-                    <div className="flex items-center justify-between w-full">
-                      <span>{service.service_name}</span>
-                      {service.estimated_days && (
-                        <Badge variant="outline" className="ml-2 text-xs">
-                          {service.estimated_days}
-                        </Badge>
-                      )}
-                    </div>
-                  </SelectItem>
-                ))
-              )}
-            </SelectContent>
-          </Select>
-        </CardContent>
-      </Card>
-
       {/* Smart Rate/Label Button */}
       <Button 
         onClick={selectedService && shippingRates.length > 0 ? createShippingLabel : fetchShippingRates} 
@@ -1108,6 +1055,11 @@ export function EnhancedShippingConfiguration({
               const confirmationFee = rate?.confirmation_options?.find(opt => opt.type === confirmationType)?.fee || 0;
               return (rate ? rate.cost + confirmationFee : 0).toFixed(2);
             })()}
+          </>
+        ) : shippingRates.length > 0 ? (
+          <>
+            <ArrowUpDown className="h-4 w-4 mr-2" />
+            Refresh Rates
           </>
         ) : (
           <>
