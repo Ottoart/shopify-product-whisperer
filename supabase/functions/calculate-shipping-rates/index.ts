@@ -16,6 +16,13 @@ interface RateRequest {
     zip: string;
     country: string;
   };
+  package?: {
+    weight: number;
+    length: number;
+    width: number;
+    height: number;
+    value?: number;
+  };
   service_preferences?: string[]; // ['ground', 'expedited', 'overnight']
   additional_services?: {
     signature_required?: boolean;
@@ -169,13 +176,13 @@ serve(async (req) => {
       country: order.shipping_country || 'US'
     };
 
-    // Package details from order
+    // Package details - use request data if provided, otherwise fall back to order data
     const packageDetails = {
-      weight: order.weight_lbs || 1,
-      length: order.length_inches || 12,
-      width: order.width_inches || 12,
-      height: order.height_inches || 6,
-      value: order.total_amount || 100
+      weight: rateRequest.package?.weight || order.weight_lbs || 1,
+      length: rateRequest.package?.length || order.length_inches || 12,
+      width: rateRequest.package?.width || order.width_inches || 12,
+      height: rateRequest.package?.height || order.height_inches || 6,
+      value: rateRequest.package?.value || order.total_amount || 100
     };
 
     console.log('Package details:', packageDetails);
