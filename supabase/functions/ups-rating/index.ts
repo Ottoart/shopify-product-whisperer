@@ -346,6 +346,12 @@ async function processUPSRating(requestData: RatingRequest, credentials: any, ac
               Pickup: {
                 Date: new Date().toISOString().split('T')[0].replace(/-/g, '')
               }
+            },
+            ShipmentServiceOptions: {
+              DeclaredValue: {
+                CurrencyCode: "USD",
+                MonetaryValue: "100.00"
+              }
             }
           }
         }
