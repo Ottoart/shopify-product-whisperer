@@ -36,25 +36,25 @@ export function ShippingOverviewDashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold">
+          <h1 className="text-xl sm:text-3xl font-bold">
             {storeFilter ? `${storeFilter} Shipping Dashboard` : 'Shipping Dashboard'}
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm sm:text-base text-muted-foreground">
             {storeFilter 
               ? `Comprehensive shipping analytics for ${storeFilter} store` 
               : 'Comprehensive shipping analytics and operations management'
             }
           </p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <CalendarDays className="h-4 w-4" />
-            Date Range
+            <span className="hidden sm:inline">Date Range</span>
           </div>
           <Select value={dateRange} onValueChange={setDateRange}>
-            <SelectTrigger className="w-48">
+            <SelectTrigger className="w-full sm:w-48">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

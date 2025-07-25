@@ -22,62 +22,62 @@ export default function Shipping() {
   const [activeTab, setActiveTab] = useState("orders");
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Truck className="h-8 w-8 text-primary" />
+        <Truck className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
         <div>
-          <h1 className="text-3xl font-bold">Shipping & Fulfillment</h1>
-          <p className="text-muted-foreground">Multi-channel order management, carrier rate comparison & label generation</p>
+          <h1 className="text-xl sm:text-3xl font-bold">Shipping & Fulfillment</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">Multi-channel order management, carrier rate comparison & label generation</p>
         </div>
       </div>
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-10 h-auto gap-1 p-1">
-          <TabsTrigger value="orders" className="flex items-center gap-2">
+        <TabsList className="flex w-full overflow-x-auto gap-1 p-1 md:grid md:grid-cols-4 lg:grid-cols-10 h-auto">
+          <TabsTrigger value="orders" className="flex items-center gap-2 flex-shrink-0">
             <Package className="h-4 w-4" />
-            Orders
+            <span className="hidden sm:inline">Orders</span>
           </TabsTrigger>
-          <TabsTrigger value="stores" className="flex items-center gap-2">
+          <TabsTrigger value="stores" className="flex items-center gap-2 flex-shrink-0">
             <Store className="h-4 w-4" />
-            Stores
+            <span className="hidden sm:inline">Stores</span>
           </TabsTrigger>
-          <TabsTrigger value="rates" className="flex items-center gap-2">
+          <TabsTrigger value="rates" className="flex items-center gap-2 flex-shrink-0">
             <Truck className="h-4 w-4" />
-            Rates
+            <span className="hidden sm:inline">Rates</span>
           </TabsTrigger>
-          <TabsTrigger value="rules" className="flex items-center gap-2">
+          <TabsTrigger value="rules" className="flex items-center gap-2 flex-shrink-0">
             <Settings className="h-4 w-4" />
-            Rules
+            <span className="hidden sm:inline">Rules</span>
           </TabsTrigger>
-          <TabsTrigger value="tracking" className="flex items-center gap-2">
+          <TabsTrigger value="tracking" className="flex items-center gap-2 flex-shrink-0">
             <Zap className="h-4 w-4" />
-            Tracking
+            <span className="hidden sm:inline">Tracking</span>
           </TabsTrigger>
-          <TabsTrigger value="returns" className="flex items-center gap-2">
+          <TabsTrigger value="returns" className="flex items-center gap-2 flex-shrink-0">
             <RotateCcw className="h-4 w-4" />
-            Returns
+            <span className="hidden sm:inline">Returns</span>
           </TabsTrigger>
-          <TabsTrigger value="batch" className="flex items-center gap-2">
+          <TabsTrigger value="batch" className="flex items-center gap-2 flex-shrink-0">
             <Package className="h-4 w-4" />
-            Batch
+            <span className="hidden sm:inline">Batch</span>
           </TabsTrigger>
-          <TabsTrigger value="carriers" className="flex items-center gap-2">
+          <TabsTrigger value="carriers" className="flex items-center gap-2 flex-shrink-0">
             <Building2 className="h-4 w-4" />
-            Carriers
+            <span className="hidden sm:inline">Carriers</span>
           </TabsTrigger>
-          <TabsTrigger value="webhooks" className="flex items-center gap-2">
+          <TabsTrigger value="webhooks" className="flex items-center gap-2 flex-shrink-0">
             <Webhook className="h-4 w-4" />
-            Webhooks
+            <span className="hidden sm:inline">Webhooks</span>
           </TabsTrigger>
-          <TabsTrigger value="validation" className="flex items-center gap-2">
+          <TabsTrigger value="validation" className="flex items-center gap-2 flex-shrink-0">
             <TestTube className="h-4 w-4" />
-            Validation
+            <span className="hidden sm:inline">Validation</span>
           </TabsTrigger>
-          <TabsTrigger value="ai" className="flex items-center gap-2">
+          <TabsTrigger value="ai" className="flex items-center gap-2 flex-shrink-0">
             <Brain className="h-4 w-4" />
-            AI Intelligence
+            <span className="hidden sm:inline">AI Intelligence</span>
           </TabsTrigger>
         </TabsList>
 
