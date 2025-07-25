@@ -345,10 +345,11 @@ async function processUPSRating(requestData: RatingRequest, credentials: any, ac
         }
       };
 
-      // CRITICAL: Always add RateInformation for negotiated rates
-      // This matches ShipStation's approach and is required for negotiated rates
-      upsRequest.RateRequest.Shipment['RateInformation'] = {
-        NegotiatedRatesIndicator: ''
+      // CRITICAL: Use proper ShipmentRatingOptions structure for negotiated rates
+      // This is the correct format according to UPS API documentation
+      upsRequest.RateRequest.Shipment['ShipmentRatingOptions'] = {
+        NegotiatedRatesIndicator: 'Y',
+        TPFCNegotiatedRatesIndicator: 'Y'
       };
 
       // Debug: Log what ShipStation equivalent would be
