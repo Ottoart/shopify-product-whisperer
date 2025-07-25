@@ -352,6 +352,10 @@ async function processUPSRating(requestData: RatingRequest, credentials: any, ac
                 CurrencyCode: "USD",
                 MonetaryValue: "100.00"
               }
+            },
+            InvoiceLineTotal: {
+              CurrencyCode: "USD",
+              MonetaryValue: "100.00"
             }
           }
         }
