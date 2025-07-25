@@ -356,7 +356,30 @@ async function processUPSRating(requestData: RatingRequest, credentials: any, ac
             InvoiceLineTotal: {
               CurrencyCode: "USD",
               MonetaryValue: "100.00"
-            }
+            },
+            Product: [{
+              Description: "General Merchandise",
+              CommodityCode: "999999",
+              OriginCountryCode: requestData.shipFrom.country,
+              Unit: {
+                UnitOfMeasurement: {
+                  Code: "EA",
+                  Description: "Each"
+                },
+                Value: "1"
+              },
+              ProductWeight: {
+                UnitOfMeasurement: {
+                  Code: "LBS",
+                  Description: "Pounds"
+                },
+                Weight: packageWeightLbs.toString()
+              },
+              UnitValue: {
+                CurrencyCode: "USD",
+                MonetaryValue: "100.00"
+              }
+            }]
           }
         }
       };
