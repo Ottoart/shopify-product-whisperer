@@ -12,9 +12,9 @@ export interface ShippingRate {
 }
 
 export interface RateRequest {
-  orderId: string;
-  shipFrom?: {
-    name: string;
+  order_id: string; // Match backend interface
+  ship_from?: {
+    name?: string;
     company?: string;
     address: string;
     address2?: string;
@@ -40,11 +40,11 @@ export interface RateRequest {
     weightUnit?: string;
     dimensionUnit?: string;
   };
-  servicePreferences?: string[];
-  additionalServices?: {
-    signatureRequired?: boolean;
-    insuranceValue?: number;
-    saturdayDelivery?: boolean;
+  service_preferences?: string[]; // Match backend interface
+  additional_services?: { // Match backend interface
+    signature_required?: boolean;
+    insurance_value?: number;
+    saturday_delivery?: boolean;
   };
 }
 
@@ -59,24 +59,51 @@ export function useShippingRates() {
     setError(null);
     
     try {
+      console.log('🔄 Calculating shipping rates with request:', JSON.stringify(request, null, 2));
+      
       const { data, error: rateError } = await supabase.functions.invoke('calculate-shipping-rates', {
         body: request
       });
 
+      console.log('📦 Rate calculation response:', { data, error: rateError });
+
       if (rateError) {
+        console.error('❌ Supabase function error:', rateError);
         throw new Error(rateError.message);
       }
 
       if (data?.error) {
+        console.error('❌ Backend error:', data.error);
         throw new Error(data.error);
       }
 
       const calculatedRates = data?.rates || [];
-      setRates(calculatedRates);
+      console.log(`✅ Calculated ${calculatedRates.length} shipping rates:`, calculatedRates);
       
-      return calculatedRates;
+      // Transform rates to match frontend interface
+      const transformedRates = calculatedRates.map((rate: any) => ({
+        carrier: rate.carrier,
+        serviceCode: rate.service_code,
+        serviceName: rate.service_name,
+        cost: rate.cost,
+        estimatedDays: rate.estimated_days,
+        estimatedDelivery: rate.estimated_delivery || `Delivery in ${rate.estimated_days}`
+      }));
+      
+      setRates(transformedRates);
+      
+      if (transformedRates.length === 0) {
+        toast({
+          title: "No rates found",
+          description: "No shipping rates are available for this shipment. Please check your shipping addresses and package details.",
+          variant: "destructive",
+        });
+      }
+      
+      return transformedRates;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to calculate shipping rates';
+      console.error('❌ Rate calculation error:', err);
       setError(errorMessage);
       toast({
         title: "Rate calculation failed",

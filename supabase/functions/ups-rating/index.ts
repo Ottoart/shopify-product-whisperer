@@ -241,6 +241,7 @@ async function processUPSRating(requestData: RatingRequest, credentials: any, ac
     }
 
     // Log shipping details for debugging
+    // Enhanced debugging information
     console.log('🌍 Shipping details:');
     console.log('Ship From Country:', requestData.shipFrom.country);
     console.log('Ship To Country:', requestData.shipTo.country);
@@ -248,6 +249,10 @@ async function processUPSRating(requestData: RatingRequest, credentials: any, ac
     console.log('Account Postal Code:', accountPostalCode);
     console.log('Account Country:', accountCountryCode);
     console.log('Negotiated Rates Enabled:', credentials.enable_negotiated_rates);
+    console.log('📦 Package Details:');
+    console.log('Weight (lbs):', requestData.package.weight);
+    console.log('Dimensions (inches):', `${requestData.package.length}x${requestData.package.width}x${requestData.package.height}`);
+    console.log('📮 Valid Services to check:', validServices?.map(s => `${s.service_code}: ${s.service_name}`) || []);
 
     // Force sandbox environment for consistency with token endpoint
     const ratingApiUrl = 'https://wwwcie.ups.com/api/rating/v1/rate';
@@ -371,7 +376,7 @@ async function processUPSRating(requestData: RatingRequest, credentials: any, ac
             continue; // Skip this service and try the next one
           }
 
-          // Transform UPS response to our format
+              // Transform UPS response to our format
           if (rateResponse.RateResponse?.RatedShipment) {
             const ratedShipments = Array.isArray(rateResponse.RateResponse.RatedShipment) 
               ? rateResponse.RateResponse.RatedShipment 
@@ -383,21 +388,37 @@ async function processUPSRating(requestData: RatingRequest, credentials: any, ac
               const serviceType = getUPSServiceType(serviceCode);
               const estimatedDays = getUPSEstimatedDays(serviceCode);
               
-              // Use negotiated rates if available and enabled, otherwise use published rates
-              const totalCharges = (credentials.enable_negotiated_rates && shipment.NegotiatedRateCharges) 
-                ? shipment.NegotiatedRateCharges.TotalCharge.MonetaryValue 
-                : shipment.TotalCharges?.MonetaryValue || '0';
+              // Enhanced rate extraction logic with better error handling
+              let totalCharges = '0';
+              let currency = 'USD';
               
-              const currency = shipment.TotalCharges?.CurrencyCode || 'USD';
+              // Try negotiated rates first if enabled
+              if (credentials.enable_negotiated_rates && shipment.NegotiatedRateCharges?.TotalCharge) {
+                totalCharges = shipment.NegotiatedRateCharges.TotalCharge.MonetaryValue || '0';
+                currency = shipment.NegotiatedRateCharges.TotalCharge.CurrencyCode || 'USD';
+                console.log(`📊 Rate for ${serviceName}: ${totalCharges} ${currency} (Negotiated)`);
+              } else if (shipment.TotalCharges) {
+                totalCharges = shipment.TotalCharges.MonetaryValue || '0';
+                currency = shipment.TotalCharges.CurrencyCode || 'USD';
+                console.log(`📊 Rate for ${serviceName}: ${totalCharges} ${currency} (Published)`);
+              } else {
+                console.error(`❌ No rate data found for ${serviceName}. UPS Response:`, JSON.stringify(shipment, null, 2));
+                continue; // Skip this rate if no pricing data
+              }
 
-              console.log(`📊 Rate for ${serviceName}: ${totalCharges} ${currency} ${credentials.enable_negotiated_rates && shipment.NegotiatedRateCharges ? '(Negotiated)' : '(Published)'}`);
+              // Validate rate data before adding
+              const costValue = parseFloat(totalCharges);
+              if (isNaN(costValue) || costValue <= 0) {
+                console.error(`❌ Invalid cost value for ${serviceName}: ${totalCharges}`);
+                continue;
+              }
 
               allRates.push({
                 carrier: 'UPS',
                 service_code: serviceCode,
                 service_name: serviceName,
                 service_type: serviceType,
-                cost: parseFloat(totalCharges),
+                cost: costValue,
                 currency: currency,
                 estimated_days: estimatedDays,
                 supports_tracking: true,
@@ -405,10 +426,22 @@ async function processUPSRating(requestData: RatingRequest, credentials: any, ac
                 supports_signature: true
               });
             }
+          } else {
+            console.error(`❌ No RatedShipment data in UPS response for ${service.service_code}:`, JSON.stringify(rateResponse, null, 2));
           }
         } else {
           console.error(`❌ UPS API Error for ${service.service_code} - Status:`, response.status);
           console.error(`❌ UPS API Error for ${service.service_code} - Response:`, responseText);
+          
+          // Try to parse error response for better debugging
+          try {
+            const errorResponse = JSON.parse(responseText);
+            if (errorResponse.response?.errors) {
+              console.error(`❌ UPS Error Details for ${service.service_code}:`, errorResponse.response.errors);
+            }
+          } catch (e) {
+            console.error(`❌ Could not parse UPS error response for ${service.service_code}`);
+          }
           // Continue with other services even if one fails
         }
       } catch (error) {
@@ -418,9 +451,22 @@ async function processUPSRating(requestData: RatingRequest, credentials: any, ac
     }
 
     console.log('✅ All UPS rates collected:', allRates);
+    
+    // Enhanced response with debug information
+    const response = {
+      rates: allRates,
+      debug: {
+        services_checked: validServices?.length || 0,
+        rates_found: allRates.length,
+        account_country: accountCountryCode,
+        ship_route: `${requestData.shipFrom.country} -> ${requestData.shipTo.country}`,
+        package_weight: requestData.package.weight,
+        timestamp: new Date().toISOString()
+      }
+    };
 
     return new Response(
-      JSON.stringify({ rates: allRates }),
+      JSON.stringify(response),
       { 
         status: 200, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 

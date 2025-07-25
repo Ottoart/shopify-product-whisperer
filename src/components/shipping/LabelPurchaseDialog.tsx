@@ -170,8 +170,13 @@ export function LabelPurchaseDialog({
   const calculateInitialRates = async () => {
     if (!order) return;
 
+    console.log('🔄 Calculating initial rates for order:', order.id);
+    console.log('📦 Package details:', packageDetails);
+    console.log('📮 Ship from config:', shipFromConfig);
+
     const rateRequest = {
-      orderId: order.id,
+      order_id: order.id, // Match backend interface
+      ship_from: shipFromConfig,
       shipTo: {
         name: order.customerName,
         address: order.shippingAddress.line1,
@@ -189,14 +194,19 @@ export function LabelPurchaseDialog({
       }
     };
 
-    await calculateRates(rateRequest);
+    console.log('📡 Sending rate request:', JSON.stringify(rateRequest, null, 2));
+    const calculatedRates = await calculateRates(rateRequest);
+    console.log('✅ Received rates:', calculatedRates);
   };
 
   const handleRecalculateRates = async () => {
-    if (!order) return;
+    if (!order || !shipFromConfig) return;
+    
+    console.log('🔄 Recalculating rates with updated package details');
     
     const rateRequest = {
-      orderId: order.id,
+      order_id: order.id, // Match backend interface
+      ship_from: shipFromConfig,
       shipTo: {
         name: order.customerName,
         address: order.shippingAddress.line1,
@@ -212,9 +222,14 @@ export function LabelPurchaseDialog({
         width: packageDetails.width,
         height: packageDetails.height
       },
-      additionalServices
+      additional_services: { // Transform to match backend interface
+        signature_required: additionalServices.signatureRequired,
+        insurance_value: additionalServices.insuranceValue,
+        saturday_delivery: additionalServices.saturdayDelivery
+      }
     };
 
+    console.log('📡 Recalculating with request:', JSON.stringify(rateRequest, null, 2));
     await calculateRates(rateRequest);
   };
 

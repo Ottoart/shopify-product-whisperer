@@ -331,12 +331,28 @@ async function getUPSRates(carrier: any, shipFrom: any, shipTo: any, packageDeta
       console.error('❌ UPS API error:', error);
       console.error('❌ UPS Error message:', error.message || 'Unknown error');
       console.error('❌ UPS Error details:', error.details || 'No details');
-      // Don't return fake rates for authenticated UPS - return empty array instead
+      return [];
+    }
+
+    // Enhanced UPS response handling
+    if (data?.error) {
+      console.error('❌ UPS API returned error:', data.error);
+      console.error('❌ UPS Error context:', data.details || 'No additional details');
       return [];
     }
 
     const rates = data?.rates || [];
-    console.log(`✅ UPS rates received: ${rates.length} rates`, rates.map((r: any) => `${r.service_name}: $${r.cost}`));
+    console.log(`✅ UPS rates received: ${rates.length} rates`);
+    
+    if (rates.length === 0) {
+      console.log('⚠️ No UPS rates returned - checking debug info');
+      if (data?.debug) {
+        console.log('🔍 UPS Debug Info:', JSON.stringify(data.debug, null, 2));
+      }
+    } else {
+      console.log('✅ UPS Rate details:', rates.map((r: any) => `${r.service_name}: $${r.cost} ${r.currency}`));
+    }
+    
     return rates;
   } catch (error) {
     console.error('❌ UPS rating error:', error);
