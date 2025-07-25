@@ -285,14 +285,14 @@ async function processUPSRating(requestData: RatingRequest, credentials: any, ac
     // Validate and normalize package weight (UPS minimum requirements)
     let packageWeightLbs = requestData.package.weight || 1.0; // Default to 1 lb if missing
     
-    // UPS minimum is 0.1 lbs, but for international shipments use 1.0 as safe minimum
-    if (packageWeightLbs < 1.0) {
-      packageWeightLbs = 1.0;
-      console.log('⚖️ Adjusted weight to minimum 1.0 lbs for UPS international shipping');
+    // UPS has strict weight requirements - ensure minimum 0.1 lbs and proper decimal format
+    if (packageWeightLbs < 0.1) {
+      packageWeightLbs = 0.1;
+      console.log('⚖️ Adjusted weight to minimum 0.1 lbs for UPS');
     }
     
-    // UPS requires whole number weights for some services - round up to nearest whole number
-    packageWeightLbs = Math.ceil(packageWeightLbs);
+    // Round to 1 decimal place to avoid precision issues
+    packageWeightLbs = Math.round(packageWeightLbs * 10) / 10;
     
     console.log(`📦 Weight validation: Original: ${requestData.package.weight}lbs, Normalized: ${packageWeightLbs}lbs`);
     
@@ -400,7 +400,7 @@ async function processUPSRating(requestData: RatingRequest, credentials: any, ac
                   Code: "LBS",
                   Description: "Pounds"
                 },
-                Weight: packageWeightLbs.toString()
+                Weight: packageWeightLbs.toFixed(1)
               }
             }],
             DeliveryTimeInformation: {
@@ -659,7 +659,7 @@ function buildProductDetails(requestData: RatingRequest, packageWeightLbs: numbe
             Code: "LBS", 
             Description: "Pounds"
           },
-          Weight: Math.ceil(Math.max(1.0, itemWeight)).toString() // UPS minimum 1 lb, rounded up
+          Weight: Math.max(0.1, itemWeight).toFixed(1) // UPS minimum 0.1 lbs
         },
         UnitValue: {
           CurrencyCode: requestData.order?.currency || "USD",
@@ -687,7 +687,7 @@ function buildProductDetails(requestData: RatingRequest, packageWeightLbs: numbe
           Code: "LBS",
           Description: "Pounds"
         },
-        Weight: Math.ceil(Math.max(1.0, packageWeightLbs)).toString()
+        Weight: Math.max(0.1, packageWeightLbs).toFixed(1)
       },
       UnitValue: {
         CurrencyCode: "USD",
