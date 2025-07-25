@@ -11,6 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { useShippingRates, type ShippingRate } from '@/hooks/useShippingRates';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { LabelConfirmationDialog } from './LabelConfirmationDialog';
 import { 
   Package, 
   Truck, 
@@ -87,6 +88,8 @@ export function LabelPurchaseDialog({
   });
   const [purchasedLabel, setPurchasedLabel] = useState<any>(null);
   const [loadingConfig, setLoadingConfig] = useState(true);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [orderSummary, setOrderSummary] = useState<any>(null);
   
   const { rates, loading, calculateRates, purchaseLabel } = useShippingRates();
   const { toast } = useToast();
@@ -233,6 +236,76 @@ export function LabelPurchaseDialog({
     await calculateRates(rateRequest);
   };
 
+  const handleGetLabel = async () => {
+    if (!selectedRate || !order || !shipFromConfig) return;
+
+    try {
+      // Call rate summary API to get detailed cost breakdown
+      const response = await supabase.functions.invoke('shipping-rate-summary', {
+        body: { fulfillmentPlanIds: [order.id] }
+      });
+
+      if (response.error) {
+        console.error('Error getting rate summary:', response.error);
+        toast({
+          title: "Error",
+          description: "Failed to get shipping cost details",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const summaryData = response.data;
+      if (summaryData.orderDetails && summaryData.orderDetails.length > 0) {
+        setOrderSummary(summaryData.orderDetails[0]);
+        setShowConfirmation(true);
+      } else {
+        // Fallback to basic confirmation
+        const fallbackSummary = {
+          orderNumber: order.orderNumber,
+          carrier: selectedRate.carrier,
+          service: selectedRate.serviceCode,
+          serviceName: selectedRate.serviceName,
+          shipTo: {
+            name: order.customerName,
+            address: order.shippingAddress.line1,
+            city: order.shippingAddress.city,
+            state: order.shippingAddress.state,
+            zip: order.shippingAddress.zip,
+            country: order.shippingAddress.country
+          },
+          shipFrom: shipFromConfig,
+          package: packageDetails,
+          items: order.items.map(item => ({
+            name: item.productTitle,
+            quantity: item.quantity,
+            price: order.totalAmount / order.items.length // Rough estimate
+          })),
+          costs: {
+            baseAmount: selectedRate.cost * 0.8,
+            fuelSurcharge: selectedRate.cost * 0.2,
+            hstAmount: selectedRate.cost * 0.13,
+            gstAmount: 0,
+            pstAmount: 0,
+            deliveryConfirmation: 0,
+            totalCost: selectedRate.cost,
+            currency: order.currency
+          },
+          estimatedDelivery: selectedRate.estimatedDays
+        };
+        setOrderSummary(fallbackSummary);
+        setShowConfirmation(true);
+      }
+    } catch (error) {
+      console.error('Failed to get label confirmation:', error);
+      toast({
+        title: "Error",
+        description: "Failed to get shipping confirmation details",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handlePurchaseLabel = async () => {
     if (!selectedRate || !order || !shipFromConfig) return;
 
@@ -255,6 +328,7 @@ export function LabelPurchaseDialog({
       );
 
       setPurchasedLabel(result);
+      setShowConfirmation(false);
       setStep('confirmation');
       onLabelPurchased?.();
     } catch (error) {
@@ -555,14 +629,14 @@ export function LabelPurchaseDialog({
                   <Button variant="outline" onClick={() => onOpenChange(false)}>
                     Cancel
                   </Button>
-                  <Button 
-                    onClick={() => setStep('purchase')} 
-                    disabled={!selectedRate}
-                    className="flex items-center gap-2"
-                  >
-                    <DollarSign className="h-4 w-4" />
-                    Purchase Label
-                  </Button>
+                   <Button 
+                     onClick={handleGetLabel} 
+                     disabled={!selectedRate}
+                     className="flex items-center gap-2"
+                   >
+                     <DollarSign className="h-4 w-4" />
+                     Get Label
+                   </Button>
                 </div>
               </div>
             )}
@@ -678,6 +752,18 @@ export function LabelPurchaseDialog({
           </>
         )}
       </DialogContent>
+
+      {/* Label Confirmation Dialog */}
+      {showConfirmation && orderSummary && (
+        <LabelConfirmationDialog
+          open={showConfirmation}
+          onOpenChange={setShowConfirmation}
+          orderData={orderSummary}
+          onConfirm={handlePurchaseLabel}
+          onCancel={() => setShowConfirmation(false)}
+          isLoading={loading}
+        />
+      )}
     </Dialog>
   );
 }
