@@ -1,62 +1,17 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { useShippingRates, type ShippingRate } from '@/hooks/useShippingRates';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { LabelConfirmationDialog } from './LabelConfirmationDialog';
-import { 
-  Package, 
-  Truck, 
-  DollarSign, 
-  Calendar, 
-  Loader2, 
-  CheckCircle, 
-  AlertCircle,
-  Printer,
-  Download,
-  Weight,
-  Ruler,
-  Shield,
-  FileText
-} from 'lucide-react';
-
-interface Order {
-  id: string;
-  orderNumber: string;
-  customerName: string;
-  customerEmail: string;
-  totalAmount: number;
-  currency: string;
-  storeName: string;
-  shippingAddress: {
-    line1: string;
-    line2?: string;
-    city: string;
-    state: string;
-    zip: string;
-    country: string;
-    validated: boolean;
-  };
-  packageDetails: {
-    weight?: number;
-    length?: number;
-    width?: number;
-    height?: number;
-  };
-  items: Array<{
-    productTitle: string;
-    quantity: number;
-    weight?: number;
-  }>;
-}
+import { useShippingRates } from '@/hooks/useShippingRates';
+import { useOrders, type Order } from '@/hooks/useOrders';
+import { Truck, Package, MapPin, Phone, AlertTriangle } from 'lucide-react';
 
 interface LabelPurchaseDialogProps {
   open: boolean;
@@ -65,95 +20,90 @@ interface LabelPurchaseDialogProps {
   onLabelPurchased?: () => void;
 }
 
-export function LabelPurchaseDialog({ 
-  open, 
-  onOpenChange, 
-  order,
-  onLabelPurchased 
-}: LabelPurchaseDialogProps) {
-  const [step, setStep] = useState<'rates' | 'purchase' | 'confirmation'>('rates');
-  const [selectedRate, setSelectedRate] = useState<ShippingRate | null>(null);
-  const [shipFromConfig, setShipFromConfig] = useState<any>(null);
+export function LabelPurchaseDialog({ open, onOpenChange, order, onLabelPurchased }: LabelPurchaseDialogProps) {
+  const { toast } = useToast();
+
+  const [shipFromConfig, setShipFromConfig] = useState({
+    name: '',
+    company: '',
+    address: '',
+    address2: '',
+    city: '',
+    state: '',
+    zip: '',
+    country: 'CA',
+    phone: '' // Add phone field
+  });
+
   const [packageDetails, setPackageDetails] = useState({
-    weight: 1,
+    weight: 2.5,
     length: 12,
     width: 8,
     height: 4,
-    packageType: '02'
+    value: 0
   });
-  const [additionalServices, setAdditionalServices] = useState({
-    signatureRequired: false,
-    insuranceValue: 0,
-    saturdayDelivery: false
-  });
-  const [purchasedLabel, setPurchasedLabel] = useState<any>(null);
-  const [loadingConfig, setLoadingConfig] = useState(true);
-  const [showConfirmation, setShowConfirmation] = useState(false);
-  const [orderSummary, setOrderSummary] = useState<any>(null);
-  
-  const { rates, loading, calculateRates, purchaseLabel } = useShippingRates();
-  const { toast } = useToast();
 
-  // Load shipping configuration and calculate rates when dialog opens
+  const [recipientPhone, setRecipientPhone] = useState('');
+  const [shipperPhone, setShipperPhone] = useState('');
+  const [loadingConfig, setLoadingConfig] = useState(true);
+
+  const {
+    rates,
+    loading: ratesLoading,
+    calculateRates,
+    purchaseLabel
+  } = useShippingRates();
+
+  // Load shipping configuration and rates when dialog opens
   useEffect(() => {
     if (open && order) {
-      loadShippingConfig();
+      loadShippingConfiguration();
     }
   }, [open, order]);
 
-  // Update package details from order when it changes
-  useEffect(() => {
-    if (order?.packageDetails) {
-      setPackageDetails(prev => ({
-        ...prev,
-        weight: order.packageDetails.weight || 1,
-        length: order.packageDetails.length || 12,
-        width: order.packageDetails.width || 8,
-        height: order.packageDetails.height || 4
-      }));
-    }
-  }, [order]);
-
-  const loadShippingConfig = async () => {
-    if (!order) return;
-    
+  const loadShippingConfiguration = async () => {
     setLoadingConfig(true);
     try {
-      // Load default shipping configuration for the store
-      const { data: config, error } = await supabase
+      console.log('📊 Loading shipping configuration...');
+
+      // Load default shipping config
+      const { data: configs } = await supabase
         .from('store_shipping_configs')
         .select('*')
-        .eq('store_name', order.storeName)
         .eq('is_default', true)
-        .single();
+        .limit(1);
 
-      if (error && error.code !== 'PGRST116') { // Not found is okay
-        console.error('Error loading shipping config:', error);
-      }
-
+      const config = configs?.[0];
+      
       if (config) {
         setShipFromConfig({
-          name: config.from_name,
+          name: config.from_name || '',
           company: config.from_company || '',
-          address: config.from_address_line1,
+          address: config.from_address_line1 || '',
           address2: config.from_address_line2 || '',
-          city: config.from_city,
-          state: config.from_state,
-          zip: config.from_zip,
-          country: config.from_country
+          city: config.from_city || '',
+          state: config.from_state || '',
+          zip: config.from_zip || '',
+          country: config.from_country || 'CA',
+          phone: config.from_phone || '' // Load phone from config
         });
+        
+        setShipperPhone(config.from_phone || ''); // Set shipper phone
       } else {
-        // Use default configuration
+        // Default shipping config
         setShipFromConfig({
-          name: 'Default Sender',
+          name: 'Default Shipper',
           company: '',
           address: '123 Main St',
           address2: '',
           city: 'New York',
           state: 'NY',
           zip: '10001',
-          country: 'US'
+          country: 'US',
+          phone: '555-0123' // Default phone
         });
+        
+        setShipperPhone('555-0123');
       }
 
       // Auto-calculate rates
@@ -198,573 +148,406 @@ export function LabelPurchaseDialog({
     };
 
     console.log('📡 Sending rate request:', JSON.stringify(rateRequest, null, 2));
-    const calculatedRates = await calculateRates(rateRequest);
-    console.log('✅ Received rates:', calculatedRates);
+
+    try {
+      await calculateRates(rateRequest);
+    } catch (error) {
+      console.error('Failed to calculate rates:', error);
+    }
   };
 
   const handleRecalculateRates = async () => {
-    if (!order || !shipFromConfig) return;
-    
-    console.log('🔄 Recalculating rates with updated package details');
-    
-    const rateRequest = {
-      order_id: order.id, // Match backend interface
-      ship_from: shipFromConfig,
-      shipTo: {
+    await calculateInitialRates();
+  };
+
+  const handlePurchaseLabel = async (rate: any) => {
+    if (!order) return;
+
+    // Validate required phone numbers for UPS
+    if (rate.carrier === 'UPS') {
+      if (!shipperPhone?.trim()) {
+        toast({
+          title: "Phone number required",
+          description: "UPS requires a shipper phone number. Please enter your phone number.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (!recipientPhone?.trim()) {
+        toast({
+          title: "Phone number required", 
+          description: "UPS requires a recipient phone number. Please enter the recipient's phone number.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    try {
+      console.log('🔄 Purchasing label for rate:', rate);
+      console.log('📞 Using phone numbers - Shipper:', shipperPhone, 'Recipient:', recipientPhone);
+
+      const shipFromWithPhone = {
+        ...shipFromConfig,
+        phone: shipperPhone || '514-555-0123'
+      };
+
+      const shipToWithPhone = {
         name: order.customerName,
+        company: '',
         address: order.shippingAddress.line1,
         address2: order.shippingAddress.line2,
         city: order.shippingAddress.city,
         state: order.shippingAddress.state,
         zip: order.shippingAddress.zip,
-        country: order.shippingAddress.country
-      },
-      package: {
-        weight: packageDetails.weight,
-        length: packageDetails.length,
-        width: packageDetails.width,
-        height: packageDetails.height
-      },
-      additional_services: { // Transform to match backend interface
-        signature_required: additionalServices.signatureRequired,
-        insurance_value: additionalServices.insuranceValue,
-        saturday_delivery: additionalServices.saturdayDelivery
-      }
-    };
+        country: order.shippingAddress.country,
+        phone: recipientPhone || shipperPhone || '514-555-0123'
+      };
 
-    console.log('📡 Recalculating with request:', JSON.stringify(rateRequest, null, 2));
-    await calculateRates(rateRequest);
-  };
+      const result = await purchaseLabel(
+        order.id,
+        rate.serviceCode,
+        rate.carrier,
+        shipFromWithPhone,
+        shipToWithPhone,
+        {
+          ...packageDetails,
+          value: packageDetails.value || order.totalAmount
+        },
+        {
+          signatureRequired: false,
+          insuranceValue: order.totalAmount
+        }
+      );
 
-  const handleGetLabel = async () => {
-    if (!selectedRate || !order || !shipFromConfig) return;
-
-    try {
-      // Call rate summary API to get detailed cost breakdown
-      const response = await supabase.functions.invoke('shipping-rate-summary', {
-        body: { fulfillmentPlanIds: [order.id] }
+      console.log('✅ Label purchased successfully:', result);
+      
+      toast({
+        title: "Label purchased successfully",
+        description: `Tracking number: ${result.tracking_number || result.trackingNumber}`,
       });
 
-      if (response.error) {
-        console.error('Error getting rate summary:', response.error);
-        toast({
-          title: "Error",
-          description: "Failed to get shipping cost details",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const summaryData = response.data;
-      if (summaryData.orderDetails && summaryData.orderDetails.length > 0) {
-        setOrderSummary(summaryData.orderDetails[0]);
-        setShowConfirmation(true);
-      } else {
-        // Fallback to basic confirmation
-        const fallbackSummary = {
-          orderNumber: order.orderNumber,
-          carrier: selectedRate.carrier,
-          service: selectedRate.serviceCode,
-          serviceName: selectedRate.serviceName,
-          shipTo: {
-            name: order.customerName,
-            address: order.shippingAddress.line1,
-            city: order.shippingAddress.city,
-            state: order.shippingAddress.state,
-            zip: order.shippingAddress.zip,
-            country: order.shippingAddress.country
-          },
-          shipFrom: shipFromConfig,
-          package: packageDetails,
-          items: order.items.map(item => ({
-            name: item.productTitle,
-            quantity: item.quantity,
-            price: order.totalAmount / order.items.length // Rough estimate
-          })),
-          costs: {
-            baseAmount: selectedRate.cost * 0.8,
-            fuelSurcharge: selectedRate.cost * 0.2,
-            hstAmount: selectedRate.cost * 0.13,
-            gstAmount: 0,
-            pstAmount: 0,
-            deliveryConfirmation: 0,
-            totalCost: selectedRate.cost,
-            currency: order.currency
-          },
-          estimatedDelivery: selectedRate.estimatedDays
-        };
-        setOrderSummary(fallbackSummary);
-        setShowConfirmation(true);
-      }
+      onLabelPurchased?.();
+      onOpenChange(false);
     } catch (error) {
-      console.error('Failed to get label confirmation:', error);
+      console.error('❌ Failed to purchase label:', error);
       toast({
-        title: "Error",
-        description: "Failed to get shipping confirmation details",
+        title: "Label purchase failed",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
         variant: "destructive",
       });
     }
   };
 
-  const handlePurchaseLabel = async () => {
-    if (!selectedRate || !order || !shipFromConfig) return;
-
-    try {
-      const result = await purchaseLabel(
-        order.id,
-        selectedRate.serviceCode,
-        selectedRate.carrier, // Add carrier parameter for multi-carrier support
-        shipFromConfig,
-        {
-          name: order.customerName,
-          address: order.shippingAddress.line1,
-          address2: order.shippingAddress.line2,
-          city: order.shippingAddress.city,
-          state: order.shippingAddress.state,
-          zip: order.shippingAddress.zip,
-          country: order.shippingAddress.country
-        },
-        packageDetails,
-        additionalServices
-      );
-
-      setPurchasedLabel(result);
-      setShowConfirmation(false);
-      setStep('confirmation');
-      onLabelPurchased?.();
-    } catch (error) {
-      console.error('Failed to purchase label:', error);
-    }
-  };
-
-  const handlePrintLabel = () => {
-    if (!purchasedLabel?.labelUrl) return;
-    
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>Shipping Label - ${purchasedLabel.trackingNumber}</title>
-            <style>
-              body { margin: 0; padding: 20px; text-align: center; }
-              img { max-width: 100%; height: auto; }
-              .header { margin-bottom: 20px; font-family: Arial, sans-serif; }
-            </style>
-          </head>
-          <body>
-            <div class="header">
-              <h2>Shipping Label</h2>
-              <p>Tracking: ${purchasedLabel.trackingNumber}</p>
-              <p>Order: ${order?.orderNumber}</p>
-            </div>
-            <img src="${purchasedLabel.labelUrl}" alt="Shipping Label" />
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.print();
-    }
-  };
-
-  const handleDownloadLabel = () => {
-    if (!purchasedLabel?.labelUrl) return;
-    
-    const link = document.createElement('a');
-    link.href = purchasedLabel.labelUrl;
-    link.download = `label-${purchasedLabel.trackingNumber}.gif`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const resetDialog = () => {
-    setStep('rates');
-    setSelectedRate(null);
-    setPurchasedLabel(null);
-    setPackageDetails({
-      weight: order?.packageDetails?.weight || 1,
-      length: order?.packageDetails?.length || 12,
-      width: order?.packageDetails?.width || 8,
-      height: order?.packageDetails?.height || 4,
-      packageType: '02'
-    });
-    setAdditionalServices({
-      signatureRequired: false,
-      insuranceValue: 0,
-      saturdayDelivery: false
-    });
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
-
   if (!order) return null;
 
   return (
-    <Dialog open={open} onOpenChange={(newOpen) => {
-      onOpenChange(newOpen);
-      if (!newOpen) {
-        setTimeout(resetDialog, 200); // Reset after dialog closes
-      }
-    }}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            Purchase Shipping Label - Order #{order.orderNumber}
-          </DialogTitle>
-        </DialogHeader>
+            <Truck className="w-5 h-5" />
+          Purchase Shipping Label - {order.orderNumber}
+        </DialogTitle>
+      </DialogHeader>
 
-        {/* Order Summary */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm">Order Summary</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-muted-foreground">Customer:</span> {order.customerName}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left Column - Configuration */}
+        <div className="space-y-6">
+          {/* Order Summary */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="w-4 h-4" />
+                Order Details
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Customer:</span>
+                <span className="font-medium">{order.customerName}</span>
               </div>
-              <div>
-                <span className="text-muted-foreground">Total:</span> {formatCurrency(order.totalAmount)}
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Total:</span>
+                <span className="font-medium">{order.currency} {order.totalAmount}</span>
               </div>
-              <div className="col-span-2">
-                <span className="text-muted-foreground">Ship to:</span>{' '}
-                {order.shippingAddress.line1}, {order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zip}
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Destination:</span>
+                <span className="font-medium text-right">
+                  {order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zip}
+                </span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Ship From Configuration */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4" />
+                  Ship From Address
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="from-name">From Name *</Label>
+                    <Input
+                      id="from-name"
+                      value={shipFromConfig.name}
+                      onChange={(e) => setShipFromConfig(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Shipper name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="from-phone">From Phone * (Required for UPS)</Label>
+                    <Input
+                      id="from-phone"
+                      value={shipperPhone}
+                      onChange={(e) => setShipperPhone(e.target.value)}
+                      placeholder="(555) 123-4567"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="from-company">From Company</Label>
+                    <Input
+                      id="from-company"
+                      value={shipFromConfig.company}
+                      onChange={(e) => setShipFromConfig(prev => ({ ...prev, company: e.target.value }))}
+                      placeholder="Company name (optional)"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="recipient-phone">Recipient Phone * (Required for UPS)</Label>
+                    <Input
+                      id="recipient-phone"
+                      value={recipientPhone}
+                      onChange={(e) => setRecipientPhone(e.target.value)}
+                      placeholder="(555) 123-4567"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="from-address">Address *</Label>
+                    <Input
+                      id="from-address"
+                      value={shipFromConfig.address}
+                      onChange={(e) => setShipFromConfig(prev => ({ ...prev, address: e.target.value }))}
+                      placeholder="Street address"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="from-address2">Address 2</Label>
+                    <Input
+                      id="from-address2"
+                      value={shipFromConfig.address2}
+                      onChange={(e) => setShipFromConfig(prev => ({ ...prev, address2: e.target.value }))}
+                      placeholder="Apt, suite, etc."
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="from-city">City *</Label>
+                    <Input
+                      id="from-city"
+                      value={shipFromConfig.city}
+                      onChange={(e) => setShipFromConfig(prev => ({ ...prev, city: e.target.value }))}
+                      placeholder="City"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="from-state">State/Province *</Label>
+                    <Input
+                      id="from-state"
+                      value={shipFromConfig.state}
+                      onChange={(e) => setShipFromConfig(prev => ({ ...prev, state: e.target.value }))}
+                      placeholder="State/Province"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="from-zip">ZIP/Postal Code *</Label>
+                    <Input
+                      id="from-zip"
+                      value={shipFromConfig.zip}
+                      onChange={(e) => setShipFromConfig(prev => ({ ...prev, zip: e.target.value }))}
+                      placeholder="ZIP/Postal"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Package Details */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="w-4 h-4" />
+                  Package Details
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="weight">Weight (lbs) *</Label>
+                    <Input
+                      id="weight"
+                      type="number"
+                      step="0.1"
+                      min="0.1"
+                      value={packageDetails.weight}
+                      onChange={(e) => setPackageDetails(prev => ({ ...prev, weight: parseFloat(e.target.value) || 0.1 }))}
+                      placeholder="2.5"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="value">Declared Value ({order.currency}) *</Label>
+                    <Input
+                      id="value"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={packageDetails.value || order.totalAmount}
+                      onChange={(e) => setPackageDetails(prev => ({ ...prev, value: parseFloat(e.target.value) || 0 }))}
+                      placeholder={order.totalAmount.toString()}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="length">Length (in) *</Label>
+                    <Input
+                      id="length"
+                      type="number"
+                      step="0.1"
+                      min="0.1"
+                      value={packageDetails.length}
+                      onChange={(e) => setPackageDetails(prev => ({ ...prev, length: parseFloat(e.target.value) || 0.1 }))}
+                      placeholder="12"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="width">Width (in) *</Label>
+                    <Input
+                      id="width"
+                      type="number"
+                      step="0.1"
+                      min="0.1"
+                      value={packageDetails.width}
+                      onChange={(e) => setPackageDetails(prev => ({ ...prev, width: parseFloat(e.target.value) || 0.1 }))}
+                      placeholder="8"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="height">Height (in) *</Label>
+                    <Input
+                      id="height"
+                      type="number"
+                      step="0.1"
+                      min="0.1"
+                      value={packageDetails.height}
+                      onChange={(e) => setPackageDetails(prev => ({ ...prev, height: parseFloat(e.target.value) || 0.1 }))}
+                      placeholder="4"
+                    />
+                  </div>
+                </div>
+
+                <Button 
+                  onClick={handleRecalculateRates} 
+                  variant="outline" 
+                  className="w-full"
+                  disabled={ratesLoading}
+                >
+                  {ratesLoading ? 'Calculating...' : 'Recalculate Rates'}
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right Column - Shipping Rates */}
+          <div className="space-y-6">
+            {/* Phone Number Requirements Alert */}
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
+                <div>
+                  <h4 className="font-medium text-amber-900">Phone Numbers Required</h4>
+                  <p className="text-sm text-amber-700 mt-1">
+                    UPS requires phone numbers for both shipper and recipient. Canada Post phone numbers are optional.
+                  </p>
+                </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
 
-        {loadingConfig ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin mr-2" />
-            Loading shipping configuration...
-          </div>
-        ) : (
-          <>
-            {/* Step 1: Rate Selection */}
-            {step === 'rates' && (
-              <div className="space-y-6">
-                {/* Package Details */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <Weight className="h-4 w-4" />
-                      Package Details
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-4 gap-4">
-                      <div>
-                        <Label htmlFor="weight">Weight (lbs)</Label>
-                        <Input
-                          id="weight"
-                          type="number"
-                          step="0.1"
-                          value={packageDetails.weight}
-                          onChange={(e) => setPackageDetails(prev => ({ ...prev, weight: parseFloat(e.target.value) || 0 }))}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="length">Length (in)</Label>
-                        <Input
-                          id="length"
-                          type="number"
-                          value={packageDetails.length}
-                          onChange={(e) => setPackageDetails(prev => ({ ...prev, length: parseInt(e.target.value) || 0 }))}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="width">Width (in)</Label>
-                        <Input
-                          id="width"
-                          type="number"
-                          value={packageDetails.width}
-                          onChange={(e) => setPackageDetails(prev => ({ ...prev, width: parseInt(e.target.value) || 0 }))}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="height">Height (in)</Label>
-                        <Input
-                          id="height"
-                          type="number"
-                          value={packageDetails.height}
-                          onChange={(e) => setPackageDetails(prev => ({ ...prev, height: parseInt(e.target.value) || 0 }))}
-                        />
-                      </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Available Shipping Rates</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {loadingConfig ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3].map((i) => (
+                      <Skeleton key={i} className="h-16 w-full" />
+                    ))}
+                  </div>
+                ) : ratesLoading ? (
+                  <div className="text-center py-8">
+                    <div className="inline-flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                      Calculating shipping rates...
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="packageType">Package Type</Label>
-                        <Select value={packageDetails.packageType} onValueChange={(value) => setPackageDetails(prev => ({ ...prev, packageType: value }))}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="02">Customer Supplied Package</SelectItem>
-                            <SelectItem value="01">UPS Letter</SelectItem>
-                            <SelectItem value="03">Tube</SelectItem>
-                            <SelectItem value="04">PAK</SelectItem>
-                            <SelectItem value="21">UPS Express Box</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="flex items-end">
-                        <Button onClick={handleRecalculateRates} disabled={loading}>
-                          {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                          Recalculate Rates
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Additional Services */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <Shield className="h-4 w-4" />
-                      Additional Services
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="signature"
-                          checked={additionalServices.signatureRequired}
-                          onCheckedChange={(checked) => setAdditionalServices(prev => ({ ...prev, signatureRequired: checked as boolean }))}
-                        />
-                        <Label htmlFor="signature">Signature Required</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="saturday"
-                          checked={additionalServices.saturdayDelivery}
-                          onCheckedChange={(checked) => setAdditionalServices(prev => ({ ...prev, saturdayDelivery: checked as boolean }))}
-                        />
-                        <Label htmlFor="saturday">Saturday Delivery</Label>
-                      </div>
-                    </div>
-                    <div>
-                      <Label htmlFor="insurance">Insurance Value ($)</Label>
-                      <Input
-                        id="insurance"
-                        type="number"
-                        step="0.01"
-                        value={additionalServices.insuranceValue}
-                        onChange={(e) => setAdditionalServices(prev => ({ ...prev, insuranceValue: parseFloat(e.target.value) || 0 }))}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Shipping Rates */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <Truck className="h-4 w-4" />
-                      Available Shipping Rates
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {loading ? (
-                      <div className="flex items-center justify-center py-8">
-                        <Loader2 className="h-6 w-6 animate-spin mr-2" />
-                        Calculating shipping rates...
-                      </div>
-                    ) : rates.length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <AlertCircle className="h-8 w-8 mx-auto mb-2" />
-                        No shipping rates available. Please check your package details and try again.
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {rates.map((rate, index) => (
-                          <div
-                            key={index}
-                            className={`border rounded-lg p-4 cursor-pointer transition-colors ${
-                              selectedRate?.serviceCode === rate.serviceCode
-                                ? 'border-primary bg-primary/5'
-                                : 'border-border hover:border-primary/50'
-                            }`}
-                            onClick={() => setSelectedRate(rate)}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <div className={`w-4 h-4 rounded-full border-2 ${
-                                  selectedRate?.serviceCode === rate.serviceCode
-                                    ? 'border-primary bg-primary'
-                                    : 'border-muted-foreground'
-                                }`} />
-                                <div>
-                                  <div className="font-medium">{rate.serviceName}</div>
-                                  <div className="text-sm text-muted-foreground flex items-center gap-4">
-                                    <span className="flex items-center gap-1">
-                                      <Calendar className="h-3 w-3" />
-                                      {rate.estimatedDays}
-                                    </span>
-                                    <span>{rate.estimatedDelivery}</span>
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-lg font-semibold">{formatCurrency(rate.cost)}</div>
-                                <Badge variant="secondary" className="text-xs">{rate.carrier}</Badge>
-                              </div>
-                            </div>
+                  </div>
+                ) : rates.length > 0 ? (
+                  <div className="space-y-3">
+                    {rates.map((rate, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline">{rate.carrier}</Badge>
+                            <span className="font-medium">{rate.serviceName}</span>
                           </div>
-                        ))}
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {rate.estimatedDays}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-bold text-lg">
+                            ${rate.cost.toFixed(2)}
+                          </div>
+                          <Button
+                            size="sm"
+                            onClick={() => handlePurchaseLabel(rate)}
+                            className="mt-2"
+                          >
+                            Purchase Label
+                          </Button>
+                        </div>
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                <div className="flex justify-between">
-                  <Button variant="outline" onClick={() => onOpenChange(false)}>
-                    Cancel
-                  </Button>
-                   <Button 
-                     onClick={handleGetLabel} 
-                     disabled={!selectedRate}
-                     className="flex items-center gap-2"
-                   >
-                     <DollarSign className="h-4 w-4" />
-                     Get Label
-                   </Button>
-                </div>
-              </div>
-            )}
-
-            {/* Step 2: Purchase Confirmation */}
-            {step === 'purchase' && selectedRate && (
-              <div className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm">Purchase Summary</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <span className="text-muted-foreground">Service:</span> {selectedRate.serviceName}
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Cost:</span> {formatCurrency(selectedRate.cost)}
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Delivery:</span> {selectedRate.estimatedDays}
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Est. Date:</span> {selectedRate.estimatedDelivery}
-                      </div>
-                    </div>
-                    <Separator />
-                    <div className="space-y-2 text-sm">
-                      <div><strong>Package:</strong> {packageDetails.weight} lbs, {packageDetails.length}×{packageDetails.width}×{packageDetails.height} in</div>
-                      {additionalServices.signatureRequired && <div><strong>Signature Required:</strong> Yes</div>}
-                      {additionalServices.saturdayDelivery && <div><strong>Saturday Delivery:</strong> Yes</div>}
-                      {additionalServices.insuranceValue > 0 && <div><strong>Insurance:</strong> {formatCurrency(additionalServices.insuranceValue)}</div>}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <div className="flex justify-between">
-                  <Button variant="outline" onClick={() => setStep('rates')}>
-                    Back to Rates
-                  </Button>
-                  <Button 
-                    onClick={handlePurchaseLabel} 
-                    disabled={loading}
-                    className="flex items-center gap-2"
-                  >
-                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
-                    Confirm Purchase
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* Step 3: Confirmation & Print */}
-            {step === 'confirmation' && purchasedLabel && (
-              <div className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm flex items-center gap-2 text-green-600">
-                      <CheckCircle className="h-5 w-5" />
-                      Label Purchased Successfully!
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <span className="text-muted-foreground">Tracking Number:</span>
-                        <div className="font-mono font-semibold">{purchasedLabel.trackingNumber}</div>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Total Cost:</span>
-                        <div className="font-semibold">{formatCurrency(purchasedLabel.cost)}</div>
-                      </div>
-                      <div className="col-span-2">
-                        <span className="text-muted-foreground">Estimated Delivery:</span>
-                        <div>{purchasedLabel.estimatedDelivery}</div>
-                      </div>
-                    </div>
-                    
-                    <Separator />
-                    
-                    <div className="space-y-3">
-                      <h4 className="font-medium">Shipping Label</h4>
-                      <div className="border rounded-lg p-4 bg-muted/50">
-                        <img 
-                          src={purchasedLabel.labelUrl} 
-                          alt="Shipping Label" 
-                          className="max-w-full h-auto mx-auto"
-                          style={{ maxHeight: '400px' }}
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="flex gap-3">
-                      <Button onClick={handlePrintLabel} className="flex items-center gap-2">
-                        <Printer className="h-4 w-4" />
-                        Print Label
-                      </Button>
-                      <Button variant="outline" onClick={handleDownloadLabel} className="flex items-center gap-2">
-                        <Download className="h-4 w-4" />
-                        Download
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <div className="flex justify-end">
-                  <Button onClick={() => onOpenChange(false)}>
-                    Close
-                  </Button>
-                </div>
-              </div>
-            )}
-          </>
-        )}
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Truck className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>No shipping rates available</p>
+                    <p className="text-sm mt-1">Check your package details and addresses</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </DialogContent>
-
-      {/* Label Confirmation Dialog */}
-      {showConfirmation && orderSummary && (
-        <LabelConfirmationDialog
-          open={showConfirmation}
-          onOpenChange={setShowConfirmation}
-          orderData={orderSummary}
-          onConfirm={handlePurchaseLabel}
-          onCancel={() => setShowConfirmation(false)}
-          isLoading={loading}
-        />
-      )}
     </Dialog>
   );
 }
