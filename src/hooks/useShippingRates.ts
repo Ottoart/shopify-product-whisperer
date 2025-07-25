@@ -197,11 +197,11 @@ export function useShippingRates() {
           serviceCode,
           shipFrom: {
             ...shipFrom,
-            phone: shipFrom.phone || '514-555-0123'
+            phone: shipFrom.phone || '514-555-0123' // Ensure phone is always included
           },
           shipTo: {
             ...shipTo,
-            phone: shipTo.phone || '514-555-0123'
+            phone: shipTo.phone || shipFrom.phone || '514-555-0123' // Fallback hierarchy
           },
           package: {
             weight: packageDetails.weight,
