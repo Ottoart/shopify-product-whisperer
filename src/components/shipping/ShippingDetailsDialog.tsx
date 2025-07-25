@@ -762,7 +762,8 @@ export function ShippingDetailsDialog({ isOpen, onClose, order, onUpdateOrder }:
                 </Card>
 
                 {/* International Shipping - Customs Declarations */}
-                {order.shippingAddress?.country !== 'US' && (
+                {/* Show customs declarations for all shipments from Canada */}
+                {(true) && (
                   <Card>
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">

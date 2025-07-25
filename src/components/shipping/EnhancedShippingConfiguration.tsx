@@ -137,10 +137,10 @@ export function EnhancedShippingConfiguration({
     company: "",
     address_line1: "",
     address_line2: "",
-    city: "",
-    state: "",
-    zip: "",
-    country: "US",
+    city: "Montreal",
+    state: "QC",
+    zip: "H2N 1Z4",
+    country: "CA",
     phone: "",
     email: ""
   });
@@ -195,17 +195,8 @@ export function EnhancedShippingConfiguration({
       if (error) throw error;
 
       if (data) {
-        // Fix country code if Montreal is set to US
-        let correctedCountry = data.from_country;
-        if (data.from_city?.toLowerCase().includes('montreal') && data.from_country === 'US') {
-          correctedCountry = 'CA';
-          
-          // Update in database
-          await supabase
-            .from('store_shipping_configs')
-            .update({ from_country: 'CA' })
-            .eq('id', data.id);
-        }
+        // Use the correct country code from database
+        const correctedCountry = data.from_country;
 
         const address: ShipFromAddress = {
           id: data.id,
@@ -366,17 +357,17 @@ export function EnhancedShippingConfiguration({
       setSelectedShipFrom(address.id!);
       setShowAddressDialog(false);
 
-      // Reset form
+      // Reset form with Canadian defaults
       setNewAddress({
         label: "",
         name: "",
         company: "",
         address_line1: "",
         address_line2: "",
-        city: "",
-        state: "",
-        zip: "",
-        country: "US",
+        city: "Montreal",
+        state: "QC",
+        zip: "H2N 1Z4",
+        country: "CA",
         phone: "",
         email: ""
       });
@@ -470,11 +461,8 @@ export function EnhancedShippingConfiguration({
     try {
       const shipFromAddress = shipFromAddresses.find(addr => addr.id === selectedShipFrom);
       
-      // Fix country code for Montreal (should be CA, not US)
-      let shipFromCountry = shipFromAddress?.country || 'US';
-      if (shipFromAddress?.city?.toLowerCase() === 'montreal' && shipFromCountry === 'US') {
-        shipFromCountry = 'CA';
-      }
+      // Use the country code from ship-from address
+      const shipFromCountry = shipFromAddress?.country || 'CA';
       
       const requestData = {
         order_id: currentOrderId,

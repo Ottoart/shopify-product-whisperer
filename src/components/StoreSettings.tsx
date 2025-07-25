@@ -246,8 +246,8 @@ export function StoreSettings({ storeId, onBack }: StoreSettingsProps) {
                         setSettings(prev => ({ ...prev, standardize_addresses: checked as boolean }))
                       }
                     />
-                    <Label htmlFor="standardize_us" className="text-sm">
-                      Standardize and correct US addresses
+                     <Label htmlFor="standardize_us" className="text-sm">
+                      Standardize and correct Canadian and US addresses
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
