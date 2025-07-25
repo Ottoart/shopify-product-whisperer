@@ -89,7 +89,7 @@ Deno.serve(async (req) => {
     const requestData: RatingRequest = await req.json();
     console.log('📍 Full request data:', JSON.stringify(requestData, null, 2));
 
-    // Handle both new and legacy data formats
+    // Handle both new standardized format and legacy data formats
     const shipFrom = requestData.shipFrom || requestData.ship_from;
     const shipTo = requestData.shipTo || requestData.ship_to;
     const pkg = requestData.package;
@@ -103,6 +103,9 @@ Deno.serve(async (req) => {
       shipFrom: shipFrom.zip, 
       shipTo: shipTo.zip, 
       weight: pkg.weight,
+      weightUnit: pkg.weight_unit || 'LBS',
+      dimensions: `${pkg.length}x${pkg.width}x${pkg.height}`,
+      dimensionUnit: pkg.dimension_unit || 'IN',
       items: order?.items?.length || 0
     });
 
@@ -144,7 +147,7 @@ Deno.serve(async (req) => {
 
     if (!apiKey || !apiSecret) {
       console.log('⚠️ No Canada Post credentials available, returning fallback rates');
-      return new Response(JSON.stringify(getFallbackRates()), {
+      return new Response(JSON.stringify(getFallbackRates(shipTo.country)), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       });
@@ -233,7 +236,7 @@ Deno.serve(async (req) => {
       
       // Return fallback rates on API error
       console.log('🔄 Returning fallback rates due to API error');
-      return new Response(JSON.stringify(getFallbackRates()), {
+      return new Response(JSON.stringify(getFallbackRates(shipTo.country)), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       });
@@ -243,7 +246,7 @@ Deno.serve(async (req) => {
     console.error('💥 Error in Canada Post rating:', error);
     
     // Return fallback rates on any error
-    return new Response(JSON.stringify(getFallbackRates()), {
+    return new Response(JSON.stringify(getFallbackRates('US')), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
@@ -390,10 +393,49 @@ function parseCanadaPostXMLResponse(xml: string): CanadaPostRate[] {
     }
   }
   
-  return rates.length > 0 ? rates : getFallbackRates();
+  return rates.length > 0 ? rates : getFallbackRates('US');
 }
 
-function getFallbackRates(): CanadaPostRate[] {
+function getFallbackRates(destinationCountry?: string): CanadaPostRate[] {
+  // Return different fallback rates based on destination
+  if (destinationCountry === 'US') {
+    return [
+      {
+        carrier: 'Canada Post',
+        service: 'Tracked Packet - USA',
+        serviceCode: 'USA.TP',
+        cost: 12.99,
+        deliveryDays: '7-10 business days',
+        currency: 'CAD'
+      },
+      {
+        carrier: 'Canada Post',
+        service: 'Small Packet - USA Air',
+        serviceCode: 'USA.SP.AIR',
+        cost: 8.99,
+        deliveryDays: '7-14 business days',
+        currency: 'CAD'
+      },
+      {
+        carrier: 'Canada Post',
+        service: 'Expedited Parcel - USA',
+        serviceCode: 'USA.EP',
+        cost: 24.99,
+        deliveryDays: '4-7 business days',
+        currency: 'CAD'
+      },
+      {
+        carrier: 'Canada Post',
+        service: 'Xpresspost - USA',
+        serviceCode: 'USA.XP',
+        cost: 32.99,
+        deliveryDays: '2-3 business days',
+        currency: 'CAD'
+      }
+    ];
+  }
+
+  // Default domestic rates
   return [
     {
       carrier: 'Canada Post',

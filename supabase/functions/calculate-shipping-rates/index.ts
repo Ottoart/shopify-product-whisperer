@@ -428,49 +428,49 @@ async function getCanadaPostRates(carrier: any, shipFrom: any, shipTo: any, pack
   try {
     console.log('🔄 Calling Canada Post rating function');
     
-    // Convert package details to metric (Canada Post uses metric)
-    const weightKg = packageDetails.weight * 0.453592; // lbs to kg
-    const lengthCm = packageDetails.length * 2.54; // inches to cm
-    const widthCm = packageDetails.width * 2.54;
-    const heightCm = packageDetails.height * 2.54;
-    
-    // Extract postal codes (Canada Post requires them)
-    const fromPostalCode = shipFrom.zip || shipFrom.postalCode || 'K1A0A6'; // Default to Ottawa if not provided
-    const toPostalCode = shipTo.zip || shipTo.postalCode || 'M5V3A8'; // Default to Toronto if not provided
-    
     const canadaPostClient = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
     
-    const { data, error } = await canadaPostClient.functions.invoke('canada-post-rating', {
-      body: {
-        shipFrom: {
-          postalCode: fromPostalCode
-        },
-        shipTo: {
-          address: {
-            postalCode: toPostalCode,
-            countryCode: shipTo.country || 'US'
-          }
-        },
-        package: {
-          weight: {
-            value: weightKg,
-            units: 'KG'
-          },
-          dimensions: {
-            length: lengthCm,
-            width: widthCm,
-            height: heightCm,
-            units: 'CM'
-          }
-        }
+    // Build request using the same format as UPS
+    const canadaPostRequest = {
+      shipFrom: {
+        name: shipFrom.name || "Shipper",
+        company: shipFrom.company || "",
+        address: shipFrom.address,
+        city: shipFrom.city,
+        state: shipFrom.state,
+        zip: shipFrom.zip,
+        country: shipFrom.country
+      },
+      shipTo: {
+        name: shipTo.name,
+        address: shipTo.address,
+        city: shipTo.city,
+        state: shipTo.state,
+        zip: shipTo.zip,
+        country: shipTo.country
+      },
+      package: {
+        weight: packageDetails.weight,
+        weight_unit: 'LBS',
+        length: packageDetails.length,
+        width: packageDetails.width,
+        height: packageDetails.height,
+        dimension_unit: 'IN',
+        value: packageDetails.value
       }
+    };
+
+    console.log('📦 Canada Post Request payload:', JSON.stringify(canadaPostRequest, null, 2));
+
+    const { data, error } = await canadaPostClient.functions.invoke('canada-post-rating', {
+      body: canadaPostRequest
     });
 
     console.log('📦 Canada Post API response:', { data, error });
 
     if (error) {
       console.error('❌ Canada Post API error:', error);
-      return getFallbackCanadaPostRates();
+      return getFallbackCanadaPostRates(shipTo.country);
     }
 
     const canadaPostRates = data || [];
@@ -504,14 +504,69 @@ async function getCanadaPostRates(carrier: any, shipFrom: any, shipTo: any, pack
     
   } catch (error) {
     console.error('❌ Canada Post rating error:', error);
-    return getFallbackCanadaPostRates();
+    return getFallbackCanadaPostRates(shipTo.country);
   }
 }
 
-function getFallbackCanadaPostRates(): ShippingRate[] {
-  console.log('🔄 Using fallback Canada Post rates');
-  const baseRate = 12.50;
+function getFallbackCanadaPostRates(destinationCountry?: string): ShippingRate[] {
+  console.log('🔄 Using fallback Canada Post rates for destination:', destinationCountry);
   
+  // Return different fallback rates based on destination
+  if (destinationCountry === 'US') {
+    return [
+      {
+        carrier: 'Canada Post',
+        service_code: 'USA.TP',
+        service_name: 'Tracked Packet - USA',
+        service_type: 'standard',
+        cost: 12.99,
+        currency: 'CAD',
+        estimated_days: '7-10 business days',
+        supports_tracking: true,
+        supports_insurance: false,
+        supports_signature: false
+      },
+      {
+        carrier: 'Canada Post',
+        service_code: 'USA.SP.AIR',
+        service_name: 'Small Packet - USA Air',
+        service_type: 'economy',
+        cost: 8.99,
+        currency: 'CAD',
+        estimated_days: '7-14 business days',
+        supports_tracking: false,
+        supports_insurance: false,
+        supports_signature: false
+      },
+      {
+        carrier: 'Canada Post',
+        service_code: 'USA.EP',
+        service_name: 'Expedited Parcel - USA',
+        service_type: 'expedited',
+        cost: 24.99,
+        currency: 'CAD',
+        estimated_days: '4-7 business days',
+        supports_tracking: true,
+        supports_insurance: true,
+        supports_signature: false
+      },
+      {
+        carrier: 'Canada Post',
+        service_code: 'USA.XP',
+        service_name: 'Xpresspost - USA',
+        service_type: 'expedited',
+        cost: 32.99,
+        currency: 'CAD',
+        estimated_days: '2-3 business days',
+        supports_tracking: true,
+        supports_insurance: true,
+        supports_signature: true
+      }
+    ];
+  }
+
+  // Default domestic rates
+  const baseRate = 12.50;
   return [
     {
       carrier: 'Canada Post',
