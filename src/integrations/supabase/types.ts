@@ -1168,9 +1168,11 @@ export type Database = {
       }
       order_items: {
         Row: {
+          commodity_code: string | null
           created_at: string
           id: string
           order_id: string
+          origin_country: string | null
           price: number
           product_handle: string | null
           product_title: string
@@ -1180,9 +1182,11 @@ export type Database = {
           weight_lbs: number | null
         }
         Insert: {
+          commodity_code?: string | null
           created_at?: string
           id?: string
           order_id: string
+          origin_country?: string | null
           price: number
           product_handle?: string | null
           product_title: string
@@ -1192,9 +1196,11 @@ export type Database = {
           weight_lbs?: number | null
         }
         Update: {
+          commodity_code?: string | null
           created_at?: string
           id?: string
           order_id?: string
+          origin_country?: string | null
           price?: number
           product_handle?: string | null
           product_title?: string
@@ -2871,6 +2877,7 @@ export type Database = {
           id: string
           is_active: boolean
           platform: string
+          ship_from_address: Json | null
           store_name: string
           storefront_domain: string | null
           updated_at: string
@@ -2883,6 +2890,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           platform?: string
+          ship_from_address?: Json | null
           store_name: string
           storefront_domain?: string | null
           updated_at?: string
@@ -2895,6 +2903,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           platform?: string
+          ship_from_address?: Json | null
           store_name?: string
           storefront_domain?: string | null
           updated_at?: string

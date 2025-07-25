@@ -11,6 +11,8 @@ const corsHeaders = {
 // Request interface
 interface RatingRequest {
   shipFrom: {
+    name?: string;
+    company?: string;
     address: string;
     city: string;
     state: string;
@@ -18,6 +20,7 @@ interface RatingRequest {
     country: string;
   };
   shipTo: {
+    name: string;
     address: string;
     city: string;
     state: string;
@@ -29,6 +32,20 @@ interface RatingRequest {
     length?: number;
     width?: number;
     height?: number;
+    value?: number;
+  };
+  order?: {
+    orderNumber: string;
+    currency: string;
+    items: Array<{
+      id: string;
+      product_title: string;
+      quantity: number;
+      price: number;
+      weight_lbs?: number;
+      origin_country?: string;
+      commodity_code?: string;
+    }>;
   };
   serviceCode?: string;
 }
@@ -240,8 +257,14 @@ async function processUPSRating(requestData: RatingRequest, credentials: any, ac
       );
     }
 
-    // Convert package weight from lbs to grams if needed (to match ShipStation format)
-    const packageWeightLbs = requestData.package.weight;
+    // Validate and normalize package weight (UPS minimum requirements)
+    let packageWeightLbs = Math.max(0.1, requestData.package.weight); // UPS minimum 0.1 lbs
+    
+    // Round to 1 decimal place for API consistency
+    packageWeightLbs = Math.round(packageWeightLbs * 10) / 10;
+    
+    console.log(`📦 Weight validation: Original: ${requestData.package.weight}lbs, Normalized: ${packageWeightLbs}lbs`);
+    
     const packageWeightGrams = Math.round(packageWeightLbs * 453.592); // Convert lbs to grams
     
     // Convert dimensions from inches to centimeters if needed
@@ -289,7 +312,7 @@ async function processUPSRating(requestData: RatingRequest, credentials: any, ac
               Description: service.service_name
             },
             Shipper: {
-              Name: "Shipper",
+              Name: requestData.shipFrom.name || "Shipper",
               ShipperNumber: accountNumber,
               Address: {
                 AddressLine: [requestData.shipFrom.address || ""],
@@ -300,7 +323,7 @@ async function processUPSRating(requestData: RatingRequest, credentials: any, ac
               }
             },
             ShipTo: {
-              Name: "Consignee", 
+              Name: requestData.shipTo.name || "Consignee", 
               Address: {
                 AddressLine: [requestData.shipTo.address || ""],
                 City: requestData.shipTo.city || "",
@@ -349,37 +372,15 @@ async function processUPSRating(requestData: RatingRequest, credentials: any, ac
             },
             ShipmentServiceOptions: {
               DeclaredValue: {
-                CurrencyCode: "USD",
-                MonetaryValue: "100.00"
+                CurrencyCode: requestData.order?.currency || "USD",
+                MonetaryValue: (requestData.package.value || 100).toFixed(2)
               }
             },
             InvoiceLineTotal: {
-              CurrencyCode: "USD",
-              MonetaryValue: "100.00"
+              CurrencyCode: requestData.order?.currency || "USD",
+              MonetaryValue: (requestData.package.value || 100).toFixed(2)
             },
-            Product: [{
-              Description: "General Merchandise",
-              CommodityCode: "999999",
-              OriginCountryCode: requestData.shipFrom.country,
-              Unit: {
-                UnitOfMeasurement: {
-                  Code: "EA",
-                  Description: "Each"
-                },
-                Value: "1"
-              },
-              ProductWeight: {
-                UnitOfMeasurement: {
-                  Code: "LBS",
-                  Description: "Pounds"
-                },
-                Weight: packageWeightLbs.toString()
-              },
-              UnitValue: {
-                CurrencyCode: "USD",
-                MonetaryValue: "100.00"
-              }
-            }]
+            Product: buildProductDetails(requestData, packageWeightLbs)
           }
         }
       };
@@ -591,4 +592,67 @@ function getUPSEstimatedDays(code: string): string {
     '65': '1-3 business days'
   };
   return estimatedDays[code] || '3-5 business days';
+}
+
+function buildProductDetails(requestData: RatingRequest, packageWeightLbs: number): any[] {
+  // Use real order item data if available, otherwise use defaults
+  if (requestData.order?.items && requestData.order.items.length > 0) {
+    console.log('📦 Using real order item data for UPS Product details');
+    
+    return requestData.order.items.map((item, index) => {
+      const itemWeight = item.weight_lbs || (packageWeightLbs / requestData.order!.items.length);
+      const itemValue = item.price || 10;
+      
+      return {
+        Description: item.product_title.substring(0, 35), // UPS limits description length
+        CommodityCode: item.commodity_code || "999999",
+        OriginCountryCode: item.origin_country || requestData.shipFrom.country,
+        Unit: {
+          UnitOfMeasurement: {
+            Code: "EA",
+            Description: "Each"
+          },
+          Value: item.quantity.toString()
+        },
+        ProductWeight: {
+          UnitOfMeasurement: {
+            Code: "LBS", 
+            Description: "Pounds"
+          },
+          Weight: (Math.round(Math.max(0.1, itemWeight) * 10) / 10).toString() // UPS minimum weight, rounded
+        },
+        UnitValue: {
+          CurrencyCode: requestData.order?.currency || "USD",
+          MonetaryValue: itemValue.toFixed(2)
+        }
+      };
+    });
+  } else {
+    console.log('📦 Using default Product details (no order items)');
+    
+    // Fallback to single generic product
+    return [{
+      Description: "General Merchandise",
+      CommodityCode: "999999",
+      OriginCountryCode: requestData.shipFrom.country,
+      Unit: {
+        UnitOfMeasurement: {
+          Code: "EA",
+          Description: "Each"
+        },
+        Value: "1"
+      },
+      ProductWeight: {
+        UnitOfMeasurement: {
+          Code: "LBS",
+          Description: "Pounds"
+        },
+        Weight: (Math.round(Math.max(0.1, packageWeightLbs) * 10) / 10).toString()
+      },
+      UnitValue: {
+        CurrencyCode: "USD",
+        MonetaryValue: (requestData.package.value || 100).toFixed(2)
+      }
+    }];
+  }
 }

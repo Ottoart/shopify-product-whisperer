@@ -93,10 +93,13 @@ serve(async (req) => {
     const rateRequest: RateRequest = await req.json();
     console.log('Rate calculation request:', rateRequest);
 
-    // Get order details
+    // Get order details with items
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .select('*')
+      .select(`
+        *,
+        order_items(*)
+      `)
       .eq('id', rateRequest.order_id)
       .eq('user_id', userId)
       .single();
@@ -128,15 +131,33 @@ serve(async (req) => {
 
     console.log(`Found ${carriers?.length || 0} active carriers`);
 
-    // Determine ship from address
-    const shipFrom = rateRequest.ship_from || {
-      name: "Your Store",
-      address: "123 Store Street", // Default - should be configurable
-      city: "Your City",
-      state: "Your State",
-      zip: "12345",
-      country: "US"
-    };
+    // Get ship-from address from store configuration
+    let shipFrom = rateRequest.ship_from;
+    
+    if (!shipFrom) {
+      // Get store configuration for ship-from address
+      const { data: storeConfig, error: storeError } = await supabase
+        .from('store_configurations')
+        .select('ship_from_address')
+        .eq('user_id', userId)
+        .eq('store_name', order.store_name)
+        .eq('is_active', true)
+        .single();
+      
+      if (storeConfig?.ship_from_address) {
+        shipFrom = storeConfig.ship_from_address;
+      } else {
+        // Use fallback default
+        shipFrom = {
+          name: "Your Store",
+          address: "123 Store Street",
+          city: "Your City", 
+          state: "Your State",
+          zip: "12345",
+          country: "US"
+        };
+      }
+    }
 
     const shipTo = {
       name: order.customer_name,
@@ -179,7 +200,7 @@ serve(async (req) => {
             const validServices = getValidUPSServices(carrier, shipFrom, shipTo);
             console.log(`📦 Valid UPS services for this route: ${validServices.map(s => s.service_code).join(', ')}`);
             
-            carrierRates = await getUPSRates(carrier, shipFrom, shipTo, packageDetails, rateRequest.additional_services, authHeader, validServices);
+            carrierRates = await getUPSRates(carrier, shipFrom, shipTo, packageDetails, rateRequest.additional_services, authHeader, validServices, order);
             console.log(`📦 UPS returned ${carrierRates.length} rates`);
             break;
           case 'FEDEX':
@@ -270,7 +291,7 @@ function getValidUPSServices(carrier: any, shipFrom: any, shipTo: any): any[] {
   return allServices;
 }
 
-async function getUPSRates(carrier: any, shipFrom: any, shipTo: any, packageDetails: any, additionalServices?: any, authHeader?: string, validServices?: any[]): Promise<ShippingRate[]> {
+async function getUPSRates(carrier: any, shipFrom: any, shipTo: any, packageDetails: any, additionalServices?: any, authHeader?: string, validServices?: any[], order?: any): Promise<ShippingRate[]> {
   // Use existing UPS rating function
   try {
     console.log('🔄 Calling UPS rating function with:', {
@@ -282,9 +303,11 @@ async function getUPSRates(carrier: any, shipFrom: any, shipTo: any, packageDeta
     
     const upsClient = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
     
-    // Create the request object for UPS rating
+    // Create the request object for UPS rating with real order data
     const upsRequest = {
       shipFrom: {
+        name: shipFrom.name || "Shipper",
+        company: shipFrom.company || "",
         address: shipFrom.address,
         city: shipFrom.city,
         state: shipFrom.state,
@@ -292,6 +315,7 @@ async function getUPSRates(carrier: any, shipFrom: any, shipTo: any, packageDeta
         country: shipFrom.country
       },
       shipTo: {
+        name: shipTo.name,
         address: shipTo.address,
         city: shipTo.city,
         state: shipTo.state,
@@ -302,12 +326,32 @@ async function getUPSRates(carrier: any, shipFrom: any, shipTo: any, packageDeta
         weight: packageDetails.weight,
         length: packageDetails.length,
         width: packageDetails.width,
-        height: packageDetails.height
-      }
+        height: packageDetails.height,
+        value: packageDetails.value
+      },
+      order: order ? {
+        orderNumber: order.order_number,
+        currency: order.currency,
+        items: order.order_items || []
+      } : null
     };
 
     console.log('📦 UPS Request payload:', JSON.stringify(upsRequest, null, 2));
     console.log('🔑 Auth header present:', authHeader ? 'YES' : 'NO');
+    
+    // Log order items data for debugging
+    if (order?.order_items) {
+      console.log('📋 Order items data:', JSON.stringify(order.order_items.map((item: any) => ({
+        product_title: item.product_title,
+        price: item.price,
+        quantity: item.quantity,
+        weight_lbs: item.weight_lbs,
+        origin_country: item.origin_country,
+        commodity_code: item.commodity_code
+      })), null, 2));
+    } else {
+      console.log('⚠️ No order items found in order data');
+    }
 
     // Call UPS rating function with auth header
     const requestOptions: any = {
