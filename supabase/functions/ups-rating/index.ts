@@ -263,9 +263,10 @@ async function processUPSRating(requestData: RatingRequest, credentials: any, ac
     console.log('Dimensions (inches):', `${requestData.package.length}x${requestData.package.width}x${requestData.package.height}`);
     console.log('📮 Valid Services to check:', validServices?.map(s => `${s.service_code}: ${s.service_name}`) || []);
 
-    // Force sandbox environment for consistency with token endpoint
-    const ratingApiUrl = 'https://wwwcie.ups.com/api/rating/v1/rate';
-    console.log('📍 Using Rating API URL (SANDBOX):', ratingApiUrl);
+    // Use the proper negotiated rates endpoint structure
+    const baseUrl = credentials.is_production ? 'https://apis.ups.com' : 'https://wwwcie.ups.com';
+    const ratingApiUrl = `${baseUrl}/api/rating/v1/rate?additionalinfo=timeintransit`;
+    console.log('📍 Using Rating API URL with negotiated rates support:', ratingApiUrl);
 
     // Get rates for each valid service separately to avoid "invalid service" errors
     const allRates = [];
