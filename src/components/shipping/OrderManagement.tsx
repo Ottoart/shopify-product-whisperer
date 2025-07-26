@@ -15,6 +15,9 @@ import { useOrders, type Order } from "@/hooks/useOrders";
 import { supabase } from "@/integrations/supabase/client";
 import { ProductDetailsDialog } from './ProductDetailsDialog';
 import { ShippingDetailsDialog } from './ShippingDetailsDialog';
+import { ResizableTable } from './ResizableTable';
+import { TableColumnResizer } from './TableColumnResizer';
+import { useColumnPersistence } from '@/hooks/useColumnPersistence';
 
 
 import { 
@@ -100,6 +103,24 @@ export function OrderManagement() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showLabelPurchaseDialog, setShowLabelPurchaseDialog] = useState(false);
   const [selectedOrderForLabelPurchase, setSelectedOrderForLabelPurchase] = useState<Order | null>(null);
+  
+  // Column persistence hook
+  const { columnWidths, updateColumnWidth, getColumnStyle } = useColumnPersistence('awaiting-shipment', {
+    checkbox: 48,
+    orderNumber: 140,
+    itemSku: 120,
+    itemName: 200,
+    quantity: 80,
+    recipient: 160,
+    age: 80,
+    totalAmount: 120,
+    weight: 100,
+    notes: 60,
+    orderDate: 120,
+    state: 80,
+    requestedService: 140,
+    actions: 140
+  });
   
   const handleRefreshOrders = useCallback(async () => {
     setIsRefreshing(true);
@@ -257,12 +278,21 @@ export function OrderManagement() {
     const now = new Date();
     const order = new Date(orderDate);
     const diffTime = Math.abs(now.getTime() - order.getTime());
+    const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    if (diffDays === 1) return { text: "1 day", color: "green" };
-    if (diffDays <= 3) return { text: `${diffDays} days`, color: "green" };
-    if (diffDays <= 7) return { text: `${diffDays} days`, color: "yellow" };
-    return { text: `${diffDays} days`, color: "red" };
+    // Show hours for orders less than 48 hours old
+    if (diffHours < 48) {
+      if (diffHours === 0) return { text: "< 1h", color: "green", sortValue: diffHours };
+      if (diffHours === 1) return { text: "1h", color: "green", sortValue: diffHours };
+      return { text: `${diffHours}h`, color: "green", sortValue: diffHours };
+    }
+    
+    // Show days for orders 48+ hours old
+    if (diffDays === 1) return { text: "1 day", color: "green", sortValue: diffHours };
+    if (diffDays <= 3) return { text: `${diffDays} days`, color: "green", sortValue: diffHours };
+    if (diffDays <= 7) return { text: `${diffDays} days`, color: "yellow", sortValue: diffHours };
+    return { text: `${diffDays} days`, color: "red", sortValue: diffHours };
   };
 
   const formatCurrency = (amount: number, currency: string) => {
@@ -337,6 +367,10 @@ export function OrderManagement() {
       case 'requestedService':
         aValue = a.shippingDetails.requestedService || 'Standard';
         bValue = b.shippingDetails.requestedService || 'Standard';
+        break;
+      case 'age':
+        aValue = getAge(a.orderDate).sortValue;
+        bValue = getAge(b.orderDate).sortValue;
         break;
       default:
         return 0;
@@ -569,10 +603,11 @@ export function OrderManagement() {
           </div>
         ) : (
           <>
-            <Table className="orders-table">
+            <ResizableTable className="orders-table">
+              <TableColumnResizer tableSelector=".orders-table" />
               <TableHeader className="sticky top-0 bg-background">
                 <TableRow className="bg-muted/50">
-                  <TableHead className="w-12">
+                  <TableHead style={getColumnStyle('checkbox')}>
                     <Checkbox 
                       checked={selectedOrders.length === filteredOrders.length && filteredOrders.length > 0}
                       onCheckedChange={(checked) => {
@@ -584,7 +619,7 @@ export function OrderManagement() {
                       }}
                     />
                   </TableHead>
-                   <TableHead className="min-w-32">
+                   <TableHead style={getColumnStyle('orderNumber')}>
                      <button 
                        className="flex items-center gap-1 hover:text-foreground/80" 
                        onClick={() => handleSort('orderNumber')}
@@ -592,7 +627,7 @@ export function OrderManagement() {
                        Order # {getSortIcon('orderNumber')}
                      </button>
                    </TableHead>
-                    <TableHead className="w-24">
+                    <TableHead style={getColumnStyle('itemSku')}>
                       <button 
                         className="flex items-center gap-1 hover:text-foreground/80" 
                         onClick={() => handleSort('itemSku')}
@@ -600,7 +635,7 @@ export function OrderManagement() {
                         Item SKU {getSortIcon('itemSku')}
                       </button>
                     </TableHead>
-                    <TableHead className="min-w-48">
+                    <TableHead style={getColumnStyle('itemName')}>
                       <button 
                         className="flex items-center gap-1 hover:text-foreground/80" 
                         onClick={() => handleSort('itemName')}
@@ -608,7 +643,7 @@ export function OrderManagement() {
                         Item Name {getSortIcon('itemName')}
                       </button>
                     </TableHead>
-                    <TableHead className="w-20">
+                    <TableHead style={getColumnStyle('quantity')}>
                       <button 
                         className="flex items-center gap-1 hover:text-foreground/80" 
                         onClick={() => handleSort('quantity')}
@@ -616,7 +651,7 @@ export function OrderManagement() {
                         Quantity {getSortIcon('quantity')}
                       </button>
                     </TableHead>
-                   <TableHead className="min-w-40">
+                   <TableHead style={getColumnStyle('recipient')}>
                      <button 
                        className="flex items-center gap-1 hover:text-foreground/80" 
                        onClick={() => handleSort('recipient')}
@@ -624,8 +659,15 @@ export function OrderManagement() {
                        Recipient {getSortIcon('recipient')}
                      </button>
                    </TableHead>
-                   <TableHead className="w-20">Age</TableHead>
-                   <TableHead className="w-24">
+                   <TableHead style={getColumnStyle('age')}>
+                     <button 
+                       className="flex items-center gap-1 hover:text-foreground/80" 
+                       onClick={() => handleSort('age')}
+                     >
+                       Age {getSortIcon('age')}
+                     </button>
+                   </TableHead>
+                   <TableHead style={getColumnStyle('totalAmount')}>
                      <button 
                        className="flex items-center gap-1 hover:text-foreground/80" 
                        onClick={() => handleSort('totalAmount')}
@@ -633,7 +675,7 @@ export function OrderManagement() {
                        Order Total {getSortIcon('totalAmount')}
                      </button>
                    </TableHead>
-                   <TableHead className="w-24">
+                   <TableHead style={getColumnStyle('weight')}>
                      <button 
                        className="flex items-center gap-1 hover:text-foreground/80" 
                        onClick={() => handleSort('weight')}
@@ -641,8 +683,8 @@ export function OrderManagement() {
                        Weight {getSortIcon('weight')}
                      </button>
                    </TableHead>
-                   <TableHead className="w-16">Notes</TableHead>
-                   <TableHead className="w-24">
+                   <TableHead style={getColumnStyle('notes')}>Notes</TableHead>
+                   <TableHead style={getColumnStyle('orderDate')}>
                      <button 
                        className="flex items-center gap-1 hover:text-foreground/80" 
                        onClick={() => handleSort('orderDate')}
@@ -650,7 +692,7 @@ export function OrderManagement() {
                        Order Date {getSortIcon('orderDate')}
                      </button>
                    </TableHead>
-                   <TableHead className="w-16">
+                   <TableHead style={getColumnStyle('state')}>
                      <button 
                        className="flex items-center gap-1 hover:text-foreground/80" 
                        onClick={() => handleSort('state')}
@@ -658,7 +700,7 @@ export function OrderManagement() {
                        State {getSortIcon('state')}
                      </button>
                    </TableHead>
-                     <TableHead className="w-32">
+                     <TableHead style={getColumnStyle('requestedService')}>
                        <button 
                          className="flex items-center gap-1 hover:text-foreground/80" 
                          onClick={() => handleSort('requestedService')}
@@ -666,7 +708,7 @@ export function OrderManagement() {
                          Requested Service {getSortIcon('requestedService')}
                        </button>
                      </TableHead>
-                     <TableHead className="w-32">Actions</TableHead>
+                     <TableHead style={getColumnStyle('actions')}>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -758,10 +800,16 @@ export function OrderManagement() {
                           <div className="font-medium">{order.customerName}</div>
                           <div className="text-xs text-muted-foreground">{order.customerEmail}</div>
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">{age.text}</div>
-                      </TableCell>
+                       </TableCell>
+                       <TableCell>
+                         <div className={`text-sm ${
+                           age.color === 'green' ? 'text-green-600' :
+                           age.color === 'yellow' ? 'text-yellow-600' :
+                           'text-red-600'
+                         }`}>
+                           {age.text}
+                         </div>
+                       </TableCell>
                       <TableCell className="text-right">
                         <div className="text-sm font-medium">
                           {formatCurrency(order.totalAmount, order.currency)}
@@ -833,8 +881,8 @@ export function OrderManagement() {
                     </TableRow>
                   );
                 })}
-              </TableBody>
-            </Table>
+               </TableBody>
+             </ResizableTable>
 
             {filteredOrders.length === 0 && (
               <div className="p-12 text-center">
