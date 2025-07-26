@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -10,12 +10,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import { Plus, Trash2, Package } from "lucide-react";
 import { useFulfillmentData } from "@/hooks/useFulfillmentData";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const submissionSchema = z.object({
   destination_id: z.string().min(1, "Please select a fulfillment destination"),
+  custom_fulfillment_channel: z.string().optional(),
   special_instructions: z.string().optional(),
 });
 
@@ -35,40 +38,89 @@ const itemSchema = z.object({
 type SubmissionFormData = z.infer<typeof submissionSchema>;
 type ItemFormData = z.infer<typeof itemSchema>;
 
+interface PrepService {
+  id: string;
+  name: string;
+  code: string;
+  description: string;
+  base_price: number;
+}
+
+interface FulfillmentDestination {
+  id: string;
+  code: string;
+  name: string;
+  description: string;
+}
+
 interface ItemWithPrepServices extends ItemFormData {
   id: string;
   prep_services: string[];
 }
 
 export function CreateSubmissionForm() {
-  // This component needs to be updated to use the correct hook for inventory submissions
-  // For now, we'll use placeholder data
-  const destinations: any[] = [];
-  const prepServices: any[] = [];
-  const loading = false;
-  
-  const createSubmission = async (data: any) => {
-    console.log('Create submission:', data);
-  };
-  
-  const addSubmissionItems = async (data: any) => {
-    console.log('Add submission items:', data);
-  };
-  
-  const addPrepServices = async (data: any) => {
-    console.log('Add prep services:', data);
-  };
   const { toast } = useToast();
   const [items, setItems] = useState<ItemWithPrepServices[]>([]);
   const [showItemForm, setShowItemForm] = useState(false);
+  const [prepServices, setPrepServices] = useState<PrepService[]>([]);
+  const [destinations, setDestinations] = useState<FulfillmentDestination[]>([]);
+  const [selectedDestination, setSelectedDestination] = useState<string>("");
+  const [loading, setLoading] = useState(false);
 
   const form = useForm<SubmissionFormData>({
     resolver: zodResolver(submissionSchema),
     defaultValues: {
       destination_id: "",
+      custom_fulfillment_channel: "",
       special_instructions: "",
     },
   });
+
+  // Fetch destinations and prep services on component mount
+  useEffect(() => {
+    fetchDestinations();
+    fetchPrepServices();
+  }, []);
+
+  const fetchDestinations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('fulfillment_destinations')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+      
+      if (error) throw error;
+      setDestinations(data || []);
+    } catch (error) {
+      console.error('Error fetching destinations:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load fulfillment destinations",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchPrepServices = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('prep_services')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+      
+      if (error) throw error;
+      setPrepServices(data || []);
+    } catch (error) {
+      console.error('Error fetching prep services:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load prep services",
+        variant: "destructive",
+      });
+    }
+  };
 
   const itemForm = useForm<ItemFormData>({
     resolver: zodResolver(itemSchema),
@@ -133,45 +185,68 @@ export function CreateSubmissionForm() {
       return;
     }
 
-    try {
-      await createSubmission({
-        destination_id: data.destination_id,
-        special_instructions: data.special_instructions,
-        total_items: items.length,
-        total_prep_cost: calculateTotalCost(),
+    // Validate custom fulfillment channel if Omni Fulfillment is selected
+    const selectedDest = destinations.find(d => d.id === data.destination_id);
+    if (selectedDest?.code === 'OMNI' && !data.custom_fulfillment_channel?.trim()) {
+      toast({
+        title: "Error",
+        description: "Please specify your custom fulfillment channel",
+        variant: "destructive",
       });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Generate submission number
+      const submissionNumber = `SUB-${Date.now()}`;
+      
+      // Get current user ID
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      
+      // Create the submission
+      const { data: submission, error: submissionError } = await supabase
+        .from('inventory_submissions')
+        .insert({
+          user_id: user.id,
+          submission_number: submissionNumber,
+          destination_id: data.destination_id,
+          special_instructions: data.special_instructions || '',
+          total_items: items.length,
+          total_prep_cost: calculateTotalCost(),
+          status: 'draft'
+        })
+        .select()
+        .single();
+
+      if (submissionError) throw submissionError;
 
       // Add items
-      await addSubmissionItems(items.map(({ id, prep_services, ...item }) => ({
-        sku: item.sku,
-        product_title: item.product_title,
-        quantity: item.quantity,
-        unit_cost: item.unit_cost,
-        weight_lbs: item.weight_lbs,
-        length_inches: item.length_inches,
-        width_inches: item.width_inches,
-        height_inches: item.height_inches,
-        expiration_date: item.expiration_date,
-        lot_number: item.lot_number,
-      })));
-
-      // Add prep services
-      const prepServiceRequests = items.flatMap(item =>
-        item.prep_services.map(serviceId => ({
-          prep_service_id: serviceId,
+      const { error: itemsError } = await supabase
+        .from('submission_items')
+        .insert(items.map(({ id, prep_services, ...item }) => ({
+          submission_id: submission.id,
+          sku: item.sku,
+          product_title: item.product_title,
           quantity: item.quantity,
-          unit_price: prepServices.find(s => s.id === serviceId)?.base_price || 0,
-          total_price: (prepServices.find(s => s.id === serviceId)?.base_price || 0) * item.quantity,
-        }))
-      );
+          unit_cost: item.unit_cost,
+          weight_lbs: item.weight_lbs,
+          length_inches: item.length_inches,
+          width_inches: item.width_inches,
+          height_inches: item.height_inches,
+          expiration_date: item.expiration_date || null,
+          lot_number: item.lot_number || null,
+        })));
 
-      if (prepServiceRequests.length > 0) {
-        await addPrepServices(prepServiceRequests);
-      }
+      if (itemsError) throw itemsError;
 
       // Reset form
       form.reset();
       setItems([]);
+      setSelectedDestination("");
       
       toast({
         title: "Success",
@@ -184,6 +259,8 @@ export function CreateSubmissionForm() {
         description: "Failed to create submission",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -199,7 +276,13 @@ export function CreateSubmissionForm() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Fulfillment Destination</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select 
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      setSelectedDestination(value);
+                    }} 
+                    defaultValue={field.value}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select destination" />
@@ -223,6 +306,29 @@ export function CreateSubmissionForm() {
                 </FormItem>
               )}
             />
+
+            {/* Custom Fulfillment Channel field - show only for Omni Fulfillment */}
+            {selectedDestination && destinations.find(d => d.id === selectedDestination)?.code === 'OMNI' && (
+              <FormField
+                control={form.control}
+                name="custom_fulfillment_channel"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Custom Fulfillment Channel</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Enter your fulfillment provider name" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Specify the name of your preferred fulfillment provider
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <FormField
               control={form.control}
@@ -408,23 +514,42 @@ export function CreateSubmissionForm() {
 
                         {/* Prep Services Selection */}
                         <div className="space-y-2">
-                          <div className="text-sm font-medium">Prep Services:</div>
-                          <div className="grid gap-2 md:grid-cols-2">
+                          <Label className="text-sm font-medium">Prep Services</Label>
+                          <div className="grid grid-cols-1 gap-2">
                             {prepServices.map((service) => (
-                              <div key={service.id} className="flex items-center space-x-2">
-                                <Checkbox
-                                  id={`${item.id}-${service.id}`}
-                                  checked={item.prep_services.includes(service.id)}
-                                  onCheckedChange={() => togglePrepService(item.id, service.id)}
-                                />
-                                <label
-                                  htmlFor={`${item.id}-${service.id}`}
-                                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                >
-                                  {service.name} (${service.base_price.toFixed(2)})
-                                </label>
-                              </div>
+                              <label
+                                key={service.id}
+                                className="flex items-center justify-between p-2 rounded-md border cursor-pointer hover:bg-muted/50"
+                              >
+                                <div className="flex items-center space-x-2">
+                                  <Checkbox
+                                    checked={item.prep_services.includes(service.id)}
+                                    onCheckedChange={() => togglePrepService(item.id, service.id)}
+                                  />
+                                  <div className="flex flex-col">
+                                    <span className="text-sm font-medium">{service.name}</span>
+                                    <span className="text-xs text-muted-foreground">{service.description}</span>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <span className="text-sm font-medium">${service.base_price.toFixed(2)}</span>
+                                  <div className="text-xs text-muted-foreground">
+                                    × {item.quantity} = ${(service.base_price * item.quantity).toFixed(2)}
+                                  </div>
+                                </div>
+                              </label>
                             ))}
+                          </div>
+                          <div className="pt-2 border-t">
+                            <div className="flex justify-between text-sm">
+                              <span>Item prep total:</span>
+                              <span className="font-medium">
+                                ${item.prep_services.reduce((total, serviceId) => {
+                                  const service = prepServices.find(s => s.id === serviceId);
+                                  return total + (service ? service.base_price * item.quantity : 0);
+                                }, 0).toFixed(2)}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>
