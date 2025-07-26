@@ -160,14 +160,36 @@ async function validateUPSCredentials(credentials: any) {
 }
 
 async function validateCanadaPostCredentials(credentials: any) {
-  const { api_username, api_password, customer_number } = credentials
+  const { api_username, api_password, customer_number, environment } = credentials
 
   if (!api_username || !api_password || !customer_number) {
-    return { valid: false, error: 'Username, password, and customer number are required' }
+    return { valid: false, error: 'API Username, API Password, and Customer Number are required' }
   }
 
-  // For demo purposes, accept any non-empty credentials
-  return { valid: true, message: 'Canada Post credentials format validated' }
+  try {
+    // Test credentials by making a request to Canada Post API
+    const baseUrl = environment === 'production' 
+      ? 'https://soa-gw.canadapost.ca' 
+      : 'https://ct.soa-gw.canadapost.ca';
+    
+    const response = await fetch(`${baseUrl}/rs/ship/service`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Basic ${btoa(`${api_username}:${api_password}`)}`,
+        'Accept': 'application/vnd.cpc.ship+xml',
+        'Accept-language': 'en-CA'
+      }
+    });
+    
+    if (response.ok) {
+      return { valid: true, message: 'Canada Post credentials validated successfully' };
+    } else {
+      return { valid: false, error: `API validation failed: ${response.status} ${response.statusText}` };
+    }
+  } catch (error) {
+    console.error('Canada Post validation error:', error);
+    return { valid: false, error: 'Failed to validate credentials against Canada Post API' };
+  }
 }
 
 async function validateShipStationCredentials(credentials: any) {

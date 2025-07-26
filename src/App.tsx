@@ -30,7 +30,7 @@ import { AboutUs } from "./pages/AboutUs";
 import NotFound from "./pages/NotFound";
 
 import Logs from "./pages/Logs";
-import CanadaPostCallback from "./pages/CanadaPostCallback";
+
 import { CustomerTrackingPage as CustomerTracking } from "./pages/CustomerTracking";
 import SendInventory from "./pages/SendInventory";
 import ReceivingDashboard from "./pages/ReceivingDashboard";
@@ -113,7 +113,7 @@ const AuthenticatedApp = () => {
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/sync-status" element={<SyncStatus />} />
               <Route path="/logs" element={<Logs />} />
-              <Route path="/canada-post-oauth-callback" element={<CanadaPostCallback />} />
+              
               <Route path="/customer-portal" element={<CustomerPortal />} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>

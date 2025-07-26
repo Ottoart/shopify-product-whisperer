@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { useShippingServices } from "@/hooks/useShippingServices";
+import { CarrierConfigurationDialog } from "./CarrierConfigurationDialog";
 
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -99,19 +100,9 @@ export function CarrierManagement() {
   const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
   const [isPlanComparisonOpen, setIsPlanComparisonOpen] = useState(false);
   const [isAddCarrierOpen, setIsAddCarrierOpen] = useState(false);
-  const [isCanadaPostConfigOpen, setIsCanadaPostConfigOpen] = useState(false);
+  const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
   const [connectedUserCarriers, setConnectedUserCarriers] = useState<any[]>([]);
   const [carrierLoading, setCarrierLoading] = useState(true);
-  
-  // Canada Post configuration state
-  const [canadaPostConfig, setCanadaPostConfig] = useState({
-    apiKey: '',
-    apiSecret: '',
-    customerNumber: '',
-    contractNumber: '',
-    accountType: 'commercial',
-    isProduction: false
-  });
 
   // Fetch real carrier configurations from database
   useEffect(() => {
@@ -731,115 +722,6 @@ export function CarrierManagement() {
     </Dialog>
   );
 
-  const CanadaPostConfigModal = () => (
-    <Dialog open={isCanadaPostConfigOpen} onOpenChange={setIsCanadaPostConfigOpen}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-3 mb-2">
-            <div className="bg-red-600 text-white px-3 py-1 rounded text-sm font-bold">
-              CANADA POST
-            </div>
-          </DialogTitle>
-          <DialogDescription className="text-base font-medium text-foreground mb-4">
-            Connect your Canada Post Account
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="space-y-4">
-          <div className="text-sm text-muted-foreground">
-            <p className="mb-3">
-              <strong>PrepFox has partnered with Canada Post to streamline the shipping process for Canadian merchants!</strong> PrepFox now supports both <strong>Solutions for Small Business Account (Venture One)</strong> accounts and <strong>Commercial</strong> accounts.
-            </p>
-            <p className="mb-4">
-              Don't yet have a Canada Post account? <span className="text-blue-600 underline cursor-pointer">Click here to get started.</span>
-            </p>
-          </div>
-
-          <div className="space-y-3">
-            <p className="text-sm font-medium">
-              To continue, please select the type of account you have and click Connect.
-            </p>
-            
-            <div className="space-y-2">
-              <label className="flex items-center space-x-3 cursor-pointer">
-                <input
-                  type="radio"
-                  name="accountType"
-                  value="small_business"
-                  checked={canadaPostConfig.accountType === 'small_business'}
-                  onChange={(e) => setCanadaPostConfig(prev => ({ ...prev, accountType: e.target.value }))}
-                  className="w-4 h-4 text-blue-600"
-                />
-                <span className="text-sm">Solutions for Small Business Account (Venture One)</span>
-              </label>
-              
-              <label className="flex items-center space-x-3 cursor-pointer">
-                <input
-                  type="radio"
-                  name="accountType"
-                  value="commercial"
-                  checked={canadaPostConfig.accountType === 'commercial'}
-                  onChange={(e) => setCanadaPostConfig(prev => ({ ...prev, accountType: e.target.value }))}
-                  className="w-4 h-4 text-blue-600"
-                />
-                <span className="text-sm">Commercial*</span>
-              </label>
-            </div>
-            
-            <div className="text-xs text-muted-foreground">
-              *Reminder: Commercial account holders are required to manifest each day's shipments. Failure to manifest shipments may result in additional monthly invoice fees. <span className="text-blue-600 underline cursor-pointer">Click here for more information.</span>
-            </div>
-          </div>
-        </div>
-        
-        <DialogFooter className="flex justify-between">
-          <Button variant="outline" onClick={() => setIsCanadaPostConfigOpen(false)}>
-            Back
-          </Button>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setIsCanadaPostConfigOpen(false)}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={async () => {
-                try {
-                  // Get OAuth URL from our edge function with account type
-                  const { data, error } = await supabase.functions.invoke('canada-post-oauth-url', {
-                    body: { accountType: canadaPostConfig.accountType }
-                  });
-                  
-                  if (error) {
-                    throw error;
-                  }
-
-                  if (data?.auth_url) {
-                    toast({
-                      title: "Connecting to Canada Post",
-                      description: "Opening Canada Post login...",
-                    });
-
-                    // Use window.location.replace to avoid iframe issues
-                    window.location.replace(data.auth_url);
-                  }
-                } catch (error) {
-                  console.error('Canada Post connection error:', error);
-                  toast({
-                    title: "Connection Failed",
-                    description: "Failed to initiate Canada Post authorization",
-                    variant: "destructive",
-                  });
-                }
-              }}
-              disabled={!canadaPostConfig.accountType}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              Connect
-            </Button>
-          </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
 
   const AddCarrierModal = () => (
     <Dialog open={isAddCarrierOpen} onOpenChange={setIsAddCarrierOpen}>
@@ -859,9 +741,9 @@ export function CarrierManagement() {
               disabled={carrier.id !== 'canada-post'}
               onClick={() => {
                 if (carrier.id === 'canada-post') {
-                  // Open Canada Post configuration modal
+                  // Open carrier configuration dialog
                   setIsAddCarrierOpen(false);
-                  setIsCanadaPostConfigOpen(true);
+                  setIsConfigDialogOpen(true);
                   return;
                 }
                 
@@ -1261,7 +1143,7 @@ export function CarrierManagement() {
               <div className="flex gap-2">
                 <Button 
                   variant="outline"
-                  onClick={() => setIsCanadaPostConfigOpen(true)}
+                  onClick={() => setIsConfigDialogOpen(true)}
                   className="gap-2 border-orange-200 hover:bg-orange-50"
                 >
                   🇨🇦 Connect Canada Post
@@ -1291,7 +1173,7 @@ export function CarrierManagement() {
                   <div className="flex gap-2">
                     <Button 
                       variant="outline"
-                      onClick={() => setIsCanadaPostConfigOpen(true)}
+                      onClick={() => setIsConfigDialogOpen(true)}
                       className="gap-2 border-orange-200 hover:bg-orange-50"
                     >
                       🇨🇦 Connect Canada Post
@@ -1410,8 +1292,13 @@ export function CarrierManagement() {
       <ServiceManagementModal />
       <SubscriptionModal />
       <PlanComparisonModal />
-      <CanadaPostConfigModal />
+      
       <AddCarrierModal />
+      
+      <CarrierConfigurationDialog 
+        isOpen={isConfigDialogOpen} 
+        onClose={() => setIsConfigDialogOpen(false)} 
+      />
     </div>
   );
 }

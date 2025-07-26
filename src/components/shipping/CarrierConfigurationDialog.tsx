@@ -73,7 +73,8 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
     api_username: '',
     api_password: '',
     customer_number: '',
-    contact_id: ''
+    contact_id: '',
+    environment: 'development'
   });
   const [sendleConfig, setSendleConfig] = useState({
     api_key: '',
@@ -120,7 +121,7 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
       enable_carbon_neutral: false, enable_ground_freight: false,
       enable_additional_services: false, enable_user_order_number: false
     });
-    setCanadaPostConfig({ api_username: '', api_password: '', customer_number: '', contact_id: '' });
+    setCanadaPostConfig({ api_username: '', api_password: '', customer_number: '', contact_id: '', environment: 'development' });
     setSendleConfig({ api_key: '', api_secret: '', sandbox: false });
     setShipstationConfig({ api_key: '', api_secret: '', store_id: '' });
   };
@@ -256,7 +257,7 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
       case 'ups':
         return ['client_id', 'client_secret', 'account_number'];
       case 'canada_post':
-        return ['api_username', 'api_password', 'customer_number', 'contact_id'];
+        return ['api_username', 'api_password', 'customer_number'];
       case 'sendle':
         return ['api_key', 'api_secret'];
       case 'shipstation':
@@ -362,6 +363,15 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
         enable_ground_freight: creds.enable_ground_freight || false,
         enable_additional_services: creds.enable_additional_services || false,
         enable_user_order_number: creds.enable_user_order_number || false
+      });
+    } else if (carrier.carrier_name === 'canada_post') {
+      const creds = carrier.api_credentials as any;
+      setCanadaPostConfig({
+        api_username: creds.api_username || '',
+        api_password: creds.api_password || '',
+        customer_number: creds.customer_number || '',
+        contact_id: creds.contact_id || '',
+        environment: creds.environment || 'development'
       });
     }
   };
@@ -580,7 +590,7 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
                 </div>
               )}
 
-              {selectedCarrier === 'canada_post' && (
+              {(selectedCarrier === 'canada_post' || editingCarrier?.carrier_name === 'canada_post') && (
                 <div className="space-y-4">
                   <Separator />
                   <div className="flex items-center gap-2">
@@ -637,13 +647,24 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
                     />
                   </div>
 
-                  <Button 
-                    onClick={handleAddOrUpdateCarrier} 
-                    disabled={isSubmitting || loading}
-                    className="w-full"
-                  >
-                    {isSubmitting ? 'Adding...' : 'Add Canada Post'}
-                  </Button>
+                   <div className="flex gap-2">
+                     <Button 
+                       onClick={handleAddOrUpdateCarrier} 
+                       disabled={isSubmitting || loading}
+                       className="flex-1"
+                     >
+                       {isSubmitting ? (editingCarrier ? 'Updating...' : 'Adding...') : (editingCarrier ? 'Update Canada Post' : 'Add Canada Post')}
+                     </Button>
+                     {editingCarrier && (
+                       <Button 
+                         variant="outline" 
+                         onClick={handleCancelEdit}
+                         disabled={isSubmitting}
+                       >
+                         Cancel
+                       </Button>
+                     )}
+                   </div>
                 </div>
               )}
 
