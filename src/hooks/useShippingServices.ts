@@ -188,33 +188,55 @@ export const useShippingServices = () => {
     api_credentials: any;
     settings?: any;
   }) => {
-    if (!user) return null;
+    if (!user) {
+      throw new Error('Authentication required. Please log in and try again.');
+    }
 
-    const { data, error } = await supabase
-      .from('carrier_configurations')
-      .insert({
-        user_id: user.id,
-        ...carrierData
-      })
-      .select()
-      .single();
+    console.log('🔧 Adding carrier configuration for user:', user.id);
+    console.log('🔧 Carrier data:', { ...carrierData, api_credentials: '[HIDDEN]' });
 
-    if (error) {
-      console.error('Error adding carrier configuration:', error);
+    try {
+      const { data, error } = await supabase
+        .from('carrier_configurations')
+        .insert({
+          user_id: user.id,
+          carrier_name: carrierData.carrier_name,
+          api_credentials: carrierData.api_credentials,
+          settings: carrierData.settings || {},
+          is_active: true
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('🔧 Database error adding carrier:', error);
+        
+        if (error.code === 'PGRST301') {
+          throw new Error('Permission denied. Please refresh the page and try again.');
+        } else if (error.code === '23505') {
+          throw new Error('This carrier is already configured for your account.');
+        } else {
+          throw new Error(`Database error: ${error.message}`);
+        }
+      }
+
+      console.log('🔧 Carrier added successfully:', data.id);
+
+      // Refresh carriers list immediately
+      await fetchCarriers();
+      
+      // Try to refresh services, but don't fail if edge function has issues
+      try {
+        await fetchServices(true);
+      } catch (serviceError) {
+        console.log('🔧 Could not refresh services immediately, but carrier was added successfully:', serviceError);
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('🔧 Error in addCarrierConfiguration:', error);
       throw error;
     }
-
-    // Refresh carriers list immediately
-    await fetchCarriers();
-    
-    // Try to refresh services, but don't fail if edge function has issues
-    try {
-      await fetchServices(true);
-    } catch (serviceError) {
-      console.log('Could not refresh services immediately, but carrier was added successfully:', serviceError);
-    }
-    
-    return data;
   };
 
   const updateCarrierConfiguration = async (carrierId: string, updates: Partial<CarrierConfiguration>) => {

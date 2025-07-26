@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -124,11 +125,52 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
     setShipstationConfig({ api_key: '', api_secret: '', store_id: '' });
   };
 
+  const validateCarrierConfig = (carrier: string, config: any) => {
+    const errors: string[] = [];
+    
+    switch (carrier) {
+      case 'ups':
+        if (!config.client_id) errors.push('Client ID is required');
+        if (!config.client_secret) errors.push('Client Secret is required'); 
+        if (!config.account_number) errors.push('Account Number is required');
+        if (!config.postal_code) errors.push('Account Postal Code is required');
+        break;
+      case 'canada_post':
+        if (!config.api_username) errors.push('API Username is required');
+        if (!config.api_password) errors.push('API Password is required');
+        if (!config.customer_number) errors.push('Customer Number is required');
+        break;
+      case 'shipstation':
+        if (!config.api_key) errors.push('API Key is required');
+        if (!config.api_secret) errors.push('API Secret is required');
+        break;
+      case 'sendle':
+        if (!config.api_key) errors.push('API Key is required');
+        if (!config.api_secret) errors.push('API Secret is required');
+        break;
+    }
+    
+    return errors;
+  };
+
   const handleAddOrUpdateCarrier = async () => {
     if (!selectedCarrier && !editingCarrier) {
       toast({
-        title: "Error",
+        title: "❌ Validation Error",
         description: "Please select a carrier",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const config = getCarrierConfig();
+    const carrierName = editingCarrier?.carrier_name || selectedCarrier;
+    const validationErrors = validateCarrierConfig(carrierName, config);
+    
+    if (validationErrors.length > 0) {
+      toast({
+        title: "❌ Missing Required Fields",
+        description: validationErrors.join(', '),
         variant: "destructive"
       });
       return;
@@ -137,8 +179,6 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
     setIsSubmitting(true);
 
     try {
-      const config = getCarrierConfig();
-      
       if (editingCarrier) {
         // Update existing carrier
         await updateCarrierConfiguration(editingCarrier.id, {
@@ -147,8 +187,8 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
         });
 
         toast({
-          title: "Success",
-          description: `${editingCarrier.carrier_name.toUpperCase()} carrier has been updated successfully`,
+          title: "✅ Updated Successfully",
+          description: `${editingCarrier.carrier_name.toUpperCase()} carrier configuration has been updated`,
         });
 
         setEditingCarrier(null);
@@ -161,8 +201,8 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
         });
 
         toast({
-          title: "Success",
-          description: `${selectedCarrier.toUpperCase()} carrier has been added successfully`,
+          title: "✅ Added Successfully", 
+          description: `${selectedCarrier.toUpperCase()} carrier has been configured and is ready to use`,
         });
       }
 
@@ -171,9 +211,22 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
 
     } catch (error) {
       console.error('Error saving carrier:', error);
+      
+      let errorMessage = `Failed to ${editingCarrier ? 'update' : 'add'} carrier configuration`;
+      
+      if (error instanceof Error) {
+        if (error.message.includes('row-level security')) {
+          errorMessage = 'Permission denied. Please make sure you are logged in.';
+        } else if (error.message.includes('unique')) {
+          errorMessage = 'This carrier is already configured for your account.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
-        title: "Error",
-        description: `Failed to ${editingCarrier ? 'update' : 'add'} carrier configuration`,
+        title: "❌ Configuration Failed",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -234,16 +287,39 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
   const handleTestConnection = async (carrierId: string) => {
     setTestingCarrier(carrierId);
     try {
-      // Here you would call your test connection API
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API call
-      toast({
-        title: "Success",
-        description: "Connection test successful",
+      const carrier = carriers.find(c => c.id === carrierId);
+      if (!carrier) {
+        throw new Error('Carrier not found');
+      }
+
+      const { data, error } = await supabase.functions.invoke('validate-carrier-credentials', {
+        body: {
+          carrier_name: carrier.carrier_name,
+          api_credentials: carrier.api_credentials
+        }
       });
+
+      if (error) {
+        throw new Error(`Validation failed: ${error.message}`);
+      }
+
+      if (data.valid) {
+        toast({
+          title: "✅ Connection Successful",
+          description: data.message || "Carrier credentials validated successfully",
+        });
+      } else {
+        toast({
+          title: "❌ Connection Failed",
+          description: data.error || "Credential validation failed",
+          variant: "destructive"
+        });
+      }
     } catch (error) {
+      console.error('Connection test error:', error);
       toast({
-        title: "Error",
-        description: "Connection test failed",
+        title: "❌ Test Failed",
+        description: error instanceof Error ? error.message : "Connection test failed",
         variant: "destructive"
       });
     } finally {
