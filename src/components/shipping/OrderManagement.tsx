@@ -169,7 +169,7 @@ export function OrderManagement() {
     }, 30 * 60 * 1000); // 30 minutes
 
     return () => clearInterval(interval);
-  }, [handleRefreshOrders]);
+  }, []); // Remove handleRefreshOrders from dependency array
 
   // Initial fetch on component mount - run only once
   useEffect(() => {
