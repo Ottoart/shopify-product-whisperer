@@ -21,7 +21,39 @@ interface CarrierConfigurationDialogProps {
 
 const SUPPORTED_CARRIERS = [
   { value: 'ups', label: 'UPS', description: 'United Parcel Service' },
+  { value: 'fedex', label: 'FedEx', description: 'FedEx provides rapid, reliable, time-definite delivery to more than 220 countries and territories.' },
+  { value: 'usps', label: 'USPS', description: 'United States Postal Service' },
+  { value: 'dhl', label: 'DHL', description: 'DHL Express' },
   { value: 'canada_post', label: 'Canada Post', description: 'Canada Post Corporation' },
+  { value: 'purolator', label: 'Purolator', description: 'Purolator Inc. is an integrated freight, package and logistics solutions provider in Canada.' },
+  { value: 'canpar', label: 'Canpar', description: 'Canpar Express' },
+  { value: 'seko', label: 'SEKO', description: 'SEKO Ecommerce' },
+  { value: 'gls', label: 'GLS', description: 'General Logistics Systems' },
+  { value: 'aramex', label: 'Aramex', description: 'Aramex delivery unlimited' },
+  { value: 'chrono_express', label: 'Chrono Express', description: 'Chrono Express' },
+  { value: 'swyft', label: 'Swyft', description: 'Swyft Logistics' },
+  { value: 'rivo', label: 'Rivo', description: 'Rivo Logistics' },
+  { value: 'nationex', label: 'Nationex', description: 'Nationex Courier' },
+  { value: 'globale', label: 'Global-e', description: "Global-e provides users from over 200 countries with an end-to-end solution, enabling them to view prices in their local currency, pre-pay taxes and duties, select from a wide variety of international payment methods and check-out using their preferred payment method." },
+  { value: 'intelcom', label: 'Intelcom', description: 'Intelcom Express' },
+  { value: 'wizmo', label: 'Wizmo', description: 'Wizmo a smart company' },
+  { value: 'tusk', label: 'Tusk', description: 'Tusk Logistics' },
+  { value: 'maersk_b2c', label: 'Maersk B2C', description: 'Maersk B2C' },
+  { value: 'maersk_b2c2', label: 'Maersk B2C', description: 'Maersk B2C' },
+  { value: 'globalpost', label: 'GlobalPost', description: 'GlobalPost International' },
+  { value: 'flashbox', label: 'FlashBox', description: 'Same-Day Delivery Specialist' },
+  { value: 'netparcel', label: 'netParcel', description: 'netParcel Shipping' },
+  { value: 'shippie', label: 'Shippie', description: 'Shippie Express' },
+  { value: 'fleetoptics', label: 'FleetOptics', description: 'FleetOptics Logistics' },
+  { value: 'openborder', label: 'Openborder', description: 'Openborder Shipping' },
+  { value: 'cirro', label: 'Cirro', description: 'Geazone Transvirual GeaZone' },
+  { value: 'shippingchimp', label: 'ShippingChimp', description: 'ShippingChimp Solutions' },
+  { value: 'onto', label: 'Onto', description: 'Onto Logistics' },
+  { value: 'apc', label: 'APC', description: 'APC Postal Logistics' },
+  { value: 'geazone', label: 'GeaZone', description: 'GeaZone is Vancouver Transvirial GeaZone' },
+  { value: 'ecom', label: 'eCom', description: 'eCom Solutions' },
+  { value: 'loomis_express', label: 'Loomis Express', description: 'Loomis Express' },
+  { value: 'landmark_global', label: 'Landmark Global', description: 'Landmark Global a global company' },
   { value: 'sendle', label: 'Sendle', description: 'Carbon-neutral shipping' },
   { value: 'shipstation', label: 'ShipStation', description: 'Multi-carrier shipping software' }
 ];
@@ -411,23 +443,38 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
             </CardHeader>
             <CardContent className="space-y-4">
               {!editingCarrier && (
-                <div>
-                  <Label htmlFor="carrier">Select Carrier</Label>
-                  <Select value={selectedCarrier} onValueChange={setSelectedCarrier}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose a carrier..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {SUPPORTED_CARRIERS.map(carrier => (
-                        <SelectItem key={carrier.value} value={carrier.value}>
-                          <div>
-                            <div className="font-medium">{carrier.label}</div>
-                            <div className="text-sm text-muted-foreground">{carrier.description}</div>
+                <div className="space-y-3">
+                  <Label>Connect with a Provider by clicking on a tile below</Label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-64 overflow-y-auto">
+                    {SUPPORTED_CARRIERS.map(carrier => (
+                      <Card 
+                        key={carrier.value} 
+                        className={`cursor-pointer transition-all duration-200 hover:shadow-md ${
+                          selectedCarrier === carrier.value 
+                            ? 'ring-2 ring-primary border-primary bg-primary/5' 
+                            : 'hover:border-primary/50'
+                        }`}
+                        onClick={() => setSelectedCarrier(carrier.value)}
+                      >
+                        <CardContent className="p-3 text-center">
+                          <div className="h-12 w-12 mx-auto mb-2 rounded-lg bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
+                            <Truck className="h-6 w-6 text-primary" />
                           </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                          <div className="font-medium text-sm">{carrier.label}</div>
+                          {carrier.value === 'fedex' && (
+                            <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                              {carrier.description}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                  {selectedCarrier && (
+                    <div className="text-sm text-muted-foreground">
+                      Selected: <span className="font-medium">{SUPPORTED_CARRIERS.find(c => c.value === selectedCarrier)?.label}</span>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -757,6 +804,31 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
                     className="w-full"
                   >
                     {isSubmitting ? 'Adding...' : 'Add ShipStation'}
+                  </Button>
+                </div>
+              )}
+
+              {selectedCarrier && !['ups', 'canada_post', 'sendle', 'shipstation'].includes(selectedCarrier) && (
+                <div className="space-y-4">
+                  <Separator />
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-amber-500" />
+                    <span className="text-sm font-medium">{SUPPORTED_CARRIERS.find(c => c.value === selectedCarrier)?.label} Configuration</span>
+                  </div>
+                  
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                    <p className="text-sm text-amber-800">
+                      <strong>Coming Soon:</strong> Direct integration with {SUPPORTED_CARRIERS.find(c => c.value === selectedCarrier)?.label} is in development. 
+                      For now, you can use our ShipStation integration which supports {SUPPORTED_CARRIERS.find(c => c.value === selectedCarrier)?.label} as a connected carrier.
+                    </p>
+                  </div>
+
+                  <Button 
+                    variant="outline"
+                    onClick={() => setSelectedCarrier('shipstation')}
+                    className="w-full"
+                  >
+                    Use ShipStation Integration Instead
                   </Button>
                 </div>
               )}
