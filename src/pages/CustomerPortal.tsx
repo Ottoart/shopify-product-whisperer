@@ -257,8 +257,16 @@ export default function CustomerPortal() {
         priority: 'medium'
       });
 
-      // Reload tickets
-      loadUserData(user.id);
+      // Reload tickets without full data reload
+      const { data: ticketData } = await supabase
+        .from('support_tickets')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      if (ticketData) {
+        setTickets(ticketData);
+      }
     } catch (error: any) {
       toast({
         title: 'Error creating ticket',
@@ -307,8 +315,16 @@ export default function CustomerPortal() {
         would_recommend: true
       });
 
-      // Reload feedback
-      loadUserData(user.id);
+      // Reload feedback without full data reload
+      const { data: feedbackData } = await supabase
+        .from('order_feedback')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      if (feedbackData) {
+        setFeedback(feedbackData);
+      }
     } catch (error: any) {
       toast({
         title: 'Error submitting feedback',
