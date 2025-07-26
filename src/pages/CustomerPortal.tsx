@@ -138,51 +138,72 @@ export default function CustomerPortal() {
   const loadUserData = async (userId: string) => {
     try {
       // Load profile
-      const { data: profileData } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from('customer_profiles')
         .select('*')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
-      if (profileData) setProfile(profileData);
+      if (profileError) {
+        console.error('Profile error:', profileError);
+      } else if (profileData) {
+        setProfile(profileData);
+      }
 
       // Load addresses
-      const { data: addressData } = await supabase
+      const { data: addressData, error: addressError } = await supabase
         .from('customer_addresses')
         .select('*')
         .eq('user_id', userId)
         .order('is_default', { ascending: false });
 
-      if (addressData) setAddresses(addressData);
+      if (addressError) {
+        console.error('Address error:', addressError);
+      } else if (addressData) {
+        setAddresses(addressData);
+      }
 
       // Load support tickets
-      const { data: ticketData } = await supabase
+      const { data: ticketData, error: ticketError } = await supabase
         .from('support_tickets')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
-      if (ticketData) setTickets(ticketData);
+      if (ticketError) {
+        console.error('Ticket error:', ticketError);
+      } else if (ticketData) {
+        setTickets(ticketData);
+      }
 
       // Load feedback
-      const { data: feedbackData } = await supabase
+      const { data: feedbackData, error: feedbackError } = await supabase
         .from('order_feedback')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
-      if (feedbackData) setFeedback(feedbackData);
+      if (feedbackError) {
+        console.error('Feedback error:', feedbackError);
+      } else if (feedbackData) {
+        setFeedback(feedbackData);
+      }
 
       // Load packages (orders)
-      const { data: packageData } = await supabase
+      const { data: packageData, error: packageError } = await supabase
         .from('packages')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
-      if (packageData) setPackages(packageData);
+      if (packageError) {
+        console.error('Package error:', packageError);
+      } else if (packageData) {
+        setPackages(packageData);
+      }
 
     } catch (error: any) {
+      console.error('Load user data error:', error);
       toast({
         title: 'Error loading data',
         description: error.message,
