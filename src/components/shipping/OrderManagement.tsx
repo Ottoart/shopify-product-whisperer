@@ -49,6 +49,7 @@ import {
 } from "lucide-react";
 import { ShippedProductsView } from './ShippedProductsView';
 import { LabelPurchaseDialog } from './LabelPurchaseDialog';
+import { TableColumnResizer } from './TableColumnResizer';
 
 export function OrderManagement() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -569,8 +570,9 @@ export function OrderManagement() {
           </div>
         ) : (
           <>
-            <Table className="orders-table">
-              <TableHeader className="sticky top-0 bg-background">
+            <div className="relative">
+              <Table className="orders-table">
+                <TableHeader className="sticky top-0 bg-background">
                 <TableRow className="bg-muted/50">
                   <TableHead className="w-12">
                     <Checkbox 
@@ -834,7 +836,9 @@ export function OrderManagement() {
                   );
                 })}
               </TableBody>
-            </Table>
+              </Table>
+              <TableColumnResizer tableSelector=".orders-table" />
+            </div>
 
             {filteredOrders.length === 0 && (
               <div className="p-12 text-center">
