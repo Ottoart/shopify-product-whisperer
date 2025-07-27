@@ -20,10 +20,10 @@ interface StoreShippingConfig {
 
 const UPS_REGISTERED_ADDRESS = {
   address_line1: '9200 Park ave',
-  address_line2: '301',
+  address_line2: '301', // Standardized format without "suite"
   city: 'MONTREAL',
   state: 'QC',
-  zip: 'H2N1Z4',
+  zip: 'H2N1Z4', // Canadian postal code without space
   country: 'CA'
 };
 
