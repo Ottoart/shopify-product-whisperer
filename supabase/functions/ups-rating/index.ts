@@ -205,16 +205,55 @@ serve(async (req) => {
   }
 });
 
+// Enhanced address formatting functions
+function formatCanadianPostalCode(postalCode: string): string {
+  if (!postalCode) return postalCode;
+  // Remove spaces and convert to uppercase
+  const cleaned = postalCode.replace(/\s/g, '').toUpperCase();
+  // Canadian postal codes are 6 characters: A1A1A1
+  if (cleaned.length === 6 && /^[A-Z]\d[A-Z]\d[A-Z]\d$/.test(cleaned)) {
+    return cleaned; // Return without space for UPS API
+  }
+  return postalCode;
+}
+
+// Standardize address format for UPS API consistency
+function standardizeUPSAddress(address: string): string {
+  if (!address) return address;
+  
+  return address
+    .trim()
+    // Standardize suite/apartment formats to match UPS registered address
+    .replace(/\bsuite\s+(\d+)/gi, '$1')
+    .replace(/\bapt\.?\s+(\d+)/gi, '$1')  
+    .replace(/\b#\s*(\d+)/g, '$1')
+    // Clean up extra spaces
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 async function processUPSRating(requestData: RatingRequest, credentials: any, accountNumber: string, validServices: any[]) {
     // Enhanced validation with Canadian address handling
     console.log('📋 Validating UPS API request fields...');
     console.log('🏠 Ship From Address:', JSON.stringify(requestData.shipFrom, null, 2));
     console.log('📍 Ship To Address:', JSON.stringify(requestData.shipTo, null, 2));
     
+    // Standardize address formatting for UPS API consistency
+    if (requestData.shipFrom?.address) {
+      const originalAddress = requestData.shipFrom.address;
+      requestData.shipFrom.address = standardizeUPSAddress(originalAddress);
+      if (originalAddress !== requestData.shipFrom.address) {
+        console.log('🏠 Standardized ship-from address:', `"${originalAddress}" → "${requestData.shipFrom.address}"`);
+      }
+    }
+    
     // Format Canadian postal code if needed (H2N1Z4 vs H2N 1Z4)
     if (requestData.shipFrom?.country === 'CA' && requestData.shipFrom?.zip) {
-      requestData.shipFrom.zip = requestData.shipFrom.zip.replace(/\s+/g, '').toUpperCase();
-      console.log('🇨🇦 Formatted Canadian postal code:', requestData.shipFrom.zip);
+      const originalZip = requestData.shipFrom.zip;
+      requestData.shipFrom.zip = formatCanadianPostalCode(originalZip);
+      if (originalZip !== requestData.shipFrom.zip) {
+        console.log('🇨🇦 Formatted Canadian postal code:', `"${originalZip}" → "${requestData.shipFrom.zip}"`);
+      }
     }
     
     if (!requestData.shipFrom?.zip || !requestData.shipFrom?.country ||
