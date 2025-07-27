@@ -206,7 +206,17 @@ serve(async (req) => {
 });
 
 async function processUPSRating(requestData: RatingRequest, credentials: any, accountNumber: string, validServices: any[]) {
-    // Validate required fields for UPS API
+    // Enhanced validation with Canadian address handling
+    console.log('📋 Validating UPS API request fields...');
+    console.log('🏠 Ship From Address:', JSON.stringify(requestData.shipFrom, null, 2));
+    console.log('📍 Ship To Address:', JSON.stringify(requestData.shipTo, null, 2));
+    
+    // Format Canadian postal code if needed (H2N1Z4 vs H2N 1Z4)
+    if (requestData.shipFrom?.country === 'CA' && requestData.shipFrom?.zip) {
+      requestData.shipFrom.zip = requestData.shipFrom.zip.replace(/\s+/g, '').toUpperCase();
+      console.log('🇨🇦 Formatted Canadian postal code:', requestData.shipFrom.zip);
+    }
+    
     if (!requestData.shipFrom?.zip || !requestData.shipFrom?.country ||
         !requestData.shipFrom?.city || !requestData.shipFrom?.state ||
         !requestData.shipFrom?.address ||
@@ -568,14 +578,41 @@ async function processUPSRating(requestData: RatingRequest, credentials: any, ac
           console.error(`❌ UPS API Error for ${service.service_code} - Status:`, response.status);
           console.error(`❌ UPS API Error for ${service.service_code} - Response:`, responseText);
           
-          // Try to parse error response for better debugging
+          // Enhanced error parsing for common UPS issues
           try {
             const errorResponse = JSON.parse(responseText);
+            
             if (errorResponse.response?.errors) {
               console.error(`❌ UPS Error Details for ${service.service_code}:`, errorResponse.response.errors);
+              
+              // Check for common address validation errors
+              errorResponse.response.errors.forEach((error: any) => {
+                if (error.code === '111210' || error.message?.includes('Address')) {
+                  console.error(`🏠 ADDRESS VALIDATION ERROR: The ship-from address may not match your UPS account registration`);
+                  console.error(`💡 SOLUTION: Ensure your store shipping address exactly matches your UPS account address:`);
+                  console.error(`   Current: ${requestData.shipFrom.address}, ${requestData.shipFrom.city}, ${requestData.shipFrom.state}, ${requestData.shipFrom.zip}`);
+                  console.error(`   Required: Must match UPS account registration exactly`);
+                }
+                
+                if (error.code === '111285' || error.message?.includes('Weight')) {
+                  console.error(`⚖️ WEIGHT ERROR: ${error.message}`);
+                  console.error(`💡 Current weight: ${packageWeightLbs}lbs`);
+                }
+              });
             }
+            
+            if (errorResponse.Fault) {
+              console.error(`❌ UPS Fault for ${service.service_code}:`, errorResponse.Fault);
+            }
+            
           } catch (e) {
-            console.error(`❌ Could not parse UPS error response for ${service.service_code}`);
+            console.error(`❌ Could not parse UPS error response for ${service.service_code}:`, e);
+            
+            // Check for common string patterns in unparseable responses
+            if (responseText.includes('Address') || responseText.includes('address')) {
+              console.error(`🏠 ADDRESS ISSUE DETECTED: Response contains address-related error`);
+              console.error(`💡 Check that your ship-from address matches UPS account registration`);
+            }
           }
           // Continue with other services even if one fails
         }
