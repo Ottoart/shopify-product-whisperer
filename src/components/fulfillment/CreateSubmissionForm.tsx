@@ -179,21 +179,30 @@ export function CreateSubmissionForm() {
   };
 
   const onSubmit = async (data: SubmissionFormData) => {
+    console.log('Form submission started:', { data, itemsCount: items.length });
+    
+    // Enhanced validation with user feedback
+    const validationErrors = [];
+    
+    if (!data.destination_id) {
+      validationErrors.push("Please select a fulfillment destination");
+    }
+    
     if (items.length === 0) {
-      toast({
-        title: "Error",
-        description: "Please add at least one item to the submission",
-        variant: "destructive",
-      });
-      return;
+      validationErrors.push("Please add at least one item to the submission");
     }
 
     // Validate custom fulfillment channel if Omni Fulfillment is selected
     const selectedDest = destinations.find(d => d.id === data.destination_id);
     if (selectedDest?.code === 'OMNI' && !data.custom_fulfillment_channel?.trim()) {
+      validationErrors.push("Please specify your custom fulfillment channel for Omni Fulfillment");
+    }
+
+    if (validationErrors.length > 0) {
+      console.log('Validation errors:', validationErrors);
       toast({
-        title: "Error",
-        description: "Please specify your custom fulfillment channel",
+        title: "Form Validation Error",
+        description: validationErrors.join('. '),
         variant: "destructive",
       });
       return;
@@ -599,24 +608,58 @@ export function CreateSubmissionForm() {
             </CardContent>
           </Card>
 
-          {/* Summary */}
-          {items.length > 0 && (
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex justify-between items-center">
+          {/* Summary and Submission */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="space-y-4">
+                {/* Validation checklist */}
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium">Submission Requirements:</h4>
+                  <div className="grid gap-2 text-sm">
+                    <div className={`flex items-center gap-2 ${form.watch('destination_id') ? 'text-green-600' : 'text-destructive'}`}>
+                      <div className={`w-2 h-2 rounded-full ${form.watch('destination_id') ? 'bg-green-600' : 'bg-destructive'}`} />
+                      Fulfillment destination selected
+                      {!form.watch('destination_id') && <span className="text-xs text-muted-foreground">(Required)</span>}
+                    </div>
+                    <div className={`flex items-center gap-2 ${items.length > 0 ? 'text-green-600' : 'text-destructive'}`}>
+                      <div className={`w-2 h-2 rounded-full ${items.length > 0 ? 'bg-green-600' : 'bg-destructive'}`} />
+                      At least one item added ({items.length} items)
+                      {items.length === 0 && <span className="text-xs text-muted-foreground">(Required)</span>}
+                    </div>
+                    {selectedDestination && destinations.find(d => d.id === selectedDestination)?.code === 'OMNI' && (
+                      <div className={`flex items-center gap-2 ${form.watch('custom_fulfillment_channel')?.trim() ? 'text-green-600' : 'text-destructive'}`}>
+                        <div className={`w-2 h-2 rounded-full ${form.watch('custom_fulfillment_channel')?.trim() ? 'bg-green-600' : 'bg-destructive'}`} />
+                        Custom fulfillment channel specified
+                        {!form.watch('custom_fulfillment_channel')?.trim() && <span className="text-xs text-muted-foreground">(Required for Omni)</span>}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Summary */}
+                <div className="flex justify-between items-center pt-4 border-t">
                   <div>
                     <div className="font-medium">Total Items: {items.length}</div>
                     <div className="text-sm text-muted-foreground">
                       Estimated Prep Cost: ${calculateTotalCost().toFixed(2)}
                     </div>
                   </div>
-                  <Button type="submit" disabled={loading || items.length === 0}>
+                  <Button 
+                    type="submit" 
+                    disabled={
+                      loading || 
+                      items.length === 0 || 
+                      !form.watch('destination_id') ||
+                      (selectedDestination && destinations.find(d => d.id === selectedDestination)?.code === 'OMNI' && !form.watch('custom_fulfillment_channel')?.trim())
+                    }
+                    className="min-w-[140px]"
+                  >
                     {loading ? "Creating..." : "Create Submission"}
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              </div>
+            </CardContent>
+          </Card>
         </form>
       </Form>
 
