@@ -44,26 +44,45 @@ export function PaymentDialog({
   };
 
   const handlePayment = async () => {
+    console.log('[PaymentDialog] Starting payment process for submission:', submission.id);
     setIsProcessing(true);
     
     try {
+      console.log('[PaymentDialog] Invoking create-submission-payment function...');
+      
       const { data, error } = await supabase.functions.invoke('create-submission-payment', {
         body: { submissionId: submission.id }
       });
 
-      if (error) throw error;
+      console.log('[PaymentDialog] Function response:', { data, error });
+
+      if (error) {
+        console.error('[PaymentDialog] Edge function error:', error);
+        throw error;
+      }
 
       if (data?.url) {
-        // Redirect to Stripe checkout
-        window.location.href = data.url;
+        console.log('[PaymentDialog] Opening Stripe checkout in new tab:', data.url);
+        // Open Stripe checkout in a new tab instead of redirecting
+        const stripeWindow = window.open(data.url, '_blank');
+        
+        if (!stripeWindow) {
+          throw new Error("Popup blocked. Please allow popups and try again.");
+        }
+        
+        toast({
+          title: "Payment Processing",
+          description: "Redirected to Stripe. Complete your payment in the new tab.",
+        });
       } else {
-        throw new Error("No payment URL received");
+        console.error('[PaymentDialog] No payment URL in response:', data);
+        throw new Error("No payment URL received from payment service");
       }
     } catch (error) {
-      console.error("Payment error:", error);
+      console.error("[PaymentDialog] Payment error:", error);
       toast({
         title: "Payment Error",
-        description: "Failed to initiate payment. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to initiate payment. Please try again.",
         variant: "destructive",
       });
     } finally {

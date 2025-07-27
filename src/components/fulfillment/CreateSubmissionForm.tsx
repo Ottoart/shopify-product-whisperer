@@ -259,6 +259,9 @@ export function CreateSubmissionForm() {
 
       // Show payment dialog if there are costs
       if (totalCost > 0) {
+        console.log('[CreateSubmissionForm] Opening payment dialog. Submission data:', submission);
+        console.log('[CreateSubmissionForm] Items for payment:', items);
+        
         setPaymentSubmission({
           ...submission,
           destination: submission.fulfillment_destinations
