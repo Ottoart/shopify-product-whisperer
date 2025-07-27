@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { EnhancedAdminDashboard } from "@/components/admin/EnhancedAdminDashboard";
+import { MasterAdminSetup } from "@/components/MasterAdminSetup";
+import { useIsMasterAdmin } from "@/hooks/usePermissions";
 import { Users, Building, DollarSign, Activity, Shield, Settings } from "lucide-react";
 import { Session } from '@supabase/supabase-js';
 
@@ -32,8 +34,18 @@ interface Company {
 }
 
 const AdminDashboard = () => {
-  return <EnhancedAdminDashboard />;
+  const isMasterAdmin = useIsMasterAdmin();
+  
+  // If no master admin exists yet, show setup component
+  if (!isMasterAdmin) {
+    return (
+      <div className="container mx-auto py-8">
+        <MasterAdminSetup />
+      </div>
+    );
+  }
 
+  return <EnhancedAdminDashboard />;
 };
 
 export default AdminDashboard;
