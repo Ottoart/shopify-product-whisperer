@@ -43,14 +43,31 @@ export function SubmissionsList({ submissions, loading, type }: SubmissionsListP
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'draft':
-        return 'text-yellow-600';
-      case 'submitted':
-        return 'text-blue-600';
-      case 'approved':
-        return 'text-green-600';
+      case "approved":
+        return "text-green-600";
+      case "pending_approval":
+        return "text-blue-600";
+      case "payment_pending":
+        return "text-yellow-600";
+      case "submitted":
+        return "text-blue-600";
+      case "draft":
+        return "text-orange-600";
+      case "rejected":
+        return "text-red-600";
       default:
-        return 'text-gray-600';
+        return "text-gray-600";
+    }
+  };
+
+  const getStatusDisplayName = (status: string) => {
+    switch (status) {
+      case "pending_approval":
+        return "Pending Approval";
+      case "payment_pending":
+        return "Payment Pending";
+      default:
+        return status.charAt(0).toUpperCase() + status.slice(1);
     }
   };
 
@@ -104,11 +121,11 @@ export function SubmissionsList({ submissions, loading, type }: SubmissionsListP
                 <FileText className="h-5 w-5" />
                 {submission.submission_number || 'N/A'}
               </CardTitle>
-              <Badge 
+               <Badge 
                 variant={getStatusBadgeVariant(submission.status || 'draft')}
                 className={getStatusColor(submission.status || 'draft')}
               >
-                {(submission.status || 'draft').charAt(0).toUpperCase() + (submission.status || 'draft').slice(1)}
+                {getStatusDisplayName(submission.status || 'draft')}
               </Badge>
             </div>
           </CardHeader>

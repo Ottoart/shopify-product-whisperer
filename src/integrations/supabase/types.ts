@@ -833,9 +833,15 @@ export type Database = {
       }
       inventory_submissions: {
         Row: {
+          approved_at: string | null
+          approved_by_user_id: string | null
           created_at: string
           destination_id: string
           id: string
+          payment_id: string | null
+          payment_status: string | null
+          rejection_reason: string | null
+          shipment_details: Json | null
           special_instructions: string | null
           status: string
           submission_number: string
@@ -846,9 +852,15 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          approved_at?: string | null
+          approved_by_user_id?: string | null
           created_at?: string
           destination_id: string
           id?: string
+          payment_id?: string | null
+          payment_status?: string | null
+          rejection_reason?: string | null
+          shipment_details?: Json | null
           special_instructions?: string | null
           status?: string
           submission_number: string
@@ -859,9 +871,15 @@ export type Database = {
           user_id: string
         }
         Update: {
+          approved_at?: string | null
+          approved_by_user_id?: string | null
           created_at?: string
           destination_id?: string
           id?: string
+          payment_id?: string | null
+          payment_status?: string | null
+          rejection_reason?: string | null
+          shipment_details?: Json | null
           special_instructions?: string | null
           status?: string
           submission_number?: string
@@ -877,6 +895,13 @@ export type Database = {
             columns: ["destination_id"]
             isOneToOne: false
             referencedRelation: "fulfillment_destinations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_submissions_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "submission_payments"
             referencedColumns: ["id"]
           },
         ]
@@ -3061,6 +3086,72 @@ export type Database = {
         }
         Relationships: []
       }
+      submission_invoices: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          currency: string
+          due_date: string | null
+          id: string
+          invoice_date: string
+          invoice_number: string
+          payment_id: string
+          pdf_url: string | null
+          status: string
+          submission_id: string
+          subtotal_cents: number
+          tax_amount_cents: number | null
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          currency?: string
+          due_date?: string | null
+          id?: string
+          invoice_date?: string
+          invoice_number: string
+          payment_id: string
+          pdf_url?: string | null
+          status?: string
+          submission_id: string
+          subtotal_cents: number
+          tax_amount_cents?: number | null
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          currency?: string
+          due_date?: string | null
+          id?: string
+          invoice_date?: string
+          invoice_number?: string
+          payment_id?: string
+          pdf_url?: string | null
+          status?: string
+          submission_id?: string
+          subtotal_cents?: number
+          tax_amount_cents?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "submission_invoices_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "submission_payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "submission_invoices_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       submission_items: {
         Row: {
           created_at: string
@@ -3110,6 +3201,62 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "fk_submission_items_submission"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      submission_payments: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          currency: string
+          failed_at: string | null
+          failure_reason: string | null
+          id: string
+          paid_at: string | null
+          payment_method_types: string[] | null
+          status: string
+          stripe_payment_intent_id: string | null
+          stripe_session_id: string | null
+          submission_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          currency?: string
+          failed_at?: string | null
+          failure_reason?: string | null
+          id?: string
+          paid_at?: string | null
+          payment_method_types?: string[] | null
+          status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          submission_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          currency?: string
+          failed_at?: string | null
+          failure_reason?: string | null
+          id?: string
+          paid_at?: string | null
+          payment_method_types?: string[] | null
+          status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          submission_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "submission_payments_submission_id_fkey"
             columns: ["submission_id"]
             isOneToOne: false
             referencedRelation: "inventory_submissions"
@@ -3603,6 +3750,10 @@ export type Database = {
       check_low_stock: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      generate_invoice_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       generate_rma_number: {
         Args: Record<PropertyKey, never>

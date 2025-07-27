@@ -1,13 +1,21 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Package, FileText, CheckCircle, Clock } from "lucide-react";
 import { useFulfillmentData } from "@/hooks/useFulfillmentData";
 import { CreateSubmissionForm } from "@/components/fulfillment/CreateSubmissionForm";
 import { SubmissionsList } from "@/components/fulfillment/SubmissionsList";
+import { PaymentVerification } from "@/components/fulfillment/PaymentVerification";
 
 export default function SendInventory() {
   const [activeTab, setActiveTab] = useState("create");
+  const [searchParams] = useSearchParams();
+  
+  // Handle payment verification
+  if (searchParams.get("payment") || searchParams.get("session_id")) {
+    return <PaymentVerification />;
+  }
   // This page needs to use the correct hook for inventory submissions
   // For now, we'll use placeholder data
   const submissions: any[] = [];

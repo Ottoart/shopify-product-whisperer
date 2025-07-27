@@ -15,6 +15,7 @@ import { Plus, Trash2, Package } from "lucide-react";
 import { useFulfillmentData } from "@/hooks/useFulfillmentData";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { PaymentDialog } from "./PaymentDialog";
 
 const submissionSchema = z.object({
   destination_id: z.string().min(1, "Please select a fulfillment destination"),
@@ -66,6 +67,8 @@ export function CreateSubmissionForm() {
   const [destinations, setDestinations] = useState<FulfillmentDestination[]>([]);
   const [selectedDestination, setSelectedDestination] = useState<string>("");
   const [loading, setLoading] = useState(false);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [paymentSubmission, setPaymentSubmission] = useState<any>(null);
 
   const form = useForm<SubmissionFormData>({
     resolver: zodResolver(submissionSchema),
@@ -219,7 +222,7 @@ export function CreateSubmissionForm() {
           total_prep_cost: calculateTotalCost(),
           status: 'draft'
         })
-        .select()
+        .select('*, fulfillment_destinations!inner(*)')
         .single();
 
       if (submissionError) throw submissionError;
@@ -243,15 +246,37 @@ export function CreateSubmissionForm() {
 
       if (itemsError) throw itemsError;
 
-      // Reset form
-      form.reset();
-      setItems([]);
-      setSelectedDestination("");
-      
-      toast({
-        title: "Success",
-        description: "Inventory submission created successfully!",
-      });
+      const totalCost = calculateTotalCost();
+
+      // Show payment dialog if there are costs
+      if (totalCost > 0) {
+        setPaymentSubmission({
+          ...submission,
+          destination: submission.fulfillment_destinations
+        });
+        setShowPaymentDialog(true);
+      } else {
+        // If no costs, directly submit for approval
+        const { error: updateError } = await supabase
+          .from('inventory_submissions')
+          .update({ 
+            status: 'pending_approval',
+            submitted_at: new Date().toISOString()
+          })
+          .eq('id', submission.id);
+
+        if (updateError) throw updateError;
+
+        // Reset form
+        form.reset();
+        setItems([]);
+        setSelectedDestination("");
+        
+        toast({
+          title: "Success",
+          description: "Submission created and sent for approval!",
+        });
+      }
     } catch (error) {
       console.error('Error creating submission:', error);
       toast({
@@ -594,6 +619,33 @@ export function CreateSubmissionForm() {
           )}
         </form>
       </Form>
+
+      {/* Payment Dialog */}
+      {paymentSubmission && (
+        <PaymentDialog
+          open={showPaymentDialog}
+          onOpenChange={setShowPaymentDialog}
+          submission={paymentSubmission}
+          items={items.map(item => ({
+            sku: item.sku,
+            quantity: item.quantity,
+            prep_services: item.prep_services.map(serviceId => {
+              const service = prepServices.find(s => s.id === serviceId);
+              return service ? { name: service.name, cost_per_item: service.base_price } : { name: '', cost_per_item: 0 };
+            }).filter(s => s.name)
+          }))}
+          onPaymentSuccess={() => {
+            setShowPaymentDialog(false);
+            form.reset();
+            setItems([]);
+            setSelectedDestination("");
+            toast({
+              title: "Payment Successful",
+              description: "Your submission has been sent for approval!",
+            });
+          }}
+        />
+      )}
     </div>
   );
 }
