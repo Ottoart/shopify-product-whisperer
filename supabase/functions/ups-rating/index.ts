@@ -460,7 +460,21 @@ async function processUPSRating(requestData: RatingRequest, credentials: any, ac
             continue; // Skip this service and try the next one
           }
 
-              // Transform UPS response to our format
+          // Log the full response for debugging
+          console.log(`🔍 Full UPS API Response for ${service.service_code}:`, JSON.stringify(rateResponse, null, 2));
+
+          // Check for response errors or warnings
+          if (rateResponse.RateResponse?.Response?.Alert) {
+            const alerts = Array.isArray(rateResponse.RateResponse.Response.Alert) 
+              ? rateResponse.RateResponse.Response.Alert 
+              : [rateResponse.RateResponse.Response.Alert];
+            
+            for (const alert of alerts) {
+              console.log(`⚠️ UPS Alert for ${service.service_code}: ${alert.Code} - ${alert.Description}`);
+            }
+          }
+
+          // Transform UPS response to our format
           if (rateResponse.RateResponse?.RatedShipment) {
             const ratedShipments = Array.isArray(rateResponse.RateResponse.RatedShipment) 
               ? rateResponse.RateResponse.RatedShipment 
@@ -523,7 +537,32 @@ async function processUPSRating(requestData: RatingRequest, credentials: any, ac
               });
             }
           } else {
-            console.error(`❌ No RatedShipment data in UPS response for ${service.service_code}:`, JSON.stringify(rateResponse, null, 2));
+            console.error(`❌ No RatedShipment data in UPS response for ${service.service_code}`);
+            console.log(`🔍 UPS Response structure:`, JSON.stringify(rateResponse, null, 2));
+            
+            // Check for common issues
+            if (rateResponse.RateResponse?.Response?.ResponseStatus?.Code !== '1') {
+              console.error(`❌ UPS Response Status indicates failure: ${rateResponse.RateResponse?.Response?.ResponseStatus?.Description || 'Unknown error'}`);
+            }
+            
+            // Check for UPS-specific error messages
+            if (rateResponse.Fault) {
+              console.error(`❌ UPS Fault: ${JSON.stringify(rateResponse.Fault, null, 2)}`);
+            }
+            
+            // Check for service availability issues
+            if (rateResponse.RateResponse?.Response?.Alert) {
+              const alerts = Array.isArray(rateResponse.RateResponse.Response.Alert) 
+                ? rateResponse.RateResponse.Response.Alert 
+                : [rateResponse.RateResponse.Response.Alert];
+              
+              for (const alert of alerts) {
+                if (alert.Code === '110208' || alert.Code === '110920') {
+                  console.error(`❌ UPS Service not available: ${alert.Description} (Code: ${alert.Code})`);
+                  console.error(`💡 Suggestion: This UPS account may not have ${service.service_name} (${service.service_code}) enabled for Canada to US shipping`);
+                }
+              }
+            }
           }
         } else {
           console.error(`❌ UPS API Error for ${service.service_code} - Status:`, response.status);
