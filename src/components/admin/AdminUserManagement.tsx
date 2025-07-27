@@ -1,134 +1,124 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, Edit, Trash2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { UserPlus, Search, MoreHorizontal } from "lucide-react";
 
 interface AdminUser {
   id: string;
   user_id: string;
-  role: "admin" | "master_admin" | "manager" | "user";
+  role: string;
   is_active: boolean;
   created_at: string;
-  permissions: any;
-  created_by: string;
   updated_at: string;
-  profiles?: {
-    display_name: string;
-    phone: string;
-  } | null;
 }
 
 export const AdminUserManagement = () => {
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
   const [newUser, setNewUser] = useState({
-    email: "",
-    full_name: "",
-    role: "admin",
-    password: ""
+    email: '',
+    displayName: '',
+    password: '',
+    role: 'user'
   });
   const { toast } = useToast();
-  const queryClient = useQueryClient();
 
-  const { data: adminUsers, isLoading } = useQuery({
-    queryKey: ["admin-users"],
-    queryFn: async () => {
+  useEffect(() => {
+    loadAdminUsers();
+  }, []);
+
+  const loadAdminUsers = async () => {
+    try {
+      setLoading(true);
       const { data, error } = await supabase
-        .from("admin_users")
-        .select("*")
-        .order("created_at", { ascending: false });
+        .from('admin_users')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setAdminUsers(data || []);
+    } catch (error) {
+      console.error('Error loading admin users:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load admin users.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createAdminUser = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('create-admin-user', {
+        body: newUser
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Admin user created successfully!",
+      });
       
-      if (error) throw error;
-      return data as AdminUser[];
-    }
-  });
-
-  const createUserMutation = useMutation({
-    mutationFn: async (userData: typeof newUser) => {
-      const { data, error } = await supabase.functions.invoke("create-admin-user", {
-        body: userData
-      });
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       setIsCreateDialogOpen(false);
-      setNewUser({ email: "", full_name: "", role: "admin", password: "" });
-      toast({ title: "Admin user created successfully" });
-    },
-    onError: (error: any) => {
-      toast({ 
-        title: "Error creating admin user", 
-        description: error.message,
-        variant: "destructive" 
+      setNewUser({ email: '', displayName: '', password: '', role: 'user' });
+      loadAdminUsers();
+    } catch (error) {
+      console.error('Error creating admin user:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create admin user.",
+        variant: "destructive",
       });
     }
-  });
+  };
 
-  const updateUserMutation = useMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: Partial<AdminUser> }) => {
-      const { data, error } = await supabase
-        .from("admin_users")
-        .update(updates)
-        .eq("id", id);
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-      setEditingUser(null);
-      toast({ title: "Admin user updated successfully" });
-    },
-    onError: (error: any) => {
-      toast({ 
-        title: "Error updating admin user", 
-        description: error.message,
-        variant: "destructive" 
-      });
+  const getRoleBadgeVariant = (role: string) => {
+    switch (role) {
+      case 'master_admin': return 'default';
+      case 'admin': return 'secondary';
+      case 'manager': return 'outline';
+      default: return 'outline';
     }
-  });
-
-  const handleCreateUser = () => {
-    createUserMutation.mutate(newUser);
   };
 
-  const handleToggleActive = (user: AdminUser) => {
-    updateUserMutation.mutate({
-      id: user.id,
-      updates: { is_active: !user.is_active }
-    });
-  };
+  const filteredUsers = adminUsers.filter(user =>
+    user.user_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.role.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Admin User Management</CardTitle>
-            <CardDescription>Manage admin users and their permissions</CardDescription>
+            <CardTitle>Admin Users</CardTitle>
+            <CardDescription>Manage administrative user accounts and permissions</CardDescription>
           </div>
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
               <Button>
-                <UserPlus className="w-4 h-4 mr-2" />
+                <UserPlus className="h-4 w-4 mr-2" />
                 Add Admin User
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Create New Admin User</DialogTitle>
+                <DialogTitle>Create Admin User</DialogTitle>
                 <DialogDescription>
-                  Add a new administrator to the system
+                  Add a new administrative user to the system.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
@@ -138,16 +128,16 @@ export const AdminUserManagement = () => {
                     id="email"
                     type="email"
                     value={newUser.email}
-                    onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
+                    onChange={(e) => setNewUser({...newUser, email: e.target.value})}
                     placeholder="admin@example.com"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="full_name">Full Name</Label>
+                  <Label htmlFor="displayName">Display Name</Label>
                   <Input
-                    id="full_name"
-                    value={newUser.full_name}
-                    onChange={(e) => setNewUser(prev => ({ ...prev, full_name: e.target.value }))}
+                    id="displayName"
+                    value={newUser.displayName}
+                    onChange={(e) => setNewUser({...newUser, displayName: e.target.value})}
                     placeholder="John Doe"
                   />
                 </div>
@@ -157,39 +147,50 @@ export const AdminUserManagement = () => {
                     id="password"
                     type="password"
                     value={newUser.password}
-                    onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
-                    placeholder="Secure password"
+                    onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+                    placeholder="••••••••"
                   />
                 </div>
                 <div>
                   <Label htmlFor="role">Role</Label>
-                  <Select value={newUser.role} onValueChange={(value) => setNewUser(prev => ({ ...prev, role: value }))}>
+                  <Select value={newUser.role} onValueChange={(value) => setNewUser({...newUser, role: value})}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="master_admin">Master Admin</SelectItem>
+                      <SelectItem value="user">User</SelectItem>
+                      <SelectItem value="manager">Manager</SelectItem>
                       <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="support">Support</SelectItem>
+                      <SelectItem value="master_admin">Master Admin</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <DialogFooter>
-                <Button
-                  onClick={handleCreateUser}
-                  disabled={createUserMutation.isPending || !newUser.email || !newUser.password}
-                >
-                  {createUserMutation.isPending ? "Creating..." : "Create User"}
+                <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                  Cancel
                 </Button>
+                <Button onClick={createAdminUser}>Create User</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
-          <div>Loading admin users...</div>
+        <div className="flex items-center space-x-2 mb-4">
+          <Search className="h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search users..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="max-w-sm"
+          />
+        </div>
+        
+        {loading ? (
+          <div className="flex items-center justify-center h-32">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
         ) : (
           <Table>
             <TableHeader>
@@ -197,42 +198,33 @@ export const AdminUserManagement = () => {
                 <TableHead>User ID</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Last Updated</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead>Created</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {adminUsers?.map((user) => (
+              {filteredUsers.map((user) => (
                 <TableRow key={user.id}>
-                  <TableCell>
-                    <code className="text-sm bg-muted px-1 py-0.5 rounded">
-                      {user.user_id.substring(0, 8)}...
-                    </code>
+                  <TableCell className="font-mono text-sm">
+                    {user.user_id.slice(0, 8)}...
                   </TableCell>
                   <TableCell>
-                    <Badge variant={user.role === "master_admin" ? "default" : "secondary"}>
+                    <Badge variant={getRoleBadgeVariant(user.role)}>
                       {user.role.replace('_', ' ')}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={user.is_active ? "default" : "destructive"}>
+                    <Badge variant={user.is_active ? "default" : "secondary"}>
                       {user.is_active ? "Active" : "Inactive"}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {new Date(user.updated_at).toLocaleDateString()}
+                    {new Date(user.created_at).toLocaleDateString()}
                   </TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleToggleActive(user)}
-                        disabled={updateUserMutation.isPending}
-                      >
-                        {user.is_active ? "Deactivate" : "Activate"}
-                      </Button>
-                    </div>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="sm">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}

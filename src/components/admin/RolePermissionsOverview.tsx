@@ -1,164 +1,125 @@
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Users, Building2, FileText, BarChart3, Package, ShoppingCart, Truck, DollarSign } from "lucide-react";
-import { PermissionType, RolePermission } from "@/hooks/usePermissions";
+import { Shield, Crown, UserCheck, User } from "lucide-react";
 
-const getResourceIcon = (resourceType: string) => {
-  switch (resourceType) {
-    case 'users':
-      return <Users className="w-4 h-4" />;
-    case 'companies':
-      return <Building2 className="w-4 h-4" />;
-    case 'billing':
-      return <DollarSign className="w-4 h-4" />;
-    case 'logs':
-      return <FileText className="w-4 h-4" />;
-    case 'analytics':
-      return <BarChart3 className="w-4 h-4" />;
-    case 'inventory':
-      return <Package className="w-4 h-4" />;
-    case 'orders':
-      return <ShoppingCart className="w-4 h-4" />;
-    case 'shipping':
-      return <Truck className="w-4 h-4" />;
-    case 'system':
-      return <Shield className="w-4 h-4" />;
-    default:
-      return <Shield className="w-4 h-4" />;
+const roles = [
+  {
+    name: "master_admin",
+    displayName: "Master Admin",
+    icon: Crown,
+    description: "Full system access with all administrative privileges",
+    permissions: ["All Permissions", "System Configuration", "User Management", "Security Settings"],
+    color: "default"
+  },
+  {
+    name: "admin",
+    displayName: "Admin",
+    icon: Shield,
+    description: "Administrative access with most management capabilities",
+    permissions: ["User Management", "Data Management", "Reports & Analytics", "Limited System Settings"],
+    color: "secondary"
+  },
+  {
+    name: "manager",
+    displayName: "Manager",
+    icon: UserCheck,
+    description: "Supervisory access with read/write permissions for operational data",
+    permissions: ["User Viewing/Editing", "Data Read/Write", "Report Generation", "Analytics Access"],
+    color: "outline"
+  },
+  {
+    name: "user",
+    displayName: "User",
+    icon: User,
+    description: "Basic access with limited read permissions",
+    permissions: ["Data Reading", "Profile Management"],
+    color: "outline"
   }
-};
+];
 
-const getPermissionBadgeVariant = (permission: PermissionType) => {
-  switch (permission) {
-    case 'admin':
-      return 'destructive';
-    case 'delete':
-      return 'destructive';
-    case 'write':
-    case 'user_manage':
-    case 'company_manage':
-    case 'billing_manage':
-      return 'default';
-    case 'read':
-    case 'billing_view':
-    case 'analytics_view':
-      return 'secondary';
-    default:
-      return 'outline';
-  }
-};
-
-const getRoleBadgeVariant = (role: string) => {
-  switch (role) {
-    case 'master_admin':
-      return 'destructive';
-    case 'admin':
-      return 'default';
-    case 'manager':
-      return 'secondary';
-    case 'user':
-      return 'outline';
-    default:
-      return 'outline';
-  }
-};
+const permissionMatrix = [
+  { permission: "User Creation", master_admin: true, admin: true, manager: false, user: false },
+  { permission: "User Management", master_admin: true, admin: true, manager: true, user: false },
+  { permission: "System Configuration", master_admin: true, admin: false, manager: false, user: false },
+  { permission: "Data Management", master_admin: true, admin: true, manager: true, user: false },
+  { permission: "Report Generation", master_admin: true, admin: true, manager: true, user: false },
+  { permission: "Analytics Access", master_admin: true, admin: true, manager: true, user: false },
+  { permission: "Audit Logs", master_admin: true, admin: true, manager: false, user: false },
+  { permission: "Billing Management", master_admin: true, admin: true, manager: false, user: false },
+  { permission: "Security Settings", master_admin: true, admin: false, manager: false, user: false },
+];
 
 export const RolePermissionsOverview = () => {
-  const { data: rolePermissions, isLoading } = useQuery({
-    queryKey: ["role-permissions-overview"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("role_permissions")
-        .select("*")
-        .order("role", { ascending: true })
-        .order("resource_type", { ascending: true });
-      
-      if (error) throw error;
-      return data as RolePermission[];
-    }
-  });
-
-  // Group permissions by role
-  const groupedPermissions = rolePermissions?.reduce((acc, permission) => {
-    if (!acc[permission.role]) {
-      acc[permission.role] = [];
-    }
-    acc[permission.role].push(permission);
-    return acc;
-  }, {} as Record<string, RolePermission[]>);
-
-  if (isLoading) {
-    return (
-      <Card>
-        <CardContent className="py-8">
-          <div className="text-center">Loading role permissions...</div>
-        </CardContent>
-      </Card>
+  const getPermissionIcon = (hasPermission: boolean) => {
+    return hasPermission ? (
+      <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+    ) : (
+      <div className="h-2 w-2 bg-gray-300 rounded-full"></div>
     );
-  }
+  };
 
   return (
     <div className="space-y-6">
+      {/* Role Overview Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {roles.map((role) => (
+          <Card key={role.name}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center space-x-2">
+                <role.icon className="h-5 w-5 text-muted-foreground" />
+                <CardTitle className="text-lg">{role.displayName}</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-3">{role.description}</p>
+              <div className="space-y-1">
+                {role.permissions.map((permission) => (
+                  <Badge key={permission} variant={role.color as any} className="text-xs mr-1 mb-1">
+                    {permission}
+                  </Badge>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Permission Matrix */}
       <Card>
         <CardHeader>
-          <CardTitle>Role-Based Permissions Overview</CardTitle>
+          <CardTitle>Permission Matrix</CardTitle>
           <CardDescription>
-            View the permission matrix for all user roles in the system
+            Detailed view of permissions assigned to each role
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Role</TableHead>
                 <TableHead>Permission</TableHead>
-                <TableHead>Resource Type</TableHead>
-                <TableHead>Conditions</TableHead>
-                <TableHead>Source</TableHead>
+                <TableHead className="text-center">Master Admin</TableHead>
+                <TableHead className="text-center">Admin</TableHead>
+                <TableHead className="text-center">Manager</TableHead>
+                <TableHead className="text-center">User</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rolePermissions?.map((permission) => (
-                <TableRow key={permission.id}>
-                  <TableCell>
-                    <Badge variant={getRoleBadgeVariant(permission.role)}>
-                      {permission.role.replace('_', ' ')}
-                    </Badge>
+              {permissionMatrix.map((row) => (
+                <TableRow key={row.permission}>
+                  <TableCell className="font-medium">{row.permission}</TableCell>
+                  <TableCell className="text-center">
+                    {getPermissionIcon(row.master_admin)}
                   </TableCell>
-                  <TableCell>
-                    <Badge variant={getPermissionBadgeVariant(permission.permission)}>
-                      {permission.permission.replace('_', ' ')}
-                    </Badge>
+                  <TableCell className="text-center">
+                    {getPermissionIcon(row.admin)}
                   </TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-2">
-                      {getResourceIcon(permission.resource_type)}
-                      <code className="text-sm bg-muted px-1 py-0.5 rounded">
-                        {permission.resource_type}
-                      </code>
-                    </div>
+                  <TableCell className="text-center">
+                    {getPermissionIcon(row.manager)}
                   </TableCell>
-                  <TableCell>
-                    {permission.conditions && Object.keys(permission.conditions).length > 0 ? (
-                      <details className="text-xs">
-                        <summary className="cursor-pointer text-primary hover:underline">
-                          View Conditions
-                        </summary>
-                        <pre className="mt-1 bg-muted p-2 rounded text-xs overflow-auto max-h-20">
-                          {JSON.stringify(permission.conditions, null, 2)}
-                        </pre>
-                      </details>
-                    ) : (
-                      "—"
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm text-muted-foreground">
-                      System
-                    </span>
+                  <TableCell className="text-center">
+                    {getPermissionIcon(row.user)}
                   </TableCell>
                 </TableRow>
               ))}
@@ -166,43 +127,6 @@ export const RolePermissionsOverview = () => {
           </Table>
         </CardContent>
       </Card>
-
-      {/* Role Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {Object.entries(groupedPermissions || {}).map(([role, permissions]) => (
-          <Card key={role}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center space-x-2">
-                <Shield className="w-5 h-5" />
-                <span>{role.replace('_', ' ')}</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="text-sm text-muted-foreground">
-                  {permissions.length} permissions
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  {permissions.slice(0, 3).map((permission) => (
-                    <Badge
-                      key={permission.id}
-                      variant={getPermissionBadgeVariant(permission.permission)}
-                      className="text-xs"
-                    >
-                      {permission.permission.replace('_', ' ')}
-                    </Badge>
-                  ))}
-                  {permissions.length > 3 && (
-                    <Badge variant="outline" className="text-xs">
-                      +{permissions.length - 3} more
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
     </div>
   );
 };
