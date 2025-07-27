@@ -17,6 +17,10 @@ import { AdvancedAnalyticsDashboard } from "./AdvancedAnalyticsDashboard";
 import { CustomReportBuilder } from "./CustomReportBuilder";
 import { DataExportImport } from "./DataExportImport";
 import { PerformanceTrending } from "./PerformanceTrending";
+import { EnhancedAuditLogging } from "./EnhancedAuditLogging";
+import { DataProtectionPrivacy } from "./DataProtectionPrivacy";
+import { SecurityMonitoring } from "./SecurityMonitoring";
+import { BackupRecoveryManagement } from "./BackupRecoveryManagement";
 import { PermissionManagement } from "./PermissionManagement";
 import { RolePermissionsOverview } from "./RolePermissionsOverview";
 import { SystemLogs } from "./SystemLogs";
@@ -34,7 +38,11 @@ import {
   BarChart3,
   FileText,
   Database,
-  TrendingDown
+  TrendingDown,
+  Lock,
+  Eye,
+  Archive,
+  HardDrive
 } from "lucide-react";
 import { Session } from '@supabase/supabase-js';
 
@@ -457,6 +465,30 @@ export const EnhancedAdminDashboard = () => {
           </TabsList>
         </div>
 
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+          <TabsList className="grid w-full grid-cols-2 bg-muted/50">
+            <TabsTrigger value="audit-logs" className="data-[state=active]:bg-background">
+              <Eye className="h-4 w-4 mr-2" />
+              Audit Logs
+            </TabsTrigger>
+            <TabsTrigger value="data-protection" className="data-[state=active]:bg-background">
+              <Lock className="h-4 w-4 mr-2" />
+              Data Protection
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsList className="grid w-full grid-cols-2 bg-muted/50">
+            <TabsTrigger value="security" className="data-[state=active]:bg-background">
+              <Shield className="h-4 w-4 mr-2" />
+              Security
+            </TabsTrigger>
+            <TabsTrigger value="backup-recovery" className="data-[state=active]:bg-background">
+              <HardDrive className="h-4 w-4 mr-2" />
+              Backup
+            </TabsTrigger>
+          </TabsList>
+        </div>
+
         <TabsContent value="admin-users" className="space-y-4">
           <AdvancedUserManagement />
         </TabsContent>
@@ -503,6 +535,22 @@ export const EnhancedAdminDashboard = () => {
 
         <TabsContent value="trending" className="space-y-4">
           <PerformanceTrending />
+        </TabsContent>
+
+        <TabsContent value="audit-logs" className="space-y-4">
+          <EnhancedAuditLogging />
+        </TabsContent>
+
+        <TabsContent value="data-protection" className="space-y-4">
+          <DataProtectionPrivacy />
+        </TabsContent>
+
+        <TabsContent value="security" className="space-y-4">
+          <SecurityMonitoring />
+        </TabsContent>
+
+        <TabsContent value="backup-recovery" className="space-y-4">
+          <BackupRecoveryManagement />
         </TabsContent>
       </Tabs>
     </div>
