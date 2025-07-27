@@ -169,6 +169,31 @@ export const useIsMasterAdmin = () => {
 };
 
 /**
+ * Hook to check if any master admin exists in the system
+ */
+export const useMasterAdminExists = () => {
+  return useQuery({
+    queryKey: ['master-admin-exists'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('admin_users')
+        .select('id')
+        .eq('role', 'master_admin')
+        .eq('is_active', true)
+        .limit(1);
+      
+      if (error) {
+        console.error('Error checking master admin existence:', error);
+        return false;
+      }
+      
+      return data && data.length > 0;
+    },
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+};
+
+/**
  * Multiple permission check helper
  */
 export const usePermissions = (permissions: Array<{ permission: PermissionType, resourceType: string, resourceId?: string }>) => {
