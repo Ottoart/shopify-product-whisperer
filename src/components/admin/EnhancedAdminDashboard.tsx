@@ -8,8 +8,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { AdvancedUserManagement } from "./AdvancedUserManagement";
 import { AdvancedRoleManagement } from "./AdvancedRoleManagement";
 import { SessionManagement } from "./SessionManagement";
-import { CompanyManagement } from "./CompanyManagement";
-import { BillingManagement } from "./BillingManagement";
+import { EnhancedCompanyDashboard } from "./EnhancedCompanyDashboard";
+import { BillingOperationsHub } from "./BillingOperationsHub";
+import { CustomerSupportIntegration } from "./CustomerSupportIntegration";
+import { AdminCommunicationCenter } from "./AdminCommunicationCenter";
+import { OperationalMonitoring } from "./OperationalMonitoring";
 import { PermissionManagement } from "./PermissionManagement";
 import { RolePermissionsOverview } from "./RolePermissionsOverview";
 import { SystemLogs } from "./SystemLogs";
@@ -382,7 +385,7 @@ export const EnhancedAdminDashboard = () => {
 
       {/* Admin Tabs */}
       <Tabs defaultValue="admin-users" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-7 bg-muted/50">
+        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 bg-muted/50">
           <TabsTrigger value="admin-users" className="data-[state=active]:bg-background">
             <Users className="h-4 w-4 mr-2" />
             Users
@@ -403,13 +406,17 @@ export const EnhancedAdminDashboard = () => {
             <DollarSign className="h-4 w-4 mr-2" />
             Billing
           </TabsTrigger>
-          <TabsTrigger value="permissions" className="data-[state=active]:bg-background">
-            <Settings className="h-4 w-4 mr-2" />
-            Permissions
+          <TabsTrigger value="support" className="data-[state=active]:bg-background">
+            <TrendingUp className="h-4 w-4 mr-2" />
+            Support
           </TabsTrigger>
-          <TabsTrigger value="system-logs" className="data-[state=active]:bg-background">
+          <TabsTrigger value="communication" className="data-[state=active]:bg-background">
+            <TrendingUp className="h-4 w-4 mr-2" />
+            Communication
+          </TabsTrigger>
+          <TabsTrigger value="monitoring" className="data-[state=active]:bg-background">
             <Server className="h-4 w-4 mr-2" />
-            Logs
+            Monitoring
           </TabsTrigger>
         </TabsList>
 
@@ -426,19 +433,23 @@ export const EnhancedAdminDashboard = () => {
         </TabsContent>
 
         <TabsContent value="companies" className="space-y-4">
-          <CompanyManagement />
+          <EnhancedCompanyDashboard />
         </TabsContent>
 
         <TabsContent value="billing" className="space-y-4">
-          <BillingManagement />
+          <BillingOperationsHub />
         </TabsContent>
 
-        <TabsContent value="permissions" className="space-y-4">
-          <PermissionManagement />
+        <TabsContent value="support" className="space-y-4">
+          <CustomerSupportIntegration />
         </TabsContent>
 
-        <TabsContent value="system-logs" className="space-y-4">
-          <SystemLogs />
+        <TabsContent value="communication" className="space-y-4">
+          <AdminCommunicationCenter />
+        </TabsContent>
+
+        <TabsContent value="monitoring" className="space-y-4">
+          <OperationalMonitoring />
         </TabsContent>
       </Tabs>
     </div>
