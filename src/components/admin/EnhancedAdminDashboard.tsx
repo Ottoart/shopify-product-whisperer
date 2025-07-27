@@ -13,6 +13,10 @@ import { BillingOperationsHub } from "./BillingOperationsHub";
 import { CustomerSupportIntegration } from "./CustomerSupportIntegration";
 import { AdminCommunicationCenter } from "./AdminCommunicationCenter";
 import { OperationalMonitoring } from "./OperationalMonitoring";
+import { AdvancedAnalyticsDashboard } from "./AdvancedAnalyticsDashboard";
+import { CustomReportBuilder } from "./CustomReportBuilder";
+import { DataExportImport } from "./DataExportImport";
+import { PerformanceTrending } from "./PerformanceTrending";
 import { PermissionManagement } from "./PermissionManagement";
 import { RolePermissionsOverview } from "./RolePermissionsOverview";
 import { SystemLogs } from "./SystemLogs";
@@ -26,7 +30,11 @@ import {
   TrendingUp,
   Server,
   AlertTriangle,
-  CheckCircle
+  CheckCircle,
+  BarChart3,
+  FileText,
+  Database,
+  TrendingDown
 } from "lucide-react";
 import { Session } from '@supabase/supabase-js';
 
@@ -385,40 +393,69 @@ export const EnhancedAdminDashboard = () => {
 
       {/* Admin Tabs */}
       <Tabs defaultValue="admin-users" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 bg-muted/50">
-          <TabsTrigger value="admin-users" className="data-[state=active]:bg-background">
-            <Users className="h-4 w-4 mr-2" />
-            Users
-          </TabsTrigger>
-          <TabsTrigger value="roles" className="data-[state=active]:bg-background">
-            <Shield className="h-4 w-4 mr-2" />
-            Roles
-          </TabsTrigger>
-          <TabsTrigger value="sessions" className="data-[state=active]:bg-background">
-            <Activity className="h-4 w-4 mr-2" />
-            Sessions
-          </TabsTrigger>
-          <TabsTrigger value="companies" className="data-[state=active]:bg-background">
-            <Building className="h-4 w-4 mr-2" />
-            Companies
-          </TabsTrigger>
-          <TabsTrigger value="billing" className="data-[state=active]:bg-background">
-            <DollarSign className="h-4 w-4 mr-2" />
-            Billing
-          </TabsTrigger>
-          <TabsTrigger value="support" className="data-[state=active]:bg-background">
-            <TrendingUp className="h-4 w-4 mr-2" />
-            Support
-          </TabsTrigger>
-          <TabsTrigger value="communication" className="data-[state=active]:bg-background">
-            <TrendingUp className="h-4 w-4 mr-2" />
-            Communication
-          </TabsTrigger>
-          <TabsTrigger value="monitoring" className="data-[state=active]:bg-background">
-            <Server className="h-4 w-4 mr-2" />
-            Monitoring
-          </TabsTrigger>
-        </TabsList>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+          <TabsList className="grid w-full grid-cols-4 bg-muted/50">
+            <TabsTrigger value="admin-users" className="data-[state=active]:bg-background">
+              <Users className="h-4 w-4 mr-2" />
+              Users
+            </TabsTrigger>
+            <TabsTrigger value="roles" className="data-[state=active]:bg-background">
+              <Shield className="h-4 w-4 mr-2" />
+              Roles
+            </TabsTrigger>
+            <TabsTrigger value="sessions" className="data-[state=active]:bg-background">
+              <Activity className="h-4 w-4 mr-2" />
+              Sessions
+            </TabsTrigger>
+            <TabsTrigger value="companies" className="data-[state=active]:bg-background">
+              <Building className="h-4 w-4 mr-2" />
+              Companies
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsList className="grid w-full grid-cols-4 bg-muted/50">
+            <TabsTrigger value="billing" className="data-[state=active]:bg-background">
+              <DollarSign className="h-4 w-4 mr-2" />
+              Billing
+            </TabsTrigger>
+            <TabsTrigger value="support" className="data-[state=active]:bg-background">
+              <Settings className="h-4 w-4 mr-2" />
+              Support
+            </TabsTrigger>
+            <TabsTrigger value="communication" className="data-[state=active]:bg-background">
+              <Activity className="h-4 w-4 mr-2" />
+              Communication
+            </TabsTrigger>
+            <TabsTrigger value="monitoring" className="data-[state=active]:bg-background">
+              <Server className="h-4 w-4 mr-2" />
+              Monitoring
+            </TabsTrigger>
+          </TabsList>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+          <TabsList className="grid w-full grid-cols-2 bg-muted/50">
+            <TabsTrigger value="analytics" className="data-[state=active]:bg-background">
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Analytics
+            </TabsTrigger>
+            <TabsTrigger value="reports" className="data-[state=active]:bg-background">
+              <FileText className="h-4 w-4 mr-2" />
+              Reports
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsList className="grid w-full grid-cols-2 bg-muted/50">
+            <TabsTrigger value="data-export" className="data-[state=active]:bg-background">
+              <Database className="h-4 w-4 mr-2" />
+              Data Export
+            </TabsTrigger>
+            <TabsTrigger value="trending" className="data-[state=active]:bg-background">
+              <TrendingDown className="h-4 w-4 mr-2" />
+              Trending
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="admin-users" className="space-y-4">
           <AdvancedUserManagement />
@@ -450,6 +487,22 @@ export const EnhancedAdminDashboard = () => {
 
         <TabsContent value="monitoring" className="space-y-4">
           <OperationalMonitoring />
+        </TabsContent>
+
+        <TabsContent value="analytics" className="space-y-4">
+          <AdvancedAnalyticsDashboard />
+        </TabsContent>
+
+        <TabsContent value="reports" className="space-y-4">
+          <CustomReportBuilder />
+        </TabsContent>
+
+        <TabsContent value="data-export" className="space-y-4">
+          <DataExportImport />
+        </TabsContent>
+
+        <TabsContent value="trending" className="space-y-4">
+          <PerformanceTrending />
         </TabsContent>
       </Tabs>
     </div>
