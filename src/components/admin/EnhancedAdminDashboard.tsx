@@ -5,7 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { AdminUserManagement } from "./AdminUserManagement";
+import { AdvancedUserManagement } from "./AdvancedUserManagement";
+import { AdvancedRoleManagement } from "./AdvancedRoleManagement";
+import { SessionManagement } from "./SessionManagement";
 import { CompanyManagement } from "./CompanyManagement";
 import { BillingManagement } from "./BillingManagement";
 import { PermissionManagement } from "./PermissionManagement";
@@ -380,10 +382,18 @@ export const EnhancedAdminDashboard = () => {
 
       {/* Admin Tabs */}
       <Tabs defaultValue="admin-users" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6 bg-muted/50">
+        <TabsList className="grid w-full grid-cols-7 bg-muted/50">
           <TabsTrigger value="admin-users" className="data-[state=active]:bg-background">
             <Users className="h-4 w-4 mr-2" />
             Users
+          </TabsTrigger>
+          <TabsTrigger value="roles" className="data-[state=active]:bg-background">
+            <Shield className="h-4 w-4 mr-2" />
+            Roles
+          </TabsTrigger>
+          <TabsTrigger value="sessions" className="data-[state=active]:bg-background">
+            <Activity className="h-4 w-4 mr-2" />
+            Sessions
           </TabsTrigger>
           <TabsTrigger value="companies" className="data-[state=active]:bg-background">
             <Building className="h-4 w-4 mr-2" />
@@ -394,21 +404,25 @@ export const EnhancedAdminDashboard = () => {
             Billing
           </TabsTrigger>
           <TabsTrigger value="permissions" className="data-[state=active]:bg-background">
-            <Shield className="h-4 w-4 mr-2" />
+            <Settings className="h-4 w-4 mr-2" />
             Permissions
           </TabsTrigger>
-          <TabsTrigger value="roles" className="data-[state=active]:bg-background">
-            <Settings className="h-4 w-4 mr-2" />
-            Roles
-          </TabsTrigger>
           <TabsTrigger value="system-logs" className="data-[state=active]:bg-background">
-            <Activity className="h-4 w-4 mr-2" />
+            <Server className="h-4 w-4 mr-2" />
             Logs
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="admin-users" className="space-y-4">
-          <AdminUserManagement />
+          <AdvancedUserManagement />
+        </TabsContent>
+
+        <TabsContent value="roles" className="space-y-4">
+          <AdvancedRoleManagement />
+        </TabsContent>
+
+        <TabsContent value="sessions" className="space-y-4">
+          <SessionManagement />
         </TabsContent>
 
         <TabsContent value="companies" className="space-y-4">
@@ -421,10 +435,6 @@ export const EnhancedAdminDashboard = () => {
 
         <TabsContent value="permissions" className="space-y-4">
           <PermissionManagement />
-        </TabsContent>
-
-        <TabsContent value="roles" className="space-y-4">
-          <RolePermissionsOverview />
         </TabsContent>
 
         <TabsContent value="system-logs" className="space-y-4">
