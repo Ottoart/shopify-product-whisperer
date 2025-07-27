@@ -5,7 +5,11 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 
-export function PaymentVerification() {
+interface PaymentVerificationProps {
+  onPaymentComplete?: () => void;
+}
+
+export function PaymentVerification({ onPaymentComplete }: PaymentVerificationProps) {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -32,12 +36,16 @@ export function PaymentVerification() {
             title: "Payment Successful!",
             description: "Your submission has been sent for approval.",
           });
+          // Refresh the submissions list
+          onPaymentComplete?.();
         } else {
           toast({
             title: "Payment Not Completed",
             description: "Your submission has been saved as a draft.",
             variant: "destructive",
           });
+          // Still refresh the submissions list
+          onPaymentComplete?.();
         }
 
         // Redirect after a short delay

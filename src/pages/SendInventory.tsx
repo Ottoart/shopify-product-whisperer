@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Package, FileText, CheckCircle, Clock } from "lucide-react";
-import { useFulfillmentData } from "@/hooks/useFulfillmentData";
+import { useInventorySubmissions } from "@/hooks/useInventorySubmissions";
 import { CreateSubmissionForm } from "@/components/fulfillment/CreateSubmissionForm";
 import { SubmissionsList } from "@/components/fulfillment/SubmissionsList";
 import { PaymentVerification } from "@/components/fulfillment/PaymentVerification";
@@ -12,17 +12,15 @@ export default function SendInventory() {
   const [activeTab, setActiveTab] = useState("create");
   const [searchParams] = useSearchParams();
   
+  const { submissions, isLoading, fetchSubmissions } = useInventorySubmissions();
+
   // Handle payment verification
   if (searchParams.get("payment") || searchParams.get("session_id")) {
-    return <PaymentVerification />;
+    return <PaymentVerification onPaymentComplete={fetchSubmissions} />;
   }
-  // This page needs to use the correct hook for inventory submissions
-  // For now, we'll use placeholder data
-  const submissions: any[] = [];
-  const loading = false;
 
   const draftSubmissions = submissions.filter(sub => sub.status === 'draft');
-  const submittedSubmissions = submissions.filter(sub => sub.status === 'submitted');
+  const pendingSubmissions = submissions.filter(sub => sub.status === 'pending_approval' || sub.status === 'payment_pending');
   const approvedSubmissions = submissions.filter(sub => sub.status === 'approved');
 
   return (
@@ -62,7 +60,7 @@ export default function SendInventory() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{submittedSubmissions.length}</div>
+            <div className="text-2xl font-bold">{pendingSubmissions.length}</div>
           </CardContent>
         </Card>
 
@@ -82,7 +80,7 @@ export default function SendInventory() {
         <TabsList>
           <TabsTrigger value="create">Create New Submission</TabsTrigger>
           <TabsTrigger value="drafts">Draft Submissions ({draftSubmissions.length})</TabsTrigger>
-          <TabsTrigger value="submitted">Pending Approval ({submittedSubmissions.length})</TabsTrigger>
+          <TabsTrigger value="submitted">Pending Approval ({pendingSubmissions.length})</TabsTrigger>
           <TabsTrigger value="approved">Approved ({approvedSubmissions.length})</TabsTrigger>
         </TabsList>
 
@@ -111,7 +109,7 @@ export default function SendInventory() {
             <CardContent>
               <SubmissionsList 
                 submissions={draftSubmissions} 
-                loading={loading} 
+                loading={isLoading} 
                 type="draft"
               />
             </CardContent>
@@ -128,8 +126,8 @@ export default function SendInventory() {
             </CardHeader>
             <CardContent>
               <SubmissionsList 
-                submissions={submittedSubmissions} 
-                loading={loading} 
+                submissions={pendingSubmissions} 
+                loading={isLoading} 
                 type="submitted"
               />
             </CardContent>
@@ -147,7 +145,7 @@ export default function SendInventory() {
             <CardContent>
               <SubmissionsList 
                 submissions={approvedSubmissions} 
-                loading={loading} 
+                loading={isLoading} 
                 type="approved"
               />
             </CardContent>

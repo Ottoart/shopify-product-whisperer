@@ -9,10 +9,10 @@ import { format } from "date-fns";
 interface Submission {
   id?: string;
   submission_number?: string;
-  destination?: { name: string };
+  fulfillment_destinations?: { name: string };
   status?: string;
-  total_items?: number;
-  total_prep_cost?: number;
+  total_items?: number | null;
+  total_prep_cost?: number | null;
   special_instructions?: string;
   submitted_at?: string;
   created_at?: string;
@@ -137,7 +137,7 @@ export function SubmissionsList({ submissions, loading, type }: SubmissionsListP
                 <div>
                   <div className="text-sm font-medium">Destination</div>
                   <div className="text-sm text-muted-foreground">
-                    {submission.destination?.name || 'Unknown'}
+                    {submission.fulfillment_destinations?.name || 'Unknown'}
                   </div>
                 </div>
               </div>
