@@ -166,8 +166,6 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
         if (!config.client_id) errors.push('Client ID is required');
         if (!config.client_secret) errors.push('Client Secret is required'); 
         if (!config.account_number) errors.push('Account Number is required');
-        if (!config.postal_code) errors.push('Account Postal Code is required');
-        if (!config.country_code) errors.push('Account Country Code is required');
         break;
       case 'canada_post':
         if (!config.api_username) errors.push('API Username is required');
@@ -288,7 +286,7 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
   const getCredentialFields = (carrier: string) => {
     switch (carrier) {
       case 'ups':
-        return ['client_id', 'client_secret', 'account_number', 'postal_code', 'country_code'];
+        return ['client_id', 'client_secret', 'account_number'];
       case 'canada_post':
         return ['api_username', 'api_password', 'customer_number'];
       case 'sendle':
@@ -314,8 +312,6 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
       case 'username': return 'Username';
       case 'client_id': return 'Client ID';
       case 'client_secret': return 'Client Secret';
-      case 'postal_code': return 'Postal Code';
-      case 'country_code': return 'Country Code';
       default: return field.replace('_', ' ').toUpperCase();
     }
   };

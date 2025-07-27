@@ -261,26 +261,15 @@ async function processUPSRating(requestData: RatingRequest, credentials: any, ac
       );
     }
 
-    // Check for required account details from carrier configuration
-    const accountPostalCode = credentials.postal_code;
-    const accountCountryCode = credentials.country_code;
+    // UPS account information is now derived from ship-from address
+    const accountPostalCode = requestData.shipFrom?.zip;
+    const accountCountryCode = requestData.shipFrom?.country;
     
-    if (!accountPostalCode || !accountCountryCode) {
-      console.error('❌ Missing UPS account address details:', {
-        hasPostalCode: Boolean(accountPostalCode),
-        hasCountryCode: Boolean(accountCountryCode)
-      });
-      return new Response(
-        JSON.stringify({ 
-          error: 'UPS account address not configured', 
-          details: 'Please configure your UPS account postal code and country in carrier settings'
-        }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
+    console.log('✅ Using ship-from address for UPS account details:', {
+      accountPostalCode,
+      accountCountryCode,
+      shipFromAddress: requestData.shipFrom
+    });
 
     // Validate and normalize package weight (UPS minimum requirements)
     let packageWeightLbs = requestData.package.weight || 1.0; // Default to 1 lb if missing

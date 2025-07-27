@@ -137,14 +137,7 @@ export function ShippingDetailsDialog({ isOpen, onClose, order, onUpdateOrder }:
       const { data, error } = await supabase.functions.invoke('calculate-shipping-rates', {
         body: {
           order_id: order.id,
-          ship_from: {
-            name: "Default Store",
-            address: "123 Store Street",
-            city: "Your City", 
-            state: "Your State",
-            zip: "12345",
-            country: "US"
-          },
+          // ship_from will be automatically fetched from store_shipping_configs
           service_preferences: ["standard", "expedited", "overnight"],
           additional_services: {
             signature_required: formData.confirmation === "signature",
