@@ -98,17 +98,17 @@ serve(async (req) => {
       }
       updatedPayment = paymentUpdate;
 
-      // Update submission status to pending approval
+      // Update submission status to awaiting shipment details (we'll check if shipment_details is empty)
       const { data: submissionUpdate, error: submissionUpdateError } = await supabaseService
         .from("inventory_submissions")
         .update({
-          status: "pending_approval",
+          status: "paid", // Will be updated to pending_approval after shipment details are added
           payment_status: "paid",
           payment_id: payment.id,
           submitted_at: new Date().toISOString(),
         })
         .eq("id", payment.submission_id)
-        .select()
+        .select("*, fulfillment_destinations(*)")
         .single();
 
       if (submissionUpdateError) {

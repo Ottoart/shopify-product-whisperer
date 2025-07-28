@@ -7,7 +7,7 @@ export interface InventorySubmission {
   user_id: string;
   destination_id: string;
   submission_number: string;
-  status: 'draft' | 'payment_pending' | 'pending_approval' | 'approved' | 'rejected';
+  status: 'draft' | 'payment_pending' | 'paid' | 'pending_approval' | 'approved' | 'rejected';
   payment_status: 'pending' | 'paid' | 'failed' | null;
   total_items: number | null;
   total_prep_cost: number | null;

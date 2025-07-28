@@ -7,6 +7,7 @@ import { useInventorySubmissions } from "@/hooks/useInventorySubmissions";
 import { CreateSubmissionForm } from "@/components/fulfillment/CreateSubmissionForm";
 import { SubmissionsList } from "@/components/fulfillment/SubmissionsList";
 import { PaymentVerification } from "@/components/fulfillment/PaymentVerification";
+import { ShipmentDetailsForm } from "@/components/fulfillment/ShipmentDetailsForm";
 
 export default function SendInventory() {
   const [activeTab, setActiveTab] = useState("create");
@@ -20,8 +21,32 @@ export default function SendInventory() {
   }
 
   const draftSubmissions = submissions.filter(sub => sub.status === 'draft');
-  const pendingSubmissions = submissions.filter(sub => sub.status === 'pending_approval' || sub.status === 'payment_pending');
+  const pendingSubmissions = submissions.filter(sub => 
+    sub.status === 'pending_approval' || sub.status === 'payment_pending' || sub.status === 'paid'
+  );
   const approvedSubmissions = submissions.filter(sub => sub.status === 'approved');
+
+  // Check if we need to show shipping details form directly
+  const shippingDetailsId = searchParams.get("shipping_details");
+  if (shippingDetailsId) {
+    const submission = submissions.find(sub => sub.id === shippingDetailsId);
+    if (submission && submission.status === 'paid') {
+      return (
+        <div className="container mx-auto">
+          <ShipmentDetailsForm
+            submissionId={shippingDetailsId}
+            onSuccess={() => {
+              fetchSubmissions();
+              window.history.replaceState({}, '', '/send-inventory');
+            }}
+            onCancel={() => {
+              window.history.replaceState({}, '', '/send-inventory');
+            }}
+          />
+        </div>
+      );
+    }
+  }
 
   return (
     <div className="container mx-auto p-6 space-y-6">

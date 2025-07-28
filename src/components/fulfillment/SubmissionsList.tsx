@@ -49,6 +49,8 @@ export function SubmissionsList({ submissions, loading, type }: SubmissionsListP
         return "text-blue-600";
       case "payment_pending":
         return "text-yellow-600";
+      case "paid":
+        return "text-purple-600";
       case "submitted":
         return "text-blue-600";
       case "draft":
@@ -66,6 +68,8 @@ export function SubmissionsList({ submissions, loading, type }: SubmissionsListP
         return "Pending Approval";
       case "payment_pending":
         return "Payment Pending";
+      case "paid":
+        return "Awaiting Shipping Details";
       default:
         return status.charAt(0).toUpperCase() + status.slice(1);
     }
@@ -211,6 +215,15 @@ export function SubmissionsList({ submissions, loading, type }: SubmissionsListP
                     Submit for Approval
                   </Button>
                 </>
+              )}
+              
+              {submission.status === 'paid' && (
+                <Button 
+                  size="sm"
+                  onClick={() => window.location.href = `/send-inventory?shipping_details=${submission.id}`}
+                >
+                  Add Shipping Details
+                </Button>
               )}
               
               {type === 'approved' && (
