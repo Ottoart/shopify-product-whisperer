@@ -184,12 +184,14 @@ export const useMasterAdminExists = () => {
       
       if (error) {
         console.error('Error checking master admin existence:', error);
-        return false;
+        throw error;
       }
       
       return data && data.length > 0;
     },
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    staleTime: 0, // Always refetch
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 };
 

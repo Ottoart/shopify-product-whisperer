@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Crown, CheckCircle } from "lucide-react";
 
 export function MasterAdminSetup() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isCreating, setIsCreating] = useState(false);
   const [isCreated, setIsCreated] = useState(false);
 
@@ -20,6 +22,9 @@ export function MasterAdminSetup() {
       }
 
       console.log('Master admin creation response:', data);
+      
+      // Invalidate the master admin exists query to force refetch
+      await queryClient.invalidateQueries({ queryKey: ['master-admin-exists'] });
       
       toast({
         title: "Success!",
