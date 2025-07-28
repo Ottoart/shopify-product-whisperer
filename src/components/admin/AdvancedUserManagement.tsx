@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   Users, 
@@ -70,29 +71,39 @@ export const AdvancedUserManagement = () => {
   const [selectedUser, setSelectedUser] = useState<ComprehensiveUser | null>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
+  const [retryCount, setRetryCount] = useState(0);
   const { toast } = useToast();
+  const { adminSession, sessionStable, isLoading: authLoading } = useAdminAuth();
 
   useEffect(() => {
-    loadUsersData();
-  }, []);
+    if (!authLoading && sessionStable && adminSession) {
+      loadUsersData();
+    }
+  }, [authLoading, sessionStable, adminSession]);
 
-  const loadUsersData = async () => {
+  const loadUsersData = async (retry = false) => {
     try {
       setLoading(true);
       
-      // Get admin session from localStorage to pass to admin endpoints
-      const adminSessionString = localStorage.getItem('admin_session');
-      if (!adminSessionString) {
-        console.error('No admin session found');
+      if (!sessionStable || !adminSession) {
+        if (!retry && retryCount < 3) {
+          console.log('Admin session not stable, retrying in 1 second...');
+          setTimeout(() => {
+            setRetryCount(prev => prev + 1);
+            loadUsersData(true);
+          }, 1000);
+          return;
+        }
+        console.error('No stable admin session found after retries');
         toast({
-          title: "Error",
-          description: "Admin session not found. Please log in again.",
+          title: "Session Error",
+          description: "Admin session is not available. Please sign in again.",
           variant: "destructive",
         });
         return;
       }
 
-      const adminSession = JSON.parse(adminSessionString);
+      console.log('Loading users with admin session:', adminSession.user.email);
 
       // Load all users using admin endpoint
       const { data: usersResult, error: usersError } = await supabase.functions.invoke('admin-data', {
@@ -186,14 +197,24 @@ export const AdvancedUserManagement = () => {
       });
 
       setUsers(comprehensiveUsers);
+      setRetryCount(0); // Reset retry count on success
+      console.log(`Loaded ${comprehensiveUsers.length} users successfully`);
       
     } catch (error) {
       console.error('Error loading users data:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load user data.",
-        variant: "destructive",
-      });
+      if (retryCount < 2) {
+        console.log(`Retrying load users (attempt ${retryCount + 1})...`);
+        setTimeout(() => {
+          setRetryCount(prev => prev + 1);
+          loadUsersData(true);
+        }, 2000);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to load user data after multiple attempts.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -339,9 +360,25 @@ export const AdvancedUserManagement = () => {
           </div>
 
           {/* Users Table */}
-          {loading ? (
+          {authLoading || loading ? (
             <div className="flex items-center justify-center h-32">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-muted-foreground">
+                  {authLoading ? 'Authenticating...' : 'Loading users...'}
+                </p>
+                {retryCount > 0 && (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Retry attempt {retryCount}/3
+                  </p>
+                )}
+              </div>
+            </div>
+          ) : !sessionStable || !adminSession ? (
+            <div className="flex items-center justify-center h-32">
+              <div className="text-center">
+                <p className="text-muted-foreground">Admin session not available. Please sign in again.</p>
+              </div>
             </div>
           ) : (
             <Table>
