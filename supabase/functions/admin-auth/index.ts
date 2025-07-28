@@ -91,7 +91,30 @@ serve(async (req) => {
       return validCred;
     }) || adminUsers[0]; // Use first admin if no specific match
 
-    // Create admin session token (simplified for demo)
+    // Create Supabase Auth session for the admin user
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'magiclink',
+      email: adminUser.user_id, // Use user_id as email for admin auth
+      options: {
+        redirectTo: `${Deno.env.get("SUPABASE_URL")}/auth/v1/verify`
+      }
+    });
+
+    if (authError) {
+      console.error("Error creating auth session:", authError);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Failed to create admin session"
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 500,
+        }
+      );
+    }
+
+    // Create admin session token with Supabase Auth data
     const adminSession = {
       user: {
         id: adminUser.user_id,
@@ -101,7 +124,8 @@ serve(async (req) => {
         display_name: "Admin"
       },
       expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
-      session_id: crypto.randomUUID()
+      session_id: crypto.randomUUID(),
+      supabase_session: authData.properties?.session_string || null
     };
 
     console.log("Admin login successful for:", email);

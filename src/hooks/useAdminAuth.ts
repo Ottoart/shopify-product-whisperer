@@ -11,6 +11,7 @@ interface AdminSession {
   };
   expires_at: string;
   session_id: string;
+  supabase_session?: string | null;
 }
 
 const ADMIN_SESSION_KEY = 'admin_session';
@@ -48,6 +49,19 @@ export function useAdminAuth() {
       if (!data.success) throw new Error(data.error);
 
       const session = data.session;
+      
+      // Set up Supabase Auth session if provided
+      if (session.supabase_session) {
+        try {
+          await supabase.auth.setSession({
+            access_token: session.supabase_session,
+            refresh_token: session.supabase_session
+          });
+        } catch (authError) {
+          console.warn('Failed to set Supabase auth session:', authError);
+        }
+      }
+      
       setAdminSession(session);
       localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(session));
       
@@ -61,7 +75,15 @@ export function useAdminAuth() {
     }
   };
 
-  const signOut = () => {
+  const signOut = async () => {
+    // Clear Supabase Auth session
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.warn('Failed to sign out of Supabase auth:', error);
+    }
+    
+    // Clear admin session
     setAdminSession(null);
     localStorage.removeItem(ADMIN_SESSION_KEY);
   };
