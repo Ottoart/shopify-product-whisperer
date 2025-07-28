@@ -11,7 +11,17 @@ interface AdminSession {
   };
   expires_at: string;
   session_id: string;
-  supabase_session?: string | null;
+  supabase_session?: {
+    access_token: string;
+    refresh_token: string;
+    expires_in: number;
+    token_type: string;
+    user: {
+      id: string;
+      email: string;
+      role: string;
+    };
+  } | null;
 }
 
 const ADMIN_SESSION_KEY = 'admin_session';
@@ -54,9 +64,10 @@ export function useAdminAuth() {
       if (session.supabase_session) {
         try {
           await supabase.auth.setSession({
-            access_token: session.supabase_session,
-            refresh_token: session.supabase_session
+            access_token: session.supabase_session.access_token,
+            refresh_token: session.supabase_session.refresh_token
           });
+          console.log('Supabase auth session set successfully for admin user');
         } catch (authError) {
           console.warn('Failed to set Supabase auth session:', authError);
         }
