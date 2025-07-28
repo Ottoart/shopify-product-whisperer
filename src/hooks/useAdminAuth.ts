@@ -63,27 +63,30 @@ export function useAdminAuth() {
     setIsLoading(false);
   }, []);
 
-  // Separate effect for session validation interval without dependency on adminSession
+  // Simplified session validation - only check every 5 minutes and be less aggressive
   useEffect(() => {
     const interval = setInterval(() => {
       const currentSession = localStorage.getItem(ADMIN_SESSION_KEY);
       if (currentSession) {
         try {
           const session = JSON.parse(currentSession);
-          if (!validateSession(session)) {
-            console.warn('Admin session expired, clearing...');
+          // Only clear if session is truly expired (with 1 hour buffer)
+          const expiryTime = new Date(session.expires_at);
+          const now = new Date();
+          const oneHourBuffer = 60 * 60 * 1000;
+          
+          if (expiryTime.getTime() < (now.getTime() - oneHourBuffer)) {
+            console.warn('Admin session truly expired, clearing...');
             setAdminSession(null);
             setSessionStable(false);
             localStorage.removeItem(ADMIN_SESSION_KEY);
           }
         } catch (error) {
           console.error('Error validating session:', error);
-          setAdminSession(null);
-          setSessionStable(false);
           localStorage.removeItem(ADMIN_SESSION_KEY);
         }
       }
-    }, 30000); // Check every 30 seconds
+    }, 300000); // Check every 5 minutes instead of 30 seconds
 
     return () => clearInterval(interval);
   }, []);

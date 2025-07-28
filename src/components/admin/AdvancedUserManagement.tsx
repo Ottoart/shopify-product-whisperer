@@ -76,17 +76,36 @@ export const AdvancedUserManagement = () => {
   const { adminSession, sessionStable, isLoading: authLoading } = useAdminAuth();
 
   useEffect(() => {
-    if (!authLoading && sessionStable && adminSession) {
-      loadUsersData();
-    } else if (!authLoading && adminSession) {
-      // If session exists but not marked as stable, wait a bit then try anyway
-      const timeout = setTimeout(() => {
-        if (adminSession) {
-          console.log('Loading data with unstable session as fallback');
-          loadUsersData();
-        }
-      }, 2000);
-      return () => clearTimeout(timeout);
+    console.log('🎯 useEffect triggered:', { authLoading, sessionStable, adminSession: !!adminSession });
+    
+    if (!authLoading && adminSession) {
+      if (sessionStable) {
+        console.log('🟢 Session is stable, loading data immediately');
+        loadUsersData();
+      } else {
+        console.log('🟡 Session exists but not stable, using fallback loading');
+        // Multiple fallback attempts
+        const timeout1 = setTimeout(() => {
+          if (adminSession) {
+            console.log('⏰ First fallback attempt (1s)');
+            loadUsersData(true);
+          }
+        }, 1000);
+        
+        const timeout2 = setTimeout(() => {
+          if (adminSession && users.length === 0 && !loading) {
+            console.log('⏰ Second fallback attempt (3s)');
+            loadUsersData(true);
+          }
+        }, 3000);
+        
+        return () => {
+          clearTimeout(timeout1);
+          clearTimeout(timeout2);
+        };
+      }
+    } else {
+      console.log('🔴 Not ready to load:', { authLoading, hasSession: !!adminSession });
     }
   }, [authLoading, sessionStable, adminSession]);
 
