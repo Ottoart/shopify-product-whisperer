@@ -80,40 +80,53 @@ export const AdvancedUserManagement = () => {
     try {
       setLoading(true);
       
-      // Get all users from profiles table
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
+      // Get admin session from localStorage to pass to admin endpoints
+      const adminSessionString = localStorage.getItem('admin_session');
+      if (!adminSessionString) {
+        console.error('No admin session found');
+        toast({
+          title: "Error",
+          description: "Admin session not found. Please log in again.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-      // Get admin users separately
-      const { data: adminUsersData, error: adminError } = await supabase
-        .from('admin_users')
-        .select('*');
+      const adminSession = JSON.parse(adminSessionString);
 
-      if (profilesError) throw profilesError;
+      // Load all users using admin endpoint
+      const { data: usersResult, error: usersError } = await supabase.functions.invoke('admin-data', {
+        body: { 
+          data_type: 'all_users',
+          session_token: adminSession.session_id 
+        }
+      });
 
-      // Get store configurations for each user
-      const { data: storesData, error: storesError } = await supabase
-        .from('store_configurations')
-        .select('*');
+      if (usersError || !usersResult.success) {
+        console.error('Error loading users:', usersError || usersResult.error);
+        throw new Error(usersResult.error || 'Failed to load users');
+      }
 
-      if (storesError) throw storesError;
+      const profilesData = usersResult.data || [];
 
-      // Get inventory submissions for each user
-      const { data: submissionsData, error: submissionsError } = await supabase
-        .from('inventory_submissions')
-        .select(`
-          *,
-          submission_invoices (
-            amount_cents,
-            currency,
-            status,
-            created_at
-          )
-        `);
+      // Load admin users using admin endpoint
+      const { data: adminUsersResult, error: adminError } = await supabase.functions.invoke('admin-data', {
+        body: { 
+          data_type: 'admin_users',
+          session_token: adminSession.session_id 
+        }
+      });
 
-      if (submissionsError) throw submissionsError;
+      if (adminError || !adminUsersResult.success) {
+        console.error('Error loading admin users:', adminError || adminUsersResult.error);
+      }
+
+      const adminUsersData = adminUsersResult.data || [];
+
+      // For now, use empty arrays for stores and submissions since we need service-role access
+      // TODO: Add these data types to the admin-data endpoint
+      const storesData = [];
+      const submissionsData = [];
 
       // Process and combine all data
       const comprehensiveUsers: ComprehensiveUser[] = (profilesData || []).map(profile => {

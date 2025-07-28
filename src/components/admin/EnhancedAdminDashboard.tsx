@@ -107,41 +107,77 @@ export const EnhancedAdminDashboard = () => {
     try {
       setLoading(true);
 
-      // Load admin users
-      const { data: adminUsersData, error: adminError } = await supabase
-        .from('admin_users')
-        .select('*');
-
-      if (adminError) {
-        console.error('Error loading admin users:', adminError);
-      } else {
-        setAdminUsers(adminUsersData || []);
+      // Get admin session from localStorage to pass to admin endpoints
+      const adminSessionString = localStorage.getItem('admin_session');
+      if (!adminSessionString) {
+        console.error('No admin session found');
+        return;
       }
 
-      // Load companies
-      const { data: companiesData, error: companiesError } = await supabase
-        .from('companies')
-        .select('*');
+      const adminSession = JSON.parse(adminSessionString);
 
-      if (companiesError) {
-        console.error('Error loading companies:', companiesError);
+      // Load admin users using admin endpoint
+      const { data: adminUsersResult, error: adminError } = await supabase.functions.invoke('admin-data', {
+        body: { 
+          data_type: 'admin_users',
+          session_token: adminSession.session_id 
+        }
+      });
+
+      if (adminError || !adminUsersResult.success) {
+        console.error('Error loading admin users:', adminError || adminUsersResult.error);
       } else {
-        setCompanies(companiesData || []);
+        setAdminUsers(adminUsersResult.data || []);
       }
+
+      // Load companies using admin endpoint
+      const { data: companiesResult, error: companiesError } = await supabase.functions.invoke('admin-data', {
+        body: { 
+          data_type: 'companies',
+          session_token: adminSession.session_id 
+        }
+      });
+
+      if (companiesError || !companiesResult.success) {
+        console.error('Error loading companies:', companiesError || companiesResult.error);
+      } else {
+        setCompanies(companiesResult.data || []);
+      }
+
+      // Load user statistics using admin endpoint
+      const { data: statsResult, error: statsError } = await supabase.functions.invoke('admin-data', {
+        body: { 
+          data_type: 'user_stats',
+          session_token: adminSession.session_id 
+        }
+      });
 
       // Calculate enhanced stats
       const totalRevenue = 15420.50; // This would come from billing data
       const systemAlerts = 2;
       const pendingActions = 5;
 
-      setStats({
-        totalUsers: (adminUsersData || []).length,
-        totalCompanies: (companiesData || []).length,
-        activeSubscriptions: (companiesData || []).filter(c => c.subscription_status === 'active').length,
-        totalRevenue,
-        systemAlerts,
-        pendingActions
-      });
+      if (statsError || !statsResult.success) {
+        console.error('Error loading stats:', statsError || statsResult.error);
+        // Use fallback data
+        setStats({
+          totalUsers: (adminUsersResult.data || []).length,
+          totalCompanies: (companiesResult.data || []).length,
+          activeSubscriptions: (companiesResult.data || []).filter(c => c.subscription_status === 'active').length,
+          totalRevenue,
+          systemAlerts,
+          pendingActions
+        });
+      } else {
+        setStats({
+          totalUsers: statsResult.data.totalUsers,
+          totalCompanies: statsResult.data.totalCompanies,
+          activeSubscriptions: statsResult.data.activeSubscriptions,
+          totalRevenue,
+          systemAlerts,
+          pendingActions
+        });
+      }
 
     } catch (error) {
       console.error('Error loading dashboard data:', error);
