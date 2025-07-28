@@ -60,18 +60,7 @@ export function useAdminAuth() {
 
       const session = data.session;
       
-      // Set up Supabase Auth session if provided
-      if (session.supabase_session) {
-        try {
-          await supabase.auth.setSession({
-            access_token: session.supabase_session.access_token,
-            refresh_token: session.supabase_session.refresh_token
-          });
-          console.log('Supabase auth session set successfully for admin user');
-        } catch (authError) {
-          console.warn('Failed to set Supabase auth session:', authError);
-        }
-      }
+      // Skip Supabase Auth session setup for admin users
       
       setAdminSession(session);
       localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(session));

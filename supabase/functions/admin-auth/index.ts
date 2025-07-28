@@ -91,50 +91,7 @@ serve(async (req) => {
       return validCred;
     }) || adminUsers[0]; // Use first admin if no specific match
 
-    // Create a proper Supabase Auth session by generating an access token
-    // First, ensure the admin user exists in auth.users
-    const { data: existingUser, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(adminUser.user_id);
-    
-    if (getUserError || !existingUser.user) {
-      // Admin user doesn't exist in auth.users, create them
-      const { data: createUserData, error: createUserError } = await supabaseAdmin.auth.admin.createUser({
-        id: adminUser.user_id,
-        email: email,
-        password: crypto.randomUUID(), // Random password since admin login is handled separately
-        email_confirm: true,
-        user_metadata: {
-          display_name: "Admin",
-          role: adminUser.role
-        }
-      });
-      
-      if (createUserError) {
-        console.error("Error creating admin user:", createUserError);
-      } else {
-        console.log("Created admin user in auth.users:", createUserData.user?.id);
-      }
-    }
-    
-    // Generate an access token for the admin user
-    const { data: tokenData, error: tokenError } = await supabaseAdmin.auth.admin.generateAccessToken(adminUser.user_id);
-    
-    let authSession = null;
-    if (!tokenError && tokenData) {
-      authSession = {
-        access_token: tokenData.access_token,
-        refresh_token: tokenData.access_token, // Use same token for both
-        expires_in: 3600,
-        token_type: 'bearer',
-        user: {
-          id: adminUser.user_id,
-          email: email,
-          role: adminUser.role
-        }
-      };
-      console.log("Generated access token for admin user");
-    } else {
-      console.error("Error generating access token:", tokenError);
-    }
+    // Skip Supabase Auth integration for now - just use custom admin session
 
     // Create admin session token with Supabase Auth data
     const adminSession = {
@@ -147,7 +104,7 @@ serve(async (req) => {
       },
       expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
       session_id: crypto.randomUUID(),
-      supabase_session: authSession
+      supabase_session: null
     };
 
     console.log("Admin login successful for:", email);
