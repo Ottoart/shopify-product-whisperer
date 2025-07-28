@@ -112,22 +112,16 @@ export const AdvancedUserManagement = () => {
   const loadUsersData = async (retry = false) => {
     try {
       setLoading(true);
+      console.log('🎯 loadUsersData called:', { sessionStable, hasSession: !!adminSession, retry });
       
-      if (!sessionStable || !adminSession) {
-        if (!retry && retryCount < 3) {
-          console.log('Admin session not stable, retrying in 1 second...');
-          setTimeout(() => {
-            setRetryCount(prev => prev + 1);
-            loadUsersData(true);
-          }, 1000);
-          return;
-        }
-        console.error('No stable admin session found after retries');
+      if (!adminSession || !adminSession.session_id) {
+        console.error('❌ No admin session or session_id found');
         toast({
           title: "Session Error",
           description: "Admin session is not available. Please sign in again.",
           variant: "destructive",
         });
+        setLoading(false);
         return;
       }
 
