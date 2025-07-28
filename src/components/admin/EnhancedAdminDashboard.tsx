@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { AdvancedUserManagement } from "./AdvancedUserManagement";
 import { AdvancedRoleManagement } from "./AdvancedRoleManagement";
 import { SessionManagement } from "./SessionManagement";
@@ -44,7 +45,6 @@ import {
   Archive,
   HardDrive
 } from "lucide-react";
-import { Session } from '@supabase/supabase-js';
 
 interface AdminUser {
   id: string;
@@ -74,7 +74,6 @@ interface SystemHealth {
 
 export const EnhancedAdminDashboard = () => {
   const [loading, setLoading] = useState(true);
-  const [hasAdminAccess, setHasAdminAccess] = useState(false);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [systemHealth, setSystemHealth] = useState<SystemHealth>({
@@ -91,60 +90,17 @@ export const EnhancedAdminDashboard = () => {
     systemAlerts: 2,
     pendingActions: 5
   });
-  const [session, setSession] = useState<Session | null>(null);
   const { toast } = useToast();
+  const { isAuthenticated, isAdmin } = useAdminAuth();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    if (session?.user) {
-      checkAdminAccess();
+    if (isAuthenticated && isAdmin) {
       loadDashboardData();
     } else {
       setLoading(false);
     }
-  }, [session]);
+  }, [isAuthenticated, isAdmin]);
 
-  const checkAdminAccess = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('admin_users')
-        .select('role, is_active')
-        .eq('user_id', session?.user?.id)
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Error checking admin access:', error);
-        setHasAdminAccess(false);
-        return;
-      }
-
-      if (data && ['master_admin', 'admin', 'manager'].includes(data.role)) {
-        setHasAdminAccess(true);
-      } else {
-        setHasAdminAccess(false);
-        toast({
-          title: "Access Denied",
-          description: "You don't have permission to access the admin dashboard.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error('Error checking admin access:', error);
-      setHasAdminAccess(false);
-    }
-  };
 
   const loadDashboardData = async () => {
     try {
@@ -224,51 +180,8 @@ export const EnhancedAdminDashboard = () => {
     );
   }
 
-  if (!session?.user) {
-    return (
-      <div className="container mx-auto p-6">
-        <Card className="max-w-md mx-auto">
-          <CardHeader>
-            <CardTitle>Admin Access Required</CardTitle>
-            <CardDescription>
-              Please log in to access the admin dashboard.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button 
-              onClick={() => window.location.href = '/auth'}
-              className="w-full"
-            >
-              Go to Login
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (!hasAdminAccess) {
-    return (
-      <div className="container mx-auto p-6">
-        <Card className="max-w-md mx-auto">
-          <CardHeader>
-            <CardTitle>Access Denied</CardTitle>
-            <CardDescription>
-              You don't have permission to access the admin dashboard.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button 
-              onClick={() => window.location.href = '/'}
-              className="w-full"
-            >
-              Return to Home
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  // This component should only be rendered when admin is authenticated
+  // The parent AdminDashboard component handles the authentication flow
 
   return (
     <div className="container mx-auto p-6 space-y-6">
