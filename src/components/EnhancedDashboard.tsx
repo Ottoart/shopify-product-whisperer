@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { MockDataBadge, LiveDataBadge } from '@/components/ui/mock-data-badge';
 
 interface Insight {
   id: string;
@@ -299,55 +300,63 @@ export function EnhancedDashboard() {
       {/* KPI Cards */}
       {metrics && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Revenue Today</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">${metrics.total_revenue.toFixed(2)}</div>
-              <p className="text-xs text-muted-foreground">
-                {metrics.total_orders} orders • ${metrics.avg_order_value.toFixed(2)} AOV
-              </p>
-            </CardContent>
-          </Card>
+          <MockDataBadge>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Revenue Today</CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">${metrics.total_revenue.toFixed(2)}</div>
+                <p className="text-xs text-muted-foreground">
+                  {metrics.total_orders} orders • ${metrics.avg_order_value.toFixed(2)} AOV
+                </p>
+              </CardContent>
+            </Card>
+          </MockDataBadge>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Cost Savings</CardTitle>
-              <Zap className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">${metrics.cost_savings.toFixed(2)}</div>
-              <p className="text-xs text-muted-foreground">
-                {metrics.products_optimized} products optimized
-              </p>
-            </CardContent>
-          </Card>
+          <MockDataBadge>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Cost Savings</CardTitle>
+                <Zap className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">${metrics.cost_savings.toFixed(2)}</div>
+                <p className="text-xs text-muted-foreground">
+                  {metrics.products_optimized} products optimized
+                </p>
+              </CardContent>
+            </Card>
+          </MockDataBadge>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
-              <Target className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{metrics.conversion_rate.toFixed(1)}%</div>
-              <Progress value={metrics.conversion_rate} className="mt-2" />
-            </CardContent>
-          </Card>
+          <MockDataBadge>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
+                <Target className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{metrics.conversion_rate.toFixed(1)}%</div>
+                <Progress value={metrics.conversion_rate} className="mt-2" />
+              </CardContent>
+            </Card>
+          </MockDataBadge>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Profit Margin</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{metrics.profit_margin.toFixed(1)}%</div>
-              <p className="text-xs text-muted-foreground">
-                {metrics.price_changes} price changes today
-              </p>
-            </CardContent>
-          </Card>
+          <MockDataBadge>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Profit Margin</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{metrics.profit_margin.toFixed(1)}%</div>
+                <p className="text-xs text-muted-foreground">
+                  {metrics.price_changes} price changes today
+                </p>
+              </CardContent>
+            </Card>
+          </MockDataBadge>
         </div>
       )}
 

@@ -45,6 +45,7 @@ import {
   Archive,
   HardDrive
 } from "lucide-react";
+import { MockDataBadge, LiveDataBadge } from "@/components/ui/mock-data-badge";
 
 interface AdminUser {
   id: string;
@@ -203,114 +204,134 @@ export const EnhancedAdminDashboard = () => {
 
       {/* Enhanced Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        <Card className="gradient-border">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalUsers}</div>
-            <p className="text-xs text-muted-foreground">
-              <TrendingUp className="h-3 w-3 inline mr-1" />
-              +12% from last month
-            </p>
-          </CardContent>
-        </Card>
+        <LiveDataBadge>
+          <Card className="gradient-border">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalUsers}</div>
+              <MockDataBadge>
+                <p className="text-xs text-muted-foreground">
+                  <TrendingUp className="h-3 w-3 inline mr-1" />
+                  +12% from last month
+                </p>
+              </MockDataBadge>
+            </CardContent>
+          </Card>
+        </LiveDataBadge>
 
-        <Card className="gradient-border">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Companies</CardTitle>
-            <Building className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalCompanies}</div>
-            <p className="text-xs text-muted-foreground">
-              <TrendingUp className="h-3 w-3 inline mr-1" />
-              +5% from last month
-            </p>
-          </CardContent>
-        </Card>
+        <LiveDataBadge>
+          <Card className="gradient-border">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Companies</CardTitle>
+              <Building className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalCompanies}</div>
+              <MockDataBadge>
+                <p className="text-xs text-muted-foreground">
+                  <TrendingUp className="h-3 w-3 inline mr-1" />
+                  +5% from last month
+                </p>
+              </MockDataBadge>
+            </CardContent>
+          </Card>
+        </LiveDataBadge>
 
-        <Card className="gradient-border">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Subscriptions</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.activeSubscriptions}</div>
-            <p className="text-xs text-muted-foreground">
-              <TrendingUp className="h-3 w-3 inline mr-1" />
-              +8% from last month
-            </p>
-          </CardContent>
-        </Card>
+        <LiveDataBadge>
+          <Card className="gradient-border">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Active Subscriptions</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.activeSubscriptions}</div>
+              <MockDataBadge>
+                <p className="text-xs text-muted-foreground">
+                  <TrendingUp className="h-3 w-3 inline mr-1" />
+                  +8% from last month
+                </p>
+              </MockDataBadge>
+            </CardContent>
+          </Card>
+        </LiveDataBadge>
 
-        <Card className="gradient-border">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">${stats.totalRevenue.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">
-              <TrendingUp className="h-3 w-3 inline mr-1" />
-              +15% from last month
-            </p>
-          </CardContent>
-        </Card>
+        <MockDataBadge>
+          <Card className="gradient-border">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Revenue</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">${stats.totalRevenue.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground">
+                <TrendingUp className="h-3 w-3 inline mr-1" />
+                +15% from last month
+              </p>
+            </CardContent>
+          </Card>
+        </MockDataBadge>
 
-        <Card className="gradient-border">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">System Alerts</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{stats.systemAlerts}</div>
-            <p className="text-xs text-muted-foreground">2 warning, 0 critical</p>
-          </CardContent>
-        </Card>
+        <MockDataBadge>
+          <Card className="gradient-border">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">System Alerts</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orange-600">{stats.systemAlerts}</div>
+              <p className="text-xs text-muted-foreground">2 warning, 0 critical</p>
+            </CardContent>
+          </Card>
+        </MockDataBadge>
 
-        <Card className="gradient-border">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Actions</CardTitle>
-            <Settings className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.pendingActions}</div>
-            <p className="text-xs text-muted-foreground">Requires attention</p>
-          </CardContent>
-        </Card>
+        <MockDataBadge>
+          <Card className="gradient-border">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Pending Actions</CardTitle>
+              <Settings className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.pendingActions}</div>
+              <p className="text-xs text-muted-foreground">Requires attention</p>
+            </CardContent>
+          </Card>
+        </MockDataBadge>
       </div>
 
       {/* System Health Overview */}
-      <Card className="gradient-border">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Server className="h-5 w-5" />
-            <span>System Health Overview</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{systemHealth.uptime}</div>
-              <p className="text-sm text-muted-foreground">Uptime</p>
+      <MockDataBadge>
+        <Card className="gradient-border">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Server className="h-5 w-5" />
+              <span>System Health Overview</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">{systemHealth.uptime}</div>
+                <p className="text-sm text-muted-foreground">Uptime</p>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold">{systemHealth.activeConnections}</div>
+                <p className="text-sm text-muted-foreground">Active Connections</p>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold capitalize text-green-600">{systemHealth.status}</div>
+                <p className="text-sm text-muted-foreground">Status</p>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold">{systemHealth.lastBackup}</div>
+                <p className="text-sm text-muted-foreground">Last Backup</p>
+              </div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold">{systemHealth.activeConnections}</div>
-              <p className="text-sm text-muted-foreground">Active Connections</p>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold capitalize text-green-600">{systemHealth.status}</div>
-              <p className="text-sm text-muted-foreground">Status</p>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold">{systemHealth.lastBackup}</div>
-              <p className="text-sm text-muted-foreground">Last Backup</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </MockDataBadge>
 
       {/* Admin Tabs */}
       <Tabs defaultValue="admin-users" className="space-y-4">

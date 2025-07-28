@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MockDataBadge, LiveDataBadge } from "@/components/ui/mock-data-badge";
 import { OrderManagement } from '../OrderManagement';
 import { ShippingLabelManager } from '../ShippingLabelManager';
 import { ShippingLabelsManager } from '../LabelManagement';
@@ -327,38 +328,46 @@ export function OperationsTab({ storeFilter, dateRange, dateRangeLabel }: Operat
       <TabsContent value="dashboard" className="space-y-6">
       {/* Key Operations Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard
-          icon={DollarSign}
-          value={`$${totalRevenue.toLocaleString()}`}
-          label="Total Revenue"
-          color="text-green-600"
-          tooltip="Revenue from all processed orders"
-          trend={5.2}
-        />
-        <MetricCard
-          icon={Truck}
-          value={`$${totalShippingCost.toFixed(2)}`}
-          label="Shipping Costs"
-          color="text-blue-600"
-          tooltip="Total shipping costs paid to carriers"
-          trend={-2.1}
-        />
-        <MetricCard
-          icon={Clock}
-          value={`${avgPaymentToFulfillment.toFixed(1)}d`}
-          label="Avg Fulfillment Time"
-          color="text-orange-600"
-          tooltip="Average days from payment to shipment"
-          trend={-0.8}
-        />
-        <MetricCard
-          icon={Package}
-          value={`${weekendShippingRatio.toFixed(1)}%`}
-          label="Weekend Shipping"
-          color="text-purple-600"
-          tooltip="Percentage of orders shipped on weekends"
-          trend={1.4}
-        />
+        <LiveDataBadge>
+          <MetricCard
+            icon={DollarSign}
+            value={`$${totalRevenue.toLocaleString()}`}
+            label="Total Revenue"
+            color="text-green-600"
+            tooltip="Revenue from all processed orders"
+            trend={null}
+          />
+        </LiveDataBadge>
+        <LiveDataBadge>
+          <MetricCard
+            icon={Truck}
+            value={`$${totalShippingCost.toFixed(2)}`}
+            label="Shipping Costs"
+            color="text-blue-600"
+            tooltip="Total shipping costs paid to carriers"
+            trend={null}
+          />
+        </LiveDataBadge>
+        <LiveDataBadge>
+          <MetricCard
+            icon={Clock}
+            value={`${avgPaymentToFulfillment.toFixed(1)}d`}
+            label="Avg Fulfillment Time"
+            color="text-orange-600"
+            tooltip="Average days from payment to shipment"
+            trend={null}
+          />
+        </LiveDataBadge>
+        <LiveDataBadge>
+          <MetricCard
+            icon={Package}
+            value={`${weekendShippingRatio.toFixed(1)}%`}
+            label="Weekend Shipping"
+            color="text-purple-600"
+            tooltip="Percentage of orders shipped on weekends"
+            trend={null}
+          />
+        </LiveDataBadge>
       </div>
 
       {/* Quick Actions */}
@@ -437,64 +446,68 @@ export function OperationsTab({ storeFilter, dateRange, dateRangeLabel }: Operat
         </Card>
 
         {/* Carrier SLA Performance */}
+        <MockDataBadge>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">SLA Breach Rate by Carrier</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {carrierPerformance.map((carrier) => (
+                  <div key={carrier.carrier} className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">{carrier.carrier}</span>
+                      <Badge variant={carrier.breachRate > 10 ? 'destructive' : 'secondary'}>
+                        {carrier.breachRate}% breach
+                      </Badge>
+                    </div>
+                    <div className="w-full bg-muted rounded-full h-2">
+                      <div 
+                        className={`h-2 rounded-full ${carrier.breachRate > 10 ? 'bg-red-500' : 'bg-green-500'}`}
+                        style={{ width: `${Math.min(carrier.breachRate * 5, 100)}%` }}
+                      />
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Avg delay: {carrier.avgDelay} days • Margin: {carrier.margin}%
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </MockDataBadge>
+      </div>
+
+      {/* User Productivity Analysis */}
+      <MockDataBadge>
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">SLA Breach Rate by Carrier</CardTitle>
+            <CardTitle className="text-lg">Shipments by Fulfillment User</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {carrierPerformance.map((carrier) => (
-                <div key={carrier.carrier} className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium">{carrier.carrier}</span>
-                    <Badge variant={carrier.breachRate > 10 ? 'destructive' : 'secondary'}>
-                      {carrier.breachRate}% breach
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              {userProductivity.map((user) => (
+                <Card key={user.user} className="text-center">
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-center mb-4">
+                      <Users className="h-6 w-6 text-primary" />
+                    </div>
+                    <div className="text-2xl font-bold text-primary mb-1">
+                      {user.processed}
+                    </div>
+                    <div className="text-sm text-muted-foreground mb-2">
+                      {user.user}
+                    </div>
+                    <Badge variant="outline" className="text-xs">
+                      {user.avgTime}m avg
                     </Badge>
-                  </div>
-                  <div className="w-full bg-muted rounded-full h-2">
-                    <div 
-                      className={`h-2 rounded-full ${carrier.breachRate > 10 ? 'bg-red-500' : 'bg-green-500'}`}
-                      style={{ width: `${Math.min(carrier.breachRate * 5, 100)}%` }}
-                    />
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    Avg delay: {carrier.avgDelay} days • Margin: {carrier.margin}%
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           </CardContent>
         </Card>
-      </div>
-
-      {/* User Productivity Analysis */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Shipments by Fulfillment User</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {userProductivity.map((user) => (
-              <Card key={user.user} className="text-center">
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-center mb-4">
-                    <Users className="h-6 w-6 text-primary" />
-                  </div>
-                  <div className="text-2xl font-bold text-primary mb-1">
-                    {user.processed}
-                  </div>
-                  <div className="text-sm text-muted-foreground mb-2">
-                    {user.user}
-                  </div>
-                  <Badge variant="outline" className="text-xs">
-                    {user.avgTime}m avg
-                  </Badge>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      </MockDataBadge>
 
       <AIRecommendations orders={orders} carriers={carrierPerformance.map(c => c.carrier)} />
 
