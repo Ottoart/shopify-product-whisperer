@@ -35,7 +35,7 @@ serve(async (req) => {
     }
 
     const masterAdminEmail = Deno.env.get('MASTER_ADMIN_EMAIL') || "admin@prepfox.com";
-    const masterAdminPassword = Deno.env.get('MASTER_ADMIN_PASSWORD') || crypto.randomUUID();
+    const masterAdminPassword = Deno.env.get('MASTER_ADMIN_PASSWORD') || "Prepfox00@";
     
     let masterUser = existingAdmin.users.find(user => user.email === masterAdminEmail);
 

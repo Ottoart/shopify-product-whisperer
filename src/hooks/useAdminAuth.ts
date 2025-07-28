@@ -1,0 +1,95 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+
+interface AdminSession {
+  user: {
+    id: string;
+    email: string;
+    role: string;
+    permissions: any;
+    display_name: string;
+  };
+  expires_at: string;
+  session_id: string;
+}
+
+const ADMIN_SESSION_KEY = 'admin_session';
+
+export function useAdminAuth() {
+  const [adminSession, setAdminSession] = useState<AdminSession | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Check for existing admin session
+    const storedSession = localStorage.getItem(ADMIN_SESSION_KEY);
+    if (storedSession) {
+      try {
+        const session = JSON.parse(storedSession);
+        if (new Date(session.expires_at) > new Date()) {
+          setAdminSession(session);
+        } else {
+          localStorage.removeItem(ADMIN_SESSION_KEY);
+        }
+      } catch (error) {
+        console.error('Error parsing admin session:', error);
+        localStorage.removeItem(ADMIN_SESSION_KEY);
+      }
+    }
+    setIsLoading(false);
+  }, []);
+
+  const signIn = async (email: string, password: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-auth', {
+        body: { email, password }
+      });
+
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error);
+
+      const session = data.session;
+      setAdminSession(session);
+      localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(session));
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Admin sign in error:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Authentication failed' 
+      };
+    }
+  };
+
+  const signOut = () => {
+    setAdminSession(null);
+    localStorage.removeItem(ADMIN_SESSION_KEY);
+  };
+
+  const isAuthenticated = () => {
+    return adminSession !== null && new Date(adminSession.expires_at) > new Date();
+  };
+
+  const hasRole = (role: string) => {
+    return adminSession?.user.role === role;
+  };
+
+  const isMasterAdmin = () => {
+    return hasRole('master_admin');
+  };
+
+  const isAdmin = () => {
+    return adminSession?.user.role && ['master_admin', 'admin', 'manager'].includes(adminSession.user.role);
+  };
+
+  return {
+    adminSession,
+    isLoading,
+    signIn,
+    signOut,
+    isAuthenticated: isAuthenticated(),
+    hasRole,
+    isMasterAdmin: isMasterAdmin(),
+    isAdmin: isAdmin(),
+  };
+}

@@ -1,17 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { EnhancedAdminDashboard } from "@/components/admin/EnhancedAdminDashboard";
 import { MasterAdminSetup } from "@/components/MasterAdminSetup";
-import { useIsMasterAdmin, useMasterAdminExists, useIsAdmin } from "@/hooks/usePermissions";
-import { Users, Building, DollarSign, Activity, Shield, Settings, Lock } from "lucide-react";
-import { Session } from '@supabase/supabase-js';
-import { useSession } from "@supabase/auth-helpers-react";
-import { Navigate } from "react-router-dom";
+import { useMasterAdminExists } from "@/hooks/usePermissions";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
+import { Lock } from "lucide-react";
 import { AdminLogin } from "@/components/AdminLogin";
 
 interface AdminUser {
@@ -37,13 +31,11 @@ interface Company {
 }
 
 const AdminDashboard = () => {
-  const session = useSession();
-  const isMasterAdmin = useIsMasterAdmin();
-  const isAdmin = useIsAdmin();
-  const { data: masterAdminExists, isLoading } = useMasterAdminExists();
+  const { data: masterAdminExists, isLoading: masterAdminLoading } = useMasterAdminExists();
+  const { isAuthenticated, isAdmin, isLoading: authLoading } = useAdminAuth();
 
   // Loading state
-  if (isLoading) {
+  if (masterAdminLoading || authLoading) {
     return (
       <div className="container mx-auto py-8 flex items-center justify-center min-h-[400px]">
         <div className="text-center">
@@ -63,12 +55,12 @@ const AdminDashboard = () => {
     );
   }
 
-  // If master admin exists but user is not logged in, show admin login
-  if (!session?.user) {
+  // If master admin exists but user is not authenticated, show admin login
+  if (!isAuthenticated) {
     return <AdminLogin />;
   }
 
-  // If user is logged in but not an admin, show permission denied
+  // If user is authenticated but not an admin, show permission denied
   if (!isAdmin) {
     return (
       <div className="container mx-auto py-8">

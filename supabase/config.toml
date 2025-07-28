@@ -10,6 +10,9 @@ max_rows = 1000
 [functions.check-master-admin-exists]
 verify_jwt = false
 
+[functions.admin-auth]
+verify_jwt = false
+
 [functions.ai-generate-product-types]
 verify_jwt = true
 

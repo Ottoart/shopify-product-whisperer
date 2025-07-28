@@ -1,32 +1,30 @@
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LogIn, Shield } from "lucide-react";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
 
 export function AdminLogin() {
   const { toast } = useToast();
+  const { signIn } = useAdminAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("admin@prepfox.com");
+  const [password, setPassword] = useState("Prepfox00@");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const result = await signIn(email, password);
 
-      if (error) {
+      if (!result.success) {
         toast({
           title: "Login Failed",
-          description: error.message,
+          description: result.error || "Invalid credentials",
           variant: "destructive",
         });
         return;
