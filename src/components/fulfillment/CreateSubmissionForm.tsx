@@ -236,8 +236,8 @@ export function CreateSubmissionForm() {
 
       if (submissionError) throw submissionError;
 
-      // Add items
-      const { error: itemsError } = await supabase
+      // Add items and get their IDs
+      const { data: submissionItems, error: itemsError } = await supabase
         .from('submission_items')
         .insert(items.map(({ id, prep_services, ...item }) => ({
           submission_id: submission.id,
@@ -251,9 +251,38 @@ export function CreateSubmissionForm() {
           height_inches: item.height_inches,
           expiration_date: item.expiration_date || null,
           lot_number: item.lot_number || null,
-        })));
+        })))
+        .select('id');
 
       if (itemsError) throw itemsError;
+
+      // Add prep services for each item
+      const prepServiceInserts = [];
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const submissionItem = submissionItems[i];
+        
+        for (const serviceId of item.prep_services) {
+          const service = prepServices.find(s => s.id === serviceId);
+          if (service) {
+            prepServiceInserts.push({
+              submission_item_id: submissionItem.id,
+              prep_service_id: serviceId,
+              quantity: item.quantity,
+              unit_price: service.base_price,
+              total_price: service.base_price * item.quantity
+            });
+          }
+        }
+      }
+
+      if (prepServiceInserts.length > 0) {
+        const { error: prepServicesError } = await supabase
+          .from('submission_prep_services')
+          .insert(prepServiceInserts);
+
+        if (prepServicesError) throw prepServicesError;
+      }
 
       const totalCost = calculateTotalCost();
 

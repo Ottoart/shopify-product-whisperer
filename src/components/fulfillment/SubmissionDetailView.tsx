@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { PrepServicesEditDialog } from "./PrepServicesEditDialog";
 import { 
   FileText, 
   Calendar, 
@@ -16,7 +17,9 @@ import {
   Weight,
   Calendar as CalendarIcon,
   Hash,
-  X
+  X,
+  Edit3,
+  Wrench
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -32,6 +35,19 @@ interface SubmissionItem {
   height_inches: number | null;
   expiration_date: string | null;
   lot_number: string | null;
+  submission_prep_services: Array<{
+    id: string;
+    prep_service_id: string;
+    quantity: number;
+    unit_price: number;
+    total_price: number;
+    prep_services: {
+      id: string;
+      name: string;
+      code: string;
+      description: string;
+    };
+  }>;
 }
 
 interface SubmissionDetailViewProps {
@@ -43,6 +59,7 @@ export function SubmissionDetailView({ submissionId, onClose }: SubmissionDetail
   const [submission, setSubmission] = useState<any>(null);
   const [items, setItems] = useState<SubmissionItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -60,10 +77,25 @@ export function SubmissionDetailView({ submissionId, onClose }: SubmissionDetail
 
         if (submissionError) throw submissionError;
 
-        // Fetch submission items
+        // Fetch submission items with prep services
         const { data: itemsData, error: itemsError } = await supabase
           .from('submission_items')
-          .select('*')
+          .select(`
+            *,
+            submission_prep_services(
+              id,
+              prep_service_id,
+              quantity,
+              unit_price,
+              total_price,
+              prep_services(
+                id,
+                name,
+                code,
+                description
+              )
+            )
+          `)
           .eq('submission_id', submissionId);
 
         if (itemsError) throw itemsError;
@@ -86,6 +118,62 @@ export function SubmissionDetailView({ submissionId, onClose }: SubmissionDetail
       fetchSubmissionDetails();
     }
   }, [submissionId, toast]);
+
+  const refreshSubmissionDetails = async () => {
+    try {
+      setLoading(true);
+      // Fetch submission details
+      const { data: submissionData, error: submissionError } = await supabase
+        .from('inventory_submissions')
+        .select(`
+          *,
+          fulfillment_destinations(name)
+        `)
+        .eq('id', submissionId)
+        .single();
+
+      if (submissionError) throw submissionError;
+
+      // Fetch submission items with prep services
+      const { data: itemsData, error: itemsError } = await supabase
+        .from('submission_items')
+        .select(`
+          *,
+          submission_prep_services(
+            id,
+            prep_service_id,
+            quantity,
+            unit_price,
+            total_price,
+            prep_services(
+              id,
+              name,
+              code,
+              description
+            )
+          )
+        `)
+        .eq('submission_id', submissionId);
+
+      if (itemsError) throw itemsError;
+
+      setSubmission(submissionData);
+      setItems(itemsData || []);
+    } catch (error) {
+      console.error('Error fetching submission details:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load submission details",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const canEditPrepServices = () => {
+    return submission?.status === 'draft' || submission?.status === 'paid';
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -178,6 +266,16 @@ export function SubmissionDetailView({ submissionId, onClose }: SubmissionDetail
               >
                 {getStatusDisplayName(submission.status)}
               </Badge>
+              {canEditPrepServices() && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowEditDialog(true)}
+                >
+                  <Edit3 className="h-4 w-4 mr-2" />
+                  Edit Prep Services
+                </Button>
+              )}
               <Button variant="ghost" size="sm" onClick={onClose}>
                 <X className="h-4 w-4" />
               </Button>
@@ -317,19 +415,50 @@ export function SubmissionDetailView({ submissionId, onClose }: SubmissionDetail
                         )}
 
                         {/* Lot Number */}
-                        {item.lot_number && (
-                          <div className="flex items-center gap-2">
-                            <Hash className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                              <div className="text-xs font-medium">Lot #</div>
-                              <div className="text-xs text-muted-foreground">
-                                {item.lot_number}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                         {item.lot_number && (
+                           <div className="flex items-center gap-2">
+                             <Hash className="h-4 w-4 text-muted-foreground" />
+                             <div>
+                               <div className="text-xs font-medium">Lot #</div>
+                               <div className="text-xs text-muted-foreground">
+                                 {item.lot_number}
+                               </div>
+                             </div>
+                           </div>
+                         )}
+                       </div>
+
+                       {/* Prep Services */}
+                       {item.submission_prep_services?.length > 0 && (
+                         <>
+                           <Separator className="my-3" />
+                           <div>
+                             <div className="flex items-center gap-2 mb-2">
+                               <Wrench className="h-4 w-4 text-muted-foreground" />
+                               <span className="text-sm font-medium">Prep Services</span>
+                             </div>
+                             <div className="space-y-2">
+                               {item.submission_prep_services.map((sps) => (
+                                 <div key={sps.id} className="flex items-center justify-between text-sm">
+                                   <div className="flex items-center gap-2">
+                                     <span>{sps.prep_services.name}</span>
+                                     <Badge variant="outline" className="text-xs">
+                                       {sps.quantity}x
+                                     </Badge>
+                                   </div>
+                                   <div className="text-right">
+                                     <div className="font-medium">${sps.total_price.toFixed(2)}</div>
+                                     <div className="text-xs text-muted-foreground">
+                                       ${sps.unit_price.toFixed(2)} each
+                                     </div>
+                                   </div>
+                                 </div>
+                               ))}
+                             </div>
+                           </div>
+                         </>
+                       )}
+                     </div>
                   </CardContent>
                 </Card>
               ))}
@@ -373,6 +502,15 @@ export function SubmissionDetailView({ submissionId, onClose }: SubmissionDetail
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Prep Services Dialog */}
+      <PrepServicesEditDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        submissionId={submissionId}
+        items={items}
+        onSuccess={refreshSubmissionDetails}
+      />
     </div>
   );
 }
