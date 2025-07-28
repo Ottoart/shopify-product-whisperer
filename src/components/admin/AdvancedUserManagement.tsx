@@ -112,7 +112,12 @@ export const AdvancedUserManagement = () => {
   const loadUsersData = async (retry = false) => {
     try {
       setLoading(true);
-      console.log('🎯 loadUsersData called:', { sessionStable, hasSession: !!adminSession, retry });
+      console.log('🎯 loadUsersData called:', { 
+        sessionStable, 
+        hasSession: !!adminSession, 
+        sessionId: adminSession?.session_id,
+        retry 
+      });
       
       if (!adminSession || !adminSession.session_id) {
         console.error('❌ No admin session or session_id found');
@@ -125,36 +130,72 @@ export const AdvancedUserManagement = () => {
         return;
       }
 
-      console.log('Loading users with admin session:', adminSession.user.email);
+      console.log('🚀 Making API call to admin-data for all_users with session:', adminSession.user.email);
 
-      // Load all users using admin endpoint
-      const { data: usersResult, error: usersError } = await supabase.functions.invoke('admin-data', {
+      // Add timeout promise to catch hanging requests
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout after 30 seconds')), 30000)
+      );
+
+      // Load all users using admin endpoint with timeout
+      const apiCall = supabase.functions.invoke('admin-data', {
         body: { 
           data_type: 'all_users',
           session_token: adminSession.session_id 
         }
       });
 
-      if (usersError || !usersResult.success) {
-        console.error('Error loading users:', usersError || usersResult.error);
-        throw new Error(usersResult.error || 'Failed to load users');
+      const { data: usersResult, error: usersError } = await Promise.race([apiCall, timeoutPromise]) as any;
+
+      console.log('📦 Raw API response for all_users:', { 
+        hasData: !!usersResult, 
+        hasError: !!usersError,
+        result: usersResult,
+        error: usersError 
+      });
+
+      if (usersError) {
+        console.error('❌ Supabase function invoke error:', usersError);
+        throw new Error(`API call failed: ${usersError.message || usersError}`);
+      }
+
+      if (!usersResult) {
+        console.error('❌ No result returned from API');
+        throw new Error('No response from admin-data function');
+      }
+
+      if (!usersResult.success) {
+        console.error('❌ API returned unsuccessful result:', usersResult);
+        throw new Error(usersResult.error || 'API call returned unsuccessful result');
       }
 
       const profilesData = usersResult.data || [];
 
-      // Load admin users using admin endpoint
-      const { data: adminUsersResult, error: adminError } = await supabase.functions.invoke('admin-data', {
+      console.log('✅ Users data loaded successfully:', usersResult.data?.length, 'users');
+
+      // Load admin users using admin endpoint with timeout
+      console.log('🚀 Making API call to admin-data for admin_users');
+      
+      const adminApiCall = supabase.functions.invoke('admin-data', {
         body: { 
           data_type: 'admin_users',
           session_token: adminSession.session_id 
         }
       });
 
-      if (adminError || !adminUsersResult.success) {
-        console.error('Error loading admin users:', adminError || adminUsersResult.error);
+      const { data: adminUsersResult, error: adminError } = await Promise.race([adminApiCall, timeoutPromise]) as any;
+
+      console.log('📦 Raw API response for admin_users:', { 
+        hasData: !!adminUsersResult, 
+        hasError: !!adminError,
+        result: adminUsersResult 
+      });
+
+      if (adminError) {
+        console.error('⚠️ Error loading admin users (non-critical):', adminError);
       }
 
-      const adminUsersData = adminUsersResult.data || [];
+      const adminUsersData = (adminUsersResult?.success ? adminUsersResult.data : []) || [];
 
       // For now, use empty arrays for stores and submissions since we need service-role access
       // TODO: Add these data types to the admin-data endpoint
@@ -223,17 +264,21 @@ export const AdvancedUserManagement = () => {
       console.log(`Loaded ${comprehensiveUsers.length} users successfully`);
       
     } catch (error) {
-      console.error('Error loading users data:', error);
-      if (retryCount < 2) {
-        console.log(`Retrying load users (attempt ${retryCount + 1})...`);
+      console.error('💥 Error loading users data:', error);
+      
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      
+      if (retryCount < 2 && !retry) {
+        console.log(`🔄 Retrying load users (attempt ${retryCount + 1}/3)... Error was: ${errorMessage}`);
+        setRetryCount(prev => prev + 1);
         setTimeout(() => {
-          setRetryCount(prev => prev + 1);
           loadUsersData(true);
         }, 2000);
       } else {
+        console.error('❌ Final failure after all retries');
         toast({
-          title: "Error",
-          description: "Failed to load user data after multiple attempts.",
+          title: "Error Loading Users",
+          description: `Failed to load user data: ${errorMessage}`,
           variant: "destructive",
         });
       }
@@ -394,12 +439,42 @@ export const AdvancedUserManagement = () => {
                     Retry attempt {retryCount}/3
                   </p>
                 )}
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => loadUsersData(true)}
+                  className="mt-4"
+                  disabled={loading}
+                >
+                  Retry Now
+                </Button>
               </div>
             </div>
-          ) : !sessionStable || !adminSession ? (
+          ) : !adminSession ? (
             <div className="flex items-center justify-center h-32">
               <div className="text-center">
-                <p className="text-muted-foreground">Admin session not available. Please sign in again.</p>
+                <p className="text-muted-foreground mb-4">Admin session not available. Please sign in again.</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => window.location.reload()}
+                >
+                  Refresh Page
+                </Button>
+              </div>
+            </div>
+          ) : users.length === 0 ? (
+            <div className="flex items-center justify-center h-32">
+              <div className="text-center">
+                <p className="text-muted-foreground mb-4">No users found or failed to load data.</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => loadUsersData(true)}
+                  disabled={loading}
+                >
+                  Try Again
+                </Button>
               </div>
             </div>
           ) : (
