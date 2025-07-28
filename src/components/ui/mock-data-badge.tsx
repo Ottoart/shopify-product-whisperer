@@ -1,5 +1,4 @@
 import React from 'react';
-import { Badge } from '@/components/ui/badge';
 
 interface MockDataBadgeProps {
   children: React.ReactNode;
@@ -10,16 +9,13 @@ interface MockDataBadgeProps {
 export const MockDataBadge = ({ children, type = 'mock', className = '' }: MockDataBadgeProps) => (
   <div className={`relative ${className}`}>
     {children}
-    <Badge 
-      variant="outline" 
-      className={`absolute -top-2 -right-2 text-xs z-10 ${
+    <div 
+      className={`absolute -top-1 -right-1 w-3 h-3 rounded-full z-10 shadow-sm border-2 border-background ${
         type === 'mock' 
-          ? 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-700' 
-          : 'bg-green-100 text-green-800 border-green-300 dark:bg-green-900/20 dark:text-green-400 dark:border-green-700'
+          ? 'bg-amber-400 dark:bg-amber-500' 
+          : 'bg-green-400 dark:bg-green-500'
       }`}
-    >
-      {type === 'mock' ? 'Mock' : 'Live'}
-    </Badge>
+    />
   </div>
 );
 
