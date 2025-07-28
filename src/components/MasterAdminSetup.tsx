@@ -45,42 +45,70 @@ export function MasterAdminSetup() {
     }
   };
 
+  if (isCreated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+              <CheckCircle className="w-6 h-6 text-green-600" />
+            </div>
+            <CardTitle className="text-2xl font-bold text-green-700">Setup Complete!</CardTitle>
+            <p className="text-muted-foreground">
+              Master admin account has been created successfully. Please refresh the page to access the login form.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <Button 
+              onClick={() => window.location.reload()}
+              className="w-full"
+            >
+              Refresh Page
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader className="text-center">
-        <CardTitle className="flex items-center justify-center gap-2">
-          <Crown className="h-5 w-5 text-yellow-500" />
-          Master Admin Setup
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="text-center text-sm text-muted-foreground">
-          <p>Create the master admin account for PrepFox system administration.</p>
-          <p className="mt-2">
-            <strong>Email:</strong> ottman1@gmail.com<br />
-            <strong>Password:</strong> Prepfox00@
-          </p>
-        </div>
-        
-        {isCreated ? (
-          <div className="flex items-center justify-center gap-2 text-green-600">
-            <CheckCircle className="h-5 w-5" />
-            <span>Master admin created successfully!</span>
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <div className="mx-auto mb-4 w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+            <Crown className="w-6 h-6 text-primary" />
           </div>
-        ) : (
+          <CardTitle className="text-2xl font-bold">Master Admin Setup</CardTitle>
+          <p className="text-muted-foreground">
+            Initialize the PrepFox admin system by creating the master administrator account.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="bg-muted/50 p-4 rounded-lg space-y-2">
+            <p className="text-sm font-medium">Default Credentials:</p>
+            <p className="text-sm text-muted-foreground">Email: admin@prepfox.com</p>
+            <p className="text-sm text-muted-foreground">Password: Auto-generated (check logs)</p>
+          </div>
+          
           <Button 
             onClick={handleCreateMasterAdmin}
             disabled={isCreating}
             className="w-full"
           >
-            {isCreating ? "Creating..." : "Create Master Admin"}
+            {isCreating ? (
+              <>
+                <Crown className="mr-2 h-4 w-4 animate-spin" />
+                Creating Master Admin...
+              </>
+            ) : (
+              <>
+                <Crown className="mr-2 h-4 w-4" />
+                Initialize Admin System
+              </>
+            )}
           </Button>
-        )}
-        
-        <div className="text-xs text-muted-foreground text-center">
-          This action can be performed multiple times safely.
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

@@ -7,6 +7,9 @@ schemas = ["public", "graphql_public"]
 extra_search_path = ["public", "extensions"]
 max_rows = 1000
 
+[functions.check-master-admin-exists]
+verify_jwt = false
+
 [functions.ai-generate-product-types]
 verify_jwt = true
 

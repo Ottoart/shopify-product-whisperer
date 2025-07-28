@@ -12,6 +12,7 @@ import { Users, Building, DollarSign, Activity, Shield, Settings, Lock } from "l
 import { Session } from '@supabase/supabase-js';
 import { useSession } from "@supabase/auth-helpers-react";
 import { Navigate } from "react-router-dom";
+import { AdminLogin } from "@/components/AdminLogin";
 
 interface AdminUser {
   id: string;
@@ -62,9 +63,9 @@ const AdminDashboard = () => {
     );
   }
 
-  // If master admin exists but user is not logged in, redirect to auth
+  // If master admin exists but user is not logged in, show admin login
   if (!session?.user) {
-    return <Navigate to="/auth" replace />;
+    return <AdminLogin />;
   }
 
   // If user is logged in but not an admin, show permission denied

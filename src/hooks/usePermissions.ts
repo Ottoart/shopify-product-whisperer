@@ -175,19 +175,18 @@ export const useMasterAdminExists = () => {
   return useQuery({
     queryKey: ['master-admin-exists'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('admin_users')
-        .select('id')
-        .eq('role', 'master_admin')
-        .eq('is_active', true)
-        .limit(1);
+      const { data, error } = await supabase.functions.invoke('check-master-admin-exists');
       
       if (error) {
         console.error('Error checking master admin existence:', error);
         throw error;
       }
       
-      return data && data.length > 0;
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to check master admin existence');
+      }
+      
+      return data.exists;
     },
     staleTime: 0, // Always refetch
     refetchOnMount: true,
