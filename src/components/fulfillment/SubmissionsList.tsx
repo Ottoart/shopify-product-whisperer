@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FileText, Calendar, Package, DollarSign, MapPin } from "lucide-react";
 import { format } from "date-fns";
+import { SubmissionDetailView } from "./SubmissionDetailView";
+import { ManualPaymentVerification } from "./ManualPaymentVerification";
 
 interface Submission {
   id?: string;
@@ -27,6 +29,8 @@ interface SubmissionsListProps {
 
 export function SubmissionsList({ submissions, loading, type }: SubmissionsListProps) {
   const [expandedSubmission, setExpandedSubmission] = useState<string | null>(null);
+  const [selectedSubmissionId, setSelectedSubmissionId] = useState<string | null>(null);
+  const [manualVerifyId, setManualVerifyId] = useState<string | null>(null);
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
@@ -199,11 +203,9 @@ export function SubmissionsList({ submissions, loading, type }: SubmissionsListP
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => setExpandedSubmission(
-                  expandedSubmission === submission.id ? null : submission.id
-                )}
+                onClick={() => setSelectedSubmissionId(submission.id || null)}
               >
-                {expandedSubmission === submission.id ? 'Hide Details' : 'View Details'}
+                View Details
               </Button>
               
               {type === 'draft' && (
@@ -215,6 +217,16 @@ export function SubmissionsList({ submissions, loading, type }: SubmissionsListP
                     Submit for Approval
                   </Button>
                 </>
+              )}
+              
+              {submission.status === 'payment_pending' && (
+                <Button 
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setManualVerifyId(submission.id || null)}
+                >
+                  Verify Payment
+                </Button>
               )}
               
               {submission.status === 'paid' && (
@@ -246,6 +258,27 @@ export function SubmissionsList({ submissions, loading, type }: SubmissionsListP
           </CardContent>
         </Card>
       ))}
+      
+      {/* Detailed Submission View Modal */}
+      {selectedSubmissionId && (
+        <SubmissionDetailView
+          submissionId={selectedSubmissionId}
+          onClose={() => setSelectedSubmissionId(null)}
+        />
+      )}
+      
+      {/* Manual Payment Verification Modal */}
+      {manualVerifyId && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <ManualPaymentVerification
+            submissionId={manualVerifyId}
+            onVerificationComplete={() => {
+              setManualVerifyId(null);
+              window.location.reload(); // Refresh to show updated status
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }

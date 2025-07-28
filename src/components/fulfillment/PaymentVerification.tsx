@@ -36,7 +36,12 @@ export function PaymentVerification({ onPaymentComplete }: PaymentVerificationPr
           body: { sessionId }
         });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Verify payment error:', error);
+          throw error;
+        }
+
+        console.log('Payment verification response:', data);
 
         if (data?.sessionStatus === "paid") {
           // Set submission data and show success page
