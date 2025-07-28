@@ -66,30 +66,35 @@ export function useAdminAuth() {
     localStorage.removeItem(ADMIN_SESSION_KEY);
   };
 
-  const isAuthenticated = () => {
-    return adminSession !== null && new Date(adminSession.expires_at) > new Date();
-  };
+  // Reactive computed values that will trigger re-renders
+  const isAuthenticated = adminSession !== null && 
+    (adminSession ? new Date(adminSession.expires_at) > new Date() : false);
 
   const hasRole = (role: string) => {
     return adminSession?.user.role === role;
   };
 
-  const isMasterAdmin = () => {
-    return hasRole('master_admin');
-  };
+  const isMasterAdmin = adminSession?.user.role === 'master_admin';
 
-  const isAdmin = () => {
-    return adminSession?.user.role && ['master_admin', 'admin', 'manager'].includes(adminSession.user.role);
-  };
+  const isAdmin = adminSession?.user.role && 
+    ['master_admin', 'admin', 'manager'].includes(adminSession.user.role);
+
+  // Add debug logging
+  console.log('useAdminAuth state:', {
+    hasSession: !!adminSession,
+    isAuthenticated,
+    isAdmin,
+    userRole: adminSession?.user.role
+  });
 
   return {
     adminSession,
     isLoading,
     signIn,
     signOut,
-    isAuthenticated: isAuthenticated(),
+    isAuthenticated,
     hasRole,
-    isMasterAdmin: isMasterAdmin(),
-    isAdmin: isAdmin(),
+    isMasterAdmin,
+    isAdmin,
   };
 }
