@@ -78,6 +78,15 @@ export const AdvancedUserManagement = () => {
   useEffect(() => {
     if (!authLoading && sessionStable && adminSession) {
       loadUsersData();
+    } else if (!authLoading && adminSession) {
+      // If session exists but not marked as stable, wait a bit then try anyway
+      const timeout = setTimeout(() => {
+        if (adminSession) {
+          console.log('Loading data with unstable session as fallback');
+          loadUsersData();
+        }
+      }, 2000);
+      return () => clearTimeout(timeout);
     }
   }, [authLoading, sessionStable, adminSession]);
 

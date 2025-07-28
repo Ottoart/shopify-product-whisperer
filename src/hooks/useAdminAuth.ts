@@ -61,19 +61,32 @@ export function useAdminAuth() {
   useEffect(() => {
     const sessionLoaded = loadSession();
     setIsLoading(false);
-    
-    // Add session validation interval
+  }, []);
+
+  // Separate effect for session validation interval without dependency on adminSession
+  useEffect(() => {
     const interval = setInterval(() => {
-      if (adminSession && !validateSession(adminSession)) {
-        console.warn('Admin session expired, clearing...');
-        setAdminSession(null);
-        setSessionStable(false);
-        localStorage.removeItem(ADMIN_SESSION_KEY);
+      const currentSession = localStorage.getItem(ADMIN_SESSION_KEY);
+      if (currentSession) {
+        try {
+          const session = JSON.parse(currentSession);
+          if (!validateSession(session)) {
+            console.warn('Admin session expired, clearing...');
+            setAdminSession(null);
+            setSessionStable(false);
+            localStorage.removeItem(ADMIN_SESSION_KEY);
+          }
+        } catch (error) {
+          console.error('Error validating session:', error);
+          setAdminSession(null);
+          setSessionStable(false);
+          localStorage.removeItem(ADMIN_SESSION_KEY);
+        }
       }
     }, 30000); // Check every 30 seconds
 
     return () => clearInterval(interval);
-  }, [adminSession]);
+  }, []);
 
   const signIn = async (email: string, password: string) => {
     try {
