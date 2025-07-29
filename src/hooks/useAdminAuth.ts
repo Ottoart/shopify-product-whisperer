@@ -149,13 +149,6 @@ export function useAdminAuth() {
   const isAdmin = adminSession?.user.role && 
     ['master_admin', 'admin', 'manager'].includes(adminSession.user.role);
 
-  // Add debug logging
-  console.log('useAdminAuth state:', {
-    hasSession: !!adminSession,
-    isAuthenticated,
-    isAdmin,
-    userRole: adminSession?.user.role
-  });
 
   return {
     adminSession,

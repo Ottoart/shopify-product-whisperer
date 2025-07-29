@@ -90,26 +90,29 @@ serve(async (req) => {
         break;
 
       case 'user_stats':
-        // Get comprehensive user statistics
-        const { data: userCount, error: userCountError } = await supabaseAdmin
+        // Get comprehensive user statistics using count
+        const { count: userCount, error: userCountError } = await supabaseAdmin
           .from('profiles')
-          .select('id', { count: 'exact' });
+          .select('*', { count: 'exact', head: true });
 
-        const { data: adminCount, error: adminCountError } = await supabaseAdmin
+        const { count: adminCount, error: adminCountError } = await supabaseAdmin
           .from('admin_users')
-          .select('id', { count: 'exact' })
+          .select('*', { count: 'exact', head: true })
           .eq('is_active', true);
 
-        const { data: companyCount, error: companyCountError } = await supabaseAdmin
+        const { count: companyCount, error: companyCountError } = await supabaseAdmin
           .from('companies')
-          .select('id', { count: 'exact' });
+          .select('*', { count: 'exact', head: true });
 
-        const { data: activeCompanies, error: activeCompaniesError } = await supabaseAdmin
+        const { count: activeCompanies, error: activeCompaniesError } = await supabaseAdmin
           .from('companies')
-          .select('id', { count: 'exact' })
+          .select('*', { count: 'exact', head: true })
           .eq('subscription_status', 'active');
 
+        console.log("Count results:", { userCount, adminCount, companyCount, activeCompanies });
+
         if (userCountError || adminCountError || companyCountError || activeCompaniesError) {
+          console.error("Count errors:", { userCountError, adminCountError, companyCountError, activeCompaniesError });
           result = { 
             success: false, 
             data: null, 
@@ -119,10 +122,10 @@ serve(async (req) => {
           result = { 
             success: true, 
             data: {
-              totalUsers: userCount?.length || 0,
-              totalAdmins: adminCount?.length || 0,
-              totalCompanies: companyCount?.length || 0,
-              activeSubscriptions: activeCompanies?.length || 0
+              totalUsers: userCount || 0,
+              totalAdmins: adminCount || 0,
+              totalCompanies: companyCount || 0,
+              activeSubscriptions: activeCompanies || 0
             }, 
             error: null 
           };
