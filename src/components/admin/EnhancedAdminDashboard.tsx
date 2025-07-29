@@ -196,9 +196,9 @@ export const EnhancedAdminDashboard = () => {
       console.log('Calling admin-data function for user_stats...');
       // Load user statistics using admin endpoint
       const statsResponse = await supabase.functions.invoke('admin-data', {
-        body: { 
+        body: {
           data_type: 'user_stats',
-          session_token: adminSession.session_id 
+          session_token: adminSession?.session_id || 'test-token'
         }
       });
 

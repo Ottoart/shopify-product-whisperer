@@ -14,7 +14,10 @@ serve(async (req) => {
   try {
     const { data_type, session_token } = await req.json();
 
+    console.log("Admin data request received:", { data_type, hasToken: !!session_token });
+
     if (!session_token) {
+      console.log("No session token provided");
       return new Response(
         JSON.stringify({
           success: false,
