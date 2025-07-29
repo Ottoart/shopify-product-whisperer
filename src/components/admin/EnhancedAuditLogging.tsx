@@ -321,7 +321,7 @@ export const EnhancedAuditLogging: React.FC = () => {
                       <SelectValue placeholder="All events" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Events</SelectItem>
+                      <SelectItem value="all">All Events</SelectItem>
                       <SelectItem value="authentication">Authentication</SelectItem>
                       <SelectItem value="data_access">Data Access</SelectItem>
                       <SelectItem value="system_configuration">System Config</SelectItem>
@@ -336,7 +336,7 @@ export const EnhancedAuditLogging: React.FC = () => {
                       <SelectValue placeholder="All levels" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Levels</SelectItem>
+                      <SelectItem value="all">All Levels</SelectItem>
                       <SelectItem value="low">Low</SelectItem>
                       <SelectItem value="medium">Medium</SelectItem>
                       <SelectItem value="high">High</SelectItem>
