@@ -95,47 +95,23 @@ export const EnhancedAdminDashboard = () => {
   const { isAuthenticated, isAdmin, adminSession, isLoading: authLoading, sessionStable } = useAdminAuth();
 
   useEffect(() => {
-    if ((isAuthenticated && isAdmin) || (!authLoading && adminSession)) {
+    console.log('Dashboard useEffect triggered:', {
+      isAuthenticated,
+      isAdmin,
+      hasAdminSession: !!adminSession,
+      authLoading
+    });
+    
+    if (isAuthenticated && isAdmin && adminSession && !authLoading) {
+      console.log('✅ All conditions met, loading dashboard data');
       loadDashboardData();
     } else if (!authLoading) {
+      console.log('❌ Conditions not met, setting loading to false');
       setLoading(false);
     }
-  }, [isAuthenticated, isAdmin, authLoading]);
+  }, [isAuthenticated, isAdmin, adminSession, authLoading]);
 
 
-  const testFunction = async () => {
-    console.log('=== TESTING ADMIN-DATA FUNCTION ===');
-    try {
-      const adminSessionString = localStorage.getItem('admin_session');
-      console.log('Session string:', adminSessionString ? 'exists' : 'missing');
-      
-      if (adminSessionString) {
-        const adminSession = JSON.parse(adminSessionString);
-        console.log('Parsed session:', adminSession);
-        
-        console.log('Making function call...');
-        const result = await supabase.functions.invoke('admin-data', {
-          body: { 
-            data_type: 'admin_users',
-            session_token: adminSession.session_id 
-          }
-        });
-        
-        console.log('Function result:', result);
-        toast({
-          title: "Test Result",
-          description: result.data ? "Function works!" : "Function failed: " + (result.error?.message || 'Unknown error'),
-        });
-      }
-    } catch (error) {
-      console.error('Test function error:', error);
-      toast({
-        title: "Test Error",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  };
 
   const loadDashboardData = async () => {
     try {
@@ -308,14 +284,6 @@ export const EnhancedAdminDashboard = () => {
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <Button 
-            onClick={testFunction}
-            variant="outline"
-            size="sm"
-            className="text-xs"
-          >
-            Test Function
-          </Button>
           {getSystemHealthIcon()}
           <span className="text-sm font-medium">System {systemHealth.status}</span>
         </div>

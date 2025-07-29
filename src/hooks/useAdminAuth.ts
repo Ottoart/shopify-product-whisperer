@@ -61,6 +61,11 @@ export function useAdminAuth() {
   useEffect(() => {
     const sessionLoaded = loadSession();
     setIsLoading(false);
+    if (sessionLoaded) {
+      console.log('✅ Admin session loaded from localStorage');
+    } else {
+      console.log('❌ No valid admin session found');
+    }
   }, []);
 
   // Simplified session validation - only check every 5 minutes and be less aggressive
