@@ -103,90 +103,165 @@ export const EnhancedAdminDashboard = () => {
   }, [isAuthenticated, isAdmin]);
 
 
+  const testFunction = async () => {
+    console.log('=== TESTING ADMIN-DATA FUNCTION ===');
+    try {
+      const adminSessionString = localStorage.getItem('admin_session');
+      console.log('Session string:', adminSessionString ? 'exists' : 'missing');
+      
+      if (adminSessionString) {
+        const adminSession = JSON.parse(adminSessionString);
+        console.log('Parsed session:', adminSession);
+        
+        console.log('Making function call...');
+        const result = await supabase.functions.invoke('admin-data', {
+          body: { 
+            data_type: 'admin_users',
+            session_token: adminSession.session_id 
+          }
+        });
+        
+        console.log('Function result:', result);
+        toast({
+          title: "Test Result",
+          description: result.data ? "Function works!" : "Function failed: " + (result.error?.message || 'Unknown error'),
+        });
+      }
+    } catch (error) {
+      console.error('Test function error:', error);
+      toast({
+        title: "Test Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
   const loadDashboardData = async () => {
     try {
       setLoading(true);
+      console.log('=== LOADING DASHBOARD DATA ===');
 
       // Get admin session from localStorage to pass to admin endpoints
       const adminSessionString = localStorage.getItem('admin_session');
       if (!adminSessionString) {
         console.error('No admin session found');
+        toast({
+          title: "Session Error",
+          description: "No admin session found",
+          variant: "destructive"
+        });
         return;
       }
 
       const adminSession = JSON.parse(adminSessionString);
+      console.log('Admin session loaded:', adminSession);
 
+      console.log('Calling admin-data function for admin_users...');
       // Load admin users using admin endpoint
-      const { data: adminUsersResult, error: adminError } = await supabase.functions.invoke('admin-data', {
+      const adminUsersResponse = await supabase.functions.invoke('admin-data', {
         body: { 
           data_type: 'admin_users',
           session_token: adminSession.session_id 
         }
       });
 
-      if (adminError || !adminUsersResult.success) {
-        console.error('Error loading admin users:', adminError || adminUsersResult.error);
+      console.log('Admin users response:', adminUsersResponse);
+
+      if (adminUsersResponse.error) {
+        console.error('Function invoke error:', adminUsersResponse.error);
+        toast({
+          title: "Function Error",
+          description: adminUsersResponse.error.message,
+          variant: "destructive"
+        });
+      } else if (!adminUsersResponse.data?.success) {
+        console.error('Function returned error:', adminUsersResponse.data?.error);
+        toast({
+          title: "Data Error", 
+          description: adminUsersResponse.data?.error || 'Unknown error',
+          variant: "destructive"
+        });
       } else {
-        setAdminUsers(adminUsersResult.data || []);
+        console.log('Admin users loaded successfully:', adminUsersResponse.data.data);
+        setAdminUsers(adminUsersResponse.data.data || []);
       }
 
+      console.log('Calling admin-data function for companies...');
       // Load companies using admin endpoint
-      const { data: companiesResult, error: companiesError } = await supabase.functions.invoke('admin-data', {
+      const companiesResponse = await supabase.functions.invoke('admin-data', {
         body: { 
           data_type: 'companies',
           session_token: adminSession.session_id 
         }
       });
 
-      if (companiesError || !companiesResult.success) {
-        console.error('Error loading companies:', companiesError || companiesResult.error);
+      console.log('Companies response:', companiesResponse);
+
+      if (companiesResponse.error) {
+        console.error('Companies function invoke error:', companiesResponse.error);
+        toast({
+          title: "Function Error",
+          description: companiesResponse.error.message,
+          variant: "destructive"
+        });
+      } else if (!companiesResponse.data?.success) {
+        console.error('Companies function returned error:', companiesResponse.data?.error);
+        toast({
+          title: "Data Error",
+          description: companiesResponse.data?.error || 'Unknown error', 
+          variant: "destructive"
+        });
       } else {
-        setCompanies(companiesResult.data || []);
+        console.log('Companies loaded successfully:', companiesResponse.data.data);
+        setCompanies(companiesResponse.data.data || []);
       }
 
+      console.log('Calling admin-data function for user_stats...');
       // Load user statistics using admin endpoint
-      const { data: statsResult, error: statsError } = await supabase.functions.invoke('admin-data', {
+      const statsResponse = await supabase.functions.invoke('admin-data', {
         body: { 
           data_type: 'user_stats',
           session_token: adminSession.session_id 
         }
       });
 
-      // Calculate enhanced stats
-      const totalRevenue = 15420.50; // This would come from billing data
-      const systemAlerts = 2;
-      const pendingActions = 5;
+      console.log('Stats response:', statsResponse);
 
-      if (statsError || !statsResult.success) {
-        console.error('Error loading stats:', statsError || statsResult.error);
-        // Use fallback data
-        setStats({
-          totalUsers: (adminUsersResult.data || []).length,
-          totalCompanies: (companiesResult.data || []).length,
-          activeSubscriptions: (companiesResult.data || []).filter(c => c.subscription_status === 'active').length,
-          totalRevenue,
-          systemAlerts,
-          pendingActions
+      if (statsResponse.error) {
+        console.error('Stats function invoke error:', statsResponse.error);
+        toast({
+          title: "Function Error",
+          description: statsResponse.error.message,
+          variant: "destructive"
+        });
+      } else if (!statsResponse.data?.success) {
+        console.error('Stats function returned error:', statsResponse.data?.error);
+        toast({
+          title: "Data Error",
+          description: statsResponse.data?.error || 'Unknown error',
+          variant: "destructive"
         });
       } else {
-        setStats({
-          totalUsers: statsResult.data.totalUsers,
-          totalCompanies: statsResult.data.totalCompanies,
-          activeSubscriptions: statsResult.data.activeSubscriptions,
-          totalRevenue,
-          systemAlerts,
-          pendingActions
-        });
+        console.log('Stats loaded successfully:', statsResponse.data.data);
+        const statsData = statsResponse.data.data || {};
+        setStats(prev => ({
+          ...prev,
+          totalUsers: statsData.totalUsers || 0,
+          totalCompanies: statsData.totalCompanies || 0,
+          activeSubscriptions: statsData.activeSubscriptions || 0,
+        }));
       }
 
     } catch (error) {
       console.error('Error loading dashboard data:', error);
       toast({
         title: "Error",
-        description: "Failed to load dashboard data. Please try again.",
-        variant: "destructive",
+        description: "Failed to load dashboard data: " + error.message,
+        variant: "destructive"
       });
     } finally {
+      console.log('Loading complete, setting loading to false');
       setLoading(false);
     }
   };
@@ -233,6 +308,14 @@ export const EnhancedAdminDashboard = () => {
           </p>
         </div>
         <div className="flex items-center space-x-2">
+          <Button 
+            onClick={testFunction}
+            variant="outline"
+            size="sm"
+            className="text-xs"
+          >
+            Test Function
+          </Button>
           {getSystemHealthIcon()}
           <span className="text-sm font-medium">System {systemHealth.status}</span>
         </div>
