@@ -92,15 +92,40 @@ export const EnhancedAdminDashboard = () => {
     pendingActions: 5
   });
   const { toast } = useToast();
-  const { isAuthenticated, isAdmin } = useAdminAuth();
+  const { isAuthenticated, isAdmin, adminSession, isLoading: authLoading, sessionStable } = useAdminAuth();
 
   useEffect(() => {
-    if (isAuthenticated && isAdmin) {
+    console.log('useAdminAuth state:', {
+      hasSession: !!adminSession,
+      isAuthenticated,
+      isAdmin: { _type: typeof isAdmin, value: isAdmin },
+      userRole: adminSession?.user?.role
+    });
+    
+    console.log('🎯 useEffect triggered:', {
+      authLoading: authLoading,
+      sessionStable: sessionStable,
+      adminSession: !!adminSession
+    });
+
+    // Check for admin session directly from localStorage as fallback
+    const adminSessionString = localStorage.getItem('admin_session');
+    const hasLocalSession = !!adminSessionString;
+    
+    if (hasLocalSession && !authLoading) {
+      console.log('✅ Loading dashboard data with local session');
+      loadDashboardData();
+    } else if (isAuthenticated && isAdmin) {
+      console.log('✅ Loading dashboard data with auth hook');
       loadDashboardData();
     } else {
+      console.log('🔴 Not ready to load:', {
+        authLoading: authLoading,
+        hasSession: hasLocalSession
+      });
       setLoading(false);
     }
-  }, [isAuthenticated, isAdmin]);
+  }, [isAuthenticated, isAdmin, authLoading, adminSession]);
 
 
   const testFunction = async () => {
