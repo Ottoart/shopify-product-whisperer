@@ -33,23 +33,52 @@ export function useAdminAuth() {
 
   const validateSession = (session: AdminSession): boolean => {
     if (!session || !session.user || !session.expires_at) {
+      console.log('❌ Session validation failed: missing required fields', {
+        hasSession: !!session,
+        hasUser: !!session?.user,
+        hasExpiresAt: !!session?.expires_at
+      });
       return false;
     }
-    return new Date(session.expires_at) > new Date();
+    
+    const now = new Date();
+    const expiresAt = new Date(session.expires_at);
+    const isValid = expiresAt > now;
+    
+    console.log('⏰ Session expiry check:', {
+      now: now.toISOString(),
+      expiresAt: expiresAt.toISOString(),
+      isValid,
+      timeUntilExpiry: expiresAt.getTime() - now.getTime()
+    });
+    
+    return isValid;
   };
 
   const loadSession = () => {
     try {
       const storedSession = localStorage.getItem(ADMIN_SESSION_KEY);
       if (storedSession) {
+        console.log('📦 Found stored session, parsing...');
         const session = JSON.parse(storedSession);
+        console.log('📄 Parsed session data:', {
+          hasUser: !!session.user,
+          userRole: session.user?.role,
+          expiresAt: session.expires_at,
+          sessionId: session.session_id
+        });
+        
         if (validateSession(session)) {
+          console.log('✅ Session is valid, setting state');
           setAdminSession(session);
           setSessionStable(true);
           return true;
         } else {
+          console.log('❌ Session validation failed, removing from storage');
           localStorage.removeItem(ADMIN_SESSION_KEY);
         }
+      } else {
+        console.log('📭 No session found in localStorage');
       }
     } catch (error) {
       console.error('Error parsing admin session:', error);
