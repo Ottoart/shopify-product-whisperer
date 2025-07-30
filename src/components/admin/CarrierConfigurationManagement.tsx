@@ -133,21 +133,13 @@ export function CarrierConfigurationManagement() {
       // For admin, we're configuring system-wide PrepFox carriers
       const functionName = selectedCarrier === 'canada_post' ? 'admin-configure-canada-post' : 'setup-ups-credentials';
       
-      // Check admin authentication with detailed logging
-      console.log('🔍 Auth Check:', { 
-        isAuthenticated, 
-        sessionStable, 
-        hasSession: !!adminSession,
-        hasAccessToken: !!adminSession?.supabase_session?.access_token 
-      });
-      
-      // Wait for session to stabilize if not ready
-      if (!sessionStable) {
-        console.warn('⏳ Session not stable yet, please wait...');
+      // Check admin authentication
+      if (!isAuthenticated || !adminSession) {
+        console.error('❌ Authentication required');
         toast({
-          title: "⏳ Loading Session",
-          description: "Please wait for authentication to complete...",
-          variant: "default"
+          title: "❌ Authentication Required",
+          description: "Please log in as an admin first.",
+          variant: "destructive"
         });
         return;
       }
