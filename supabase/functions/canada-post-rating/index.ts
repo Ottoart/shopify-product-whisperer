@@ -126,29 +126,34 @@ Deno.serve(async (req) => {
     let apiSecret: string | null = null;
     let customerNumber: string | null = null;
 
-    if (canadaPostConfig?.api_credentials?.system_carrier) {
-      // This is a PrepFox managed Canada Post - use system credentials
-      console.log('🔑 Using PrepFox managed Canada Post credentials');
-      const isDev = Deno.env.get('ENVIRONMENT') !== 'production';
-      
-      // Use proper environment credentials
-      if (isDev) {
-        apiKey = Deno.env.get('CANADA_POST_DEV_API_KEY');
-        apiSecret = Deno.env.get('CANADA_POST_DEV_API_SECRET');
-        customerNumber = '2004381'; // Canada Post demo customer number
-        console.log('📋 Using Canada Post Development credentials');
+    if (canadaPostConfig?.api_credentials) {
+      // Check if user has their own Canada Post credentials first
+      if (canadaPostConfig.api_credentials.api_key) {
+        console.log('🔑 Using user provided Canada Post credentials');
+        apiKey = canadaPostConfig.api_credentials.api_key;
+        apiSecret = canadaPostConfig.api_credentials.api_secret;
+        customerNumber = canadaPostConfig.api_credentials.customer_number;
       } else {
-        apiKey = Deno.env.get('CANADA_POST_PROD_API_KEY');
-        apiSecret = Deno.env.get('CANADA_POST_PROD_API_SECRET');
-        customerNumber = canadaPostConfig.api_credentials.customerNumber || '2004381';
-        console.log('📋 Using Canada Post Production credentials');
+        // Fall back to system credentials only if user hasn't configured their own
+        console.log('🔑 Using system Canada Post credentials as fallback');
+        const isDev = Deno.env.get('ENVIRONMENT') !== 'production';
+        
+        if (isDev) {
+          apiKey = Deno.env.get('CANADA_POST_DEV_API_KEY');
+          apiSecret = Deno.env.get('CANADA_POST_DEV_API_SECRET');
+          customerNumber = '2004381'; // Demo customer only for development
+          console.log('📋 Using Canada Post Development credentials');
+        } else {
+          console.log('❌ No Canada Post credentials available for production');
+          return new Response(
+            JSON.stringify({
+              error: 'Canada Post not configured',
+              data: []
+            }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
       }
-    } else if (canadaPostConfig?.api_credentials) {
-      // User provided their own Canada Post credentials
-      console.log('🔑 Using user provided Canada Post credentials');
-      apiKey = canadaPostConfig.api_credentials.apiKey;
-      apiSecret = canadaPostConfig.api_credentials.apiSecret;
-      customerNumber = canadaPostConfig.api_credentials.customerNumber || '0000000';
     }
 
     if (!apiKey || !apiSecret) {
@@ -193,9 +198,21 @@ Deno.serve(async (req) => {
       value: pkg.value || 'unknown'
     });
 
+    // Validate customer number
+    if (!customerNumber) {
+      console.log('❌ No Canada Post customer number available');
+      return new Response(
+        JSON.stringify({
+          error: 'Canada Post customer number required',
+          data: getFallbackRates('US', 1)
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Build XML request according to Canada Post API specification
     const xmlRequest = buildCanadaPostXMLRequest({
-      customerNumber: customerNumber || '2004381',
+      customerNumber,
       weight: weightInKg,
       originPostalCode: (shipFrom.zip || '').replace(/\s+/g, '').toUpperCase(),
       destinationPostalCode: (shipTo.zip || shipTo.postal_code || '').replace(/\s+/g, '').toUpperCase(),

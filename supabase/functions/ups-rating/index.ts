@@ -1,813 +1,372 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3'
-import { ensureValidUPSTokenForRating } from '../_shared/ups-auth.ts'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3';
+import { corsHeaders } from '../_shared/cors.ts';
 
-// CORS headers
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-// Request interface
 interface RatingRequest {
-  shipFrom: {
-    name?: string;
+  order_id?: string;
+  shipFrom?: {
+    name: string;
     company?: string;
     address: string;
+    address2?: string;
     city: string;
     state: string;
     zip: string;
     country: string;
-    phone?: string;
   };
-  shipTo: {
+  shipTo?: {
     name: string;
     address: string;
+    address2?: string;
     city: string;
     state: string;
     zip: string;
     country: string;
-    phone?: string;
   };
-  package: {
+  package?: {
     weight: number;
-    length?: number;
-    width?: number;
-    height?: number;
+    weight_unit?: string;
+    length: number;
+    width: number;
+    height: number;
+    dimension_unit?: string;
     value?: number;
   };
   order?: {
-    orderNumber: string;
-    currency: string;
-    items: Array<{
+    orderNumber?: string;
+    currency?: string;
+    items?: Array<{
       id: string;
+      sku: string;
       product_title: string;
-      quantity: number;
       price: number;
+      quantity: number;
       weight_lbs?: number;
       origin_country?: string;
       commodity_code?: string;
     }>;
   };
-  serviceCode?: string;
 }
 
+interface UPSCredentials {
+  client_id: string;
+  client_secret: string;
+  access_token: string;
+  refresh_token?: string;
+  token_expires_at?: string;
+  account_number: string;
+  account_country: string;
+}
+
+// UPS Service definitions with proper route availability
+const UPS_SERVICES = [
+  { service_code: '03', service_name: 'UPS Ground', international: false },
+  { service_code: '12', service_name: 'UPS 3 Day Select', international: false },
+  { service_code: '02', service_name: 'UPS 2nd Day Air', international: false },
+  { service_code: '59', service_name: 'UPS 2nd Day Air A.M.', international: false },
+  { service_code: '13', service_name: 'UPS Next Day Air Saver', international: false },
+  { service_code: '01', service_name: 'UPS Next Day Air', international: false },
+  { service_code: '14', service_name: 'UPS Next Day Air Early', international: false },
+  { service_code: '07', service_name: 'UPS Worldwide Express', international: true },
+  { service_code: '08', service_name: 'UPS Worldwide Expedited', international: true },
+  { service_code: '11', service_name: 'UPS Standard', international: true },
+  { service_code: '54', service_name: 'UPS Worldwide Express Plus', international: true },
+  { service_code: '65', service_name: 'UPS Worldwide Saver', international: true }
+];
+
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log('🎯 UPS Rating Function Called');
-    console.log('📋 Request headers:', Object.fromEntries(req.headers.entries()));
-    
-    // Extract JWT token and get user ID directly
     const authHeader = req.headers.get('Authorization');
-    console.log('🔑 Auth header received:', authHeader ? 'YES' : 'NO');
-    
-    if (!authHeader?.startsWith('Bearer ')) {
-      console.error('❌ No valid authorization header provided');
+    if (!authHeader) {
+      console.log('❌ No authorization header found');
       return new Response(
         JSON.stringify({ error: 'No authorization header' }),
-        { 
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Extract user ID from JWT token directly
-    let userId: string;
-    try {
-      const token = authHeader.replace('Bearer ', '');
-      console.log('🔍 JWT token first 50 chars:', token.substring(0, 50));
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      console.log('🔍 JWT payload keys:', Object.keys(payload));
-      console.log('🔍 JWT payload sub:', payload.sub);
-      userId = payload.sub;
-      
-      if (!userId) {
-        throw new Error('No user ID in token');
-      }
-      console.log('✅ Extracted user ID from JWT:', userId);
-    } catch (jwtError) {
-      console.error('❌ Failed to extract user from JWT:', jwtError);
-      console.error('❌ JWT Error details:', JSON.stringify(jwtError, null, 2));
-      return new Response(
-        JSON.stringify({ error: 'invalid claim: missing sub claim' }),
-        { 
-          status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-
-    const requestData: RatingRequest = await req.json();
-    console.log('📦 UPS Rating request received:', JSON.stringify(requestData, null, 2));
-
-    // Create service role client for database operations
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const serviceSupabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get valid UPS services for this user
-    console.log('📋 Getting valid UPS services for user:', userId);
+    // Verify user token
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     
-    // First get the UPS carrier configuration ID
-    const { data: carrierConfig, error: carrierError } = await serviceSupabase
+    if (userError || !user) {
+      console.log('❌ Invalid user token:', userError?.message);
+      return new Response(
+        JSON.stringify({ error: 'Invalid token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const requestData = await req.json() as RatingRequest;
+    console.log('📦 UPS Rating request for user:', user.id);
+    console.log('🏠 Ship From:', requestData.shipFrom);
+    console.log('📍 Ship To:', requestData.shipTo);
+    console.log('📦 Package:', requestData.package);
+
+    // Get UPS carrier configuration
+    const { data: upsConfig, error: configError } = await supabase
       .from('carrier_configurations')
-      .select('id')
-      .eq('user_id', userId)
+      .select('*')
+      .eq('user_id', user.id)
       .eq('carrier_name', 'UPS')
       .eq('is_active', true)
       .single();
 
-    if (carrierError || !carrierConfig) {
-      console.error('❌ Failed to find UPS carrier configuration:', carrierError);
+    if (configError || !upsConfig) {
+      console.log('❌ No UPS configuration found for user:', user.id);
       return new Response(
-        JSON.stringify({ error: 'UPS carrier not configured' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
+        JSON.stringify({ error: 'UPS configuration not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Now get the services for this carrier
-    const { data: validServices, error: servicesError } = await serviceSupabase
-      .from('shipping_services')
-      .select('service_code, service_name')
-      .eq('user_id', userId)
-      .eq('carrier_configuration_id', carrierConfig.id)
-      .eq('is_available', true);
-
-    if (servicesError) {
-      console.error('❌ Failed to get valid services:', servicesError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to get valid UPS services' }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-
-    console.log('📦 Valid UPS services found:', validServices?.map(s => `${s.service_code}: ${s.service_name}`));
-
-    if (!validServices || validServices.length === 0) {
-      console.log('⚠️ No valid UPS services found for user');
-      return new Response(
-        JSON.stringify({ 
-          error: 'No valid UPS services configured',
-          details: 'Please sync your UPS services in carrier management'
-        }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-
-    // Ensure we have a valid UPS token
-    console.log('🔧 Getting UPS credentials for user:', userId);
-    const authResult = await ensureValidUPSTokenForRating(serviceSupabase, userId);
+    const credentials = upsConfig.api_credentials as UPSCredentials;
     
-    if (!authResult.success) {
-      console.error('❌ UPS authentication failed:', authResult.error);
-      return new Response(
-        JSON.stringify({ error: 'UPS authentication failed: ' + authResult.error }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
+    // Check if token is expired and refresh if needed
+    const tokenExpiry = credentials.token_expires_at ? new Date(credentials.token_expires_at) : new Date(0);
+    const now = new Date();
+    
+    if (tokenExpiry <= now && credentials.refresh_token) {
+      console.log('🔄 Token expired, refreshing...');
+      const refreshResult = await refreshUPSToken(credentials, supabase, user.id, upsConfig.id);
+      if (!refreshResult.success) {
+        return new Response(
+          JSON.stringify({ error: 'Failed to refresh UPS token' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      credentials.access_token = refreshResult.accessToken;
     }
 
-    console.log('✅ UPS authentication successful');
-    const credentials = authResult.credentials;
-    const accountNumber = credentials.account_number;
+    // Determine which services are valid for this route
+    const isInternational = requestData.shipFrom?.country !== requestData.shipTo?.country;
+    const validServices = UPS_SERVICES.filter(service => 
+      isInternational ? service.international : !service.international
+    );
 
-    return await processUPSRating(requestData, credentials, accountNumber, validServices);
+    console.log(`🌍 Route type: ${isInternational ? 'International' : 'Domestic'}`);
+    console.log(`📋 Valid services: ${validServices.map(s => s.service_code).join(', ')}`);
+
+    // Call UPS Rating API
+    const rates = await getUPSRates(requestData, credentials, validServices);
+    
+    console.log(`✅ Generated ${rates.length} UPS rates`);
+    
+    return new Response(
+      JSON.stringify({ rates }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
 
   } catch (error) {
-    console.error('❌ Unexpected error in UPS rating:', error);
+    console.error('❌ UPS Rating error:', error);
     return new Response(
-      JSON.stringify({ 
-        error: 'Internal server error',
-        details: error.message 
-      }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      JSON.stringify({ error: 'Internal server error' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
 
-// Enhanced address formatting functions
-function formatCanadianPostalCode(postalCode: string): string {
-  if (!postalCode) return postalCode;
-  // Remove spaces and convert to uppercase
-  const cleaned = postalCode.replace(/\s/g, '').toUpperCase();
-  // Canadian postal codes are 6 characters: A1A1A1
-  if (cleaned.length === 6 && /^[A-Z]\d[A-Z]\d[A-Z]\d$/.test(cleaned)) {
-    return cleaned; // Return without space for UPS API
-  }
-  return postalCode;
-}
-
-// Standardize address format for UPS API consistency
-function standardizeUPSAddress(address: string): string {
-  if (!address) return address;
-  
-  return address
-    .trim()
-    // Standardize suite/apartment formats to match UPS registered address
-    .replace(/\bsuite\s+(\d+)/gi, '$1')
-    .replace(/\bapt\.?\s+(\d+)/gi, '$1')  
-    .replace(/\b#\s*(\d+)/g, '$1')
-    // Clean up extra spaces
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-async function processUPSRating(requestData: RatingRequest, credentials: any, accountNumber: string, validServices: any[]) {
-    // Enhanced validation with Canadian address handling
-    console.log('📋 Validating UPS API request fields...');
-    console.log('🏠 Ship From Address:', JSON.stringify(requestData.shipFrom, null, 2));
-    console.log('📍 Ship To Address:', JSON.stringify(requestData.shipTo, null, 2));
-    // For Canadian addresses, use exact UPS registered address format
-    if (requestData.shipFrom?.country === 'CA') {
-      console.log('🇨🇦 Detected Canadian ship-from address, applying UPS registered format...');
-      
-      // Use exact UPS registered address to prevent validation errors
-      const upsRegisteredAddress = {
-        name: requestData.shipFrom.name || 'Ottman Oufir',
-        company: requestData.shipFrom.company || '',
-        address: '9200 Park ave, 301', // Exact format from UPS registration
-        city: 'MONTREAL', // Exact case from UPS registration
-        state: 'QC', // Province code
-        zip: 'H2N1Z4', // No space in Canadian postal code
-        country: 'CA',
-        phone: requestData.shipFrom.phone || '5551234567'
-      };
-      
-      // Override with exact registered address
-      requestData.shipFrom = upsRegisteredAddress;
-      console.log('🎯 Using UPS registered address:', JSON.stringify(upsRegisteredAddress, null, 2));
-    } else {
-      // For non-Canadian addresses, apply standardization
-      if (requestData.shipFrom?.address) {
-        const originalAddress = requestData.shipFrom.address;
-        requestData.shipFrom.address = standardizeUPSAddress(originalAddress);
-        if (originalAddress !== requestData.shipFrom.address) {
-          console.log('🏠 Standardized ship-from address:', `"${originalAddress}" → "${requestData.shipFrom.address}"`);
-        }
-      }
-    }
-    
-    if (!requestData.shipFrom?.zip || !requestData.shipFrom?.country ||
-        !requestData.shipFrom?.city || !requestData.shipFrom?.state ||
-        !requestData.shipFrom?.address ||
-        !requestData.shipTo?.zip || !requestData.shipTo?.country ||
-        !requestData.shipTo?.city || !requestData.shipTo?.state ||
-        !requestData.shipTo?.address || !requestData.shipTo?.name ||
-        !requestData.package?.weight) {
-      console.error('❌ Missing required fields for UPS API:', {
-        shipFrom: {
-          hasAddress: Boolean(requestData.shipFrom?.address),
-          hasCity: Boolean(requestData.shipFrom?.city),
-          hasState: Boolean(requestData.shipFrom?.state),
-          hasZip: Boolean(requestData.shipFrom?.zip),
-          hasCountry: Boolean(requestData.shipFrom?.country)
-        },
-        shipTo: {
-          hasName: Boolean(requestData.shipTo?.name),
-          hasAddress: Boolean(requestData.shipTo?.address),
-          hasCity: Boolean(requestData.shipTo?.city),
-          hasState: Boolean(requestData.shipTo?.state),
-          hasZip: Boolean(requestData.shipTo?.zip),
-          hasCountry: Boolean(requestData.shipTo?.country)
-        },
-        package: {
-          hasWeight: Boolean(requestData.package?.weight)
-        }
-      });
-      return new Response(
-        JSON.stringify({ 
-          error: 'Missing required shipping information for UPS API', 
-          details: 'UPS requires complete shipping addresses including name, address, city, state, zip, and country for both shipper and recipient, plus package weight'
-        }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-
-    // Validate account configuration
-    if (!accountNumber) {
-      console.error('❌ Missing UPS account number');
-      return new Response(
-        JSON.stringify({ 
-          error: 'UPS account not configured properly', 
-          details: 'Please contact support to configure your UPS account settings'
-        }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-
-    // UPS account information is now derived from ship-from address
-    const accountPostalCode = requestData.shipFrom?.zip;
-    const accountCountryCode = requestData.shipFrom?.country;
-    
-    console.log('✅ Using ship-from address for UPS account details:', {
-      accountPostalCode,
-      accountCountryCode,
-      shipFromAddress: requestData.shipFrom
+async function refreshUPSToken(credentials: UPSCredentials, supabase: any, userId: string, configId: string) {
+  try {
+    const response = await fetch('https://onlinetools.ups.com/security/v1/oauth/refresh', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Basic ${btoa(`${credentials.client_id}:${credentials.client_secret}`)}`
+      },
+      body: `grant_type=refresh_token&refresh_token=${credentials.refresh_token}`
     });
 
-    // Validate and normalize package weight (UPS minimum requirements)
-    let packageWeightLbs = requestData.package.weight || 1.0; // Default to 1 lb if missing
-    
-    // UPS weight validation fixes for international services
-    // Test different weight formats to resolve "Invalid Weight" error
-    if (packageWeightLbs < 1.0) {
-      console.log(`⚖️ Weight ${packageWeightLbs}lbs is below 1lb minimum for international services, adjusting to 1.0lbs`);
-      packageWeightLbs = 1.0; // UPS international services often require minimum 1lb
-    }
-    
-    // Ensure weight is a whole number or has max 1 decimal place
-    packageWeightLbs = Math.round(packageWeightLbs * 10) / 10;
-    
-    // For very small weights, round up to nearest 0.5lb increment
-    if (packageWeightLbs > 0 && packageWeightLbs < 1.0) {
-      packageWeightLbs = 1.0;
-    } else if (packageWeightLbs >= 1.0 && packageWeightLbs < 1.5) {
-      packageWeightLbs = Math.ceil(packageWeightLbs * 2) / 2; // Round to nearest 0.5
-    }
-    
-    console.log(`📦 Weight validation: Original: ${requestData.package.weight}lbs, Normalized: ${packageWeightLbs}lbs`);
-    
-    const packageWeightGrams = Math.round(packageWeightLbs * 453.592); // Convert lbs to grams
-    
-    // Convert dimensions from inches to centimeters if needed
-    const lengthCm = Math.round((requestData.package.length || 12) * 2.54);
-    const widthCm = Math.round((requestData.package.width || 12) * 2.54);
-    const heightCm = Math.round((requestData.package.height || 6) * 2.54);
-
-    // Log shipping details for debugging
-    // Enhanced debugging information
-    console.log('🌍 Shipping details:');
-    console.log('Ship From Country:', requestData.shipFrom.country);
-    console.log('Ship To Country:', requestData.shipTo.country);
-    console.log('Account Number:', accountNumber);
-    console.log('Account Postal Code:', accountPostalCode);
-    console.log('Account Country:', accountCountryCode);
-    console.log('Negotiated Rates Enabled:', credentials.enable_negotiated_rates);
-    console.log('📦 Package Details:');
-    console.log('Weight (lbs):', requestData.package.weight);
-    console.log('Dimensions (inches):', `${requestData.package.length}x${requestData.package.width}x${requestData.package.height}`);
-    console.log('📮 Valid Services to check:', validServices?.map(s => `${s.service_code}: ${s.service_name}`) || []);
-
-    // Use the proper negotiated rates endpoint structure
-    const baseUrl = credentials.is_production ? 'https://apis.ups.com' : 'https://wwwcie.ups.com';
-    const ratingApiUrl = `${baseUrl}/api/rating/v1/rate?additionalinfo=timeintransit`;
-    console.log('📍 Using Rating API URL with negotiated rates support:', ratingApiUrl);
-
-    // Get rates for each valid service separately to avoid "invalid service" errors
-    const allRates = [];
-    
-    for (const service of validServices) {
-      console.log(`🔄 Getting rate for service ${service.service_code}: ${service.service_name}`);
-      
-      // Construct proper UPS Rating API request for this specific service
-      const upsRequest = {
-        RateRequest: {
-          Request: {
-            RequestOption: "Rate",
-            TransactionReference: {
-              CustomerContext: "Rating and Service Selection"
-            }
-          },
-          Shipment: {
-            Service: {
-              Code: service.service_code,
-              Description: service.service_name
-            },
-            Shipper: {
-              Name: requestData.shipFrom.name || requestData.shipFrom.company || "Shipper",
-              ShipperNumber: accountNumber,
-              Phone: requestData.shipFrom.phone ? {
-                Number: requestData.shipFrom.phone.replace(/\D/g, ''),
-                Extension: ""
-              } : undefined,
-              Address: {
-                AddressLine: [requestData.shipFrom.address],
-                City: requestData.shipFrom.city,
-                StateProvinceCode: requestData.shipFrom.state,
-                PostalCode: requestData.shipFrom.zip,
-                CountryCode: requestData.shipFrom.country
-              }
-            },
-            ShipTo: {
-              Name: requestData.shipTo.name, 
-              Phone: requestData.shipTo.phone ? {
-                Number: requestData.shipTo.phone.replace(/\D/g, ''),
-                Extension: ""
-              } : undefined,
-              Address: {
-                AddressLine: [requestData.shipTo.address],
-                City: requestData.shipTo.city,
-                StateProvinceCode: requestData.shipTo.state,
-                PostalCode: requestData.shipTo.zip,
-                CountryCode: requestData.shipTo.country
-              }
-            },
-            ShipFrom: {
-              Name: requestData.shipFrom.name || requestData.shipFrom.company || "Ship From Location",
-              Address: {
-                AddressLine: [requestData.shipFrom.address],
-                City: requestData.shipFrom.city,
-                StateProvinceCode: requestData.shipFrom.state,
-                PostalCode: requestData.shipFrom.zip,
-                CountryCode: requestData.shipFrom.country
-              }
-            },
-            Package: [{
-              PackagingType: {
-                Code: "02",  // Customer Supplied Package 
-                Description: "Package"
-              },
-              Dimensions: {
-                UnitOfMeasurement: {
-                  Code: "IN",
-                  Description: "Inches"
-                },
-                Length: (requestData.package.length || 12).toString(),
-                Width: (requestData.package.width || 8).toString(), 
-                Height: (requestData.package.height || 4).toString()
-              },
-              PackageWeight: {
-                UnitOfMeasurement: {
-                  Code: "LBS",
-                  Description: "Pounds"
-                },
-                Weight: packageWeightLbs.toString() // Remove .toFixed(1) to send as whole number if possible
-              }
-            }],
-            DeliveryTimeInformation: {
-              PackageBillType: "03",
-              Pickup: {
-                Date: new Date().toISOString().split('T')[0].replace(/-/g, '')
-              }
-            },
-            ShipmentServiceOptions: {
-              DeclaredValue: {
-                CurrencyCode: requestData.order?.currency || "USD",
-                MonetaryValue: (requestData.package.value || 100).toFixed(2)
-              }
-            },
-            InvoiceLineTotal: {
-              CurrencyCode: requestData.order?.currency || "USD",
-              MonetaryValue: (requestData.package.value || 100).toFixed(2)
-            },
-            Product: buildProductDetails(requestData, packageWeightLbs)
-          }
-        }
-      };
-
-      // CRITICAL: Always add RateInformation for negotiated rates
-      // This matches ShipStation's approach and is required for negotiated rates
-      upsRequest.RateRequest.Shipment['RateInformation'] = {
-        NegotiatedRatesIndicator: ''
-      };
-
-      // Debug: Log what ShipStation equivalent would be
-      console.log(`🔍 ShipStation Comparison - Service ${service.service_code}:`);
-      console.log(`Package Weight: ${packageWeightLbs}lbs (${packageWeightGrams}g)`);
-      console.log(`Dimensions: ${requestData.package.length || 12}"x${requestData.package.width || 12}"x${requestData.package.height || 6}" (${lengthCm}x${widthCm}x${heightCm}cm)`);
-      console.log(`Account: ${accountNumber} (${accountCountryCode})`);
-      console.log(`Negotiated Rates Flag: ${credentials.enable_negotiated_rates ? 'ENABLED' : 'DISABLED'}`);
-
-      console.log(`📦 UPS API Request for ${service.service_code}:`, JSON.stringify(upsRequest, null, 2));
-
-      // Prepare headers for UPS API call - Match ShipStation's approach
-      const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${credentials.access_token}`,
-        'transId': 'PrepFox-Rating-' + Date.now() + '-' + service.service_code,
-        'transactionSrc': 'PrepFox'
-      };
-
-      // Make the UPS API call for this service
-      console.log(`🚀 Calling UPS Rating API for ${service.service_code}...`);
-      try {
-        const response = await fetch(ratingApiUrl, {
-          method: 'POST',
-          headers: headers,
-          body: JSON.stringify(upsRequest)
-        });
-
-        console.log(`📥 UPS API Response Status for ${service.service_code}:`, response.status);
-
-        const responseText = await response.text();
-        console.log(`📥 UPS API Response Body for ${service.service_code}:`, responseText);
-
-        if (response.ok) {
-          // Parse successful response
-          let rateResponse;
-          try {
-            rateResponse = JSON.parse(responseText);
-          } catch (e) {
-            console.error(`❌ Failed to parse UPS response for ${service.service_code}:`, e);
-            continue; // Skip this service and try the next one
-          }
-
-          // Log the full response for debugging
-          console.log(`🔍 Full UPS API Response for ${service.service_code}:`, JSON.stringify(rateResponse, null, 2));
-
-          // Check for response errors or warnings
-          if (rateResponse.RateResponse?.Response?.Alert) {
-            const alerts = Array.isArray(rateResponse.RateResponse.Response.Alert) 
-              ? rateResponse.RateResponse.Response.Alert 
-              : [rateResponse.RateResponse.Response.Alert];
-            
-            for (const alert of alerts) {
-              console.log(`⚠️ UPS Alert for ${service.service_code}: ${alert.Code} - ${alert.Description}`);
-            }
-          }
-
-          // Transform UPS response to our format
-          if (rateResponse.RateResponse?.RatedShipment) {
-            const ratedShipments = Array.isArray(rateResponse.RateResponse.RatedShipment) 
-              ? rateResponse.RateResponse.RatedShipment 
-              : [rateResponse.RateResponse.RatedShipment];
-
-            for (const shipment of ratedShipments) {
-              const serviceCode = shipment.Service?.Code || service.service_code;
-              const serviceName = service.service_name;
-              const serviceType = getUPSServiceType(serviceCode);
-              const estimatedDays = getUPSEstimatedDays(serviceCode);
-              
-              // Enhanced rate extraction logic - CRITICAL: Check negotiated rates properly
-              let totalCharges = '0';
-              let currency = 'USD';
-              let rateType = 'Published';
-              
-              // Debug: Log the entire shipment structure to understand response format
-              console.log(`🔍 Full UPS shipment response for ${serviceName}:`, JSON.stringify(shipment, null, 2));
-              
-              // Always try negotiated rates first (they should be returned when RateInformation is included)
-              if (shipment.NegotiatedRateCharges?.TotalCharge) {
-                totalCharges = shipment.NegotiatedRateCharges.TotalCharge.MonetaryValue || '0';
-                currency = shipment.NegotiatedRateCharges.TotalCharge.CurrencyCode || 'USD';
-                rateType = 'Negotiated';
-                console.log(`💰 Negotiated Rate for ${serviceName}: ${totalCharges} ${currency}`);
-              } else if (shipment.TotalCharges) {
-                totalCharges = shipment.TotalCharges.MonetaryValue || '0';
-                currency = shipment.TotalCharges.CurrencyCode || 'USD';
-                rateType = 'Published';
-                console.log(`📊 Published Rate for ${serviceName}: ${totalCharges} ${currency}`);
-                
-                // Log why we didn't get negotiated rates
-                if (credentials.enable_negotiated_rates) {
-                  console.log(`⚠️ Negotiated rates enabled but not returned. Check account setup.`);
-                  console.log(`🔍 NegotiatedRateCharges structure:`, shipment.NegotiatedRateCharges || 'NOT PRESENT');
-                }
-              } else {
-                console.error(`❌ No rate data found for ${serviceName}. UPS Response:`, JSON.stringify(shipment, null, 2));
-                continue; // Skip this rate if no pricing data
-              }
-
-              // Validate rate data before adding
-              const costValue = parseFloat(totalCharges);
-              if (isNaN(costValue) || costValue <= 0) {
-                console.error(`❌ Invalid cost value for ${serviceName}: ${totalCharges}`);
-                continue;
-              }
-
-              allRates.push({
-                carrier: 'UPS',
-                service_code: serviceCode,
-                service_name: serviceName,
-                service_type: serviceType,
-                cost: costValue,
-                currency: currency,
-                estimated_days: estimatedDays,
-                supports_tracking: true,
-                supports_insurance: true,
-                supports_signature: true
-              });
-            }
-          } else {
-            console.error(`❌ No RatedShipment data in UPS response for ${service.service_code}`);
-            console.log(`🔍 UPS Response structure:`, JSON.stringify(rateResponse, null, 2));
-            
-            // Check for common issues
-            if (rateResponse.RateResponse?.Response?.ResponseStatus?.Code !== '1') {
-              console.error(`❌ UPS Response Status indicates failure: ${rateResponse.RateResponse?.Response?.ResponseStatus?.Description || 'Unknown error'}`);
-            }
-            
-            // Check for UPS-specific error messages
-            if (rateResponse.Fault) {
-              console.error(`❌ UPS Fault: ${JSON.stringify(rateResponse.Fault, null, 2)}`);
-            }
-            
-            // Check for service availability issues
-            if (rateResponse.RateResponse?.Response?.Alert) {
-              const alerts = Array.isArray(rateResponse.RateResponse.Response.Alert) 
-                ? rateResponse.RateResponse.Response.Alert 
-                : [rateResponse.RateResponse.Response.Alert];
-              
-              for (const alert of alerts) {
-                if (alert.Code === '110208' || alert.Code === '110920') {
-                  console.error(`❌ UPS Service not available: ${alert.Description} (Code: ${alert.Code})`);
-                  console.error(`💡 Suggestion: This UPS account may not have ${service.service_name} (${service.service_code}) enabled for Canada to US shipping`);
-                }
-              }
-            }
-          }
-        } else {
-          console.error(`❌ UPS API Error for ${service.service_code} - Status:`, response.status);
-          console.error(`❌ UPS API Error for ${service.service_code} - Response:`, responseText);
-          
-          // Enhanced error parsing for common UPS issues
-          try {
-            const errorResponse = JSON.parse(responseText);
-            
-            if (errorResponse.response?.errors) {
-              console.error(`❌ UPS Error Details for ${service.service_code}:`, errorResponse.response.errors);
-              
-              // Check for common address validation errors
-              errorResponse.response.errors.forEach((error: any) => {
-                if (error.code === '111210' || error.message?.includes('Address')) {
-                  console.error(`🏠 ADDRESS VALIDATION ERROR: The ship-from address may not match your UPS account registration`);
-                  console.error(`💡 SOLUTION: Ensure your store shipping address exactly matches your UPS account address:`);
-                  console.error(`   Current: ${requestData.shipFrom.address}, ${requestData.shipFrom.city}, ${requestData.shipFrom.state}, ${requestData.shipFrom.zip}`);
-                  console.error(`   Required: Must match UPS account registration exactly`);
-                }
-                
-                if (error.code === '111546' || error.code === '111285' || error.message?.includes('Weight')) {
-                  console.error(`⚖️ WEIGHT ERROR: ${error.message}`);
-                  console.error(`💡 Original weight: ${requestData.package.weight}lbs, Processed: ${packageWeightLbs}lbs`);
-                  
-                  // Try alternative weight values for this service
-                  const alternativeWeights = [1, 2, 3, 5];
-                  for (const altWeight of alternativeWeights) {
-                    if (altWeight !== packageWeightLbs) {
-                      console.log(`🔄 Retrying service ${service.service_code} with weight ${altWeight}lbs...`);
-                      
-                      // Create modified request with alternative weight
-                      const modifiedRequest = JSON.parse(JSON.stringify(upsRequest));
-                      modifiedRequest.RateRequest.Shipment.Package[0].PackageWeight.Weight = altWeight.toString();
-                      
-                      try {
-                        const retryResponse = await fetch(ratingApiUrl, {
-                          method: 'POST',
-                          headers: headers,
-                          body: JSON.stringify(modifiedRequest)
-                        });
-                        
-                        if (retryResponse.ok) {
-                          console.log(`✅ Success with alternative weight ${altWeight}lbs for service ${service.service_code}`);
-                          const retryText = await retryResponse.text();
-                          const retryData = JSON.parse(retryText);
-                          
-                          if (retryData.RateResponse?.RatedShipment) {
-                            const ratedShipments = Array.isArray(retryData.RateResponse.RatedShipment) 
-                              ? retryData.RateResponse.RatedShipment 
-                              : [retryData.RateResponse.RatedShipment];
-                            
-                            for (const shipment of ratedShipments) {
-                              const serviceCode = shipment.Service?.Code || service.service_code;
-                              const serviceName = service.service_name;
-                              const serviceType = getUPSServiceType(serviceCode);
-                              const estimatedDays = getUPSEstimatedDays(serviceCode);
-                              
-                              let totalCharges = '0';
-                              let currency = 'USD';
-                              
-                              if (shipment.NegotiatedRateCharges?.TotalCharge) {
-                                totalCharges = shipment.NegotiatedRateCharges.TotalCharge.MonetaryValue || '0';
-                                currency = shipment.NegotiatedRateCharges.TotalCharge.CurrencyCode || 'USD';
-                              } else if (shipment.TotalCharges) {
-                                totalCharges = shipment.TotalCharges.MonetaryValue || '0';
-                                currency = shipment.TotalCharges.CurrencyCode || 'USD';
-                              }
-                              
-                              const costValue = parseFloat(totalCharges);
-                              if (!isNaN(costValue) && costValue > 0) {
-                                allRates.push({
-                                  carrier: 'UPS',
-                                  service_code: serviceCode,
-                                  service_name: serviceName,
-                                  service_type: serviceType,
-                                  cost: costValue,
-                                  currency: currency,
-                                  estimated_days: estimatedDays,
-                                  supports_tracking: true,
-                                  supports_insurance: true,
-                                  supports_signature: true
-                                });
-                              }
-                            }
-                          }
-                          break; // Exit retry loop on success
-                        }
-                      } catch (retryError) {
-                        console.log(`❌ Retry failed for weight ${altWeight}lbs:`, retryError);
-                      }
-                    }
-                  }
-                }
-              });
-            }
-            
-            if (errorResponse.Fault) {
-              console.error(`❌ UPS Fault for ${service.service_code}:`, errorResponse.Fault);
-            }
-            
-          } catch (e) {
-            console.error(`❌ Could not parse UPS error response for ${service.service_code}:`, e);
-            
-            // Check for common string patterns in unparseable responses
-            if (responseText.includes('Address') || responseText.includes('address')) {
-              console.error(`🏠 ADDRESS ISSUE DETECTED: Response contains address-related error`);
-              console.error(`💡 Check that your ship-from address matches UPS account registration`);
-            }
-          }
-          // Continue with other services even if one fails
-        }
-      } catch (error) {
-        console.error(`❌ Network error for ${service.service_code}:`, error);
-        // Continue with other services even if one fails
-      }
+    if (!response.ok) {
+      console.error('❌ UPS token refresh failed:', response.status);
+      return { success: false };
     }
 
-    console.log('✅ All UPS rates collected:', allRates);
-    
-    // Enhanced response with debug information
-    const response = {
-      rates: allRates,
-      debug: {
-        services_checked: validServices?.length || 0,
-        rates_found: allRates.length,
-        account_country: accountCountryCode,
-        ship_route: `${requestData.shipFrom.country} -> ${requestData.shipTo.country}`,
-        package_weight: requestData.package.weight,
-        timestamp: new Date().toISOString()
-      }
+    const data = await response.json();
+    const expiresAt = new Date(Date.now() + (data.expires_in * 1000));
+
+    // Update credentials in database
+    const updatedCredentials = {
+      ...credentials,
+      access_token: data.access_token,
+      token_expires_at: expiresAt.toISOString()
     };
 
-    return new Response(
-      JSON.stringify(response),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    await supabase
+      .from('carrier_configurations')
+      .update({ api_credentials: updatedCredentials })
+      .eq('id', configId);
+
+    console.log('✅ UPS token refreshed successfully');
+    return { success: true, accessToken: data.access_token };
+  } catch (error) {
+    console.error('❌ Error refreshing UPS token:', error);
+    return { success: false };
+  }
+}
+
+async function getUPSRates(requestData: RatingRequest, credentials: UPSCredentials, validServices: any[]) {
+  const rates = [];
+
+  // Build UPS Rating request
+  const ratingRequest = {
+    RateRequest: {
+      Request: {
+        RequestOption: "Shop",
+        TransactionReference: {
+          CustomerContext: "Rating and Service",
+          TransactionIdentifier: `Rating_${Date.now()}`
+        }
+      },
+      Pickup: {
+        Date: new Date().toISOString().split('T')[0].replace(/-/g, '')
+      },
+      Shipment: {
+        Shipper: {
+          Name: requestData.shipFrom?.name || "Shipper",
+          ShipperNumber: credentials.account_number,
+          Address: {
+            AddressLine: [requestData.shipFrom?.address || ""],
+            City: requestData.shipFrom?.city || "",
+            StateProvinceCode: requestData.shipFrom?.state || "",
+            PostalCode: requestData.shipFrom?.zip || "",
+            CountryCode: requestData.shipFrom?.country || "US"
+          }
+        },
+        ShipTo: {
+          Name: requestData.shipTo?.name || "Recipient",
+          Address: {
+            AddressLine: [requestData.shipTo?.address || ""],
+            City: requestData.shipTo?.city || "",
+            StateProvinceCode: requestData.shipTo?.state || "",
+            PostalCode: requestData.shipTo?.zip || "",
+            CountryCode: requestData.shipTo?.country || "US"
+          }
+        },
+        ShipFrom: {
+          Name: requestData.shipFrom?.name || "Ship From",
+          Address: {
+            AddressLine: [requestData.shipFrom?.address || ""],
+            City: requestData.shipFrom?.city || "",
+            StateProvinceCode: requestData.shipFrom?.state || "",
+            PostalCode: requestData.shipFrom?.zip || "",
+            CountryCode: requestData.shipFrom?.country || "US"
+          }
+        },
+        Service: {
+          Code: "03", // Will be overridden for each service
+          Description: "UPS Ground"
+        },
+        Package: [{
+          PackagingType: {
+            Code: "02",
+            Description: "Customer Supplied Package"
+          },
+          PackageWeight: {
+            UnitOfMeasurement: {
+              Code: "LBS",
+              Description: "Pounds"
+            },
+            Weight: (requestData.package?.weight || 1).toString()
+          },
+          Dimensions: {
+            UnitOfMeasurement: {
+              Code: "IN",
+              Description: "Inches"
+            },
+            Length: (requestData.package?.length || 10).toString(),
+            Width: (requestData.package?.width || 10).toString(),
+            Height: (requestData.package?.height || 10).toString()
+          }
+        }],
+        ShipmentRatingOptions: {
+          NegotiatedRatesIndicator: ""
+        }
       }
-    );
-}
-
-// Helper functions for UPS service mapping
-function getUPSServiceName(code: string): string {
-  const serviceNames: { [key: string]: string } = {
-    // International services for Canada to US
-    '07': 'UPS Worldwide Express',
-    '08': 'UPS Worldwide Expedited', 
-    '11': 'UPS Standard',
-    '54': 'UPS Worldwide Express Plus',
-    '65': 'UPS Worldwide Saver',
-    // Domestic US services (may work for some shipments)
-    '01': 'UPS Next Day Air',
-    '02': 'UPS 2nd Day Air',
-    '03': 'UPS Ground',
-    '12': 'UPS 3 Day Select',
-    '13': 'UPS Next Day Air Saver',
-    '14': 'UPS Next Day Air Early A.M.',
-    '59': 'UPS 2nd Day Air A.M.'
+    }
   };
-  return serviceNames[code] || `UPS Service ${code}`;
+
+  // Get rates for each valid service
+  for (const service of validServices) {
+    try {
+      const serviceRequest = { ...ratingRequest };
+      serviceRequest.RateRequest.Shipment.Service.Code = service.service_code;
+      serviceRequest.RateRequest.Shipment.Service.Description = service.service_name;
+
+      console.log(`📡 Calling UPS API for service ${service.service_code} (${service.service_name})`);
+
+      const response = await fetch('https://onlinetools.ups.com/api/rating/v1/Rate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${credentials.access_token}`,
+          'transId': `Rate_${Date.now()}`,
+          'transactionSrc': 'testing'
+        },
+        body: JSON.stringify(serviceRequest)
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (data.RateResponse?.RatedShipment) {
+          const ratedShipments = Array.isArray(data.RateResponse.RatedShipment) 
+            ? data.RateResponse.RatedShipment 
+            : [data.RateResponse.RatedShipment];
+
+          for (const shipment of ratedShipments) {
+            let totalCharges = '0';
+            let rateType = 'Published';
+
+            // Try to get negotiated rate first, fall back to published rate
+            if (shipment.NegotiatedRateCharges?.TotalCharge?.MonetaryValue) {
+              totalCharges = shipment.NegotiatedRateCharges.TotalCharge.MonetaryValue;
+              rateType = 'Negotiated';
+            } else if (shipment.TotalCharges?.MonetaryValue) {
+              totalCharges = shipment.TotalCharges.MonetaryValue;
+              rateType = 'Published';
+            }
+
+            const cost = parseFloat(totalCharges);
+            if (cost > 0) {
+              rates.push({
+                id: `ups_${service.service_code}_${Date.now()}`,
+                service_code: service.service_code,
+                service_name: service.service_name,
+                carrier: 'UPS',
+                rate: cost,
+                currency: shipment.TotalCharges?.CurrencyCode || 'USD',
+                estimated_days: getEstimatedDays(service.service_code),
+                service_type: getServiceType(service.service_code),
+                zone: shipment.RatedShipmentAlert?.[0]?.Description || undefined,
+                rate_type: rateType
+              });
+
+              console.log(`✅ UPS ${service.service_name}: $${cost} (${rateType})`);
+            }
+          }
+        }
+      } else {
+        const errorText = await response.text();
+        console.log(`❌ UPS API error for ${service.service_name}:`, response.status, errorText);
+      }
+    } catch (error) {
+      console.error(`❌ Error getting UPS rate for ${service.service_name}:`, error);
+    }
+  }
+
+  return rates;
 }
 
-function getUPSServiceType(code: string): string {
-  const expeditedCodes = ['01', '13', '14', '59'];
-  const expressOvernightCodes = ['01', '13', '14'];
-  const expedited2DayCodes = ['02', '59'];
-  const expedited3DayCodes = ['12'];
-  
-  if (expressOvernightCodes.includes(code)) return 'overnight';
-  if (expedited2DayCodes.includes(code)) return 'expedited';
-  if (expedited3DayCodes.includes(code)) return 'expedited';
-  if (expeditedCodes.includes(code)) return 'expedited';
-  return 'standard';
-}
-
-function getUPSEstimatedDays(code: string): string {
+function getEstimatedDays(serviceCode: string): string {
   const estimatedDays: { [key: string]: string } = {
     '01': '1 business day',
     '02': '2 business days', 
@@ -818,73 +377,22 @@ function getUPSEstimatedDays(code: string): string {
     '12': '3 business days',
     '13': '1 business day',
     '14': '1 business day',
-    '54': '1-2 business days',
+    '54': '1-3 business days',
     '59': '2 business days',
     '65': '1-3 business days'
   };
-  return estimatedDays[code] || '3-5 business days';
+  return estimatedDays[serviceCode] || '1-7 business days';
 }
 
-function buildProductDetails(requestData: RatingRequest, packageWeightLbs: number): any[] {
-  // Use real order item data if available, otherwise use defaults
-  if (requestData.order?.items && requestData.order.items.length > 0) {
-    console.log('📦 Using real order item data for UPS Product details');
-    
-    return requestData.order.items.map((item, index) => {
-      // Ensure each product has minimum 1 lb weight for UPS
-      const itemWeight = Math.max(1.0, item.weight_lbs || (packageWeightLbs / requestData.order!.items.length));
-      const itemValue = item.price || 10;
-      
-      return {
-        Description: item.product_title.substring(0, 35), // UPS limits description length
-        CommodityCode: item.commodity_code || "999999",
-        OriginCountryCode: item.origin_country || requestData.shipFrom.country,
-        Unit: {
-          UnitOfMeasurement: {
-            Code: "EA",
-            Description: "Each"
-          },
-          Value: item.quantity.toString()
-        },
-        ProductWeight: {
-          UnitOfMeasurement: {
-            Code: "LBS", 
-            Description: "Pounds"
-          },
-          Weight: Math.max(0.1, itemWeight).toFixed(1) // UPS minimum 0.1 lbs
-        },
-        UnitValue: {
-          CurrencyCode: requestData.order?.currency || "USD",
-          MonetaryValue: itemValue.toFixed(2)
-        }
-      };
-    });
-  } else {
-    console.log('📦 Using default Product details (no order items)');
-    
-    // Fallback to single generic product
-    return [{
-      Description: "General Merchandise",
-      CommodityCode: "999999",
-      OriginCountryCode: requestData.shipFrom.country,
-      Unit: {
-        UnitOfMeasurement: {
-          Code: "EA",
-          Description: "Each"
-        },
-        Value: "1"
-      },
-      ProductWeight: {
-        UnitOfMeasurement: {
-          Code: "LBS",
-          Description: "Pounds"
-        },
-        Weight: Math.max(0.1, packageWeightLbs).toFixed(1)
-      },
-      UnitValue: {
-        CurrencyCode: "USD",
-        MonetaryValue: (requestData.package.value || 100).toFixed(2)
-      }
-    }];
-  }
+function getServiceType(serviceCode: string): string {
+  const expeditedCodes = ['01', '13', '14', '59'];
+  const expressOvernightCodes = ['01', '13', '14'];
+  const expedited2DayCodes = ['02', '59'];
+  const expedited3DayCodes = ['12'];
+  
+  if (expressOvernightCodes.includes(serviceCode)) return 'overnight';
+  if (expedited2DayCodes.includes(serviceCode)) return 'expedited';
+  if (expedited3DayCodes.includes(serviceCode)) return 'expedited';
+  if (expeditedCodes.includes(serviceCode)) return 'expedited';
+  return 'standard';
 }
