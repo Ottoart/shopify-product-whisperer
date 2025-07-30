@@ -38,12 +38,25 @@ export function useAdminAuth() {
     return new Date(session.expires_at) > new Date();
   };
 
-  const loadSession = () => {
+  const loadSession = async () => {
     try {
       const storedSession = localStorage.getItem(ADMIN_SESSION_KEY);
       if (storedSession) {
         const session = JSON.parse(storedSession);
         if (validateSession(session)) {
+          // Restore Supabase session if available
+          if (session.supabase_session?.access_token) {
+            try {
+              await supabase.auth.setSession({
+                access_token: session.supabase_session.access_token,
+                refresh_token: session.supabase_session.refresh_token
+              });
+              console.log('✅ Restored Supabase session for edge function calls');
+            } catch (error) {
+              console.warn('Failed to restore Supabase session:', error);
+            }
+          }
+          
           setAdminSession(session);
           setSessionStable(true);
           return true;
@@ -59,13 +72,17 @@ export function useAdminAuth() {
   };
 
   useEffect(() => {
-    const sessionLoaded = loadSession();
-    setIsLoading(false);
-    if (sessionLoaded) {
-      console.log('✅ Admin session loaded from localStorage');
-    } else {
-      console.log('❌ No valid admin session found');
-    }
+    const initSession = async () => {
+      const sessionLoaded = await loadSession();
+      setIsLoading(false);
+      if (sessionLoaded) {
+        console.log('✅ Admin session loaded from localStorage');
+      } else {
+        console.log('❌ No valid admin session found');
+      }
+    };
+    
+    initSession();
   }, []);
 
   // Simplified session validation - only check every 5 minutes and be less aggressive
@@ -110,6 +127,15 @@ export function useAdminAuth() {
       
       if (!validateSession(session)) {
         throw new Error('Invalid session received from server');
+      }
+      
+      // Set the Supabase session if available for edge function compatibility
+      if (session.supabase_session?.access_token) {
+        await supabase.auth.setSession({
+          access_token: session.supabase_session.access_token,
+          refresh_token: session.supabase_session.refresh_token
+        });
+        console.log('✅ Supabase session set for edge function calls');
       }
       
       setAdminSession(session);

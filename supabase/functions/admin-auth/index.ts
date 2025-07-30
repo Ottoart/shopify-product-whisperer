@@ -91,9 +91,57 @@ serve(async (req) => {
       return validCred;
     }) || adminUsers[0]; // Use first admin if no specific match
 
-    // Skip Supabase Auth integration for now - just use custom admin session
+    // Create a proper Supabase user session for edge function compatibility
+    let supabaseSession = null;
+    
+    try {
+      // Try to get or create a Supabase user for this admin
+      const { data: existingUser, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(adminUser.user_id);
+      
+      if (getUserError && getUserError.message?.includes('User not found')) {
+        // Create a new Supabase user for this admin
+        const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+          id: adminUser.user_id,
+          email: email,
+          email_confirmed_at: new Date().toISOString(),
+          user_metadata: {
+            role: adminUser.role,
+            display_name: "Admin",
+            is_admin: true
+          }
+        });
+        
+        if (createError) {
+          console.error("Error creating Supabase user:", createError);
+        } else {
+          console.log("Created Supabase user for admin:", email);
+        }
+      }
+      
+      // Generate access token for the admin user
+      const { data: tokenData, error: tokenError } = await supabaseAdmin.auth.admin.generateAccessToken(adminUser.user_id);
+      
+      if (!tokenError && tokenData) {
+        supabaseSession = {
+          access_token: tokenData.access_token,
+          refresh_token: tokenData.refresh_token || '',
+          expires_in: tokenData.expires_in || 3600,
+          token_type: 'bearer',
+          user: {
+            id: adminUser.user_id,
+            email: email,
+            role: adminUser.role
+          }
+        };
+        console.log("Generated Supabase session for admin");
+      } else {
+        console.error("Error generating token:", tokenError);
+      }
+    } catch (error) {
+      console.error("Error setting up Supabase session:", error);
+    }
 
-    // Create admin session token with Supabase Auth data
+    // Create admin session with Supabase compatibility
     const adminSession = {
       user: {
         id: adminUser.user_id,
@@ -104,7 +152,7 @@ serve(async (req) => {
       },
       expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
       session_id: crypto.randomUUID(),
-      supabase_session: null
+      supabase_session: supabaseSession
     };
 
     console.log("Admin login successful for:", email);
