@@ -43,23 +43,30 @@ serve(async (req) => {
         console.log('✅ Using standard Supabase user:', user.email);
       } else {
         console.log('⚠️ Standard auth failed, trying admin JWT decode...');
-        // Handle admin session JWT - try to parse as JSON directly
+        // Handle admin session JWT - properly decode base64 payload
         try {
-          const payload = JSON.parse(jwt);
-          console.log('🔓 Decoded admin JWT payload:', { 
-            sub: payload.sub, 
-            email: payload.email,
-            iss: payload.iss,
-            aud: payload.aud
-          });
-          
-          if (payload.sub && payload.email) {
-            user = {
-              id: payload.sub,
+          // JWT format: header.payload.signature
+          const parts = jwt.split('.');
+          if (parts.length === 3) {
+            // Decode the payload (second part)
+            const payload = JSON.parse(atob(parts[1]));
+            console.log('🔓 Decoded admin JWT payload:', { 
+              sub: payload.sub, 
               email: payload.email,
-              user_metadata: payload.user_metadata || {}
-            };
-            console.log('✅ Using admin session JWT for user:', user.email);
+              iss: payload.iss,
+              aud: payload.aud
+            });
+            
+            if (payload.sub && payload.email) {
+              user = {
+                id: payload.sub,
+                email: payload.email,
+                user_metadata: payload.user_metadata || {}
+              };
+              console.log('✅ Using admin session JWT for user:', user.email);
+            }
+          } else {
+            console.error('❌ Invalid JWT format - expected 3 parts separated by dots');
           }
         } catch (decodeError) {
           console.error('❌ Failed to decode admin JWT:', decodeError);

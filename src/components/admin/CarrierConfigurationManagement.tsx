@@ -130,8 +130,25 @@ export function CarrierConfigurationManagement() {
       
       // For admin, we're configuring system-wide PrepFox carriers
       const functionName = selectedCarrier === 'canada_post' ? 'admin-configure-canada-post' : 'setup-ups-credentials';
+      
+      // Get admin session for authentication
+      const adminSession = JSON.parse(localStorage.getItem('adminSession') || '{}');
+      if (!adminSession.token) {
+        toast({
+          title: "❌ Authentication Required",
+          description: "Admin authentication required. Please log in again.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      console.log('🔧 Configuring carrier with admin auth:', selectedCarrier);
+      
       const { data, error } = await supabase.functions.invoke(functionName, {
-        body: requestBody
+        body: requestBody,
+        headers: {
+          Authorization: `Bearer ${adminSession.token}`
+        }
       });
 
       if (error) throw error;
