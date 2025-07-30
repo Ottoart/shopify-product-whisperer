@@ -174,7 +174,9 @@ export function useAdminAuth() {
   };
 
   // Reactive computed values that will trigger re-renders
-  const isAuthenticated = adminSession !== null && 
+  // Fix race condition by ensuring session is stable and has access token
+  const isAuthenticated = sessionStable && adminSession !== null && 
+    adminSession.supabase_session?.access_token &&
     (adminSession ? new Date(adminSession.expires_at) > new Date() : false);
 
   const hasRole = (role: string) => {

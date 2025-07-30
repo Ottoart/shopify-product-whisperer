@@ -50,7 +50,7 @@ export function CarrierConfigurationManagement() {
   });
 
   const { toast } = useToast();
-  const { adminSession, isAuthenticated } = useAdminAuth();
+  const { adminSession, isAuthenticated, sessionStable } = useAdminAuth();
 
   // Load existing configurations on mount
   useEffect(() => {
@@ -133,20 +133,44 @@ export function CarrierConfigurationManagement() {
       // For admin, we're configuring system-wide PrepFox carriers
       const functionName = selectedCarrier === 'canada_post' ? 'admin-configure-canada-post' : 'setup-ups-credentials';
       
-      // Check admin authentication
-      if (!isAuthenticated || !adminSession) {
-        console.error('❌ No admin authentication. Session:', { isAuthenticated, hasSession: !!adminSession });
+      // Check admin authentication with detailed logging
+      console.log('🔍 Auth Check:', { 
+        isAuthenticated, 
+        sessionStable, 
+        hasSession: !!adminSession,
+        hasAccessToken: !!adminSession?.supabase_session?.access_token 
+      });
+      
+      // Wait for session to stabilize if not ready
+      if (!sessionStable) {
+        console.warn('⏳ Session not stable yet, please wait...');
         toast({
-          title: "❌ Authentication Required",
-          description: "Admin authentication required. Please log in again.",
-          variant: "destructive"
+          title: "⏳ Loading Session",
+          description: "Please wait for authentication to complete...",
+          variant: "default"
         });
         return;
       }
       
-      const token = adminSession.supabase_session?.access_token;
+      // Get token with fallback to localStorage
+      let token = adminSession?.supabase_session?.access_token;
+      
       if (!token) {
-        console.error('❌ No access token in admin session');
+        // Fallback: try to get token from localStorage
+        try {
+          const storedSession = localStorage.getItem('admin_session');
+          if (storedSession) {
+            const parsedSession = JSON.parse(storedSession);
+            token = parsedSession.supabase_session?.access_token;
+            console.log('🔄 Using fallback token from localStorage');
+          }
+        } catch (error) {
+          console.error('Failed to parse stored session:', error);
+        }
+      }
+      
+      if (!token) {
+        console.error('❌ No access token available anywhere');
         toast({
           title: "❌ Authentication Error",
           description: "No valid access token found. Please log in again.",
