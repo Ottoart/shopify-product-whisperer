@@ -250,12 +250,13 @@ export class CanadaPostCarrier implements CarrierInterface {
 
   async validateCredentials(): Promise<{ valid: boolean; error?: string }> {
     try {
-      // Test with a simple service discovery call
+      // Test with a simple service discovery call as per Canada Post documentation
       const response = await fetch(`${this.baseUrl}/rs/ship/service`, {
         method: 'GET',
         headers: {
           'Authorization': this.getAuthHeader(),
-          'Accept': 'application/vnd.cpc.ship.service-v3+xml'
+          'Accept': 'application/vnd.cpc.ship.service-v3+xml',
+          'Accept-language': 'en-CA'
         }
       });
 
@@ -263,9 +264,11 @@ export class CanadaPostCarrier implements CarrierInterface {
         return { valid: true };
       } else {
         const error = await response.text();
-        return { valid: false, error: `Invalid credentials: ${error}` };
+        console.error('Canada Post credential validation failed:', response.status, error);
+        return { valid: false, error: `Invalid credentials: ${response.status} - ${error}` };
       }
     } catch (error) {
+      console.error('Canada Post validation error:', error);
       return { 
         valid: false, 
         error: error instanceof Error ? error.message : 'Unknown error' 

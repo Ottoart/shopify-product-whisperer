@@ -153,28 +153,35 @@ async function testCanadaPostCredentials(credentials: any) {
       ? 'https://soa-gw.canadapost.ca'
       : 'https://ct.soa-gw.canadapost.ca'
 
+    // Format authentication as specified in Canada Post docs
     const auth = btoa(`${credentials.api_key}:${credentials.api_secret}`)
     
+    // Test with a simple service discovery call
     const response = await fetch(`${baseUrl}/rs/ship/service`, {
       method: 'GET',
       headers: {
         'Authorization': `Basic ${auth}`,
-        'Accept': 'application/vnd.cpc.ship.rate-v4+xml',
-        'Content-Type': 'application/vnd.cpc.ship.rate-v4+xml',
+        'Accept': 'application/vnd.cpc.ship.service-v3+xml',
         'Accept-language': 'en-CA'
       }
     })
 
+    console.log('Canada Post API test response status:', response.status)
+    
     if (response.ok) {
+      const responseText = await response.text()
+      console.log('Canada Post API test successful, response preview:', responseText.substring(0, 200))
       return { success: true }
     } else {
       const errorText = await response.text()
+      console.error('Canada Post API test failed:', response.status, errorText)
       return { 
         success: false, 
         error: `API test failed: ${response.status} ${response.statusText} - ${errorText}` 
       }
     }
   } catch (error) {
+    console.error('Canada Post connection test error:', error)
     return { 
       success: false, 
       error: `Connection test failed: ${error.message}` 
