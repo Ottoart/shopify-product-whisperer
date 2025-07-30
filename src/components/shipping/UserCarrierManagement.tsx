@@ -52,11 +52,17 @@ export function UserCarrierManagement() {
 
   const loadSystemCarriers = async () => {
     try {
-      // Check which carriers are configured in the system
+      // Check which carriers are configured by admin
       const { data: configs, error } = await supabase
         .from('carrier_configurations')
         .select('*')
-        .is('user_id', null); // System carriers have null user_id
+        .eq('is_active', true);
+
+      if (error) {
+        console.error('Error loading carrier configs:', error);
+      }
+
+      console.log('Loaded carrier configs:', configs);
 
       const systemCarriers: PrepFoxCarrier[] = SYSTEM_CARRIERS.map(carrier => {
         const config = configs?.find(c => c.carrier_name === carrier.name);

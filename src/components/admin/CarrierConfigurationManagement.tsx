@@ -90,7 +90,7 @@ export function CarrierConfigurationManagement() {
       }
       
       // For admin, we're configuring system-wide PrepFox carriers
-      const functionName = selectedCarrier === 'canada_post' ? 'canada-post-setup' : 'setup-ups-credentials';
+      const functionName = selectedCarrier === 'canada_post' ? 'admin-configure-canada-post' : 'setup-ups-credentials';
       const { data, error } = await supabase.functions.invoke(functionName, {
         body: requestBody
       });
