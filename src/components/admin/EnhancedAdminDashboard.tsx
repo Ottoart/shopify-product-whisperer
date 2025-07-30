@@ -43,9 +43,11 @@ import {
   Lock,
   Eye,
   Archive,
-  HardDrive
+  HardDrive,
+  Truck
 } from "lucide-react";
 import { MockDataBadge, LiveDataBadge } from "@/components/ui/mock-data-badge";
+import { CarrierConfigurationManagement } from "./CarrierConfigurationManagement";
 
 interface AdminUser {
   id: string;
@@ -422,7 +424,7 @@ export const EnhancedAdminDashboard = () => {
 
       {/* Admin Tabs */}
       <Tabs defaultValue="admin-users" className="space-y-4">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
           <TabsList className="grid w-full grid-cols-4 bg-muted/50">
             <TabsTrigger value="admin-users" className="data-[state=active]:bg-background">
               <Users className="h-4 w-4 mr-2" />
@@ -458,6 +460,21 @@ export const EnhancedAdminDashboard = () => {
             <TabsTrigger value="monitoring" className="data-[state=active]:bg-background">
               <Server className="h-4 w-4 mr-2" />
               Monitoring
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsList className="grid w-full grid-cols-3 bg-muted/50">
+            <TabsTrigger value="carriers" className="data-[state=active]:bg-background">
+              <Truck className="h-4 w-4 mr-2" />
+              Carriers
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="data-[state=active]:bg-background">
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Analytics
+            </TabsTrigger>
+            <TabsTrigger value="reports" className="data-[state=active]:bg-background">
+              <FileText className="h-4 w-4 mr-2" />
+              Reports
             </TabsTrigger>
           </TabsList>
         </div>
@@ -572,6 +589,10 @@ export const EnhancedAdminDashboard = () => {
 
         <TabsContent value="backup-recovery" className="space-y-4">
           <BackupRecoveryManagement />
+        </TabsContent>
+
+        <TabsContent value="carriers" className="space-y-4">
+          <CarrierConfigurationManagement />
         </TabsContent>
       </Tabs>
     </div>
