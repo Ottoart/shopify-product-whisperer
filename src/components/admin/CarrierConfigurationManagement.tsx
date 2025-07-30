@@ -11,6 +11,7 @@ import { Truck, Plus, Settings, TestTube, Eye, EyeOff, CheckCircle, AlertCircle 
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { MockDataBadge, LiveDataBadge } from "@/components/ui/mock-data-badge";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
 
 const SUPPORTED_CARRIERS = [
   { value: 'ups', label: 'UPS', description: 'United Parcel Service' },
@@ -49,6 +50,7 @@ export function CarrierConfigurationManagement() {
   });
 
   const { toast } = useToast();
+  const { adminSession, isAuthenticated } = useAdminAuth();
 
   // Load existing configurations on mount
   useEffect(() => {
@@ -131,12 +133,9 @@ export function CarrierConfigurationManagement() {
       // For admin, we're configuring system-wide PrepFox carriers
       const functionName = selectedCarrier === 'canada_post' ? 'admin-configure-canada-post' : 'setup-ups-credentials';
       
-      // Get admin session for authentication
-      const adminSession = JSON.parse(localStorage.getItem('admin_session') || '{}');
-      const token = adminSession.supabaseSession?.access_token;
-      
-      if (!token) {
-        console.error('❌ No admin token found. Admin session:', adminSession);
+      // Check admin authentication
+      if (!isAuthenticated || !adminSession?.supabase_session?.access_token) {
+        console.error('❌ No admin authentication. Session:', { isAuthenticated, hasSession: !!adminSession });
         toast({
           title: "❌ Authentication Required",
           description: "Admin authentication required. Please log in again.",
@@ -144,6 +143,8 @@ export function CarrierConfigurationManagement() {
         });
         return;
       }
+      
+      const token = adminSession.supabase_session.access_token;
 
       console.log('🔧 Configuring carrier with admin auth:', selectedCarrier);
       
