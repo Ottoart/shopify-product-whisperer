@@ -72,11 +72,27 @@ export function CarrierConfigurationManagement() {
 
     try {
       const config = getCarrierConfig();
+      let requestBody: any = {};
+
+      // Map the config to the expected format for each carrier
+      if (selectedCarrier === 'canada_post') {
+        const cpConfig = config as typeof canadaPostConfig;
+        requestBody = {
+          api_key: cpConfig.api_key,
+          api_secret: cpConfig.api_secret,
+          customer_number: cpConfig.customer_number,
+          contract_number: cpConfig.contract_number,
+          account_type: cpConfig.account_type || 'commercial',
+          is_production: cpConfig.is_production || false
+        };
+      } else {
+        requestBody = config;
+      }
       
       // For admin, we're configuring system-wide PrepFox carriers
       const functionName = selectedCarrier === 'canada_post' ? 'canada-post-setup' : 'setup-ups-credentials';
       const { data, error } = await supabase.functions.invoke(functionName, {
-        body: config
+        body: requestBody
       });
 
       if (error) throw error;
