@@ -134,7 +134,7 @@ export function CarrierConfigurationManagement() {
       const functionName = selectedCarrier === 'canada_post' ? 'admin-configure-canada-post' : 'setup-ups-credentials';
       
       // Check admin authentication
-      if (!isAuthenticated || !adminSession?.supabase_session?.access_token) {
+      if (!isAuthenticated || !adminSession) {
         console.error('❌ No admin authentication. Session:', { isAuthenticated, hasSession: !!adminSession });
         toast({
           title: "❌ Authentication Required",
@@ -144,7 +144,16 @@ export function CarrierConfigurationManagement() {
         return;
       }
       
-      const token = adminSession.supabase_session.access_token;
+      const token = adminSession.supabase_session?.access_token;
+      if (!token) {
+        console.error('❌ No access token in admin session');
+        toast({
+          title: "❌ Authentication Error",
+          description: "No valid access token found. Please log in again.",
+          variant: "destructive"
+        });
+        return;
+      }
 
       console.log('🔧 Configuring carrier with admin auth:', selectedCarrier);
       

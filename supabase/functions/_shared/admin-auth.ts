@@ -17,59 +17,42 @@ export async function validateAdminAuth(authHeader: string) {
   console.log('🔍 Processing JWT token (first 20 chars):', jwt.substring(0, 20));
   
   try {
-    // Try standard Supabase auth first
-    const { data: { user: authUser }, error: userError } = await supabase.auth.getUser(jwt);
-    console.log('🔑 Supabase auth result:', { authUser: !!authUser, error: userError });
-    
-    if (authUser) {
-      user = authUser;
-      console.log('✅ Using standard Supabase user:', user.email);
-    } else {
-      console.log('⚠️ Standard auth failed, trying admin JWT decode...');
-      // Handle admin session JWT - properly decode JWT payload
-      try {
-        // JWT format: header.payload.signature
-        const parts = jwt.split('.');
-        if (parts.length === 3) {
-          // Decode the payload (second part)
-          // Add padding if needed for proper base64 decoding
-          let payloadB64 = parts[1];
-          while (payloadB64.length % 4) {
-            payloadB64 += '=';
-          }
-          
-          const payload = JSON.parse(atob(payloadB64));
-          console.log('🔓 Decoded admin JWT payload:', { 
-            sub: payload.sub, 
-            email: payload.email,
-            iss: payload.iss,
-            aud: payload.aud,
-            exp: payload.exp
-          });
-          
-          // Check if token is expired
-          if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
-            console.error('❌ Admin JWT token expired');
-            return { error: 'Token expired', status: 401 };
-          }
-          
-          if (payload.sub && payload.email) {
-            user = {
-              id: payload.sub,
-              email: payload.email,
-              user_metadata: payload.user_metadata || {}
-            };
-            console.log('✅ Using admin session JWT for user:', user.email);
-          }
-        } else {
-          console.error('❌ Invalid JWT format - expected 3 parts separated by dots');
-          return { error: 'Invalid token format', status: 401 };
-        }
-      } catch (decodeError) {
-        console.error('❌ Failed to decode admin JWT:', decodeError);
-        console.log('🔍 JWT content preview:', jwt.substring(0, 100));
-        return { error: 'Invalid token', status: 401 };
+    // Handle admin session JWT - decode JWT payload
+    const parts = jwt.split('.');
+    if (parts.length === 3) {
+      // Decode the payload (second part)
+      // Add padding if needed for proper base64 decoding
+      let payloadB64 = parts[1];
+      while (payloadB64.length % 4) {
+        payloadB64 += '=';
       }
+      
+      const payload = JSON.parse(atob(payloadB64));
+      console.log('🔓 Decoded admin JWT payload:', { 
+        sub: payload.sub, 
+        email: payload.email,
+        iss: payload.iss,
+        aud: payload.aud,
+        exp: payload.exp
+      });
+      
+      // Check if token is expired
+      if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+        console.error('❌ Admin JWT token expired');
+        return { error: 'Token expired', status: 401 };
+      }
+      
+      if (payload.sub && payload.email) {
+        user = {
+          id: payload.sub,
+          email: payload.email,
+          user_metadata: payload.user_metadata || {}
+        };
+        console.log('✅ Using admin session JWT for user:', user.email);
+      }
+    } else {
+      console.error('❌ Invalid JWT format - expected 3 parts separated by dots');
+      return { error: 'Invalid token format', status: 401 };
     }
   } catch (error) {
     console.error('❌ Authentication error:', error);

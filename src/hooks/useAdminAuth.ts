@@ -52,9 +52,12 @@ export function useAdminAuth() {
                 refresh_token: session.supabase_session.refresh_token
               });
               console.log('✅ Restored Supabase session for edge function calls');
+              console.log('🔑 Access token (first 20 chars):', session.supabase_session.access_token.substring(0, 20));
             } catch (error) {
               console.warn('Failed to restore Supabase session:', error);
             }
+          } else {
+            console.warn('⚠️ No supabase_session.access_token found in stored session');
           }
           
           setAdminSession(session);
@@ -136,6 +139,9 @@ export function useAdminAuth() {
           refresh_token: session.supabase_session.refresh_token
         });
         console.log('✅ Supabase session set for edge function calls');
+        console.log('🔑 Access token (first 20 chars):', session.supabase_session.access_token.substring(0, 20));
+      } else {
+        console.error('❌ No access token in supabase_session:', session.supabase_session);
       }
       
       setAdminSession(session);

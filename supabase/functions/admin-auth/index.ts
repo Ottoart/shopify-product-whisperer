@@ -91,6 +91,34 @@ serve(async (req) => {
       return validCred;
     }) || adminUsers[0]; // Use first admin if no specific match
 
+    // Create a proper JWT-style token compatible with edge functions
+    const header = {
+      alg: "HS256",
+      typ: "JWT"
+    };
+    
+    const payload = {
+      iss: "supabase",
+      sub: adminUser.user_id,
+      aud: "authenticated",
+      exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60, // 24 hours
+      iat: Math.floor(Date.now() / 1000),
+      email: email,
+      role: "authenticated",
+      user_metadata: {
+        role: adminUser.role,
+        is_admin: true
+      }
+    };
+    
+    // Create a JWT-style token (3 parts separated by dots)
+    // For simplicity, we'll use base64 encoding without actual signing
+    const headerB64 = btoa(JSON.stringify(header)).replace(/[=]/g, '');
+    const payloadB64 = btoa(JSON.stringify(payload)).replace(/[=]/g, '');
+    const signature = btoa('admin-signature').replace(/[=]/g, ''); // Simple signature
+    
+    const jwtToken = `${headerB64}.${payloadB64}.${signature}`;
+
     // Create a proper Supabase user session for edge function compatibility
     let supabaseSession = null;
     
@@ -117,34 +145,6 @@ serve(async (req) => {
           console.log("Created Supabase user for admin:", email);
         }
       }
-      
-      // Create a proper JWT-style token compatible with edge functions
-      const header = {
-        alg: "HS256",
-        typ: "JWT"
-      };
-      
-      const payload = {
-        iss: "supabase",
-        sub: adminUser.user_id,
-        aud: "authenticated",
-        exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60, // 24 hours
-        iat: Math.floor(Date.now() / 1000),
-        email: email,
-        role: "authenticated",
-        user_metadata: {
-          role: adminUser.role,
-          is_admin: true
-        }
-      };
-      
-      // Create a JWT-style token (3 parts separated by dots)
-      // For simplicity, we'll use base64 encoding without actual signing
-      const headerB64 = btoa(JSON.stringify(header)).replace(/[=]/g, '');
-      const payloadB64 = btoa(JSON.stringify(payload)).replace(/[=]/g, '');
-      const signature = btoa('admin-signature').replace(/[=]/g, ''); // Simple signature
-      
-      const jwtToken = `${headerB64}.${payloadB64}.${signature}`;
       
       supabaseSession = {
         access_token: jwtToken,
@@ -173,7 +173,17 @@ serve(async (req) => {
       },
       expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
       session_id: crypto.randomUUID(),
-      supabase_session: supabaseSession
+      supabase_session: supabaseSession || {
+        access_token: jwtToken,
+        refresh_token: '',
+        expires_in: 24 * 60 * 60,
+        token_type: 'bearer',
+        user: {
+          id: adminUser.user_id,
+          email: email,
+          role: adminUser.role
+        }
+      }
     };
 
     console.log("Admin login successful for:", email);
