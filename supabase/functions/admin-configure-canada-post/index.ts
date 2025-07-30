@@ -153,38 +153,72 @@ async function testCanadaPostCredentials(credentials: any) {
       ? 'https://soa-gw.canadapost.ca'
       : 'https://ct.soa-gw.canadapost.ca'
 
-    // Format authentication as specified in Canada Post docs
-    const auth = btoa(`${credentials.api_key}:${credentials.api_secret}`)
+    // Build SOAP request for DiscoverServices operation
+    const soapBody = `<?xml version="1.0" encoding="UTF-8"?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" 
+                  xmlns:rat="http://www.canadapost.ca/ws/soap/ship/rate/v4">
+  <soapenv:Header>
+    <wsse:Security xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
+      <wsse:UsernameToken>
+        <wsse:Username>${credentials.api_key}</wsse:Username>
+        <wsse:Password>${credentials.api_secret}</wsse:Password>
+      </wsse:UsernameToken>
+    </wsse:Security>
+  </soapenv:Header>
+  <soapenv:Body>
+    <rat:discover-services-request>
+      <rat:locale>EN</rat:locale>
+      <rat:destination-country-code>CA</rat:destination-country-code>
+    </rat:discover-services-request>
+  </soapenv:Body>
+</soapenv:Envelope>`
+
+    console.log('Testing Canada Post SOAP credentials with DiscoverServices...')
     
-    // Test with a simple service discovery call
-    const response = await fetch(`${baseUrl}/rs/ship/service`, {
-      method: 'GET',
+    const response = await fetch(`${baseUrl}/rs/soap/rating/v4`, {
+      method: 'POST',
       headers: {
-        'Authorization': `Basic ${auth}`,
-        'Accept': 'application/vnd.cpc.ship.service-v3+xml',
-        'Accept-language': 'en-CA'
-      }
+        'Content-Type': 'text/xml; charset=utf-8',
+        'SOAPAction': '',
+        'Accept': 'text/xml'
+      },
+      body: soapBody
     })
 
-    console.log('Canada Post API test response status:', response.status)
+    const responseText = await response.text()
+    console.log('Canada Post SOAP response status:', response.status)
+    console.log('Canada Post SOAP response preview:', responseText.substring(0, 500))
     
     if (response.ok) {
-      const responseText = await response.text()
-      console.log('Canada Post API test successful, response preview:', responseText.substring(0, 200))
-      return { success: true }
+      // Check for SOAP fault
+      if (responseText.includes('soap:Fault') || responseText.includes('soapenv:Fault')) {
+        return { 
+          success: false, 
+          error: `SOAP Fault in response: ${responseText}` 
+        }
+      }
+      
+      // Check for successful DiscoverServices response
+      if (responseText.includes('discover-services-response') && responseText.includes('service')) {
+        return { success: true }
+      } else {
+        return { 
+          success: false, 
+          error: `Unexpected SOAP response: ${responseText}` 
+        }
+      }
     } else {
-      const errorText = await response.text()
-      console.error('Canada Post API test failed:', response.status, errorText)
+      console.error('Canada Post SOAP test failed:', response.status, responseText)
       return { 
         success: false, 
-        error: `API test failed: ${response.status} ${response.statusText} - ${errorText}` 
+        error: `SOAP API test failed: ${response.status} ${response.statusText} - ${responseText}` 
       }
     }
   } catch (error) {
-    console.error('Canada Post connection test error:', error)
+    console.error('Canada Post SOAP connection test error:', error)
     return { 
       success: false, 
-      error: `Connection test failed: ${error.message}` 
+      error: `SOAP connection test failed: ${error.message}` 
     }
   }
 }

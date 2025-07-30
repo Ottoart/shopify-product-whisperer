@@ -1,4 +1,5 @@
 import { CarrierInterface, ShipmentDetails, RateResponse, ShipmentResponse } from './CarrierInterface';
+import { CanadaPostSOAPHelpers, SOAPCredentials } from './CanadaPostSOAPHelpers';
 
 export interface CanadaPostCredentials {
   api_key: string;
@@ -13,12 +14,21 @@ export interface CanadaPostCredentials {
 export class CanadaPostCarrier implements CarrierInterface {
   private credentials: CanadaPostCredentials;
   private baseUrl: string;
+  private soapCredentials: SOAPCredentials;
+
   constructor(credentials: CanadaPostCredentials) {
     this.credentials = credentials;
     // Use production or development endpoint
     this.baseUrl = credentials.is_production 
       ? 'https://soa-gw.canadapost.ca'
       : 'https://ct.soa-gw.canadapost.ca';
+    
+    // Set up SOAP credentials
+    this.soapCredentials = {
+      apiKey: credentials.api_key,
+      apiSecret: credentials.api_secret,
+      isProduction: credentials.is_production
+    };
   }
 
   private getAuthHeader(): string {
@@ -250,22 +260,20 @@ export class CanadaPostCarrier implements CarrierInterface {
 
   async validateCredentials(): Promise<{ valid: boolean; error?: string }> {
     try {
-      // Test with a simple service discovery call as per Canada Post documentation
-      const response = await fetch(`${this.baseUrl}/rs/ship/service`, {
-        method: 'GET',
-        headers: {
-          'Authorization': this.getAuthHeader(),
-          'Accept': 'application/vnd.cpc.ship.service-v3+xml',
-          'Accept-language': 'en-CA'
-        }
-      });
+      // Use SOAP DiscoverServices operation for credential validation
+      const requestBody = CanadaPostSOAPHelpers.buildDiscoverServicesRequest('EN', 'CA');
+      
+      const soapResponse = await CanadaPostSOAPHelpers.makeSOAPCall(
+        'discover-services-request',
+        requestBody,
+        this.soapCredentials
+      );
 
-      if (response.ok) {
+      if (soapResponse.success) {
         return { valid: true };
       } else {
-        const error = await response.text();
-        console.error('Canada Post credential validation failed:', response.status, error);
-        return { valid: false, error: `Invalid credentials: ${response.status} - ${error}` };
+        console.error('Canada Post SOAP credential validation failed:', soapResponse.error);
+        return { valid: false, error: soapResponse.error };
       }
     } catch (error) {
       console.error('Canada Post validation error:', error);

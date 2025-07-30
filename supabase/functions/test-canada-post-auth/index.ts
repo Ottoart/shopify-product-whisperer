@@ -36,40 +36,39 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Test API call to Canada Post
-    const testXmlRequest = `<?xml version="1.0" encoding="utf-8"?>
-<mailing-scenario xmlns="http://www.canadapost.ca/ws/ship/rate-v4">
-  <customer-number>2004381</customer-number>
-  <parcel-characteristics>
-    <weight>0.500</weight>
-    <dimensions>
-      <length>25.40</length>
-      <width>20.32</width>
-      <height>10.16</height>
-    </dimensions>
-  </parcel-characteristics>
-  <origin-postal-code>K1A0A6</origin-postal-code>
-  <destination>
-    <domestic>
-      <postal-code>M5V3A8</postal-code>
-    </domestic>
-  </destination>
-</mailing-scenario>`;
+    // Test with SOAP DiscoverServices call
+    const soapBody = `<?xml version="1.0" encoding="UTF-8"?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" 
+                  xmlns:rat="http://www.canadapost.ca/ws/soap/ship/rate/v4">
+  <soapenv:Header>
+    <wsse:Security xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
+      <wsse:UsernameToken>
+        <wsse:Username>${devApiKey}</wsse:Username>
+        <wsse:Password>${devApiSecret}</wsse:Password>
+      </wsse:UsernameToken>
+    </wsse:Security>
+  </soapenv:Header>
+  <soapenv:Body>
+    <rat:discover-services-request>
+      <rat:locale>EN</rat:locale>
+      <rat:destination-country-code>CA</rat:destination-country-code>
+    </rat:discover-services-request>
+  </soapenv:Body>
+</soapenv:Envelope>`;
 
-    const endpoint = 'https://ct.soa-gw.canadapost.ca/rs/ship/price';
+    const endpoint = 'https://ct.soa-gw.canadapost.ca/rs/soap/rating/v4';
     
-    console.log('🚀 Testing Canada Post API call to:', endpoint);
+    console.log('🚀 Testing Canada Post SOAP API call to:', endpoint);
     console.log('📝 Using credentials:', `${devApiKey?.substring(0, 8)}...`);
     
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
-        'Authorization': `Basic ${btoa(`${devApiKey}:${devApiSecret}`)}`,
-        'Accept': 'application/vnd.cpc.ship.rate-v4+xml',
-        'Content-Type': 'application/vnd.cpc.ship.rate-v4+xml',
-        'Accept-Language': 'en-CA'
+        'Content-Type': 'text/xml; charset=utf-8',
+        'SOAPAction': '',
+        'Accept': 'text/xml'
       },
-      body: testXmlRequest
+      body: soapBody
     });
 
     console.log('📊 Canada Post API Response Status:', response.status);

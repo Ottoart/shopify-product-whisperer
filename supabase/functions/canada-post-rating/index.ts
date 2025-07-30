@@ -210,44 +210,45 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Build XML request according to Canada Post API specification
-    const xmlRequest = buildCanadaPostXMLRequest({
+    // Build SOAP request according to Canada Post API specification
+    const soapRequest = buildCanadaPostSOAPRequest({
       customerNumber,
       weight: weightInKg,
       originPostalCode: (shipFrom.zip || '').replace(/\s+/g, '').toUpperCase(),
       destinationPostalCode: (shipTo.zip || shipTo.postal_code || '').replace(/\s+/g, '').toUpperCase(),
       destinationCountry: shipTo.country,
       dimensions: dimensions,
-      orderItems: order?.items || []
+      orderItems: order?.items || [],
+      apiKey,
+      apiSecret
     });
 
-    console.log('📝 XML Request:', xmlRequest);
+    console.log('📝 SOAP Request:', soapRequest.substring(0, 500) + '...');
 
     // Determine the correct endpoint (dev vs production)
     const isDev = Deno.env.get('ENVIRONMENT') !== 'production';
     const baseUrl = isDev ? 'https://ct.soa-gw.canadapost.ca' : 'https://soa-gw.canadapost.ca';
-    const endpoint = `${baseUrl}/rs/ship/price`;
+    const endpoint = `${baseUrl}/rs/soap/rating/v4`;
 
-    // Make request to Canada Post API
+    // Make SOAP request to Canada Post API
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
-        'Authorization': `Basic ${btoa(`${apiKey}:${apiSecret}`)}`,
-        'Accept': 'application/vnd.cpc.ship.rate-v4+xml',
-        'Content-Type': 'application/vnd.cpc.ship.rate-v4+xml',
-        'Accept-Language': 'en-CA'
+        'Content-Type': 'text/xml; charset=utf-8',
+        'SOAPAction': '',
+        'Accept': 'text/xml'
       },
-      body: xmlRequest
+      body: soapRequest
     });
 
-    console.log('📊 Canada Post API Response Status:', response.status);
+    console.log('📊 Canada Post SOAP API Response Status:', response.status);
 
     if (response.ok) {
       const xmlResponse = await response.text();
-      console.log('📋 Canada Post XML Response:', xmlResponse.substring(0, 500) + '...');
+      console.log('📋 Canada Post SOAP Response:', xmlResponse.substring(0, 500) + '...');
       
-      // Parse the XML response
-      const rates = parseCanadaPostXMLResponse(xmlResponse);
+      // Parse the SOAP response
+      const rates = parseCanadaPostSOAPResponse(xmlResponse);
       console.log('💰 Parsed rates:', rates);
       
       return new Response(JSON.stringify(rates), {
@@ -256,7 +257,7 @@ Deno.serve(async (req) => {
       });
     } else {
       const errorText = await response.text();
-      console.error('❌ Canada Post API Error:', response.status, errorText);
+      console.error('❌ Canada Post SOAP API Error:', response.status, errorText);
       
       // Return fallback rates on API error
       console.log('🔄 Returning fallback rates due to API error');
@@ -278,14 +279,16 @@ Deno.serve(async (req) => {
   }
 });
 
-function buildCanadaPostXMLRequest({
+function buildCanadaPostSOAPRequest({
   customerNumber,
   weight,
   originPostalCode,
   destinationPostalCode,
   destinationCountry,
   dimensions,
-  orderItems = []
+  orderItems = [],
+  apiKey,
+  apiSecret
 }: {
   customerNumber: string;
   weight: number;
@@ -303,14 +306,16 @@ function buildCanadaPostXMLRequest({
     origin_country?: string;
     commodity_code?: string;
   }>;
+  apiKey: string;
+  apiSecret: string;
 }) {
   // Use dimensions if provided (already converted to CM)
   const dimensionsXml = dimensions ? `
-    <dimensions>
-      <length>${dimensions.length.toFixed(2)}</length>
-      <width>${dimensions.width.toFixed(2)}</width>
-      <height>${dimensions.height.toFixed(2)}</height>
-    </dimensions>` : '';
+    <rat:dimensions>
+      <rat:length>${dimensions.length.toFixed(2)}</rat:length>
+      <rat:width>${dimensions.width.toFixed(2)}</rat:width>
+      <rat:height>${dimensions.height.toFixed(2)}</rat:height>
+    </rat:dimensions>` : '';
 
   // Log order items for debugging
   if (orderItems.length > 0) {
@@ -327,42 +332,64 @@ function buildCanadaPostXMLRequest({
   let destinationXml = '';
   if (destinationCountry === 'CA' && destinationPostalCode) {
     destinationXml = `
-      <destination>
-        <domestic>
-          <postal-code>${destinationPostalCode}</postal-code>
-        </domestic>
-      </destination>`;
+      <rat:destination>
+        <rat:domestic>
+          <rat:postal-code>${destinationPostalCode}</rat:postal-code>
+        </rat:domestic>
+      </rat:destination>`;
   } else if (destinationCountry === 'US' && destinationPostalCode) {
     destinationXml = `
-      <destination>
-        <united-states>
-          <zip-code>${destinationPostalCode}</zip-code>
-        </united-states>
-      </destination>`;
+      <rat:destination>
+        <rat:united-states>
+          <rat:zip-code>${destinationPostalCode}</rat:zip-code>
+        </rat:united-states>
+      </rat:destination>`;
   } else {
     destinationXml = `
-      <destination>
-        <international>
-          <country-code>${destinationCountry}</country-code>
-        </international>
-      </destination>`;
+      <rat:destination>
+        <rat:international>
+          <rat:country-code>${destinationCountry}</rat:country-code>
+        </rat:international>
+      </rat:destination>`;
   }
 
-  return `<?xml version="1.0" encoding="utf-8"?>
-<mailing-scenario xmlns="http://www.canadapost.ca/ws/ship/rate-v4">
-  <customer-number>${customerNumber}</customer-number>
-  <parcel-characteristics>
-    <weight>${weight.toFixed(3)}</weight>${dimensionsXml}
-  </parcel-characteristics>
-  <origin-postal-code>${originPostalCode}</origin-postal-code>
-  ${destinationXml}
-</mailing-scenario>`;
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" 
+                  xmlns:rat="http://www.canadapost.ca/ws/soap/ship/rate/v4">
+  <soapenv:Header>
+    <wsse:Security xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
+      <wsse:UsernameToken>
+        <wsse:Username>${apiKey}</wsse:Username>
+        <wsse:Password>${apiSecret}</wsse:Password>
+      </wsse:UsernameToken>
+    </wsse:Security>
+  </soapenv:Header>
+  <soapenv:Body>
+    <rat:get-rates-request>
+      <rat:locale>EN</rat:locale>
+      <rat:scenario>
+        <rat:customer-number>${customerNumber}</rat:customer-number>
+        <rat:parcel-characteristics>
+          <rat:weight>${weight.toFixed(3)}</rat:weight>${dimensionsXml}
+        </rat:parcel-characteristics>
+        <rat:origin-postal-code>${originPostalCode}</rat:origin-postal-code>
+        ${destinationXml}
+      </rat:scenario>
+    </rat:get-rates-request>
+  </soapenv:Body>
+</soapenv:Envelope>`;
 }
 
-function parseCanadaPostXMLResponse(xml: string): CanadaPostRate[] {
+function parseCanadaPostSOAPResponse(xml: string): CanadaPostRate[] {
   const rates: CanadaPostRate[] = [];
   
-  // Parse Canada Post XML response format
+  // Check for SOAP fault first
+  if (xml.includes('soap:Fault') || xml.includes('soapenv:Fault')) {
+    console.error('SOAP Fault in Canada Post response:', xml);
+    return rates;
+  }
+  
+  // Parse Canada Post SOAP XML response format
   // Look for price-quote elements containing service details
   const priceQuoteRegex = /<price-quote>([\s\S]*?)<\/price-quote>/g;
   let quoteMatch;
@@ -374,28 +401,30 @@ function parseCanadaPostXMLResponse(xml: string): CanadaPostRate[] {
     const serviceCodeMatch = quoteContent.match(/<service-code>([^<]+)<\/service-code>/);
     const serviceNameMatch = quoteContent.match(/<service-name>([^<]+)<\/service-name>/);
     const dueMatch = quoteContent.match(/<due>([^<]+)<\/due>/);
+    const transitTimeMatch = quoteContent.match(/<expected-transit-time>([^<]+)<\/expected-transit-time>/);
     
     if (serviceCodeMatch && serviceNameMatch && dueMatch) {
       const serviceCode = serviceCodeMatch[1];
       const serviceName = serviceNameMatch[1];
       const price = parseFloat(dueMatch[1]);
+      const transitDays = transitTimeMatch ? parseInt(transitTimeMatch[1]) : undefined;
       
       let serviceType = 'standard';
-      let estimatedDays = '5-7';
+      let estimatedDays = transitDays ? transitDays.toString() : '5-7';
       
       // Map Canada Post service codes to types and delivery times
       if (serviceCode.includes('DOM.RP') || serviceCode === 'REG') {
         serviceType = 'standard';
-        estimatedDays = '5-7';
+        estimatedDays = transitDays?.toString() || '5-7';
       } else if (serviceCode.includes('DOM.EP') || serviceCode === 'EXP') {
         serviceType = 'expedited';
-        estimatedDays = '2-3';
+        estimatedDays = transitDays?.toString() || '2-3';
       } else if (serviceCode.includes('DOM.XP') || serviceCode === 'XP') {
         serviceType = 'expedited';
-        estimatedDays = '1-2';
+        estimatedDays = transitDays?.toString() || '1-2';
       } else if (serviceCode.includes('DOM.PC') || serviceCode === 'PC') {
         serviceType = 'overnight';
-        estimatedDays = '1';
+        estimatedDays = transitDays?.toString() || '1';
       } else if (serviceCode.includes('USA.EP')) {
         serviceType = 'expedited';
         estimatedDays = '3-5';
