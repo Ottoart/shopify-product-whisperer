@@ -31,29 +31,43 @@ serve(async (req) => {
     const jwt = authHeader.replace('Bearer ', '')
     let user = null;
     
+    console.log('🔍 Processing JWT token (first 20 chars):', jwt.substring(0, 20));
+    
     try {
       // Try standard Supabase auth first
       const { data: { user: authUser }, error: userError } = await supabase.auth.getUser(jwt);
+      console.log('🔑 Supabase auth result:', { authUser: !!authUser, error: userError });
+      
       if (authUser) {
         user = authUser;
+        console.log('✅ Using standard Supabase user:', user.email);
       } else {
-        // Handle admin session JWT (base64 encoded for demo)
+        console.log('⚠️ Standard auth failed, trying admin JWT decode...');
+        // Handle admin session JWT - try to parse as JSON directly
         try {
-          const payload = JSON.parse(atob(jwt));
+          const payload = JSON.parse(jwt);
+          console.log('🔓 Decoded admin JWT payload:', { 
+            sub: payload.sub, 
+            email: payload.email,
+            iss: payload.iss,
+            aud: payload.aud
+          });
+          
           if (payload.sub && payload.email) {
             user = {
               id: payload.sub,
               email: payload.email,
               user_metadata: payload.user_metadata || {}
             };
-            console.log('Using admin session JWT for user:', user.email);
+            console.log('✅ Using admin session JWT for user:', user.email);
           }
         } catch (decodeError) {
-          console.error('Failed to decode admin JWT:', decodeError);
+          console.error('❌ Failed to decode admin JWT:', decodeError);
+          console.log('🔍 JWT content preview:', jwt.substring(0, 100));
         }
       }
     } catch (error) {
-      console.error('Authentication error:', error);
+      console.error('❌ Authentication error:', error);
     }
     
     if (!user) {
