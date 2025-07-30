@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { validateAdminAuth } from '../_shared/admin-auth.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,92 +14,23 @@ serve(async (req) => {
   }
 
   try {
-    // Get the authorization header
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
+    // Validate admin authentication
+    const authHeader = req.headers.get('Authorization');
+    const authResult = await validateAdminAuth(authHeader);
+    
+    if (authResult.error) {
       return new Response(
-        JSON.stringify({ error: 'Missing authorization header' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+        JSON.stringify({ error: authResult.error }),
+        { status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
-
+    
+    const { user } = authResult;
+    
     // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
-
-    // Get user from JWT - handle both standard Supabase JWT and admin JWT
-    const jwt = authHeader.replace('Bearer ', '')
-    let user = null;
-    
-    console.log('🔍 Processing JWT token (first 20 chars):', jwt.substring(0, 20));
-    
-    try {
-      // Try standard Supabase auth first
-      const { data: { user: authUser }, error: userError } = await supabase.auth.getUser(jwt);
-      console.log('🔑 Supabase auth result:', { authUser: !!authUser, error: userError });
-      
-      if (authUser) {
-        user = authUser;
-        console.log('✅ Using standard Supabase user:', user.email);
-      } else {
-        console.log('⚠️ Standard auth failed, trying admin JWT decode...');
-        // Handle admin session JWT - properly decode base64 payload
-        try {
-          // JWT format: header.payload.signature
-          const parts = jwt.split('.');
-          if (parts.length === 3) {
-            // Decode the payload (second part)
-            const payload = JSON.parse(atob(parts[1]));
-            console.log('🔓 Decoded admin JWT payload:', { 
-              sub: payload.sub, 
-              email: payload.email,
-              iss: payload.iss,
-              aud: payload.aud
-            });
-            
-            if (payload.sub && payload.email) {
-              user = {
-                id: payload.sub,
-                email: payload.email,
-                user_metadata: payload.user_metadata || {}
-              };
-              console.log('✅ Using admin session JWT for user:', user.email);
-            }
-          } else {
-            console.error('❌ Invalid JWT format - expected 3 parts separated by dots');
-          }
-        } catch (decodeError) {
-          console.error('❌ Failed to decode admin JWT:', decodeError);
-          console.log('🔍 JWT content preview:', jwt.substring(0, 100));
-        }
-      }
-    } catch (error) {
-      console.error('❌ Authentication error:', error);
-    }
-    
-    if (!user) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid authentication' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // Check if user is admin
-    const { data: adminUser, error: adminError } = await supabase
-      .from('admin_users')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('is_active', true)
-      .single()
-
-    if (adminError || !adminUser || !['master_admin', 'admin'].includes(adminUser.role)) {
-      console.error('Admin authorization error:', adminError)
-      return new Response(
-        JSON.stringify({ error: 'Admin access required' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { api_key, api_secret, customer_number, contract_number, account_type, is_production } = await req.json()
 

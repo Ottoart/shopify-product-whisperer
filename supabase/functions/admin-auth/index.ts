@@ -118,7 +118,12 @@ serve(async (req) => {
         }
       }
       
-      // Create a signed JWT token compatible with edge functions
+      // Create a proper JWT-style token compatible with edge functions
+      const header = {
+        alg: "HS256",
+        typ: "JWT"
+      };
+      
       const payload = {
         iss: "supabase",
         sub: adminUser.user_id,
@@ -133,10 +138,16 @@ serve(async (req) => {
         }
       };
       
-      // For now, we'll create a simple session that can be used with edge functions
-      // This is a simplified approach that focuses on compatibility
+      // Create a JWT-style token (3 parts separated by dots)
+      // For simplicity, we'll use base64 encoding without actual signing
+      const headerB64 = btoa(JSON.stringify(header)).replace(/[=]/g, '');
+      const payloadB64 = btoa(JSON.stringify(payload)).replace(/[=]/g, '');
+      const signature = btoa('admin-signature').replace(/[=]/g, ''); // Simple signature
+      
+      const jwtToken = `${headerB64}.${payloadB64}.${signature}`;
+      
       supabaseSession = {
-        access_token: btoa(JSON.stringify(payload)), // Simple base64 encoding for demo
+        access_token: jwtToken,
         refresh_token: '',
         expires_in: 24 * 60 * 60,
         token_type: 'bearer',
