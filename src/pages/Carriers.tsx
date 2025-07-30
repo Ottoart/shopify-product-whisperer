@@ -1,14 +1,10 @@
-import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, Plus, Settings, CheckCircle, AlertCircle } from "lucide-react";
+import { Building2, Settings, CheckCircle, AlertCircle } from "lucide-react";
 import { UserCarrierManagement } from "@/components/shipping/UserCarrierManagement";
-import { UserCarrierAccountsDialog } from "@/components/shipping/UserCarrierAccountsDialog";
-import { MockDataBadge, LiveDataBadge } from "@/components/ui/mock-data-badge";
+import { MockDataBadge } from "@/components/ui/mock-data-badge";
 
 export default function Carriers() {
-  const [isAddAccountDialogOpen, setIsAddAccountDialogOpen] = useState(false);
 
   return (
     <div className="p-6 space-y-6">
@@ -58,34 +54,17 @@ export default function Carriers() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex justify-between items-center mb-6">
-                <div>
-                  <h3 className="text-lg font-medium">Personal Carrier Integrations</h3>
-                  <p className="text-sm text-muted-foreground">Configure your own carrier API credentials</p>
-                </div>
-                <Button onClick={() => setIsAddAccountDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Carrier Account
-                </Button>
-              </div>
-              
               <MockDataBadge>
                 <div className="text-center py-12 text-muted-foreground">
                   <AlertCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <h3 className="text-lg font-medium mb-2">No Personal Accounts Connected</h3>
-                  <p className="text-sm">Connect your own carrier API accounts to get direct rates and billing.</p>
+                  <h3 className="text-lg font-medium mb-2">Personal Carrier Accounts</h3>
+                  <p className="text-sm">Personal carrier account functionality is currently unavailable. Use PrepFox managed carriers instead.</p>
                 </div>
               </MockDataBadge>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
-
-      {/* User Carrier Accounts Dialog */}
-      <UserCarrierAccountsDialog 
-        isOpen={isAddAccountDialogOpen} 
-        onClose={() => setIsAddAccountDialogOpen(false)} 
-      />
     </div>
   );
 }

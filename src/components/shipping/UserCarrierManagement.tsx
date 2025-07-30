@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Truck, Settings, CheckCircle, AlertCircle, Eye } from "lucide-react";
 import { MockDataBadge, LiveDataBadge } from "@/components/ui/mock-data-badge";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PrepFoxCarrier {
   id: string;
@@ -29,69 +30,62 @@ interface PrepFoxService {
   isUserEnabled: boolean;
 }
 
-// Mock data for PrepFox managed carriers
-const PREPFOX_CARRIERS: PrepFoxCarrier[] = [
-  {
-    id: 'ups-prepfox',
-    name: 'ups',
-    label: 'UPS',
-    description: 'United Parcel Service - PrepFox managed account',
-    isActive: true,
-    isSystemEnabled: true,
-    status: 'active',
-    services: [
-      { id: 'ups-ground', code: '03', name: 'UPS Ground', description: 'Standard ground delivery', estimatedDays: '1-5 business days', isEnabled: true, isUserEnabled: true },
-      { id: 'ups-express', code: '01', name: 'UPS Next Day Air', description: 'Next business day delivery', estimatedDays: '1 business day', isEnabled: true, isUserEnabled: false },
-      { id: 'ups-2day', code: '02', name: 'UPS 2nd Day Air', description: '2 business day delivery', estimatedDays: '2 business days', isEnabled: true, isUserEnabled: true },
-    ]
-  },
-  {
-    id: 'fedex-prepfox',
-    name: 'fedex',
-    label: 'FedEx',
-    description: 'FedEx Corporation - PrepFox managed account',
-    isActive: false,
-    isSystemEnabled: false,
-    status: 'inactive',
-    services: [
-      { id: 'fedex-ground', code: 'FEDEX_GROUND', name: 'FedEx Ground', description: 'Ground delivery service', estimatedDays: '1-5 business days', isEnabled: false, isUserEnabled: false },
-      { id: 'fedex-overnight', code: 'FEDEX_OVERNIGHT', name: 'FedEx Overnight', description: 'Next business day delivery', estimatedDays: '1 business day', isEnabled: false, isUserEnabled: false },
-    ]
-  },
-  {
-    id: 'canadapost-prepfox',
-    name: 'canada_post',
-    label: 'Canada Post',
-    description: 'Canada Post Corporation - PrepFox managed account',
-    isActive: true,
-    isSystemEnabled: true,
-    status: 'active',
-    services: [
-      { id: 'cp-regular', code: 'DOM.RP', name: 'Regular Parcel', description: 'Standard parcel delivery within Canada', estimatedDays: '2-9 business days', isEnabled: true, isUserEnabled: true },
-      { id: 'cp-expedited', code: 'DOM.EP', name: 'Expedited Parcel', description: 'Faster delivery within Canada', estimatedDays: '1-7 business days', isEnabled: true, isUserEnabled: false },
-      { id: 'cp-xpresspost', code: 'DOM.XP', name: 'Xpresspost', description: 'Guaranteed delivery time', estimatedDays: '1-2 business days', isEnabled: true, isUserEnabled: true },
-    ]
-  },
-  {
-    id: 'usps-prepfox',
-    name: 'usps',
-    label: 'USPS',
-    description: 'United States Postal Service - PrepFox managed account',
-    isActive: true,
-    isSystemEnabled: true,
-    status: 'error',
-    services: [
-      { id: 'usps-ground', code: 'USPS_GROUND_ADVANTAGE', name: 'USPS Ground Advantage', description: 'Affordable ground delivery', estimatedDays: '2-5 business days', isEnabled: false, isUserEnabled: false },
-      { id: 'usps-priority', code: 'PRIORITY_MAIL', name: 'Priority Mail', description: 'Fast, reliable service', estimatedDays: '1-3 business days', isEnabled: false, isUserEnabled: false },
-    ]
-  }
+// System carriers that can be configured
+const SYSTEM_CARRIERS = [
+  { name: 'ups', label: 'UPS', description: 'United Parcel Service - PrepFox managed account' },
+  { name: 'canada_post', label: 'Canada Post', description: 'Canada Post Corporation - PrepFox managed account' },
+  { name: 'fedex', label: 'FedEx', description: 'FedEx Corporation - PrepFox managed account' },
+  { name: 'usps', label: 'USPS', description: 'United States Postal Service - PrepFox managed account' },
+  { name: 'dhl', label: 'DHL', description: 'DHL Express - PrepFox managed account' },
+  { name: 'purolator', label: 'Purolator', description: 'Purolator Inc. - PrepFox managed account' }
 ];
 
 export function UserCarrierManagement() {
-  const [carriers, setCarriers] = useState<PrepFoxCarrier[]>(PREPFOX_CARRIERS);
-  const [loading, setLoading] = useState(false);
+  const [carriers, setCarriers] = useState<PrepFoxCarrier[]>([]);
+  const [loading, setLoading] = useState(true);
   const [expandedCarrier, setExpandedCarrier] = useState<string | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    loadSystemCarriers();
+  }, []);
+
+  const loadSystemCarriers = async () => {
+    try {
+      // Check which carriers are configured in the system
+      const { data: configs, error } = await supabase
+        .from('carrier_configurations')
+        .select('*')
+        .is('user_id', null); // System carriers have null user_id
+
+      const systemCarriers: PrepFoxCarrier[] = SYSTEM_CARRIERS.map(carrier => {
+        const config = configs?.find(c => c.carrier_name === carrier.name);
+        const isConfigured = !!config && config.is_active;
+        
+        return {
+          id: `${carrier.name}-prepfox`,
+          name: carrier.name,
+          label: carrier.label,
+          description: carrier.description,
+          isActive: false,
+          isSystemEnabled: isConfigured,
+          status: isConfigured ? 'active' : 'inactive',
+          services: []
+        };
+      });
+
+      setCarriers(systemCarriers);
+    } catch (error) {
+      console.error('Failed to load system carriers:', error);
+      toast({
+        title: "❌ Failed to Load Carriers",
+        description: "Could not load system carrier configurations",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleToggleCarrier = async (carrierId: string, enabled: boolean) => {
     setLoading(true);
@@ -163,6 +157,16 @@ export function UserCarrierManagement() {
     }
     return <Badge variant="secondary">Inactive</Badge>;
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        {[1, 2, 3].map((i) => (
+          <Card key={i} className="h-20 animate-pulse bg-muted/50" />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -240,7 +244,8 @@ export function UserCarrierManagement() {
               <MockDataBadge>
                 <div className="text-center py-4 text-muted-foreground">
                   <AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">This carrier is not available. Contact PrepFox support for activation.</p>
+                  <h4 className="font-medium mb-1">Coming Soon</h4>
+                  <p className="text-sm">This carrier is being configured by PrepFox and will be available soon.</p>
                 </div>
               </MockDataBadge>
             </CardContent>

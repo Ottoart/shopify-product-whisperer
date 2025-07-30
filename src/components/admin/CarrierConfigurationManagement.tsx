@@ -74,12 +74,9 @@ export function CarrierConfigurationManagement() {
       const config = getCarrierConfig();
       
       // For admin, we're configuring system-wide PrepFox carriers
-      const { data, error } = await supabase.functions.invoke('admin-configure-carrier', {
-        body: {
-          carrier_name: selectedCarrier,
-          api_credentials: config,
-          is_system_carrier: true
-        }
+      const functionName = selectedCarrier === 'canada_post' ? 'canada-post-setup' : 'setup-ups-credentials';
+      const { data, error } = await supabase.functions.invoke(functionName, {
+        body: config
       });
 
       if (error) throw error;
@@ -106,8 +103,9 @@ export function CarrierConfigurationManagement() {
     setTestingCarrier(carrierName);
     
     try {
-      const { data, error } = await supabase.functions.invoke('test-system-carrier', {
-        body: { carrier_name: carrierName }
+      const functionName = carrierName === 'canada_post' ? 'test-canada-post-auth' : 'test-ups-auth';
+      const { data, error } = await supabase.functions.invoke(functionName, {
+        body: {}
       });
 
       if (error) throw error;
