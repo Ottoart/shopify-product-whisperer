@@ -132,8 +132,11 @@ export function CarrierConfigurationManagement() {
       const functionName = selectedCarrier === 'canada_post' ? 'admin-configure-canada-post' : 'setup-ups-credentials';
       
       // Get admin session for authentication
-      const adminSession = JSON.parse(localStorage.getItem('adminSession') || '{}');
-      if (!adminSession.token) {
+      const adminSession = JSON.parse(localStorage.getItem('admin_session') || '{}');
+      const token = adminSession.supabaseSession?.access_token;
+      
+      if (!token) {
+        console.error('❌ No admin token found. Admin session:', adminSession);
         toast({
           title: "❌ Authentication Required",
           description: "Admin authentication required. Please log in again.",
@@ -147,7 +150,7 @@ export function CarrierConfigurationManagement() {
       const { data, error } = await supabase.functions.invoke(functionName, {
         body: requestBody,
         headers: {
-          Authorization: `Bearer ${adminSession.token}`
+          Authorization: `Bearer ${token}`
         }
       });
 
