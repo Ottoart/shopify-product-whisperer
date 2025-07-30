@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,6 +49,45 @@ export function CarrierConfigurationManagement() {
   });
 
   const { toast } = useToast();
+
+  // Load existing configurations on mount
+  useEffect(() => {
+    loadCarrierConfigurations();
+  }, []);
+
+  const loadCarrierConfigurations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('carrier_configurations')
+        .select('*')
+        .eq('settings->>system_carrier', 'true');
+
+      if (error) {
+        console.error('Error loading carrier configurations:', error);
+        return;
+      }
+
+      // Update form states with saved configurations
+      if (data) {
+        data.forEach((config: any) => {
+          if (config.carrier_name === 'canada_post' && config.api_credentials) {
+            setCanadaPostConfig({
+              api_key: config.api_credentials.api_key || '',
+              api_secret: config.api_credentials.api_secret || '',
+              customer_number: config.api_credentials.customer_number || '',
+              contract_number: config.api_credentials.contract_number || '',
+              account_type: config.api_credentials.account_type || 'commercial',
+              is_production: config.api_credentials.is_production || false
+            });
+          }
+          // Add UPS config loading when implemented
+        });
+        setCarrierConfigs(data);
+      }
+    } catch (error) {
+      console.error('Error in loadCarrierConfigurations:', error);
+    }
+  };
 
   const getCarrierConfig = () => {
     switch (selectedCarrier) {
@@ -102,6 +141,8 @@ export function CarrierConfigurationManagement() {
         description: `${selectedCarrier.toUpperCase()} has been configured for all users`,
       });
 
+      // Reload configurations to show updated data
+      await loadCarrierConfigurations();
       setSelectedCarrier('');
     } catch (error) {
       console.error('Error configuring system carrier:', error);
@@ -353,8 +394,8 @@ export function CarrierConfigurationManagement() {
                         <Truck className="h-4 w-4" />
                         <span className="font-medium">{carrier.label}</span>
                       </div>
-                      <Badge variant="outline" className="text-xs">
-                        {Math.random() > 0.5 ? 'Active' : 'Inactive'}
+                     <Badge variant="outline" className="text-xs">
+                        {carrierConfigs.find(c => c.carrier_name === carrier.value) ? 'Configured' : 'Not Configured'}
                       </Badge>
                     </div>
                     <p className="text-xs text-muted-foreground mb-3">{carrier.description}</p>

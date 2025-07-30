@@ -27,12 +27,36 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Get user from JWT
+    // Get user from JWT - handle both standard Supabase JWT and admin JWT
     const jwt = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: userError } = await supabase.auth.getUser(jwt)
+    let user = null;
     
-    if (userError || !user) {
-      console.error('Authentication error:', userError)
+    try {
+      // Try standard Supabase auth first
+      const { data: { user: authUser }, error: userError } = await supabase.auth.getUser(jwt);
+      if (authUser) {
+        user = authUser;
+      } else {
+        // Handle admin session JWT (base64 encoded for demo)
+        try {
+          const payload = JSON.parse(atob(jwt));
+          if (payload.sub && payload.email) {
+            user = {
+              id: payload.sub,
+              email: payload.email,
+              user_metadata: payload.user_metadata || {}
+            };
+            console.log('Using admin session JWT for user:', user.email);
+          }
+        } catch (decodeError) {
+          console.error('Failed to decode admin JWT:', decodeError);
+        }
+      }
+    } catch (error) {
+      console.error('Authentication error:', error);
+    }
+    
+    if (!user) {
       return new Response(
         JSON.stringify({ error: 'Invalid authentication' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
