@@ -102,11 +102,12 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
     enable_user_order_number: false
   });
   const [canadaPostConfig, setCanadaPostConfig] = useState({
-    api_username: '',
-    api_password: '',
+    api_key: '',
+    api_secret: '',
     customer_number: '',
-    contact_id: '',
-    environment: 'development'
+    contract_number: '',
+    account_type: 'commercial',
+    is_production: false
   });
   const [sendleConfig, setSendleConfig] = useState({
     api_key: '',
@@ -153,7 +154,7 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
       enable_carbon_neutral: false, enable_ground_freight: false,
       enable_additional_services: false, enable_user_order_number: false
     });
-    setCanadaPostConfig({ api_username: '', api_password: '', customer_number: '', contact_id: '', environment: 'development' });
+    setCanadaPostConfig({ api_key: '', api_secret: '', customer_number: '', contract_number: '', account_type: 'commercial', is_production: false });
     setSendleConfig({ api_key: '', api_secret: '', sandbox: false });
     setShipstationConfig({ api_key: '', api_secret: '', store_id: '' });
   };
@@ -168,8 +169,8 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
         if (!config.account_number) errors.push('Account Number is required');
         break;
       case 'canada_post':
-        if (!config.api_username) errors.push('API Username is required');
-        if (!config.api_password) errors.push('API Password is required');
+        if (!config.api_key) errors.push('API Key is required');
+        if (!config.api_secret) errors.push('API Secret is required');
         if (!config.customer_number) errors.push('Customer Number is required');
         break;
       case 'shipstation':
@@ -225,12 +226,26 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
 
         setEditingCarrier(null);
       } else {
-        // Add new carrier
-        await addCarrierConfiguration({
-          carrier_name: selectedCarrier,
-          api_credentials: config,
-          settings: {}
-        });
+        // Add new carrier - special handling for Canada Post
+        if (selectedCarrier === 'canada_post') {
+          const { data, error } = await supabase.functions.invoke('canada-post-setup', {
+            body: config
+          });
+          
+          if (error) {
+            throw new Error(error.message);
+          }
+          
+          if (!data.success) {
+            throw new Error(data.error || 'Failed to configure Canada Post');
+          }
+        } else {
+          await addCarrierConfiguration({
+            carrier_name: selectedCarrier,
+            api_credentials: config,
+            settings: {}
+          });
+        }
 
         toast({
           title: "✅ Added Successfully", 
@@ -288,7 +303,7 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
       case 'ups':
         return ['client_id', 'client_secret', 'account_number'];
       case 'canada_post':
-        return ['api_username', 'api_password', 'customer_number'];
+        return ['api_key', 'api_secret', 'customer_number', 'contract_number'];
       case 'sendle':
         return ['api_key', 'api_secret'];
       case 'shipstation':
@@ -302,10 +317,10 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
     switch (field) {
       case 'api_key': return 'API Key';
       case 'api_secret': return 'API Secret';
-      case 'api_username': return 'API Username';
-      case 'api_password': return 'API Password';
+      case 'api_key': return 'API Key';
+      case 'api_secret': return 'API Secret';
       case 'customer_number': return 'Customer Number';
-      case 'contact_id': return 'Contact ID';
+      case 'contract_number': return 'Contract Number';
       case 'account_number': return 'Account Number';
       case 'access_key': return 'Access Key';
       case 'password': return 'Password';
@@ -398,11 +413,12 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
     } else if (carrier.carrier_name === 'canada_post') {
       const creds = carrier.api_credentials as any;
       setCanadaPostConfig({
-        api_username: creds.api_username || '',
-        api_password: creds.api_password || '',
+        api_key: creds.api_key || '',
+        api_secret: creds.api_secret || '',
         customer_number: creds.customer_number || '',
-        contact_id: creds.contact_id || '',
-        environment: creds.environment || 'development'
+        contract_number: creds.contract_number || '',
+        account_type: creds.account_type || 'commercial',
+        is_production: creds.is_production || false
       });
     }
   };
@@ -656,41 +672,71 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
                   </div>
                   
                   <div>
-                    <Label htmlFor="cp_username">API Username</Label>
+                    <Label htmlFor="cp_api_key">API Key</Label>
                     <Input
-                      id="cp_username"
-                      value={canadaPostConfig.api_username}
-                      onChange={(e) => setCanadaPostConfig(prev => ({ ...prev, api_username: e.target.value }))}
-                      placeholder="Your Canada Post API username"
+                      id="cp_api_key"
+                      value={canadaPostConfig.api_key}
+                      onChange={(e) => setCanadaPostConfig(prev => ({ ...prev, api_key: e.target.value }))}
+                      placeholder="Your Canada Post API key"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="cp_password">API Password</Label>
+                    <Label htmlFor="cp_api_secret">API Secret</Label>
                     <Input
-                      id="cp_password"
+                      id="cp_api_secret"
                       type="password"
-                      value={canadaPostConfig.api_password}
-                      onChange={(e) => setCanadaPostConfig(prev => ({ ...prev, api_password: e.target.value }))}
-                      placeholder="Your Canada Post API password"
+                      value={canadaPostConfig.api_secret}
+                      onChange={(e) => setCanadaPostConfig(prev => ({ ...prev, api_secret: e.target.value }))}
+                      placeholder="Your Canada Post API secret"
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="cp_customer_number">Customer Number</Label>
-                    <Input
-                      id="cp_customer_number"
-                      value={canadaPostConfig.customer_number}
-                      onChange={(e) => setCanadaPostConfig(prev => ({ ...prev, customer_number: e.target.value }))}
-                      placeholder="Your customer number"
-                    />
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="cp_customer_number">Customer Number</Label>
+                      <Input
+                        id="cp_customer_number"
+                        value={canadaPostConfig.customer_number}
+                        onChange={(e) => setCanadaPostConfig(prev => ({ ...prev, customer_number: e.target.value }))}
+                        placeholder="0008126390"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="cp_contract_number">Contract Number</Label>
+                      <Input
+                        id="cp_contract_number"
+                        value={canadaPostConfig.contract_number}
+                        onChange={(e) => setCanadaPostConfig(prev => ({ ...prev, contract_number: e.target.value }))}
+                        placeholder="0043880018"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="cp_contact_id">Contact ID</Label>
-                    <Input
-                      id="cp_contact_id"
-                      value={canadaPostConfig.contact_id}
-                      onChange={(e) => setCanadaPostConfig(prev => ({ ...prev, contact_id: e.target.value }))}
-                      placeholder="Your contact ID"
-                    />
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="cp_account_type">Account Type</Label>
+                      <Select value={canadaPostConfig.account_type} onValueChange={(value) => setCanadaPostConfig(prev => ({ ...prev, account_type: value }))}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="commercial">Commercial</SelectItem>
+                          <SelectItem value="individual">Individual</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="cp_environment">Environment</Label>
+                      <Select value={canadaPostConfig.is_production ? 'production' : 'development'} onValueChange={(value) => setCanadaPostConfig(prev => ({ ...prev, is_production: value === 'production' }))}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="development">Development (Test)</SelectItem>
+                          <SelectItem value="production">Production (Live)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
 
                    <div className="flex gap-2">

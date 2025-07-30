@@ -39,23 +39,23 @@ serve(async (req) => {
     // Parse request body
     const body = await req.json();
     const { 
-      apiKey, 
-      apiSecret, 
-      customerNumber, 
-      contractNumber, 
-      accountType = 'commercial',
-      isProduction = false 
+      api_key, 
+      api_secret, 
+      customer_number, 
+      contract_number, 
+      account_type = 'commercial',
+      is_production = false 
     } = body;
 
-    if (!apiKey || !apiSecret || !customerNumber) {
+    if (!api_key || !api_secret || !customer_number) {
       return new Response(
-        JSON.stringify({ error: 'Missing required credentials: apiKey, apiSecret, and customerNumber are required' }),
+        JSON.stringify({ error: 'Missing required credentials: api_key, api_secret, and customer_number are required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Test the credentials by making a request to Canada Post API
-    const testResponse = await testCanadaPostCredentials(apiKey, apiSecret, customerNumber, isProduction);
+    const testResponse = await testCanadaPostCredentials(api_key, api_secret, customer_number, is_production);
     
     if (!testResponse.success) {
       return new Response(
@@ -66,13 +66,13 @@ serve(async (req) => {
 
     // Store the configuration
     const credentialsConfig = {
-      api_key: apiKey,
-      api_secret: apiSecret,
-      customer_number: customerNumber,
-      contract_number: contractNumber || '',
-      account_type: accountType,
-      is_production: isProduction,
-      environment: isProduction ? 'production' : 'development',
+      api_key,
+      api_secret,
+      customer_number,
+      contract_number: contract_number || '',
+      account_type,
+      is_production,
+      environment: is_production ? 'production' : 'development',
       authorized_at: new Date().toISOString()
     };
 
@@ -138,7 +138,7 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true,
         message: 'Canada Post configuration saved successfully',
-        environment: isProduction ? 'production' : 'development'
+        environment: is_production ? 'production' : 'development'
       }),
       { 
         status: 200, 
