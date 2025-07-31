@@ -138,6 +138,10 @@ const PublicApp = () => {
         <Route path="/repricing-landing" element={<RepricingLanding />} />
         <Route path="/repricing/features" element={<RepricingFeatures />} />
         <Route path="/repricing/pricing" element={<RepricingPricing />} />
+        <Route path="/fulfillment-landing" element={<FulfillmentLanding />} />
+        <Route path="/fulfillment-features" element={<FulfillmentFeatures />} />
+        <Route path="/fulfillment-pricing" element={<FulfillmentPricing />} />
+        <Route path="/product-management-landing" element={<ProductManagementLanding />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/customer-tracking" element={<CustomerTracking />} />
