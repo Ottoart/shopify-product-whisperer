@@ -94,24 +94,23 @@ export const EnhancedAdminDashboard = () => {
     pendingActions: 5
   });
   const { toast } = useToast();
-  const { isAuthenticated, isAdmin, adminSession, isLoading: authLoading, sessionStable } = useAdminAuth();
+  const { isAuthenticated, isAdmin, isLoading: authLoading } = useAdminAuth();
 
   useEffect(() => {
     console.log('Dashboard useEffect triggered:', {
       isAuthenticated,
       isAdmin,
-      hasAdminSession: !!adminSession,
       authLoading
     });
     
-    if (isAuthenticated && isAdmin && adminSession && !authLoading) {
+    if (isAuthenticated && isAdmin && !authLoading) {
       console.log('✅ All conditions met, loading dashboard data');
       loadDashboardData();
     } else if (!authLoading) {
       console.log('❌ Conditions not met, setting loading to false');
       setLoading(false);
     }
-  }, [isAuthenticated, isAdmin, adminSession, authLoading]);
+  }, [isAuthenticated, isAdmin, authLoading]);
 
 
 

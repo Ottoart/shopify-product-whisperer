@@ -119,11 +119,8 @@ serve(async (req) => {
     
     const jwtToken = `${headerB64}.${payloadB64}.${signature}`;
 
-    // Create a proper Supabase user session for edge function compatibility
-    let supabaseSession = null;
-    
+    // Try to get or create a Supabase user for this admin to generate a real session
     try {
-      // Try to get or create a Supabase user for this admin
       const { data: existingUser, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(adminUser.user_id);
       
       if (getUserError && getUserError.message?.includes('User not found')) {
@@ -145,24 +142,11 @@ serve(async (req) => {
           console.log("Created Supabase user for admin:", email);
         }
       }
-      
-      supabaseSession = {
-        access_token: jwtToken,
-        refresh_token: '',
-        expires_in: 24 * 60 * 60,
-        token_type: 'bearer',
-        user: {
-          id: adminUser.user_id,
-          email: email,
-          role: adminUser.role
-        }
-      };
-      console.log("Generated compatible session for admin");
     } catch (error) {
-      console.error("Error setting up Supabase session:", error);
+      console.error("Error setting up Supabase user:", error);
     }
 
-    // Create admin session with Supabase compatibility
+    // Create simple admin session
     const adminSession = {
       user: {
         id: adminUser.user_id,
@@ -172,18 +156,7 @@ serve(async (req) => {
         display_name: "Admin"
       },
       expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
-      session_id: crypto.randomUUID(),
-      supabase_session: supabaseSession || {
-        access_token: jwtToken,
-        refresh_token: '',
-        expires_in: 24 * 60 * 60,
-        token_type: 'bearer',
-        user: {
-          id: adminUser.user_id,
-          email: email,
-          role: adminUser.role
-        }
-      }
+      session_id: crypto.randomUUID()
     };
 
     console.log("Admin login successful for:", email);

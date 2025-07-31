@@ -11,17 +11,6 @@ interface AdminSession {
   };
   expires_at: string;
   session_id: string;
-  supabase_session?: {
-    access_token: string;
-    refresh_token: string;
-    expires_in: number;
-    token_type: string;
-    user: {
-      id: string;
-      email: string;
-      role: string;
-    };
-  } | null;
 }
 
 const ADMIN_SESSION_KEY = 'admin_session';
@@ -29,7 +18,6 @@ const ADMIN_SESSION_KEY = 'admin_session';
 export function useAdminAuth() {
   const [adminSession, setAdminSession] = useState<AdminSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [sessionStable, setSessionStable] = useState(false);
 
   const validateSession = (session: AdminSession): boolean => {
     if (!session || !session.user || !session.expires_at) {
@@ -38,30 +26,13 @@ export function useAdminAuth() {
     return new Date(session.expires_at) > new Date();
   };
 
-  const loadSession = async () => {
+  const loadSession = () => {
     try {
       const storedSession = localStorage.getItem(ADMIN_SESSION_KEY);
       if (storedSession) {
         const session = JSON.parse(storedSession);
         if (validateSession(session)) {
-          // Restore Supabase session if available
-          if (session.supabase_session?.access_token) {
-            try {
-              await supabase.auth.setSession({
-                access_token: session.supabase_session.access_token,
-                refresh_token: session.supabase_session.refresh_token
-              });
-              console.log('✅ Restored Supabase session for edge function calls');
-              console.log('🔑 Access token (first 20 chars):', session.supabase_session.access_token.substring(0, 20));
-            } catch (error) {
-              console.warn('Failed to restore Supabase session:', error);
-            }
-          } else {
-            console.warn('⚠️ No supabase_session.access_token found in stored session');
-          }
-          
           setAdminSession(session);
-          setSessionStable(true);
           return true;
         } else {
           localStorage.removeItem(ADMIN_SESSION_KEY);
@@ -75,35 +46,26 @@ export function useAdminAuth() {
   };
 
   useEffect(() => {
-    const initSession = async () => {
-      const sessionLoaded = await loadSession();
-      setIsLoading(false);
-      if (sessionLoaded) {
-        console.log('✅ Admin session loaded from localStorage');
-      } else {
-        console.log('❌ No valid admin session found');
-      }
-    };
+    const sessionLoaded = loadSession();
+    setIsLoading(false);
     
-    initSession();
+    if (sessionLoaded) {
+      console.log('✅ Admin session loaded');
+    } else {
+      console.log('❌ No valid admin session found');
+    }
   }, []);
 
-  // Simplified session validation - only check every 5 minutes and be less aggressive
+  // Simple session validation check every 5 minutes
   useEffect(() => {
     const interval = setInterval(() => {
       const currentSession = localStorage.getItem(ADMIN_SESSION_KEY);
       if (currentSession) {
         try {
           const session = JSON.parse(currentSession);
-          // Only clear if session is truly expired (with 1 hour buffer)
-          const expiryTime = new Date(session.expires_at);
-          const now = new Date();
-          const oneHourBuffer = 60 * 60 * 1000;
-          
-          if (expiryTime.getTime() < (now.getTime() - oneHourBuffer)) {
-            console.warn('Admin session truly expired, clearing...');
+          if (!validateSession(session)) {
+            console.warn('Admin session expired, clearing...');
             setAdminSession(null);
-            setSessionStable(false);
             localStorage.removeItem(ADMIN_SESSION_KEY);
           }
         } catch (error) {
@@ -111,7 +73,7 @@ export function useAdminAuth() {
           localStorage.removeItem(ADMIN_SESSION_KEY);
         }
       }
-    }, 300000); // Check every 5 minutes instead of 30 seconds
+    }, 300000); // Check every 5 minutes
 
     return () => clearInterval(interval);
   }, []);
@@ -132,26 +94,12 @@ export function useAdminAuth() {
         throw new Error('Invalid session received from server');
       }
       
-      // Set the Supabase session if available for edge function compatibility
-      if (session.supabase_session?.access_token) {
-        await supabase.auth.setSession({
-          access_token: session.supabase_session.access_token,
-          refresh_token: session.supabase_session.refresh_token
-        });
-        console.log('✅ Supabase session set for edge function calls');
-        console.log('🔑 Access token (first 20 chars):', session.supabase_session.access_token.substring(0, 20));
-      } else {
-        console.error('❌ No access token in supabase_session:', session.supabase_session);
-      }
-      
       setAdminSession(session);
-      setSessionStable(true);
       localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(session));
       
       return { success: true };
     } catch (error) {
       console.error('Admin sign in error:', error);
-      setSessionStable(false);
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Authentication failed' 
@@ -162,20 +110,12 @@ export function useAdminAuth() {
   };
 
   const signOut = async () => {
-    try {
-      await supabase.auth.signOut();
-    } catch (error) {
-      console.warn('Failed to sign out of Supabase auth:', error);
-    }
-    
     setAdminSession(null);
-    setSessionStable(false);
     localStorage.removeItem(ADMIN_SESSION_KEY);
   };
 
-  // Reactive computed values that will trigger re-renders
-  // Simplified authentication check - session stable + valid session + not expired
-  const isAuthenticated = sessionStable && adminSession !== null && 
+  // Simple authentication checks
+  const isAuthenticated = !isLoading && adminSession !== null && 
     (adminSession ? new Date(adminSession.expires_at) > new Date() : false);
 
   const hasRole = (role: string) => {
@@ -187,11 +127,9 @@ export function useAdminAuth() {
   const isAdmin = adminSession?.user.role && 
     ['master_admin', 'admin', 'manager'].includes(adminSession.user.role);
 
-
   return {
     adminSession,
     isLoading,
-    sessionStable,
     signIn,
     signOut,
     isAuthenticated,

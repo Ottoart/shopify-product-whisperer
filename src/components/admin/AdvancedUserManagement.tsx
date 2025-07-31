@@ -73,56 +73,28 @@ export const AdvancedUserManagement = () => {
   const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
   const [retryCount, setRetryCount] = useState(0);
   const { toast } = useToast();
-  const { adminSession, sessionStable, isLoading: authLoading } = useAdminAuth();
+  const { isAuthenticated, isAdmin, isLoading: authLoading } = useAdminAuth();
 
   useEffect(() => {
-    console.log('🎯 useEffect triggered:', { authLoading, sessionStable, adminSession: !!adminSession });
+    console.log('🎯 useEffect triggered:', { authLoading, isAuthenticated, isAdmin });
     
-    if (!authLoading && adminSession) {
-      if (sessionStable) {
-        console.log('🟢 Session is stable, loading data immediately');
-        loadUsersData();
-      } else {
-        console.log('🟡 Session exists but not stable, using fallback loading');
-        // Multiple fallback attempts
-        const timeout1 = setTimeout(() => {
-          if (adminSession) {
-            console.log('⏰ First fallback attempt (1s)');
-            loadUsersData(true);
-          }
-        }, 1000);
-        
-        const timeout2 = setTimeout(() => {
-          if (adminSession && users.length === 0 && !loading) {
-            console.log('⏰ Second fallback attempt (3s)');
-            loadUsersData(true);
-          }
-        }, 3000);
-        
-        return () => {
-          clearTimeout(timeout1);
-          clearTimeout(timeout2);
-        };
-      }
+    if (!authLoading && isAuthenticated && isAdmin) {
+      console.log('🟢 Authentication ready, loading data');
+      loadUsersData();
     } else {
-      console.log('🔴 Not ready to load:', { authLoading, hasSession: !!adminSession });
+      console.log('🔴 Not ready to load:', { authLoading, isAuthenticated, isAdmin });
     }
-  }, [authLoading, sessionStable, adminSession]);
+  }, [authLoading, isAuthenticated, isAdmin]);
 
   const loadUsersData = async (retry = false) => {
     try {
       setLoading(true);
-      console.log('🎯 loadUsersData called:', { 
-        sessionStable, 
-        hasSession: !!adminSession, 
-        sessionId: adminSession?.session_id,
-        retry 
-      });
+      console.log('🎯 loadUsersData called:', { isAuthenticated, isAdmin, retry });
       
-      if (!adminSession || !adminSession.session_id) {
-        console.error('❌ No admin session or session_id found');
+      if (!isAuthenticated || !isAdmin) {
+        console.error('❌ Not authenticated as admin');
         toast({
-          title: "Session Error",
+          title: "Authentication Error",
           description: "Admin session is not available. Please sign in again.",
           variant: "destructive",
         });
@@ -130,7 +102,7 @@ export const AdvancedUserManagement = () => {
         return;
       }
 
-      console.log('🚀 Making API call to admin-data for all_users with session:', adminSession.user.email);
+      console.log('🚀 Making API call to admin-data for all_users');
 
       // Add timeout promise to catch hanging requests
       const timeoutPromise = new Promise((_, reject) => 
@@ -140,8 +112,7 @@ export const AdvancedUserManagement = () => {
       // Load all users using admin endpoint with timeout
       const apiCall = supabase.functions.invoke('admin-data', {
         body: { 
-          data_type: 'all_users',
-          session_token: adminSession.session_id 
+          data_type: 'all_users'
         }
       });
 
@@ -178,8 +149,7 @@ export const AdvancedUserManagement = () => {
       
       const adminApiCall = supabase.functions.invoke('admin-data', {
         body: { 
-          data_type: 'admin_users',
-          session_token: adminSession.session_id 
+          data_type: 'admin_users'
         }
       });
 
@@ -450,10 +420,10 @@ export const AdvancedUserManagement = () => {
                 </Button>
               </div>
             </div>
-          ) : !adminSession ? (
+          ) : !isAuthenticated || !isAdmin ? (
             <div className="flex items-center justify-center h-32">
               <div className="text-center">
-                <p className="text-muted-foreground mb-4">Admin session not available. Please sign in again.</p>
+                <p className="text-muted-foreground mb-4">Admin authentication required. Please sign in again.</p>
                 <Button 
                   variant="outline" 
                   size="sm" 
