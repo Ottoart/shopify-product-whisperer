@@ -50,7 +50,7 @@ export function CarrierConfigurationManagement() {
   });
 
   const { toast } = useToast();
-  const { adminSession, isAuthenticated, sessionStable } = useAdminAuth();
+  const { adminSession, isAuthenticated, sessionStable, isAdmin } = useAdminAuth();
 
   // Load existing configurations on mount
   useEffect(() => {
@@ -133,9 +133,23 @@ export function CarrierConfigurationManagement() {
       // For admin, we're configuring system-wide PrepFox carriers
       const functionName = selectedCarrier === 'canada_post' ? 'admin-configure-canada-post' : 'setup-ups-credentials';
       
-      // Check admin authentication
-      if (!isAuthenticated || !adminSession) {
-        console.error('❌ Authentication required');
+      // Check admin authentication with debugging
+      console.log('🔍 Auth State:', {
+        isAuthenticated,
+        sessionStable,
+        hasAdminSession: !!adminSession,
+        userRole: adminSession?.user?.role,
+        sessionExpiry: adminSession?.expires_at,
+        hasSupabaseSession: !!adminSession?.supabase_session,
+        hasAccessToken: !!adminSession?.supabase_session?.access_token
+      });
+
+      if (!isAuthenticated || !adminSession || !isAdmin) {
+        console.error('❌ Authentication required - not admin or not authenticated');
+        if (window.location.pathname !== '/admin') {
+          window.location.href = '/admin';
+          return;
+        }
         toast({
           title: "❌ Authentication Required",
           description: "Please log in as an admin first.",
@@ -144,8 +158,22 @@ export function CarrierConfigurationManagement() {
         return;
       }
       
-      // Get token with fallback to localStorage
+      // Get token with fallback to localStorage and session recovery
       let token = adminSession?.supabase_session?.access_token;
+      
+      // If no token, try to restore Supabase session
+      if (!token) {
+        console.warn('⚠️ No access token found, attempting session recovery...');
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.access_token) {
+            token = session.access_token;
+            console.log('✅ Session recovered from Supabase');
+          }
+        } catch (error) {
+          console.error('Failed to recover session:', error);
+        }
+      }
       
       if (!token) {
         // Fallback: try to get token from localStorage
