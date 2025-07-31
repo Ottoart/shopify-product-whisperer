@@ -35,7 +35,10 @@ export function AdminLogin() {
         description: "Logged in successfully.",
       });
       
-      // No need for page refresh - the state will update automatically
+      // Force a small delay to ensure the state propagates
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
     } catch (error) {
       console.error('Login error:', error);
       toast({
