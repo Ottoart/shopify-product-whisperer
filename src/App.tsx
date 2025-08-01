@@ -54,6 +54,8 @@ import FulfillmentLanding from "./pages/FulfillmentLanding";
 import FulfillmentFeatures from "./pages/FulfillmentFeatures";
 import FulfillmentPricing from "./pages/FulfillmentPricing";
 import ProductManagementLanding from "./pages/ProductManagementLanding";
+import ProductManagementFeatures from "./pages/ProductManagementFeatures";
+import ProductManagementPricing from "./pages/ProductManagementPricing";
 
 // Create query client outside component to prevent recreating
 const queryClient = new QueryClient({
@@ -146,6 +148,8 @@ const PublicApp = () => {
         <Route path="/fulfillment-features" element={<FulfillmentFeatures />} />
         <Route path="/fulfillment-pricing" element={<FulfillmentPricing />} />
         <Route path="/product-management-landing" element={<ProductManagementLanding />} />
+        <Route path="/product-management-features" element={<ProductManagementFeatures />} />
+        <Route path="/product-management-pricing" element={<ProductManagementPricing />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/customer-tracking" element={<CustomerTracking />} />
