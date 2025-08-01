@@ -66,6 +66,11 @@ import OmniChannelFulfillment from "./pages/fulfillment/OmniChannelFulfillment";
 import InternationalFreight from "./pages/fulfillment/InternationalFreight";
 import SubscriptionFulfillment from "./pages/fulfillment/SubscriptionFulfillment";
 
+// Phase 2A - Software & Technology Products
+import PrepSoftware from "./pages/fulfillment/PrepSoftware";
+import MiddleMileLogistics from "./pages/fulfillment/MiddleMileLogistics";
+import Section321 from "./pages/fulfillment/Section321";
+
 // Create query client outside component to prevent recreating
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -166,6 +171,11 @@ const PublicApp = () => {
         <Route path="/fulfillment/services/omni-channel-3pl" element={<OmniChannelFulfillment />} />
         <Route path="/fulfillment/services/international-freight" element={<InternationalFreight />} />
         <Route path="/fulfillment/services/subscription-fulfillment" element={<SubscriptionFulfillment />} />
+        
+        {/* Phase 2A - Software & Technology Products */}
+        <Route path="/fulfillment/products/prep-software" element={<PrepSoftware />} />
+        <Route path="/fulfillment/products/middle-mile-logistics" element={<MiddleMileLogistics />} />
+        <Route path="/fulfillment/products/section-321" element={<Section321 />} />
         <Route path="/fulfillment/services/receiving" element={<FulfillmentFeatures />} />
         <Route path="/fulfillment/services/storage" element={<FulfillmentFeatures />} />
         <Route path="/fulfillment/services/pick-pack" element={<FulfillmentFeatures />} />
