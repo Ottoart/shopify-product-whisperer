@@ -651,6 +651,60 @@ export type Database = {
         }
         Relationships: []
       }
+      email_automations: {
+        Row: {
+          clicked_at: string | null
+          created_at: string
+          email_type: string
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          opened_at: string | null
+          recipient_email: string
+          retry_count: number | null
+          scheduled_for: string
+          sent_at: string | null
+          status: string
+          template_name: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          clicked_at?: string | null
+          created_at?: string
+          email_type: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          opened_at?: string | null
+          recipient_email: string
+          retry_count?: number | null
+          scheduled_for: string
+          sent_at?: string | null
+          status?: string
+          template_name: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          clicked_at?: string | null
+          created_at?: string
+          email_type?: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          opened_at?: string | null
+          recipient_email?: string
+          retry_count?: number | null
+          scheduled_for?: string
+          sent_at?: string | null
+          status?: string
+          template_name?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       feature_flags: {
         Row: {
           conditions: Json | null
