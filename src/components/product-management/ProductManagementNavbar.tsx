@@ -1,0 +1,165 @@
+import { useState, useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { 
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+  navigationMenuTriggerStyle
+} from "@/components/ui/navigation-menu";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+const featuresMenuItems = [
+  {
+    title: "AI Optimization",
+    description: "Intelligent product optimization with machine learning",
+    href: "/product-management/features/ai-optimization"
+  },
+  {
+    title: "Bulk Editing",
+    description: "Efficient bulk editing tools for large inventories",
+    href: "/product-management/features/bulk-editing"
+  },
+  {
+    title: "Multi-Channel Sync",
+    description: "Synchronize products across all sales channels",
+    href: "/product-management/features/sync"
+  },
+  {
+    title: "Analytics",
+    description: "Deep insights into product performance and trends",
+    href: "/product-management/features/analytics"
+  }
+];
+
+const solutionsMenuItems = [
+  {
+    title: "E-commerce Sellers",
+    description: "Optimize your online store product catalogs",
+    href: "/product-management/solutions/ecommerce"
+  },
+  {
+    title: "Amazon FBA",
+    description: "Specialized tools for Amazon FBA sellers",
+    href: "/product-management/solutions/fba"
+  },
+  {
+    title: "Marketplace Sellers",
+    description: "Multi-marketplace product management solutions",
+    href: "/product-management/solutions/marketplace"
+  },
+  {
+    title: "Enterprise",
+    description: "Scalable solutions for large product catalogs",
+    href: "/product-management/solutions/enterprise"
+  }
+];
+
+export function ProductManagementNavbar() {
+  const location = useLocation();
+  const [isScrolled, setIsScrolled] = useState(false);
+  
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+  
+  return (
+    <div className={cn(
+      "w-full z-50 transition-all duration-200",
+      isScrolled ? "sticky top-0 border-b shadow-sm bg-background/95 backdrop-blur-sm" : ""
+    )}>
+      <div className="container mx-auto px-4">
+        <div className="flex h-16 items-center justify-between">
+          <div className="flex items-center">
+            <Link to="/product-management-landing" className="font-bold text-xl text-primary">
+              PrepFox Product Management
+            </Link>
+            
+            <NavigationMenu className="ml-10 hidden md:flex">
+              <NavigationMenuList>
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger>Features</NavigationMenuTrigger>
+                  <NavigationMenuContent>
+                    <ul className="grid w-[500px] gap-3 p-4 md:grid-cols-2">
+                      {featuresMenuItems.map((item) => (
+                        <li key={item.title}>
+                          <NavigationMenuLink asChild>
+                            <Link
+                              to={item.href}
+                              className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                            >
+                              <div className="text-sm font-medium leading-none">
+                                {item.title}
+                              </div>
+                              <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                                {item.description}
+                              </p>
+                            </Link>
+                          </NavigationMenuLink>
+                        </li>
+                      ))}
+                    </ul>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+                
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger>Solutions</NavigationMenuTrigger>
+                  <NavigationMenuContent>
+                    <ul className="grid w-[500px] gap-3 p-4 md:grid-cols-2">
+                      {solutionsMenuItems.map((item) => (
+                        <li key={item.title}>
+                          <NavigationMenuLink asChild>
+                            <Link
+                              to={item.href}
+                              className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                            >
+                              <div className="text-sm font-medium leading-none">
+                                {item.title}
+                              </div>
+                              <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                                {item.description}
+                              </p>
+                            </Link>
+                          </NavigationMenuLink>
+                        </li>
+                      ))}
+                    </ul>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+                
+                <NavigationMenuItem>
+                  <Link to="/product-management/features" className={navigationMenuTriggerStyle()}>
+                    Features
+                  </Link>
+                </NavigationMenuItem>
+                
+                <NavigationMenuItem>
+                  <Link to="/product-management/pricing" className={navigationMenuTriggerStyle()}>
+                    Pricing
+                  </Link>
+                </NavigationMenuItem>
+              </NavigationMenuList>
+            </NavigationMenu>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <Button variant="outline" asChild>
+              <Link to="/products">Dashboard</Link>
+            </Button>
+            <Button asChild>
+              <Link to="/auth">Sign Up</Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
