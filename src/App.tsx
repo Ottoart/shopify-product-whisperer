@@ -77,6 +77,9 @@ import WholesalePrep from "./pages/fulfillment/WholesalePrep";
 import GlobalMarketplaces from "./pages/fulfillment/GlobalMarketplaces";
 import MarketExpansion from "./pages/fulfillment/MarketExpansion";
 
+// Phase 3A - Comprehensive Pricing
+import FulfillmentPricingDetailed from "./pages/FulfillmentPricingDetailed";
+
 // Create query client outside component to prevent recreating
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -167,6 +170,7 @@ const PublicApp = () => {
         <Route path="/fulfillment-landing" element={<FulfillmentLanding />} />
         <Route path="/fulfillment/features" element={<FulfillmentFeatures />} />
         <Route path="/fulfillment/pricing" element={<FulfillmentPricing />} />
+        <Route path="/fulfillment/pricing-detailed" element={<FulfillmentPricingDetailed />} />
         <Route path="/fulfillment-pricing" element={<FulfillmentPricing />} />
         <Route path="/fulfillment/services/fba-prep" element={<FBAPrep />} />
         <Route path="/fulfillment/services/amazon-sfp" element={<AmazonSFP />} />
