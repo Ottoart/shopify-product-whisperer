@@ -304,12 +304,61 @@ export default function MainLayout({ children }: MainLayoutProps) {
               </NavigationMenuItem>
 
               <NavigationMenuItem>
-                <Link
-                  to="/features"
-                  className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-transparent px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent/50 hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50"
-                >
-                  Features
-                </Link>
+                <NavigationMenuTrigger className="text-foreground bg-transparent hover:bg-accent/50">
+                  Fulfillment
+                </NavigationMenuTrigger>
+                <NavigationMenuContent>
+                  <div className="w-[600px] min-h-[300px] p-6 bg-background border rounded-lg shadow-lg">
+                    <div className="grid grid-cols-2 gap-6">
+                      <div>
+                        <h4 className="text-sm font-medium text-foreground mb-3">Services</h4>
+                        <div className="space-y-2">
+                          <Link to="/fulfillment/services/receiving" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Receiving</Link>
+                          <Link to="/fulfillment/services/storage" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Storage</Link>
+                          <Link to="/fulfillment/services/pick-pack" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Pick & Pack</Link>
+                          <Link to="/fulfillment/services/shipping-integration" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Shipping Integration</Link>
+                        </div>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-foreground mb-3">Quick Links</h4>
+                        <div className="space-y-2">
+                          <Link to="/fulfillment/features" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Features</Link>
+                          <Link to="/fulfillment/pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Pricing</Link>
+                          <Link to="/fulfillment-dashboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Dashboard</Link>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
+
+              <NavigationMenuItem>
+                <NavigationMenuTrigger className="text-foreground bg-transparent hover:bg-accent/50">
+                  Product Management
+                </NavigationMenuTrigger>
+                <NavigationMenuContent>
+                  <div className="w-[600px] min-h-[300px] p-6 bg-background border rounded-lg shadow-lg">
+                    <div className="grid grid-cols-2 gap-6">
+                      <div>
+                        <h4 className="text-sm font-medium text-foreground mb-3">Features</h4>
+                        <div className="space-y-2">
+                          <Link to="/product-management/features/ai-optimization" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">AI Optimization</Link>
+                          <Link to="/product-management/features/bulk-editing" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Bulk Editing</Link>
+                          <Link to="/product-management/features/multi-channel-sync" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Multi-Channel Sync</Link>
+                          <Link to="/product-management/features/quality-control" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Quality Control</Link>
+                        </div>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-foreground mb-3">Quick Links</h4>
+                        <div className="space-y-2">
+                          <Link to="/product-management/features" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Features</Link>
+                          <Link to="/product-management/pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Pricing</Link>
+                          <Link to="/products" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Dashboard</Link>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </NavigationMenuContent>
               </NavigationMenuItem>
 
               <NavigationMenuItem>
@@ -398,6 +447,62 @@ export default function MainLayout({ children }: MainLayoutProps) {
                             <span className="text-sm">{item.title}</span>
                           </Link>
                         ))}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                  
+                  <AccordionItem value="fulfillment">
+                    <AccordionTrigger className="text-left">Fulfillment</AccordionTrigger>
+                    <AccordionContent>
+                      <div className="space-y-2 pl-4">
+                        <div className="text-sm font-medium text-muted-foreground mb-2">Services</div>
+                        <Link to="/fulfillment/services/receiving" className="flex items-center space-x-2 p-2 rounded-lg hover:bg-accent/50 transition-colors">
+                          <Warehouse className="h-4 w-4 text-primary" />
+                          <span className="text-sm">Receiving</span>
+                        </Link>
+                        <Link to="/fulfillment/services/storage" className="flex items-center space-x-2 p-2 rounded-lg hover:bg-accent/50 transition-colors">
+                          <Package className="h-4 w-4 text-primary" />
+                          <span className="text-sm">Storage</span>
+                        </Link>
+                        <Link to="/fulfillment/services/pick-pack" className="flex items-center space-x-2 p-2 rounded-lg hover:bg-accent/50 transition-colors">
+                          <ShoppingCart className="h-4 w-4 text-primary" />
+                          <span className="text-sm">Pick & Pack</span>
+                        </Link>
+                        <div className="text-sm font-medium text-muted-foreground mb-2 mt-4">Quick Links</div>
+                        <Link to="/fulfillment/features" className="flex items-center space-x-2 p-2 rounded-lg hover:bg-accent/50 transition-colors">
+                          <span className="text-sm">Features</span>
+                        </Link>
+                        <Link to="/fulfillment/pricing" className="flex items-center space-x-2 p-2 rounded-lg hover:bg-accent/50 transition-colors">
+                          <span className="text-sm">Pricing</span>
+                        </Link>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                  
+                  <AccordionItem value="product-management">
+                    <AccordionTrigger className="text-left">Product Management</AccordionTrigger>
+                    <AccordionContent>
+                      <div className="space-y-2 pl-4">
+                        <div className="text-sm font-medium text-muted-foreground mb-2">Features</div>
+                        <Link to="/product-management/features/ai-optimization" className="flex items-center space-x-2 p-2 rounded-lg hover:bg-accent/50 transition-colors">
+                          <Brain className="h-4 w-4 text-primary" />
+                          <span className="text-sm">AI Optimization</span>
+                        </Link>
+                        <Link to="/product-management/features/bulk-editing" className="flex items-center space-x-2 p-2 rounded-lg hover:bg-accent/50 transition-colors">
+                          <Settings className="h-4 w-4 text-primary" />
+                          <span className="text-sm">Bulk Editing</span>
+                        </Link>
+                        <Link to="/product-management/features/multi-channel-sync" className="flex items-center space-x-2 p-2 rounded-lg hover:bg-accent/50 transition-colors">
+                          <Globe className="h-4 w-4 text-primary" />
+                          <span className="text-sm">Multi-Channel Sync</span>
+                        </Link>
+                        <div className="text-sm font-medium text-muted-foreground mb-2 mt-4">Quick Links</div>
+                        <Link to="/product-management/features" className="flex items-center space-x-2 p-2 rounded-lg hover:bg-accent/50 transition-colors">
+                          <span className="text-sm">Features</span>
+                        </Link>
+                        <Link to="/product-management/pricing" className="flex items-center space-x-2 p-2 rounded-lg hover:bg-accent/50 transition-colors">
+                          <span className="text-sm">Pricing</span>
+                        </Link>
                       </div>
                     </AccordionContent>
                   </AccordionItem>
