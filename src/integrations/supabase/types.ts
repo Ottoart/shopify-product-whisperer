@@ -474,6 +474,57 @@ export type Database = {
         }
         Relationships: []
       }
+      contact_inquiries: {
+        Row: {
+          assigned_to: string | null
+          company: string | null
+          created_at: string
+          email: string
+          id: string
+          inquiry_type: string
+          message: string
+          name: string
+          phone: string | null
+          priority: string
+          source_page: string | null
+          status: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          company?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          inquiry_type?: string
+          message: string
+          name: string
+          phone?: string | null
+          priority?: string
+          source_page?: string | null
+          status?: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          company?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          inquiry_type?: string
+          message?: string
+          name?: string
+          phone?: string | null
+          priority?: string
+          source_page?: string | null
+          status?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       customer_addresses: {
         Row: {
           address_line1: string
@@ -2204,6 +2255,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      quote_requests: {
+        Row: {
+          additional_services: string[] | null
+          assigned_to: string | null
+          business_details: Json
+          contact_info: Json
+          created_at: string
+          estimated_savings: string | null
+          id: string
+          message: string | null
+          pain_points: string | null
+          priority: string
+          service_type: string
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          additional_services?: string[] | null
+          assigned_to?: string | null
+          business_details?: Json
+          contact_info?: Json
+          created_at?: string
+          estimated_savings?: string | null
+          id?: string
+          message?: string | null
+          pain_points?: string | null
+          priority?: string
+          service_type: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          additional_services?: string[] | null
+          assigned_to?: string | null
+          business_details?: Json
+          contact_info?: Json
+          created_at?: string
+          estimated_savings?: string | null
+          id?: string
+          message?: string | null
+          pain_points?: string | null
+          priority?: string
+          service_type?: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
       }
       received_cartons: {
         Row: {

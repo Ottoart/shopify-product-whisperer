@@ -124,9 +124,10 @@ const FulfillmentQuotePage = () => {
     setIsSubmitting(true);
 
     try {
-      // Insert quote request to database
+      // For now, use a fallback since the types haven't regenerated yet
+      // This will be properly typed once Supabase types are updated
       const { error } = await supabase
-        .from('quote_requests')
+        .from('quote_requests' as any)
         .insert({
           service_type: serviceType,
           contact_info: {

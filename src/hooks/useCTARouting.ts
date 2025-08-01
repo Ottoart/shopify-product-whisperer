@@ -229,7 +229,7 @@ export const useServiceCTAVariants = (serviceType: string) => {
   const destination = getServiceDestination(serviceType);
   
   return {
-    primaryVariant: destination === 'auth' ? 'default' : 'default',
+    primaryVariant: 'default' as const,
     secondaryVariant: 'outline' as const,
     primaryIcon: destination === 'quote' ? 'calculator' : 'arrow-right',
     secondaryIcon: destination === 'quote' ? 'calendar' : 'phone'
