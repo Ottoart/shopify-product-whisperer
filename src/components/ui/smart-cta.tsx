@@ -53,7 +53,7 @@ export const SmartCTAButton: React.FC<SmartCTAButtonProps> = ({
     ? getServiceCTAText(serviceType) 
     : getSecondaryServiceCTAText(serviceType);
     
-  const buttonVariant = variant === 'primary' ? primaryVariant : secondaryVariant;
+  const buttonVariant = variant === 'primary' ? 'default' : 'outline';
   const icon = variant === 'primary' ? primaryIcon : secondaryIcon;
   const iconSize = size === 'lg' ? 20 : 16;
 

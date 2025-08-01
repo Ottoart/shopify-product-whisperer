@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { SmartCTASection } from '@/components/ui/smart-cta';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -376,28 +377,12 @@ const Section321 = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 px-4 bg-primary/5">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">
-            Ready to Eliminate Duty Fees?
-          </h2>
-          <p className="text-xl text-muted-foreground mb-8">
-            Join 150+ brands using Section 321 to reduce duties and optimize their supply chain
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button asChild size="lg" className="text-lg px-8">
-              <Link to="/fulfillment/quote">
-                Calculate Your Savings <Calculator className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
-            <Button asChild variant="outline" size="lg" className="text-lg px-8">
-              <Link to="/fulfillment/quote">
-                Speak with Trade Expert
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </section>
+      <SmartCTASection
+        serviceType="section-321"
+        title="Ready to Eliminate Duty Fees?"
+        description="Join 150+ brands using Section 321 to reduce duties and optimize their supply chain"
+        className="py-16 px-4 bg-primary/5"
+      />
     </div>
   );
 };

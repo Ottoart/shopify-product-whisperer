@@ -80,6 +80,10 @@ import MarketExpansion from "./pages/fulfillment/MarketExpansion";
 // Phase 3A - Comprehensive Pricing
 import FulfillmentPricingDetailed from "./pages/FulfillmentPricingDetailed";
 
+// Phase 4A - Quote System
+import FulfillmentQuote from "./pages/FulfillmentQuote";
+import FulfillmentQuoteSuccess from "./pages/FulfillmentQuoteSuccess";
+
 // Create query client outside component to prevent recreating
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -192,6 +196,10 @@ const PublicApp = () => {
         <Route path="/fulfillment/products/wholesale-prep" element={<WholesalePrep />} />
         <Route path="/fulfillment/products/global-marketplaces" element={<GlobalMarketplaces />} />
         <Route path="/fulfillment/products/market-expansion" element={<MarketExpansion />} />
+        
+        {/* Phase 4A - Quote System */}
+        <Route path="/fulfillment/quote" element={<FulfillmentQuote />} />
+        <Route path="/fulfillment/quote-success" element={<FulfillmentQuoteSuccess />} />
         <Route path="/fulfillment/services/receiving" element={<FulfillmentFeatures />} />
         <Route path="/fulfillment/services/storage" element={<FulfillmentFeatures />} />
         <Route path="/fulfillment/services/pick-pack" element={<FulfillmentFeatures />} />
