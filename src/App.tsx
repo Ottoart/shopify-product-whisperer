@@ -62,6 +62,9 @@ import FBAReturns from "./pages/fulfillment/FBAReturns";
 import DTCFulfillment from "./pages/fulfillment/DTCFulfillment";
 import EcommerceFulfillment from "./pages/fulfillment/EcommerceFulfillment";
 import B2BFulfillment from "./pages/fulfillment/B2BFulfillment";
+import OmniChannelFulfillment from "./pages/fulfillment/OmniChannelFulfillment";
+import InternationalFreight from "./pages/fulfillment/InternationalFreight";
+import SubscriptionFulfillment from "./pages/fulfillment/SubscriptionFulfillment";
 
 // Create query client outside component to prevent recreating
 const queryClient = new QueryClient({
@@ -160,6 +163,9 @@ const PublicApp = () => {
         <Route path="/fulfillment/services/dtc-fulfillment" element={<DTCFulfillment />} />
         <Route path="/fulfillment/services/ecommerce-fulfillment" element={<EcommerceFulfillment />} />
         <Route path="/fulfillment/services/b2b-fulfillment" element={<B2BFulfillment />} />
+        <Route path="/fulfillment/services/omni-channel-3pl" element={<OmniChannelFulfillment />} />
+        <Route path="/fulfillment/services/international-freight" element={<InternationalFreight />} />
+        <Route path="/fulfillment/services/subscription-fulfillment" element={<SubscriptionFulfillment />} />
         <Route path="/fulfillment/services/receiving" element={<FulfillmentFeatures />} />
         <Route path="/fulfillment/services/storage" element={<FulfillmentFeatures />} />
         <Route path="/fulfillment/services/pick-pack" element={<FulfillmentFeatures />} />
