@@ -125,7 +125,7 @@ const FulfillmentQuotePage = () => {
 
     try {
       // Insert quote request to database
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('quote_requests')
         .insert({
           service_type: serviceType,
@@ -145,12 +145,50 @@ const FulfillmentQuotePage = () => {
           additional_services: formData.additionalServices,
           message: formData.message,
           estimated_savings: serviceDetails.estimatedSavings
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
-      // Send confirmation email (placeholder for future implementation)
-      console.log('Quote submitted successfully for:', formData.email);
+      // Send quote notification emails
+      try {
+        const { error: emailError } = await supabase.functions.invoke('send-quote-notifications', {
+          body: {
+            quoteRequestId: data?.id || crypto.randomUUID(),
+            customerName: `${formData.firstName} ${formData.lastName}`,
+            customerEmail: formData.email,
+            company: formData.company,
+            serviceType,
+            estimatedSavings: serviceDetails.estimatedSavings,
+            contactInfo: {
+              firstName: formData.firstName,
+              lastName: formData.lastName,
+              email: formData.email,
+              company: formData.company,
+              phone: formData.phone
+            },
+            businessDetails: {
+              monthlyVolume: formData.monthlyVolume,
+              currentProvider: formData.currentProvider,
+              timeline: formData.timeline
+            },
+            painPoints: formData.painPoints,
+            additionalServices: formData.additionalServices,
+            message: formData.message
+          }
+        });
+
+        if (emailError) {
+          console.error('Email notification error:', emailError);
+          // Don't fail the whole process if email fails
+        } else {
+          console.log('Quote notification emails sent successfully');
+        }
+      } catch (emailError) {
+        console.error('Failed to send email notifications:', emailError);
+        // Continue with success flow even if emails fail
+      }
 
       toast({
         title: "Quote Request Submitted!",
