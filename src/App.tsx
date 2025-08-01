@@ -145,11 +145,27 @@ const PublicApp = () => {
         <Route path="/repricing/features" element={<RepricingFeatures />} />
         <Route path="/repricing/pricing" element={<RepricingPricing />} />
         <Route path="/fulfillment-landing" element={<FulfillmentLanding />} />
-        <Route path="/fulfillment-features" element={<FulfillmentFeatures />} />
-        <Route path="/fulfillment-pricing" element={<FulfillmentPricing />} />
+        <Route path="/fulfillment/features" element={<FulfillmentFeatures />} />
+        <Route path="/fulfillment/pricing" element={<FulfillmentPricing />} />
+        <Route path="/fulfillment/services/receiving" element={<FulfillmentFeatures />} />
+        <Route path="/fulfillment/services/storage" element={<FulfillmentFeatures />} />
+        <Route path="/fulfillment/services/pick-pack" element={<FulfillmentFeatures />} />
+        <Route path="/fulfillment/services/shipping" element={<FulfillmentFeatures />} />
+        <Route path="/fulfillment/solutions/fba-prep" element={<FulfillmentFeatures />} />
+        <Route path="/fulfillment/solutions/3pl" element={<FulfillmentFeatures />} />
+        <Route path="/fulfillment/solutions/dropshipping" element={<FulfillmentFeatures />} />
+        <Route path="/fulfillment/solutions/private-label" element={<FulfillmentFeatures />} />
         <Route path="/product-management-landing" element={<ProductManagementLanding />} />
-        <Route path="/product-management-features" element={<ProductManagementFeatures />} />
-        <Route path="/product-management-pricing" element={<ProductManagementPricing />} />
+        <Route path="/product-management/features" element={<ProductManagementFeatures />} />
+        <Route path="/product-management/pricing" element={<ProductManagementPricing />} />
+        <Route path="/product-management/features/ai-optimization" element={<ProductManagementFeatures />} />
+        <Route path="/product-management/features/bulk-editing" element={<ProductManagementFeatures />} />
+        <Route path="/product-management/features/multi-channel-sync" element={<ProductManagementFeatures />} />
+        <Route path="/product-management/features/analytics" element={<ProductManagementFeatures />} />
+        <Route path="/product-management/solutions/ecommerce" element={<ProductManagementFeatures />} />
+        <Route path="/product-management/solutions/amazon-fba" element={<ProductManagementFeatures />} />
+        <Route path="/product-management/solutions/marketplace" element={<ProductManagementFeatures />} />
+        <Route path="/product-management/solutions/enterprise" element={<ProductManagementFeatures />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/customer-tracking" element={<CustomerTracking />} />

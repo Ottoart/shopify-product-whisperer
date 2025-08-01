@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { FulfillmentNavbar } from "@/components/fulfillment/FulfillmentNavbar";
 import { 
   Warehouse, 
   CheckCircle,
@@ -194,33 +195,8 @@ const FulfillmentPricing = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-              <Warehouse className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-bold text-primary">PrepFox Fulfill</span>
-          </div>
-          
-          <div className="hidden md:flex items-center space-x-8">
-            <Link to="/fulfillment" className="text-muted-foreground hover:text-foreground transition-colors">Home</Link>
-            <Link to="/fulfillment-features" className="text-muted-foreground hover:text-foreground transition-colors">Features</Link>
-            <Link to="/fulfillment-pricing" className="text-foreground font-medium">Pricing</Link>
-            <Link to="/fulfillment-locations" className="text-muted-foreground hover:text-foreground transition-colors">Locations</Link>
-            <Link to="/fulfillment-resources" className="text-muted-foreground hover:text-foreground transition-colors">Resources</Link>
-          </div>
-
-          <div className="flex items-center space-x-4">
-            <Link to="/auth" className="text-muted-foreground hover:text-foreground transition-colors">Sign In</Link>
-            <Button asChild className="bg-gradient-primary hover:shadow-glow transition-smooth">
-              <Link to="/auth">Get Quote</Link>
-            </Button>
-          </div>
-        </div>
-      </nav>
-
+      <FulfillmentNavbar />
+      
       {/* Hero Section */}
       <section className="py-20 px-4 bg-gradient-to-br from-background via-secondary/20 to-accent/10">
         <div className="container mx-auto text-center">

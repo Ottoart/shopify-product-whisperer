@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import MainLayout from "@/components/MainLayout";
+import { FulfillmentNavbar } from "@/components/fulfillment/FulfillmentNavbar";
 import { 
   Warehouse, 
   Package, 
@@ -174,7 +174,8 @@ const FulfillmentFeatures = () => {
   ];
 
   return (
-    <MainLayout>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
+      <FulfillmentNavbar />
       {/* Hero Section */}
       <section className="py-20 px-4 bg-gradient-to-br from-background via-secondary/20 to-accent/10">
         <div className="container mx-auto text-center">
@@ -422,7 +423,7 @@ const FulfillmentFeatures = () => {
           </div>
         </div>
       </footer>
-    </MainLayout>
+    </div>
   );
 };
 

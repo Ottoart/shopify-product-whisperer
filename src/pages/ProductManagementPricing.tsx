@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ProductManagementNavbar } from "@/components/product-management/ProductManagementNavbar";
 import { 
   CheckCircle, ArrowRight, Sparkles, Star, Users, Play,
   Bot, Edit3, RefreshCw, BarChart3, Clock, Zap,
@@ -192,32 +193,8 @@ const ProductManagementPricing = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-              <Sparkles className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-bold text-primary">PrepFox Catalog</span>
-          </div>
-          
-          <div className="hidden md:flex items-center space-x-8">
-            <Link to="/product-management-landing" className="text-muted-foreground hover:text-foreground transition-colors">Overview</Link>
-            <Link to="/product-management-features" className="text-muted-foreground hover:text-foreground transition-colors">Features</Link>
-            <Link to="/product-management-pricing" className="text-foreground font-medium">Pricing</Link>
-            <Link to="/product-management-integrations" className="text-muted-foreground hover:text-foreground transition-colors">Integrations</Link>
-          </div>
-
-          <div className="flex items-center space-x-4">
-            <Link to="/auth" className="text-muted-foreground hover:text-foreground transition-colors">Sign In</Link>
-            <Button asChild className="bg-gradient-primary hover:shadow-glow transition-smooth">
-              <Link to="/auth">Start Free Trial</Link>
-            </Button>
-          </div>
-        </div>
-      </nav>
-
+      <ProductManagementNavbar />
+      
       {/* Hero Section */}
       <section className="py-20 px-4 bg-gradient-to-br from-background via-secondary/20 to-accent/10">
         <div className="container mx-auto text-center">
