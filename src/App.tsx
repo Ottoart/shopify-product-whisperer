@@ -71,6 +71,12 @@ import PrepSoftware from "./pages/fulfillment/PrepSoftware";
 import MiddleMileLogistics from "./pages/fulfillment/MiddleMileLogistics";
 import Section321 from "./pages/fulfillment/Section321";
 
+// Phase 2B - Strategic Services
+import DripFeeding from "./pages/fulfillment/DripFeeding";
+import WholesalePrep from "./pages/fulfillment/WholesalePrep";
+import GlobalMarketplaces from "./pages/fulfillment/GlobalMarketplaces";
+import MarketExpansion from "./pages/fulfillment/MarketExpansion";
+
 // Create query client outside component to prevent recreating
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -176,6 +182,12 @@ const PublicApp = () => {
         <Route path="/fulfillment/products/prep-software" element={<PrepSoftware />} />
         <Route path="/fulfillment/products/middle-mile-logistics" element={<MiddleMileLogistics />} />
         <Route path="/fulfillment/products/section-321" element={<Section321 />} />
+        
+        {/* Phase 2B - Strategic Services */}
+        <Route path="/fulfillment/products/drip-feeding" element={<DripFeeding />} />
+        <Route path="/fulfillment/products/wholesale-prep" element={<WholesalePrep />} />
+        <Route path="/fulfillment/products/global-marketplaces" element={<GlobalMarketplaces />} />
+        <Route path="/fulfillment/products/market-expansion" element={<MarketExpansion />} />
         <Route path="/fulfillment/services/receiving" element={<FulfillmentFeatures />} />
         <Route path="/fulfillment/services/storage" element={<FulfillmentFeatures />} />
         <Route path="/fulfillment/services/pick-pack" element={<FulfillmentFeatures />} />
