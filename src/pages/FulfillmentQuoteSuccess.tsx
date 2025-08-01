@@ -1,193 +1,131 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   CheckCircle, 
-  ArrowRight, 
-  Clock, 
-  Mail, 
-  Phone,
-  Calendar,
-  Star,
-  Users
+  ArrowLeft, 
+  Calendar, 
+  MessageSquare,
+  Star
 } from 'lucide-react';
 
-const FulfillmentQuoteSuccess = () => {
+const FulfillmentQuoteSuccessPage = () => {
   const location = useLocation();
-  const searchParams = new URLSearchParams(location.search);
-  const submitted = searchParams.get('submitted');
+  const navigate = useNavigate();
   
-  if (!submitted) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-secondary/5 to-primary/5 py-12">
-        <div className="max-w-4xl mx-auto px-4 text-center">
-          <h1 className="text-4xl font-bold mb-6">Page Not Found</h1>
-          <p className="text-xl text-muted-foreground mb-8">
-            This page is only accessible after submitting a quote request.
-          </p>
-          <Button asChild>
-            <Link to="/fulfillment-landing">
-              Return to Fulfillment <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  const searchParams = new URLSearchParams(location.search);
+  const serviceType = searchParams.get('service') || 'general';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-secondary/5 to-primary/5 py-12">
-      <div className="max-w-4xl mx-auto px-4">
-        {/* Success Header */}
-        <div className="text-center mb-12">
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle className="h-12 w-12 text-green-600" />
+      <div className="max-w-2xl mx-auto px-4">
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <CheckCircle className="h-8 w-8 text-green-600" />
           </div>
           
-          <h1 className="text-4xl md:text-5xl font-bold mb-6 text-green-600">
-            Quote Request Submitted!
+          <Badge variant="secondary" className="mb-4">
+            <Star className="h-4 w-4 mr-2" />
+            Quote Submitted Successfully
+          </Badge>
+          
+          <h1 className="text-4xl font-bold mb-4">
+            Thank You for Your Interest!
           </h1>
           
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Thank you for your interest in our fulfillment services. We've received your request and our team will be in touch soon.
+          <p className="text-xl text-muted-foreground">
+            Your quote request has been received and is being reviewed by our team.
           </p>
         </div>
 
-        {/* What Happens Next */}
-        <Card className="mb-8 shadow-lg border-0 bg-card/80 backdrop-blur-sm">
+        <Card className="shadow-lg border-0 bg-card/80 backdrop-blur-sm mb-8">
           <CardHeader>
-            <CardTitle className="text-2xl text-center">What Happens Next?</CardTitle>
+            <CardTitle className="flex items-center">
+              <Calendar className="h-5 w-5 mr-2 text-primary" />
+              What Happens Next
+            </CardTitle>
+            <CardDescription>
+              Here's what you can expect in the coming hours
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Clock className="h-8 w-8 text-primary" />
-                </div>
-                <h3 className="font-semibold text-lg mb-2">Within 1 Hour</h3>
+          <CardContent className="space-y-4">
+            <div className="flex items-start space-x-4">
+              <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center mt-1">
+                <span className="text-sm font-semibold text-primary">1</span>
+              </div>
+              <div>
+                <h3 className="font-semibold">Immediate Confirmation</h3>
                 <p className="text-sm text-muted-foreground">
-                  You'll receive an email confirmation with your request details
+                  You'll receive an email confirmation within 1 hour with your quote reference number.
                 </p>
               </div>
-              
-              <div className="text-center">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Mail className="h-8 w-8 text-primary" />
-                </div>
-                <h3 className="font-semibold text-lg mb-2">Within 24 Hours</h3>
+            </div>
+
+            <div className="flex items-start space-x-4">
+              <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center mt-1">
+                <span className="text-sm font-semibold text-primary">2</span>
+              </div>
+              <div>
+                <h3 className="font-semibold">Custom Proposal</h3>
                 <p className="text-sm text-muted-foreground">
-                  Our fulfillment specialist will send you a detailed custom proposal
+                  Our team will prepare a detailed proposal tailored to your specific needs within 24 hours.
                 </p>
               </div>
-              
-              <div className="text-center">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Calendar className="h-8 w-8 text-primary" />
-                </div>
-                <h3 className="font-semibold text-lg mb-2">Strategy Call</h3>
+            </div>
+
+            <div className="flex items-start space-x-4">
+              <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center mt-1">
+                <span className="text-sm font-semibold text-primary">3</span>
+              </div>
+              <div>
+                <h3 className="font-semibold">Strategy Consultation</h3>
                 <p className="text-sm text-muted-foreground">
-                  Schedule a 1-on-1 consultation to discuss your specific needs
+                  We'll schedule a 1-on-1 consultation to discuss your quote and answer any questions.
                 </p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Trust Signals */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-          <Card className="p-6 shadow-lg border-0 bg-card/80 backdrop-blur-sm">
-            <div className="flex items-center space-x-4 mb-4">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <Star className="h-6 w-6 text-green-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg">Industry Leading</h3>
-                <p className="text-sm text-muted-foreground">Fastest growing logistics company 2025</p>
-              </div>
-            </div>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span>Average savings:</span>
-                <Badge variant="secondary" className="text-green-600 bg-green-50">20-30%</Badge>
-              </div>
-              <div className="flex justify-between">
-                <span>Response time:</span>
-                <span className="font-medium">&lt; 24 hours</span>
-              </div>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          <Card className="p-6 text-center bg-card/80 backdrop-blur-sm">
+            <MessageSquare className="h-8 w-8 text-primary mx-auto mb-3" />
+            <h3 className="font-semibold mb-2">Have Questions?</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Need to discuss your requirements in more detail?
+            </p>
+            <Button variant="outline" size="sm">
+              Contact Sales Team
+            </Button>
           </Card>
 
-          <Card className="p-6 shadow-lg border-0 bg-card/80 backdrop-blur-sm">
-            <div className="flex items-center space-x-4 mb-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Users className="h-6 w-6 text-blue-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg">Trusted Partner</h3>
-                <p className="text-sm text-muted-foreground">500+ brands served successfully</p>
-              </div>
-            </div>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span>Client satisfaction:</span>
-                <Badge variant="secondary" className="text-blue-600 bg-blue-50">99%</Badge>
-              </div>
-              <div className="flex justify-between">
-                <span>Implementation time:</span>
-                <span className="font-medium">1-2 weeks</span>
-              </div>
-            </div>
+          <Card className="p-6 text-center bg-card/80 backdrop-blur-sm">
+            <Calendar className="h-8 w-8 text-primary mx-auto mb-3" />
+            <h3 className="font-semibold mb-2">Schedule a Call</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Want to speak with an expert right away?
+            </p>
+            <Button variant="outline" size="sm">
+              Book Consultation
+            </Button>
           </Card>
         </div>
 
-        {/* Contact Information */}
-        <Card className="mb-8 shadow-lg border-0 bg-card/80 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-xl text-center">Need Immediate Assistance?</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-center">
-              <div>
-                <Phone className="h-8 w-8 text-primary mx-auto mb-3" />
-                <h3 className="font-semibold mb-2">Call Us Directly</h3>
-                <p className="text-primary font-medium">1-800-PREPFOX</p>
-                <p className="text-sm text-muted-foreground">Mon-Fri, 9 AM - 6 PM EST</p>
-              </div>
-              
-              <div>
-                <Mail className="h-8 w-8 text-primary mx-auto mb-3" />
-                <h3 className="font-semibold mb-2">Email Our Team</h3>
-                <p className="text-primary font-medium">quotes@prepfox.com</p>
-                <p className="text-sm text-muted-foreground">Response within 4 hours</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Action Buttons */}
-        <div className="text-center space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button asChild size="lg" className="text-lg px-8">
-              <Link to="/fulfillment-landing">
-                Explore More Services <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
-            <Button asChild variant="outline" size="lg" className="text-lg px-8">
-              <Link to="/fulfillment/pricing-detailed">
-                View Pricing Details
-              </Link>
-            </Button>
-          </div>
-          
-          <p className="text-sm text-muted-foreground">
-            Questions? Check our <Link to="/fulfillment/features" className="text-primary hover:underline">FAQ section</Link> or browse our <Link to="/fulfillment-landing" className="text-primary hover:underline">service offerings</Link>
-          </p>
+        <div className="text-center">
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate('/fulfillment-landing')}
+            className="text-muted-foreground"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Fulfillment Services
+          </Button>
         </div>
       </div>
     </div>
   );
 };
 
-export default FulfillmentQuoteSuccess;
+export default FulfillmentQuoteSuccessPage;

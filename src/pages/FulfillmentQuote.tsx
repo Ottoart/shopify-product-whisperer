@@ -124,40 +124,41 @@ const FulfillmentQuotePage = () => {
     setIsSubmitting(true);
 
     try {
-      // Store quote request data (database integration in Phase 4B)
-      const quoteData = {
-        service_type: serviceType,
-        contact_info: {
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          company: formData.company,
-          phone: formData.phone
-        },
-        business_details: {
-          monthlyVolume: formData.monthlyVolume,
-          currentProvider: formData.currentProvider,
-          timeline: formData.timeline
-        },
-        pain_points: formData.painPoints,
-        additional_services: formData.additionalServices,
-        message: formData.message,
-        estimated_savings: serviceDetails.estimatedSavings
-      };
+      // Insert quote request to database
+      const { error } = await supabase
+        .from('quote_requests')
+        .insert({
+          service_type: serviceType,
+          contact_info: {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            email: formData.email,
+            company: formData.company,
+            phone: formData.phone
+          },
+          business_details: {
+            monthlyVolume: formData.monthlyVolume,
+            currentProvider: formData.currentProvider,
+            timeline: formData.timeline
+          },
+          pain_points: formData.painPoints,
+          additional_services: formData.additionalServices,
+          message: formData.message,
+          estimated_savings: serviceDetails.estimatedSavings
+        });
 
-      // For now, just log the data - database integration will be added in next step
-      console.log('Quote request data:', quoteData);
+      if (error) throw error;
 
-      // Simulate API processing
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Send confirmation email (placeholder for future implementation)
+      console.log('Quote submitted successfully for:', formData.email);
 
       toast({
         title: "Quote Request Submitted!",
         description: "We'll get back to you within 24 hours with a detailed proposal.",
       });
 
-      // Redirect to landing page with success message
-      navigate('/fulfillment-landing?submitted=true');
+      // Redirect to success page
+      navigate('/fulfillment/quote-success?service=' + serviceType);
       
     } catch (error) {
       console.error('Error submitting quote:', error);
