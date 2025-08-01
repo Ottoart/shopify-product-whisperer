@@ -147,6 +147,7 @@ const PublicApp = () => {
         <Route path="/fulfillment-landing" element={<FulfillmentLanding />} />
         <Route path="/fulfillment/features" element={<FulfillmentFeatures />} />
         <Route path="/fulfillment/pricing" element={<FulfillmentPricing />} />
+        <Route path="/fulfillment-pricing" element={<FulfillmentPricing />} />
         <Route path="/fulfillment/services/receiving" element={<FulfillmentFeatures />} />
         <Route path="/fulfillment/services/storage" element={<FulfillmentFeatures />} />
         <Route path="/fulfillment/services/pick-pack" element={<FulfillmentFeatures />} />
@@ -158,6 +159,7 @@ const PublicApp = () => {
         <Route path="/product-management-landing" element={<ProductManagementLanding />} />
         <Route path="/product-management/features" element={<ProductManagementFeatures />} />
         <Route path="/product-management/pricing" element={<ProductManagementPricing />} />
+        <Route path="/product-management-pricing" element={<ProductManagementPricing />} />
         <Route path="/product-management/features/ai-optimization" element={<ProductManagementFeatures />} />
         <Route path="/product-management/features/bulk-editing" element={<ProductManagementFeatures />} />
         <Route path="/product-management/features/multi-channel-sync" element={<ProductManagementFeatures />} />

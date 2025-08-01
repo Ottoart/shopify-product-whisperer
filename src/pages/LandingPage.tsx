@@ -181,7 +181,12 @@ const LandingPage = () => {
                       </div>
                       <div className="mt-4">
                         <Button variant="ghost" className="text-primary p-0 hover:bg-transparent hover:text-primary/90" asChild>
-                          <Link to={index === 0 ? "/shipping-landing" : index === 1 ? "/repricing-landing" : "/auth"}>
+                          <Link to={
+                            index === 0 ? "/shipping-landing" : 
+                            index === 1 ? "/repricing-landing" : 
+                            index === 2 ? "/fulfillment-landing" :
+                            "/product-management-landing"
+                          }>
                             Learn more <ArrowRight className="ml-1 h-4 w-4" />
                           </Link>
                         </Button>
