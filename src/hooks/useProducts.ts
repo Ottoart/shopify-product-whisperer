@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSessionContext } from '@supabase/auth-helpers-react';
 import { useToast } from '@/hooks/use-toast';
-import { Product, UpdatedProduct } from '@/pages/Index';
+import { Product, UpdatedProduct } from '@/types/product';
 
 export const useProducts = () => {
   const { session } = useSessionContext();

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSessionContext } from '@supabase/auth-helpers-react';
-import { Product, UpdatedProduct } from '@/pages/Index';
+import { Product, UpdatedProduct } from '@/types/product';
 
 interface EditTrackingProps {
   onProductUpdate: (productId: string, updatedData: UpdatedProduct) => void;

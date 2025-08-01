@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { AlertCircle, CheckCircle, Loader2, Package, Zap, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Product, UpdatedProduct } from "@/pages/Index";
+import { Product, UpdatedProduct } from "@/types/product";
 import { ProductComparison } from "@/components/ProductComparison";
 import { AIConnectionIndicator } from "./AIConnectionIndicator";
 

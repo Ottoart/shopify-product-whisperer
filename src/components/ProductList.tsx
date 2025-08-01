@@ -13,7 +13,7 @@ import { ChangeHistoryDialog } from '@/components/ChangeHistoryDialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Search, Package, ExternalLink, Zap, CheckSquare, Square, Edit3, Filter, ChevronDown, ChevronRight, History, Store } from 'lucide-react';
-import { Product, UpdatedProduct } from '@/pages/Index';
+import { Product, UpdatedProduct } from '@/types/product';
 
 interface ProductListProps {
   products: Product[];

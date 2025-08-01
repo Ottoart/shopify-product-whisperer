@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Wand2, Check, X, ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Product } from '@/pages/Index';
+import { Product } from '@/types/product';
 interface ProductTypeChange {
   id: string;
   title: string;

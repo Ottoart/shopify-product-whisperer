@@ -22,7 +22,7 @@ import {
   X,
   RefreshCw
 } from 'lucide-react';
-import { Product, UpdatedProduct } from '@/pages/Index';
+import { Product, UpdatedProduct } from '@/types/product';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ProductComparison } from '@/components/ProductComparison';

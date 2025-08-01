@@ -8,7 +8,7 @@ import { Edit3, Save, X, DollarSign } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useSessionContext } from '@supabase/auth-helpers-react';
-import { Product } from '@/pages/Index';
+import { Product } from '@/types/product';
 
 interface ProductEditorProps {
   product: Product;
