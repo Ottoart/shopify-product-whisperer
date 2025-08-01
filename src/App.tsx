@@ -56,6 +56,9 @@ import FulfillmentPricing from "./pages/FulfillmentPricing";
 import ProductManagementLanding from "./pages/ProductManagementLanding";
 import ProductManagementFeatures from "./pages/ProductManagementFeatures";
 import ProductManagementPricing from "./pages/ProductManagementPricing";
+import FBAPrep from "./pages/fulfillment/FBAPrep";
+import AmazonSFP from "./pages/fulfillment/AmazonSFP";
+import FBAReturns from "./pages/fulfillment/FBAReturns";
 
 // Create query client outside component to prevent recreating
 const queryClient = new QueryClient({
@@ -148,6 +151,9 @@ const PublicApp = () => {
         <Route path="/fulfillment/features" element={<FulfillmentFeatures />} />
         <Route path="/fulfillment/pricing" element={<FulfillmentPricing />} />
         <Route path="/fulfillment-pricing" element={<FulfillmentPricing />} />
+        <Route path="/fulfillment/services/fba-prep" element={<FBAPrep />} />
+        <Route path="/fulfillment/services/amazon-sfp" element={<AmazonSFP />} />
+        <Route path="/fulfillment/services/amazon-fba-returns" element={<FBAReturns />} />
         <Route path="/fulfillment/services/receiving" element={<FulfillmentFeatures />} />
         <Route path="/fulfillment/services/storage" element={<FulfillmentFeatures />} />
         <Route path="/fulfillment/services/pick-pack" element={<FulfillmentFeatures />} />
