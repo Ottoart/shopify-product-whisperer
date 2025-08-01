@@ -50,6 +50,10 @@ import RepricingFeatures from "./pages/RepricingFeatures";
 import RepricingPricing from "./pages/RepricingPricing";
 import AdminDashboard from "./pages/AdminDashboard";
 import Products from "./pages/Products";
+import FulfillmentLanding from "./pages/FulfillmentLanding";
+import FulfillmentFeatures from "./pages/FulfillmentFeatures";
+import FulfillmentPricing from "./pages/FulfillmentPricing";
+import ProductManagementLanding from "./pages/ProductManagementLanding";
 
 // Create query client outside component to prevent recreating
 const queryClient = new QueryClient({
