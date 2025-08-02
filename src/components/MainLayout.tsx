@@ -29,6 +29,11 @@ import {
   ShoppingCart,
   Warehouse,
   Menu,
+  Box,
+  HelpCircle,
+  Users,
+  BookOpen,
+  Phone,
 } from "lucide-react";
 
 interface MainLayoutProps {
@@ -157,6 +162,116 @@ export default function MainLayout({ children }: MainLayoutProps) {
     },
   ];
 
+  // Fulfillment menu items
+  const fulfillmentMenuItems = [
+    {
+      title: "FBA Prep",
+      href: "/fulfillment/services/fba-prep",
+      description: "Professional Amazon FBA preparation services",
+      icon: Package,
+    },
+    {
+      title: "3PL Fulfillment",
+      href: "/fulfillment/services/fulfillment",
+      description: "Complete order fulfillment solutions",
+      icon: Warehouse,
+    },
+    {
+      title: "Returns Processing",
+      href: "/fulfillment/services/returns",
+      description: "Comprehensive returns management",
+      icon: Shield,
+    },
+    {
+      title: "Inventory Storage",
+      href: "/fulfillment/services/storage",
+      description: "Secure and scalable inventory storage",
+      icon: Box,
+    },
+  ];
+
+  const fulfillmentSolutionsItems = [
+    {
+      title: "E-commerce Brands",
+      href: "/fulfillment/solutions/ecommerce",
+      description: "End-to-end fulfillment for online stores",
+      icon: Store,
+    },
+    {
+      title: "Amazon Sellers",
+      href: "/fulfillment/solutions/amazon",
+      description: "Specialized Amazon fulfillment services",
+      icon: Layers,
+    },
+    {
+      title: "Subscription Boxes",
+      href: "/fulfillment/solutions/subscription",
+      description: "Recurring subscription fulfillment",
+      icon: Box,
+    },
+    {
+      title: "B2B Distributors",
+      href: "/fulfillment/solutions/b2b",
+      description: "Bulk fulfillment for business customers",
+      icon: Truck,
+    },
+  ];
+
+  // Product Management menu items
+  const productManagementMenuItems = [
+    {
+      title: "AI Optimization",
+      href: "/product-management/features/ai-optimization",
+      description: "Intelligent product optimization with machine learning",
+      icon: Brain,
+    },
+    {
+      title: "Bulk Editing",
+      href: "/product-management/features/bulk-editing",
+      description: "Efficient bulk editing tools for large inventories",
+      icon: Settings,
+    },
+    {
+      title: "Multi-Channel Sync",
+      href: "/product-management/features/sync",
+      description: "Synchronize products across all sales channels",
+      icon: Globe,
+    },
+    {
+      title: "Analytics Dashboard",
+      href: "/product-management/features/analytics",
+      description: "Deep insights into product performance and trends",
+      icon: BarChart3,
+    },
+  ];
+
+  const productManagementSolutionsItems = [
+    {
+      title: "E-commerce Sellers",
+      href: "/product-management/solutions/ecommerce",
+      description: "Optimize your online store product catalogs",
+      icon: Store,
+    },
+    {
+      title: "Amazon FBA",
+      href: "/product-management/solutions/fba",
+      description: "Specialized tools for Amazon FBA sellers",
+      icon: Warehouse,
+    },
+    {
+      title: "Marketplace Sellers",
+      href: "/product-management/solutions/marketplace",
+      description: "Multi-marketplace product management solutions",
+      icon: Globe,
+    },
+    {
+      title: "Enterprise",
+      href: "/product-management/solutions/enterprise",
+      description: "Scalable solutions for large product catalogs",
+      icon: Layers,
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation */}
@@ -180,24 +295,28 @@ export default function MainLayout({ children }: MainLayoutProps) {
                   Shipping
                 </NavigationMenuTrigger>
                 <NavigationMenuContent>
-                  <div className="w-[800px] min-h-[400px] p-6 bg-background border rounded-lg shadow-lg">
-                    <div className="grid grid-cols-3 gap-6">
+                  <div className="w-[900px] p-8 bg-popover border shadow-xl rounded-lg">
+                    <div className="grid grid-cols-3 gap-8">
                       <div>
-                        <h4 className="text-sm font-medium text-foreground mb-3">Product</h4>
-                        <div className="space-y-3">
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 pb-2 border-b border-border/50">
+                          CAPABILITIES
+                        </h4>
+                        <div className="space-y-1">
                           {shippingMenuItems.map((item) => (
                             <Link
                               key={item.title}
                               to={item.href}
-                              className="block p-3 rounded-lg hover:bg-accent/50 transition-colors group"
+                              className="flex items-start gap-3 p-3 rounded-md hover:bg-accent group transition-all duration-200"
                             >
-                              <div className="flex items-start space-x-3">
-                                <div className="p-1 rounded bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                                  <item.icon className="h-4 w-4 text-primary" />
+                              <div className="mt-0.5 p-1.5 rounded-md bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                                <item.icon className="h-4 w-4 text-primary" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                                  {item.title}
                                 </div>
-                                <div>
-                                  <h5 className="text-sm font-medium text-foreground">{item.title}</h5>
-                                  <p className="text-xs text-muted-foreground">{item.description}</p>
+                                <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                                  {item.description}
                                 </div>
                               </div>
                             </Link>
@@ -205,21 +324,25 @@ export default function MainLayout({ children }: MainLayoutProps) {
                         </div>
                       </div>
                       <div>
-                        <h4 className="text-sm font-medium text-foreground mb-3">Solutions</h4>
-                        <div className="space-y-3">
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 pb-2 border-b border-border/50">
+                          SOLUTIONS
+                        </h4>
+                        <div className="space-y-1">
                           {shippingSolutionsItems.map((item) => (
                             <Link
                               key={item.title}
                               to={item.href}
-                              className="block p-3 rounded-lg hover:bg-accent/50 transition-colors group"
+                              className="flex items-start gap-3 p-3 rounded-md hover:bg-accent group transition-all duration-200"
                             >
-                              <div className="flex items-start space-x-3">
-                                <div className="p-1 rounded bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                                  <item.icon className="h-4 w-4 text-primary" />
+                              <div className="mt-0.5 p-1.5 rounded-md bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                                <item.icon className="h-4 w-4 text-primary" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                                  {item.title}
                                 </div>
-                                <div>
-                                  <h5 className="text-sm font-medium text-foreground">{item.title}</h5>
-                                  <p className="text-xs text-muted-foreground">{item.description}</p>
+                                <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                                  {item.description}
                                 </div>
                               </div>
                             </Link>
@@ -227,11 +350,26 @@ export default function MainLayout({ children }: MainLayoutProps) {
                         </div>
                       </div>
                       <div>
-                        <h4 className="text-sm font-medium text-foreground mb-3">Quick Links</h4>
-                        <div className="space-y-2">
-                          <Link to="/shipping-features" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Features</Link>
-                          <Link to="/shipping-pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Pricing</Link>
-                          <Link to="/shipping" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Dashboard</Link>
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 pb-2 border-b border-border/50">
+                          RESOURCES
+                        </h4>
+                        <div className="space-y-1">
+                          <Link to="/shipping-features" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
+                            <BarChart3 className="h-3 w-3" />
+                            Features Overview
+                          </Link>
+                          <Link to="/shipping-pricing" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
+                            <DollarSign className="h-3 w-3" />
+                            Pricing Plans
+                          </Link>
+                          <Link to="/shipping" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
+                            <Settings className="h-3 w-3" />
+                            Dashboard
+                          </Link>
+                          <Link to="/shipping-integrations" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
+                            <Zap className="h-3 w-3" />
+                            Integrations
+                          </Link>
                         </div>
                       </div>
                     </div>
@@ -244,24 +382,28 @@ export default function MainLayout({ children }: MainLayoutProps) {
                   Repricing
                 </NavigationMenuTrigger>
                 <NavigationMenuContent>
-                  <div className="w-[800px] min-h-[400px] p-6 bg-background border rounded-lg shadow-lg">
-                    <div className="grid grid-cols-3 gap-6">
+                  <div className="w-[900px] p-8 bg-popover border shadow-xl rounded-lg">
+                    <div className="grid grid-cols-3 gap-8">
                       <div>
-                        <h4 className="text-sm font-medium text-foreground mb-3">Product</h4>
-                        <div className="space-y-3">
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 pb-2 border-b border-border/50">
+                          CAPABILITIES
+                        </h4>
+                        <div className="space-y-1">
                           {repricingMenuItems.map((item) => (
                             <Link
                               key={item.title}
                               to={item.href}
-                              className="block p-3 rounded-lg hover:bg-accent/50 transition-colors group"
+                              className="flex items-start gap-3 p-3 rounded-md hover:bg-accent group transition-all duration-200"
                             >
-                              <div className="flex items-start space-x-3">
-                                <div className="p-1 rounded bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                                  <item.icon className="h-4 w-4 text-primary" />
+                              <div className="mt-0.5 p-1.5 rounded-md bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                                <item.icon className="h-4 w-4 text-primary" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                                  {item.title}
                                 </div>
-                                <div>
-                                  <h5 className="text-sm font-medium text-foreground">{item.title}</h5>
-                                  <p className="text-xs text-muted-foreground">{item.description}</p>
+                                <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                                  {item.description}
                                 </div>
                               </div>
                             </Link>
@@ -269,21 +411,25 @@ export default function MainLayout({ children }: MainLayoutProps) {
                         </div>
                       </div>
                       <div>
-                        <h4 className="text-sm font-medium text-foreground mb-3">Solutions</h4>
-                        <div className="space-y-3">
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 pb-2 border-b border-border/50">
+                          SOLUTIONS
+                        </h4>
+                        <div className="space-y-1">
                           {repricingSolutionsItems.map((item) => (
                             <Link
                               key={item.title}
                               to={item.href}
-                              className="block p-3 rounded-lg hover:bg-accent/50 transition-colors group"
+                              className="flex items-start gap-3 p-3 rounded-md hover:bg-accent group transition-all duration-200"
                             >
-                              <div className="flex items-start space-x-3">
-                                <div className="p-1 rounded bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                                  <item.icon className="h-4 w-4 text-primary" />
+                              <div className="mt-0.5 p-1.5 rounded-md bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                                <item.icon className="h-4 w-4 text-primary" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                                  {item.title}
                                 </div>
-                                <div>
-                                  <h5 className="text-sm font-medium text-foreground">{item.title}</h5>
-                                  <p className="text-xs text-muted-foreground">{item.description}</p>
+                                <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                                  {item.description}
                                 </div>
                               </div>
                             </Link>
@@ -291,11 +437,26 @@ export default function MainLayout({ children }: MainLayoutProps) {
                         </div>
                       </div>
                       <div>
-                        <h4 className="text-sm font-medium text-foreground mb-3">Quick Links</h4>
-                        <div className="space-y-2">
-                          <Link to="/repricing/features" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Features</Link>
-                          <Link to="/repricing/pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Pricing</Link>
-                          <Link to="/repricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Dashboard</Link>
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 pb-2 border-b border-border/50">
+                          RESOURCES
+                        </h4>
+                        <div className="space-y-1">
+                          <Link to="/repricing/features" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
+                            <BarChart3 className="h-3 w-3" />
+                            Features Overview
+                          </Link>
+                          <Link to="/repricing/pricing" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
+                            <DollarSign className="h-3 w-3" />
+                            Pricing Plans
+                          </Link>
+                          <Link to="/repricing" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
+                            <Settings className="h-3 w-3" />
+                            Dashboard
+                          </Link>
+                          <Link to="/strategies" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
+                            <Target className="h-3 w-3" />
+                            Strategies
+                          </Link>
                         </div>
                       </div>
                     </div>
@@ -308,23 +469,81 @@ export default function MainLayout({ children }: MainLayoutProps) {
                   Fulfillment
                 </NavigationMenuTrigger>
                 <NavigationMenuContent>
-                  <div className="w-[600px] min-h-[300px] p-6 bg-background border rounded-lg shadow-lg">
-                    <div className="grid grid-cols-2 gap-6">
+                  <div className="w-[900px] p-8 bg-popover border shadow-xl rounded-lg">
+                    <div className="grid grid-cols-3 gap-8">
                       <div>
-                        <h4 className="text-sm font-medium text-foreground mb-3">Services</h4>
-                        <div className="space-y-2">
-                          <Link to="/fulfillment/services/receiving" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Receiving</Link>
-                          <Link to="/fulfillment/services/storage" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Storage</Link>
-                          <Link to="/fulfillment/services/pick-pack" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Pick & Pack</Link>
-                          <Link to="/fulfillment/services/shipping-integration" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Shipping Integration</Link>
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 pb-2 border-b border-border/50">
+                          CAPABILITIES
+                        </h4>
+                        <div className="space-y-1">
+                          {fulfillmentMenuItems.map((item) => (
+                            <Link
+                              key={item.title}
+                              to={item.href}
+                              className="flex items-start gap-3 p-3 rounded-md hover:bg-accent group transition-all duration-200"
+                            >
+                              <div className="mt-0.5 p-1.5 rounded-md bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                                <item.icon className="h-4 w-4 text-primary" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                                  {item.title}
+                                </div>
+                                <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                                  {item.description}
+                                </div>
+                              </div>
+                            </Link>
+                          ))}
                         </div>
                       </div>
                       <div>
-                        <h4 className="text-sm font-medium text-foreground mb-3">Quick Links</h4>
-                        <div className="space-y-2">
-                          <Link to="/fulfillment/features" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Features</Link>
-                          <Link to="/fulfillment/pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Pricing</Link>
-                          <Link to="/fulfillment-dashboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Dashboard</Link>
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 pb-2 border-b border-border/50">
+                          SOLUTIONS
+                        </h4>
+                        <div className="space-y-1">
+                          {fulfillmentSolutionsItems.map((item) => (
+                            <Link
+                              key={item.title}
+                              to={item.href}
+                              className="flex items-start gap-3 p-3 rounded-md hover:bg-accent group transition-all duration-200"
+                            >
+                              <div className="mt-0.5 p-1.5 rounded-md bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                                <item.icon className="h-4 w-4 text-primary" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                                  {item.title}
+                                </div>
+                                <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                                  {item.description}
+                                </div>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 pb-2 border-b border-border/50">
+                          RESOURCES
+                        </h4>
+                        <div className="space-y-1">
+                          <Link to="/fulfillment/features" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
+                            <BarChart3 className="h-3 w-3" />
+                            Features Overview
+                          </Link>
+                          <Link to="/fulfillment/pricing" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
+                            <DollarSign className="h-3 w-3" />
+                            Pricing Plans
+                          </Link>
+                          <Link to="/fulfillment-dashboard" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
+                            <Settings className="h-3 w-3" />
+                            Dashboard
+                          </Link>
+                          <Link to="/fulfillment-quote" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
+                            <Zap className="h-3 w-3" />
+                            Get Quote
+                          </Link>
                         </div>
                       </div>
                     </div>
@@ -337,23 +556,81 @@ export default function MainLayout({ children }: MainLayoutProps) {
                   Product Management
                 </NavigationMenuTrigger>
                 <NavigationMenuContent>
-                  <div className="w-[600px] min-h-[300px] p-6 bg-background border rounded-lg shadow-lg">
-                    <div className="grid grid-cols-2 gap-6">
+                  <div className="w-[900px] p-8 bg-popover border shadow-xl rounded-lg">
+                    <div className="grid grid-cols-3 gap-8">
                       <div>
-                        <h4 className="text-sm font-medium text-foreground mb-3">Features</h4>
-                        <div className="space-y-2">
-                          <Link to="/product-management/features/ai-optimization" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">AI Optimization</Link>
-                          <Link to="/product-management/features/bulk-editing" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Bulk Editing</Link>
-                          <Link to="/product-management/features/multi-channel-sync" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Multi-Channel Sync</Link>
-                          <Link to="/product-management/features/quality-control" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Quality Control</Link>
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 pb-2 border-b border-border/50">
+                          CAPABILITIES
+                        </h4>
+                        <div className="space-y-1">
+                          {productManagementMenuItems.map((item) => (
+                            <Link
+                              key={item.title}
+                              to={item.href}
+                              className="flex items-start gap-3 p-3 rounded-md hover:bg-accent group transition-all duration-200"
+                            >
+                              <div className="mt-0.5 p-1.5 rounded-md bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                                <item.icon className="h-4 w-4 text-primary" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                                  {item.title}
+                                </div>
+                                <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                                  {item.description}
+                                </div>
+                              </div>
+                            </Link>
+                          ))}
                         </div>
                       </div>
                       <div>
-                        <h4 className="text-sm font-medium text-foreground mb-3">Quick Links</h4>
-                        <div className="space-y-2">
-                          <Link to="/product-management/features" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Features</Link>
-                          <Link to="/product-management/pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Pricing</Link>
-                          <Link to="/products" className="text-sm text-muted-foreground hover:text-foreground transition-colors block">Dashboard</Link>
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 pb-2 border-b border-border/50">
+                          SOLUTIONS
+                        </h4>
+                        <div className="space-y-1">
+                          {productManagementSolutionsItems.map((item) => (
+                            <Link
+                              key={item.title}
+                              to={item.href}
+                              className="flex items-start gap-3 p-3 rounded-md hover:bg-accent group transition-all duration-200"
+                            >
+                              <div className="mt-0.5 p-1.5 rounded-md bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                                <item.icon className="h-4 w-4 text-primary" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                                  {item.title}
+                                </div>
+                                <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                                  {item.description}
+                                </div>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 pb-2 border-b border-border/50">
+                          RESOURCES
+                        </h4>
+                        <div className="space-y-1">
+                          <Link to="/product-management/features" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
+                            <BarChart3 className="h-3 w-3" />
+                            Features Overview
+                          </Link>
+                          <Link to="/product-management/pricing" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
+                            <DollarSign className="h-3 w-3" />
+                            Pricing Plans
+                          </Link>
+                          <Link to="/products" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
+                            <Settings className="h-3 w-3" />
+                            Dashboard
+                          </Link>
+                          <Link to="/bulk-editor" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
+                            <Zap className="h-3 w-3" />
+                            Bulk Editor
+                          </Link>
                         </div>
                       </div>
                     </div>
@@ -362,12 +639,65 @@ export default function MainLayout({ children }: MainLayoutProps) {
               </NavigationMenuItem>
 
               <NavigationMenuItem>
-                <Link
-                  to="/pricing"
-                  className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-transparent px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent/50 hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50"
-                >
-                  Pricing
-                </Link>
+                <NavigationMenuTrigger className="text-foreground bg-transparent hover:bg-accent/50">
+                  Company
+                </NavigationMenuTrigger>
+                <NavigationMenuContent>
+                  <div className="w-[400px] p-6 bg-popover border shadow-xl rounded-lg">
+                    <div className="space-y-1">
+                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 pb-2 border-b border-border/50">
+                        COMPANY
+                      </h4>
+                      <Link to="/about-us" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
+                        <Users className="h-3 w-3" />
+                        About Us
+                      </Link>
+                      <Link to="#careers" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
+                        <Target className="h-3 w-3" />
+                        Careers
+                      </Link>
+                      <Link to="#contact" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
+                        <Phone className="h-3 w-3" />
+                        Contact Us
+                      </Link>
+                      <Link to="/privacy-policy" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
+                        <Shield className="h-3 w-3" />
+                        Privacy Policy
+                      </Link>
+                    </div>
+                  </div>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
+
+              <NavigationMenuItem>
+                <NavigationMenuTrigger className="text-foreground bg-transparent hover:bg-accent/50">
+                  Resources
+                </NavigationMenuTrigger>
+                <NavigationMenuContent>
+                  <div className="w-[400px] p-6 bg-popover border shadow-xl rounded-lg">
+                    <div className="space-y-1">
+                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 pb-2 border-b border-border/50">
+                        RESOURCES
+                      </h4>
+                      <Link to="#documentation" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
+                        <BookOpen className="h-3 w-3" />
+                        Documentation
+                      </Link>
+                      <Link to="#support" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
+                        <HelpCircle className="h-3 w-3" />
+                        Support Center
+                      </Link>
+                      <Link to="#blog" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
+                        <Globe className="h-3 w-3" />
+                        Blog
+                      </Link>
+                      <Link to="#api" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
+                        <Zap className="h-3 w-3" />
+                        API Reference
+                      </Link>
+                    </div>
+                  </div>
+                </NavigationMenuContent>
               </NavigationMenuItem>
 
               <NavigationMenuItem>
