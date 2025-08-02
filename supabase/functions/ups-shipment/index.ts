@@ -168,6 +168,11 @@ serve(async (req) => {
       'paymentInfo.shipperAccountNumber', 'paymentInfo.paymentType'
     ];
 
+    // Check phone numbers - warn if missing but don't fail
+    if (!requestData.shipFrom.phone && !requestData.shipTo.phone) {
+      console.warn('⚠️ No phone numbers provided - UPS strongly recommends phone numbers for shipments');
+    }
+
     const missingFields = requiredFields.filter(field => {
       const keys = field.split('.');
       let value = requestData as any;
@@ -202,6 +207,9 @@ serve(async (req) => {
           Shipper: {
             Name: requestData.shipFrom.name,
             ShipperNumber: upsAccountNumber,
+            Phone: {
+              Number: requestData.shipFrom.phone || "5145550123"
+            },
             Address: {
               AddressLine: requestData.shipFrom.address2 
                 ? [requestData.shipFrom.address, requestData.shipFrom.address2]
@@ -214,6 +222,9 @@ serve(async (req) => {
           },
           ShipTo: {
             Name: requestData.shipTo.name,
+            Phone: {
+              Number: requestData.shipTo.phone || requestData.shipFrom.phone || "5145550123"
+            },
             Address: {
               AddressLine: requestData.shipTo.address2 
                 ? [requestData.shipTo.address, requestData.shipTo.address2]

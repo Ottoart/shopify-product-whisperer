@@ -22,8 +22,10 @@ import {
   ArrowUpDown,
   Zap,
   CheckCircle,
-  Globe
+  Globe,
+  Phone
 } from "lucide-react";
+import { PhoneNumberValidator } from "./PhoneNumberValidator";
 
 interface ShippingRate {
   service_code: string;
@@ -474,7 +476,8 @@ export function EnhancedShippingConfiguration({
           city: shipFromAddress?.city,
           state: shipFromAddress?.state,
           zip: shipFromAddress?.zip,
-          country: shipFromCountry
+          country: shipFromCountry,
+          phone: shipFromAddress?.phone || ""
         },
         ship_to: selectedOrder ? {
           name: selectedOrder.customerName,
@@ -483,7 +486,8 @@ export function EnhancedShippingConfiguration({
           city: selectedOrder.shippingAddress.city,
           state: selectedOrder.shippingAddress.state,
           zip: selectedOrder.shippingAddress.zip,
-          country: selectedOrder.shippingAddress.country
+          country: selectedOrder.shippingAddress.country,
+          phone: "" // TODO: Get customer phone from order data
         } : undefined,
         package: {
           weight: weightUnit === 'kg' ? weight * 2.20462 : weight,

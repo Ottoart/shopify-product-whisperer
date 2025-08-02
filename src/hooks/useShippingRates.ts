@@ -22,6 +22,7 @@ export interface RateRequest {
     state: string;
     zip: string;
     country: string;
+    phone?: string;
   };
   shipTo: {
     name: string;
@@ -31,6 +32,7 @@ export interface RateRequest {
     state: string;
     zip: string;
     country: string;
+    phone?: string;
   };
   package: {
     weight: number;
