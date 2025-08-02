@@ -88,50 +88,58 @@ export function ProductManagementNavbar() {
                 <NavigationMenuItem>
                   <NavigationMenuTrigger>Features</NavigationMenuTrigger>
                   <NavigationMenuContent>
-                    <ul className="grid w-[500px] gap-3 p-4 md:grid-cols-2">
-                      {featuresMenuItems.map((item) => (
-                        <li key={item.title}>
-                          <NavigationMenuLink asChild>
-                            <Link
-                              to={item.href}
-                              className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                            >
-                              <div className="text-sm font-medium leading-none">
+                    <div className="w-[600px] p-6 bg-popover border shadow-xl rounded-lg">
+                      <div className="space-y-1">
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 pb-2 border-b border-border/50">
+                          PRODUCT MANAGEMENT FEATURES
+                        </h4>
+                        {featuresMenuItems.map((item) => (
+                          <Link
+                            key={item.title}
+                            to={item.href}
+                            className="flex items-start gap-3 p-3 rounded-md hover:bg-accent group transition-all duration-200"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
                                 {item.title}
                               </div>
-                              <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                              <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
                                 {item.description}
-                              </p>
-                            </Link>
-                          </NavigationMenuLink>
-                        </li>
-                      ))}
-                    </ul>
+                              </div>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
                   </NavigationMenuContent>
                 </NavigationMenuItem>
                 
                 <NavigationMenuItem>
                   <NavigationMenuTrigger>Solutions</NavigationMenuTrigger>
                   <NavigationMenuContent>
-                    <ul className="grid w-[500px] gap-3 p-4 md:grid-cols-2">
-                      {solutionsMenuItems.map((item) => (
-                        <li key={item.title}>
-                          <NavigationMenuLink asChild>
-                            <Link
-                              to={item.href}
-                              className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                            >
-                              <div className="text-sm font-medium leading-none">
+                    <div className="w-[600px] p-6 bg-popover border shadow-xl rounded-lg">
+                      <div className="space-y-1">
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 pb-2 border-b border-border/50">
+                          BUSINESS SOLUTIONS
+                        </h4>
+                        {solutionsMenuItems.map((item) => (
+                          <Link
+                            key={item.title}
+                            to={item.href}
+                            className="flex items-start gap-3 p-3 rounded-md hover:bg-accent group transition-all duration-200"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
                                 {item.title}
                               </div>
-                              <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                              <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
                                 {item.description}
-                              </p>
-                            </Link>
-                          </NavigationMenuLink>
-                        </li>
-                      ))}
-                    </ul>
+                              </div>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
                   </NavigationMenuContent>
                 </NavigationMenuItem>
                 

@@ -84,25 +84,84 @@ export function ShippingNavbar() {
             Product
           </NavigationMenuTrigger>
           <NavigationMenuContent>
-            <div className="grid w-[600px] gap-3 p-4 md:grid-cols-2">
-              {productMenuItems.map((item) => (
-                <NavigationMenuLink asChild key={item.title}>
-                  <Link
-                    to={item.href}
-                    className={cn(
-                      "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                    )}
-                  >
-                    <div className="flex items-center gap-2">
-                      <item.icon className="h-4 w-4" />
-                      <div className="text-sm font-medium leading-none">{item.title}</div>
-                    </div>
-                    <p className="line-clamp-2 text-xs leading-snug text-muted-foreground">
-                      {item.description}
-                    </p>
-                  </Link>
-                </NavigationMenuLink>
-              ))}
+            <div className="w-[800px] p-8 bg-popover border shadow-xl rounded-lg">
+              <div className="grid grid-cols-3 gap-8">
+                <div>
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 pb-2 border-b border-border/50">
+                    CAPABILITIES
+                  </h4>
+                  <div className="space-y-1">
+                    {productMenuItems.map((item) => (
+                      <Link
+                        key={item.title}
+                        to={item.href}
+                        className="flex items-start gap-3 p-3 rounded-md hover:bg-accent group transition-all duration-200"
+                      >
+                        <div className="mt-0.5 p-1.5 rounded-md bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                          <item.icon className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                            {item.title}
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                            {item.description}
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 pb-2 border-b border-border/50">
+                    SOLUTIONS
+                  </h4>
+                  <div className="space-y-1">
+                    {solutionsMenuItems.map((item) => (
+                      <Link
+                        key={item.title}
+                        to={item.href}
+                        className="flex items-start gap-3 p-3 rounded-md hover:bg-accent group transition-all duration-200"
+                      >
+                        <div className="mt-0.5 p-1.5 rounded-md bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                          <item.icon className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                            {item.title}
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                            {item.description}
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 pb-2 border-b border-border/50">
+                    RESOURCES
+                  </h4>
+                  <div className="space-y-1">
+                    <Link to="/shipping-features" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
+                      <BarChart3 className="h-3 w-3" />
+                      Features Overview
+                    </Link>
+                    <Link to="/shipping-pricing" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
+                      <Package className="h-3 w-3" />
+                      Pricing Plans
+                    </Link>
+                    <Link to="/shipping-integrations" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
+                      <Zap className="h-3 w-3" />
+                      Integrations
+                    </Link>
+                    <Link to="/shipping-resources" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
+                      <Settings className="h-3 w-3" />
+                      Resources
+                    </Link>
+                  </div>
+                </div>
+              </div>
             </div>
           </NavigationMenuContent>
         </NavigationMenuItem>
@@ -112,25 +171,31 @@ export function ShippingNavbar() {
             Solutions
           </NavigationMenuTrigger>
           <NavigationMenuContent>
-            <div className="grid w-[600px] gap-3 p-4 md:grid-cols-2">
-              {solutionsMenuItems.map((item) => (
-                <NavigationMenuLink asChild key={item.title}>
+            <div className="w-[600px] p-6 bg-popover border shadow-xl rounded-lg">
+              <div className="space-y-1">
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 pb-2 border-b border-border/50">
+                  SOLUTIONS
+                </h4>
+                {solutionsMenuItems.map((item) => (
                   <Link
+                    key={item.title}
                     to={item.href}
-                    className={cn(
-                      "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                    )}
+                    className="flex items-start gap-3 p-3 rounded-md hover:bg-accent group transition-all duration-200"
                   >
-                    <div className="flex items-center gap-2">
-                      <item.icon className="h-4 w-4" />
-                      <div className="text-sm font-medium leading-none">{item.title}</div>
+                    <div className="mt-0.5 p-1.5 rounded-md bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                      <item.icon className="h-4 w-4 text-primary" />
                     </div>
-                    <p className="line-clamp-2 text-xs leading-snug text-muted-foreground">
-                      {item.description}
-                    </p>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                        {item.title}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                        {item.description}
+                      </div>
+                    </div>
                   </Link>
-                </NavigationMenuLink>
-              ))}
+                ))}
+              </div>
             </div>
           </NavigationMenuContent>
         </NavigationMenuItem>

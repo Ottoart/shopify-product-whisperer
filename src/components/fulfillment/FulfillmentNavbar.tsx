@@ -130,50 +130,80 @@ export function FulfillmentNavbar() {
                   <NavigationMenuItem>
                     <NavigationMenuTrigger>Services</NavigationMenuTrigger>
                     <NavigationMenuContent>
-                      <ul className="grid w-[600px] gap-3 p-4 md:grid-cols-3">
-                        {servicesMenuItems.map((item) => (
-                          <li key={item.title}>
-                            <NavigationMenuLink asChild>
-                              <Link
-                                to={item.href}
-                                className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                              >
-                                <div className="text-sm font-medium leading-none">
-                                  {item.title}
-                                </div>
-                                <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                                  {item.description}
-                                </p>
+                      <div className="w-[800px] p-8 bg-popover border shadow-xl rounded-lg">
+                        <div className="grid grid-cols-3 gap-8">
+                          <div className="col-span-2">
+                            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 pb-2 border-b border-border/50">
+                              FULFILLMENT SERVICES
+                            </h4>
+                            <div className="grid grid-cols-2 gap-1">
+                              {servicesMenuItems.map((item) => (
+                                <Link
+                                  key={item.title}
+                                  to={item.href}
+                                  className="flex items-start gap-3 p-3 rounded-md hover:bg-accent group transition-all duration-200"
+                                >
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                                      {item.title}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                                      {item.description}
+                                    </div>
+                                  </div>
+                                </Link>
+                              ))}
+                            </div>
+                          </div>
+                          <div>
+                            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 pb-2 border-b border-border/50">
+                              QUICK ACCESS
+                            </h4>
+                            <div className="space-y-1">
+                              <Link to="/fulfillment/features" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
+                                Features
                               </Link>
-                            </NavigationMenuLink>
-                          </li>
-                        ))}
-                      </ul>
+                              <Link to="/fulfillment/pricing" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
+                                Pricing
+                              </Link>
+                              <Link to="/fulfillment-quote" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
+                                Get Quote
+                              </Link>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </NavigationMenuContent>
                   </NavigationMenuItem>
                   
                   <NavigationMenuItem>
                     <NavigationMenuTrigger>Products</NavigationMenuTrigger>
                     <NavigationMenuContent>
-                      <ul className="grid w-[600px] gap-3 p-4 md:grid-cols-2">
-                        {productsMenuItems.map((item) => (
-                          <li key={item.title}>
-                            <NavigationMenuLink asChild>
+                      <div className="w-[700px] p-6 bg-popover border shadow-xl rounded-lg">
+                        <div className="space-y-1">
+                          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 pb-2 border-b border-border/50">
+                            FULFILLMENT PRODUCTS
+                          </h4>
+                          <div className="grid grid-cols-2 gap-1">
+                            {productsMenuItems.map((item) => (
                               <Link
+                                key={item.title}
                                 to={item.href}
-                                className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                                className="flex items-start gap-3 p-3 rounded-md hover:bg-accent group transition-all duration-200"
                               >
-                                <div className="text-sm font-medium leading-none">
-                                  {item.title}
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                                    {item.title}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                                    {item.description}
+                                  </div>
                                 </div>
-                                <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                                  {item.description}
-                                </p>
                               </Link>
-                            </NavigationMenuLink>
-                          </li>
-                        ))}
-                      </ul>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
                     </NavigationMenuContent>
                   </NavigationMenuItem>
                   
