@@ -804,10 +804,10 @@ async function syncEbayOrders(storeConfig: any, user: any, supabase: any, syncRe
   }
 
   // eBay Sell Fulfillment API endpoint for orders with full shipping details for sellers
-  // Add date filter to get only recent orders (last 30 days)
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const dateFilter = thirtyDaysAgo.toISOString();
+  // Add date filter to get only recent orders (last 7 days)
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const dateFilter = sevenDaysAgo.toISOString();
   const apiUrl = `https://api.ebay.com/sell/fulfillment/v1/order?filter=orderfulfillmentstatus:{NOT_STARTED|IN_PROGRESS}%20AND%20creationdate:[${dateFilter}..&limit=50`;
   
   console.log(`Fetching orders from eBay API: ${apiUrl}`);

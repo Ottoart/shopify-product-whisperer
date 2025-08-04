@@ -167,7 +167,15 @@ export function OrderManagement() {
       
       // Debug logging for eBay orders
       if (order.storePlatform === 'ebay') {
-        console.log(`eBay Order ${order.orderNumber}: status=${order.status}, isAwaitingShipment=${isAwaitingShipment}, isFromActiveStore=${isFromActiveStore}, store=${order.storeName}`);
+        console.log(`eBay Order ${order.orderNumber}: status=${order.status}, isAwaitingShipment=${isAwaitingShipment}, isFromActiveStore=${isFromActiveStore}, store=${order.storeName}, orderDate=${order.orderDate}`);
+        
+        // Log store config match details
+        const matchingStore = storeConfigs.find(store => store.store_name === order.storeName);
+        if (matchingStore) {
+          console.log(`  Matching store found: ${matchingStore.store_name}, active: ${matchingStore.is_active}, platform: ${matchingStore.platform}`);
+        } else {
+          console.log(`  No matching store found for: ${order.storeName}. Available stores:`, storeConfigs.map(s => s.store_name));
+        }
       }
       
       return isAwaitingShipment && isFromActiveStore;
