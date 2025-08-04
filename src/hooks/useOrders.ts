@@ -195,23 +195,39 @@ export const useOrders = () => {
           // Try multiple approaches to get the image
           let imageSrc = undefined;
           
+          // Debug logging for eBay items
+          if (order.store_platform === 'ebay') {
+            console.log(`🔍 eBay Item Image Lookup:`, {
+              productTitle: item.product_title,
+              variantTitle: item.variant_title,
+              handle: item.product_handle,
+              sku: item.sku,
+              availableHandles: Object.keys(productImages).slice(0, 5),
+              availableSkus: Object.keys(skuImages).slice(0, 5)
+            });
+          }
+          
           // 1. Try handle lookup
           if (item.product_handle && productImages[item.product_handle]) {
             imageSrc = productImages[item.product_handle];
+            console.log(`✅ Found image by handle: ${item.product_handle}`);
           }
           // 2. Try SKU lookup  
           else if (item.sku && skuImages[item.sku]) {
             imageSrc = skuImages[item.sku];
+            console.log(`✅ Found image by SKU: ${item.sku}`);
           }
           // 3. Try handle as SKU lookup (for eBay products)
           else if (item.product_handle && skuImages[item.product_handle]) {
             imageSrc = skuImages[item.product_handle];
+            console.log(`✅ Found image by handle as SKU: ${item.product_handle}`);
           }
           // 4. For eBay products, try without EB- prefix
           else if (item.sku && item.sku.startsWith('EB-')) {
             const cleanSku = item.sku.replace('EB-', '');
             if (skuImages[cleanSku]) {
               imageSrc = skuImages[cleanSku];
+              console.log(`✅ Found image by clean SKU: ${cleanSku}`);
             }
           }
           // 5. Try product title lookup for eBay products
@@ -226,7 +242,7 @@ export const useOrders = () => {
             id: item.id,
             productHandle: item.product_handle,
             productTitle: item.product_title,
-            variantTitle: item.variant_title,
+            variantTitle: item.variant_title === '[object Object]' ? null : item.variant_title,
             sku: item.sku,
             quantity: item.quantity,
             price: item.price,
