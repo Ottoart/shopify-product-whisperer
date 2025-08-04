@@ -165,6 +165,11 @@ export function OrderManagement() {
       // Only from active stores
       const isFromActiveStore = storeConfigs.some(store => store.store_name === order.storeName && store.is_active);
       
+      // Debug logging for eBay orders
+      if (order.storePlatform === 'ebay') {
+        console.log(`eBay Order ${order.orderNumber}: status=${order.status}, isAwaitingShipment=${isAwaitingShipment}, isFromActiveStore=${isFromActiveStore}, store=${order.storeName}`);
+      }
+      
       return isAwaitingShipment && isFromActiveStore;
     });
     setOrders(filteredData);

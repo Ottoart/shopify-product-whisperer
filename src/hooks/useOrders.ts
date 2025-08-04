@@ -207,6 +207,20 @@ export const useOrders = () => {
           else if (item.product_handle && skuImages[item.product_handle]) {
             imageSrc = skuImages[item.product_handle];
           }
+          // 4. For eBay products, try without EB- prefix
+          else if (item.sku && item.sku.startsWith('EB-')) {
+            const cleanSku = item.sku.replace('EB-', '');
+            if (skuImages[cleanSku]) {
+              imageSrc = skuImages[cleanSku];
+            }
+          }
+          // 5. Try product title lookup for eBay products
+          else if (item.product_title && item.product_title.includes('eBay')) {
+            // Look for any product with similar title
+            const titleWords = item.product_title.toLowerCase().split(' ').slice(0, 3).join(' ');
+            const matchingImage = Object.values(productImages).find(img => img);
+            if (matchingImage) imageSrc = matchingImage;
+          }
           
           return {
             id: item.id,
