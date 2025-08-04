@@ -808,7 +808,7 @@ async function syncEbayOrders(storeConfig: any, user: any, supabase: any, syncRe
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
   const dateFilter = sevenDaysAgo.toISOString();
-  const apiUrl = `https://api.ebay.com/sell/fulfillment/v1/order?filter=orderfulfillmentstatus:{NOT_STARTED|IN_PROGRESS}%20AND%20creationdate:[${dateFilter}..&limit=50`;
+  const apiUrl = `https://api.ebay.com/sell/fulfillment/v1/order?filter=orderfulfillmentstatus:{NOT_STARTED|IN_PROGRESS}%20AND%20creationdate:[${dateFilter}..]&limit=50`;
   
   console.log(`Fetching orders from eBay API: ${apiUrl}`);
   
