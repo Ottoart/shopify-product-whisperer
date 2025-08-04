@@ -95,15 +95,19 @@ export function EbayDataCleanup() {
     try {
       console.log('🔄 Starting eBay sync...');
       const { data, error } = await supabase.functions.invoke('sync-orders', {
-        body: { storeName: 'ebay' }
+        body: { storeFilter: 'ebay' } // Fixed parameter name
       });
       
       if (error) throw error;
       
       console.log('🔄 Sync results:', data);
+      
+      // Phase 2B: Verify sync quality
+      await verifySync2B();
+      
       toast({
         title: "Phase 2: eBay sync completed",
-        description: `Synced ${data.totalSynced || 0} orders`,
+        description: `Successfully synced orders. Check data quality below.`,
       });
       
       // Refresh data analysis
@@ -117,6 +121,62 @@ export function EbayDataCleanup() {
       });
     } finally {
       setIsSyncing(false);
+    }
+  };
+
+  const verifySync2B = async () => {
+    console.log('🔍 Phase 2B: Verifying sync quality...');
+    
+    try {
+      // Check recent orders for variant title quality
+      const { data: recentOrders } = await supabase
+        .from('orders')
+        .select(`
+          id,
+          order_number,
+          store_platform,
+          created_at,
+          order_items (
+            id,
+            variant_title,
+            sku
+          )
+        `)
+        .eq('store_platform', 'ebay')
+        .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+        .order('created_at', { ascending: false })
+        .limit(5);
+      
+      console.log('🔍 Recent eBay orders (last 24h):', recentOrders);
+      
+      // Check for corrupted variant titles in recent orders  
+      const corruptedRecent = recentOrders?.flatMap(order => 
+        order.order_items?.filter(item => 
+          item.variant_title && item.variant_title.includes('[object Object]')
+        ) || []
+      ) || [];
+      
+      console.log('🚨 Corrupted variant titles in recent orders:', corruptedRecent);
+      
+      if (corruptedRecent.length > 0) {
+        toast({
+          title: "⚠️ Phase 2B: Variant titles still corrupted",
+          description: `Found ${corruptedRecent.length} corrupted variant titles in recent orders`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "✅ Phase 2B: Sync quality verified",
+          description: "Recent orders have properly formatted variant titles",
+        });
+      }
+    } catch (error) {
+      console.error('Phase 2B verification failed:', error);
+      toast({
+        title: "Phase 2B verification failed",
+        description: "Could not verify sync quality",
+        variant: "destructive",
+      });
     }
   };
 
