@@ -50,7 +50,7 @@ import {
 import { ShippedProductsView } from './ShippedProductsView';
 import { LabelPurchaseDialog } from './LabelPurchaseDialog';
 import { TableColumnResizer } from './TableColumnResizer';
-import { EbayDataCleanup } from './EbayDataCleanup';
+
 
 export function OrderManagement() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -576,10 +576,6 @@ export function OrderManagement() {
           </div>
         </div>
 
-      {/* eBay Debug Section */}
-      <div className="border-b p-4">
-        <EbayDataCleanup />
-      </div>
 
       {/* Content Area */}
       <div className="flex-1 overflow-auto">
