@@ -51,12 +51,17 @@ export default function AuthPage() {
       setResetMode(true);
     }
 
-    // Handle URL hash parameters for email confirmation and password reset
-    const handleHashParams = () => {
+    // Handle URL hash parameters and URL parameters for email confirmation and password reset
+    const handleAuthParams = () => {
+      // Check URL hash first
       const hash = window.location.hash.substring(1);
-      const params = new URLSearchParams(hash);
+      const hashParams = new URLSearchParams(hash);
       
-      if (params.get('type') === 'signup' && params.get('access_token')) {
+      // Check URL search parameters as backup
+      const searchParams = new URLSearchParams(window.location.search);
+      
+      // Email confirmation handling
+      if (hashParams.get('type') === 'signup' && hashParams.get('access_token')) {
         // Clear the hash from URL
         window.history.replaceState(null, '', window.location.pathname);
         
@@ -67,18 +72,41 @@ export default function AuthPage() {
         });
       }
       
-      // Handle password reset tokens
-      if (params.get('type') === 'recovery' && params.get('access_token')) {
-        const accessToken = params.get('access_token');
-        if (accessToken) {
-          setResetMode(true);
-          // Clear the hash from URL for security
-          window.history.replaceState(null, '', '/auth?mode=reset');
+      // Password reset handling - check both hash and search params
+      const resetType = hashParams.get('type') || searchParams.get('type');
+      const accessToken = hashParams.get('access_token') || searchParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token') || searchParams.get('refresh_token');
+      
+      if (resetType === 'recovery' && accessToken) {
+        // Set session with the recovery tokens
+        supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken || accessToken
+        }).then(({ error }) => {
+          if (!error) {
+            setResetMode(true);
+            // Clear the URL for security
+            window.history.replaceState(null, '', '/auth?mode=reset');
+            toast({
+              title: 'Password reset ready',
+              description: 'You can now set your new password.',
+            });
+          } else {
+            console.error('Session error:', error);
+            toast({
+              title: 'Invalid reset link',
+              description: 'This password reset link is invalid or expired. Please request a new one.',
+              variant: 'destructive',
+            });
+          }
+        }).catch((error) => {
+          console.error('Session setup failed:', error);
           toast({
-            title: 'Password reset ready',
-            description: 'You can now set your new password.',
+            title: 'Authentication error',
+            description: 'Failed to authenticate reset session. Please try again.',
+            variant: 'destructive',
           });
-        }
+        });
       }
     };
 
@@ -107,8 +135,8 @@ export default function AuthPage() {
       }
     });
 
-    // Handle hash parameters on page load
-    handleHashParams();
+    // Handle auth parameters on page load
+    handleAuthParams();
 
     return () => subscription.unsubscribe();
   }, [navigate, toast]);
