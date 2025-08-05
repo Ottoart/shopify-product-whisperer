@@ -261,7 +261,9 @@ export default function Products() {
   const filteredProducts = products.filter(product => {
     const matchesSearch = (product.title?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
                          (product.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
-    const matchesStore = selectedStore === "all" || product.store_platform === selectedStore;
+    
+    // Use vendor field instead of store_platform since that's what actually exists in the data
+    const matchesStore = selectedStore === "all" || product.vendor === selectedStore;
     const matchesStatus = selectedStatus === "all" || product.status === selectedStatus;
     
     return matchesSearch && matchesStore && matchesStatus;
@@ -306,6 +308,15 @@ export default function Products() {
             {products.length > 0 && (
               <span className="block mt-1 text-sm font-medium">
                 Showing {filteredProducts.length} of {products.length} products
+                {/* Debug current store counts */}
+                {stores.map(store => {
+                  const storeProducts = products.filter(p => p.vendor === store.store_name);
+                  return storeProducts.length > 0 ? (
+                    <span key={store.id} className="block text-xs text-muted-foreground/70">
+                      Viewing products from: {store.store_name} {storeProducts.length} products
+                    </span>
+                  ) : null;
+                })}
               </span>
             )}
           </p>

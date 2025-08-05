@@ -403,9 +403,6 @@ serve(async (req) => {
         
         // Variant data from eBay listing
         variant_sku: itemData.sku || null,
-        variant_title: variants.length > 1 ? 
-          variants.map((v, i) => `Variant ${i + 1}${v.determinedStatus ? ` (${v.determinedStatus})` : ''}`).join(', ') :
-          null,
         variant_price: itemData.price ? parseFloat(itemData.price.toString()) : null,
         variant_inventory_qty: itemData.quantity || 0,
         variant_grams: weightInGrams,
