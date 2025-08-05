@@ -61,7 +61,7 @@ serve(async (req) => {
     const html = await renderAsync(
       React.createElement(PasswordResetEmail, {
         user_email: user.email,
-        reset_url: `${site_url}/auth?mode=reset#access_token=${token_hash}&refresh_token=${token}&type=recovery`,
+        reset_url: `${site_url}/auth?mode=reset#access_token=${token}&type=recovery`,
         site_url: site_url,
       })
     );
