@@ -293,13 +293,28 @@ export default function Products() {
     fetchProducts();
   };
 
+  // Helper function to map product vendor to store configuration
+  const getStoreFromVendor = (vendor: string) => {
+    // Map vendor names to store configurations
+    const storeMapping: Record<string, string> = {
+      'eBay': 'eBay Store',
+      'Prohair': 'Prohair'
+    };
+    return storeMapping[vendor] || vendor;
+  };
+
   // Filter products based on search and filters
   const filteredProducts = products.filter(product => {
-    const matchesSearch = (product.title?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
-                         (product.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
+    const matchesSearch = searchTerm === '' || 
+      product.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.vendor?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.handle?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.tags?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.category?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    // Use vendor field instead of store_platform since that's what actually exists in the data
-    const matchesStore = selectedStore === "all" || product.vendor === selectedStore;
+    // Map vendor to store name for proper filtering
+    const productStoreName = getStoreFromVendor(product.vendor || '');
+    const matchesStore = selectedStore === "all" || productStoreName === selectedStore;
     const matchesStatus = selectedStatus === "all" || product.status === selectedStatus;
     
     return matchesSearch && matchesStore && matchesStatus;
@@ -351,12 +366,12 @@ export default function Products() {
             {products.length > 0 && (
               <span className="block mt-1 text-sm font-medium">
                 Showing {filteredProducts.length} of {products.length} products
-                {/* Debug current store counts */}
                 {stores.map(store => {
-                  const storeProducts = products.filter(p => p.vendor === store.store_name);
+                  // Count products by mapping vendor to store name
+                  const storeProducts = products.filter(p => getStoreFromVendor(p.vendor || '') === store.store_name);
                   return storeProducts.length > 0 ? (
                     <span key={store.id} className="block text-xs text-muted-foreground/70">
-                      Viewing products from: {store.store_name} {storeProducts.length} products
+                      {store.store_name}: {storeProducts.length} products
                     </span>
                   ) : null;
                 })}
