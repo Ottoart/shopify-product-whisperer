@@ -99,12 +99,25 @@ export default function AuthPage() {
           console.log('VerifyOtp result:', { 
             error: error?.message, 
             session: !!data.session, 
-            user: !!data.user 
+            user: !!data.user,
+            sessionDetails: data.session ? {
+              access_token: !!data.session.access_token,
+              refresh_token: !!data.session.refresh_token,
+              user_id: data.session.user?.id
+            } : null
           });
           
           if (!error && data.session) {
+            // Explicitly set the session and user state immediately
+            setSession(data.session);
+            setUser(data.session.user);
+            console.log('Session successfully established for password reset:', {
+              sessionId: data.session.access_token?.substring(0, 10) + '...',
+              userId: data.session.user?.id
+            });
+            
             setResetMode(true);
-            // Clear the URL for security
+            // Clear the URL for security after session is established
             window.history.replaceState(null, '', '/auth?mode=reset');
             toast({
               title: 'Password reset ready',
@@ -305,6 +318,29 @@ export default function AuthPage() {
     setLoading(true);
 
     try {
+      // Validate session before attempting password update
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      
+      console.log('Session validation before password update:', {
+        hasSession: !!currentSession,
+        hasAccessToken: !!currentSession?.access_token,
+        userId: currentSession?.user?.id,
+        localSessionExists: !!session,
+        localUserExists: !!user
+      });
+      
+      if (!currentSession || !currentSession.access_token) {
+        console.error('No valid session found for password update');
+        toast({
+          title: 'Session expired',
+          description: 'Your session has expired. Please request a new password reset link.',
+          variant: 'destructive',
+        });
+        setResetMode(false);
+        window.history.replaceState(null, '', '/auth');
+        return;
+      }
+
       const { error } = await supabase.auth.updateUser({
         password: resetForm.password
       });
