@@ -71,26 +71,12 @@ export default function AuthPage() {
       if (params.get('type') === 'recovery' && params.get('access_token')) {
         const accessToken = params.get('access_token');
         if (accessToken) {
-          // Set the session with the recovery token
-          supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: accessToken // Use same token for both
-          }).then(({ error }) => {
-            if (!error) {
-              setResetMode(true);
-              // Clear the hash from URL for security
-              window.history.replaceState(null, '', '/auth?mode=reset');
-              toast({
-                title: 'Password reset ready',
-                description: 'You can now set your new password.',
-              });
-            } else {
-              toast({
-                title: 'Invalid reset link',
-                description: 'This password reset link is invalid or expired.',
-                variant: 'destructive',
-              });
-            }
+          setResetMode(true);
+          // Clear the hash from URL for security
+          window.history.replaceState(null, '', '/auth?mode=reset');
+          toast({
+            title: 'Password reset ready',
+            description: 'You can now set your new password.',
           });
         }
       }
