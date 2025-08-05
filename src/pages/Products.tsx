@@ -34,6 +34,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ConnectStoreButton } from "@/components/ConnectStoreButton";
 import { ProductComparison } from "@/components/ProductComparison";
 import { ProductList } from "@/components/ProductList";
+import { QueueManager } from "@/components/QueueManager";
 import { SyncProgressDialog } from "@/components/SyncProgressDialog";
 import { StoreSync } from "@/components/StoreSync";
 import { SyncStatusDisplay } from "@/components/SyncStatusDisplay";
@@ -95,6 +96,12 @@ interface Product {
   listing_status?: string;
 }
 
+interface QueueItem {
+  productId: string;
+  status: 'pending' | 'processing' | 'completed' | 'error';
+  error?: string;
+}
+
 interface StoreConfig {
   id: string;
   store_name: string;
@@ -118,6 +125,9 @@ export default function Products() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [optimizedData, setOptimizedData] = useState<any>(null);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
+  // Queue management state
+  const [queueItems, setQueueItems] = useState<QueueItem[]>([]);
+  const [showQueue, setShowQueue] = useState(false);
 
   useEffect(() => {
     if (session?.user) {
@@ -257,6 +267,32 @@ export default function Products() {
     }
   };
 
+  // Queue management functions
+  const addToQueue = (productIds: string[]) => {
+    const newItems = productIds.map(id => ({
+      productId: id,
+      status: 'pending' as const
+    }));
+    setQueueItems(prev => [...prev, ...newItems]);
+    setShowQueue(true); // Show queue when items are added
+    console.log('Adding to queue:', productIds);
+  };
+
+  const updateQueueItemStatus = (productId: string, status: 'pending' | 'processing' | 'completed' | 'error', error?: string) => {
+    setQueueItems(prev => prev.map(item => 
+      item.productId === productId ? { ...item, status, error } : item
+    ));
+  };
+
+  const removeFromQueue = (productId: string) => {
+    setQueueItems(prev => prev.filter(item => item.productId !== productId));
+  };
+
+  const handleUpdateProduct = (productId: string, updatedData: any) => {
+    // Refresh the products list after updates
+    fetchProducts();
+  };
+
   // Filter products based on search and filters
   const filteredProducts = products.filter(product => {
     const matchesSearch = (product.title?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
@@ -302,7 +338,14 @@ export default function Products() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Products</h1>
+          <h1 className="text-3xl font-bold">
+            Products
+            {queueItems.length > 0 && (
+              <Badge variant="secondary" className="ml-2">
+                {queueItems.filter(item => item.status === 'pending').length} in queue
+              </Badge>
+            )}
+          </h1>
           <p className="text-muted-foreground">
             Manage and optimize your product listings across all stores
             {products.length > 0 && (
@@ -405,12 +448,7 @@ export default function Products() {
               }))}
               selectedProducts={selectedProducts}
               onSelectionChange={setSelectedProducts}
-              onAddToQueue={(productIds) => {
-                toast({
-                  title: "Products added to queue",
-                  description: `${productIds.length} products added to optimization queue`,
-                });
-              }}
+              onAddToQueue={addToQueue}
               onProductsUpdated={fetchProducts}
               onProductUpdated={(productId, updatedData) => {
                 toast({
@@ -423,6 +461,77 @@ export default function Products() {
             />
           )}
         </>
+      )}
+
+      {/* AI Optimization Queue */}
+      {queueItems.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="h-5 w-5" />
+                AI Optimization Queue
+                <Badge variant="outline" className="ml-2">
+                  {queueItems.filter(item => item.status === 'pending').length} pending
+                </Badge>
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowQueue(!showQueue)}
+              >
+                {showQueue ? 'Hide' : 'Show'} Queue
+                <Eye className="ml-1 h-4 w-4" />
+              </Button>
+            </div>
+          </CardHeader>
+          {showQueue && (
+            <CardContent>
+              <QueueManager
+                queueItems={queueItems}
+                products={products.map(p => ({
+                  id: p.handle,
+                  title: p.title || '',
+                  handle: p.handle,
+                  type: p.type || '',
+                  vendor: p.vendor || '',
+                  category: p.category || '',
+                  tags: p.tags || '',
+                  published: p.published || false,
+                  option1Name: p.option1_name || '',
+                  option1Value: p.option1_value || '',
+                  variantSku: p.variant_sku || '',
+                  variantGrams: p.variant_grams || 0,
+                  variantInventoryTracker: p.variant_inventory_tracker || '',
+                  variantInventoryQty: p.variant_inventory_qty || 0,
+                  variantInventoryPolicy: p.variant_inventory_policy || '',
+                  variantFulfillmentService: p.variant_fulfillment_service || '',
+                  variantPrice: p.variant_price || 0,
+                  variantCompareAtPrice: p.variant_compare_at_price || 0,
+                  variantRequiresShipping: p.variant_requires_shipping || true,
+                  variantTaxable: p.variant_taxable || true,
+                  variantBarcode: p.variant_barcode || '',
+                  imagePosition: p.image_position || 0,
+                  imageSrc: p.image_src || '',
+                  bodyHtml: p.body_html || '',
+                  seoTitle: p.seo_title || '',
+                  seoDescription: p.seo_description || '',
+                  googleShoppingCondition: p.google_shopping_condition || 'new',
+                  googleShoppingGender: p.google_shopping_gender || 'unisex',
+                  googleShoppingAgeGroup: p.google_shopping_age_group || 'adult',
+                  updatedAt: p.updated_at || '',
+                  shopifySyncStatus: p.shopify_sync_status,
+                  shopifySyncedAt: p.shopify_synced_at,
+                  listingStatus: p.listing_status
+                }))}
+                onUpdateStatus={updateQueueItemStatus}
+                onUpdateProduct={handleUpdateProduct}
+                onRemoveFromQueue={removeFromQueue}
+                bulkMode={false}
+              />
+            </CardContent>
+          )}
+        </Card>
       )}
 
       {/* AI Optimization Comparison Dialog */}
