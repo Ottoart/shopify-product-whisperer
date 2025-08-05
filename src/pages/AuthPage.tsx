@@ -37,8 +37,21 @@ export default function AuthPage() {
     company: ''
   });
 
+  const [resetForm, setResetForm] = useState({
+    password: '',
+    confirmPassword: ''
+  });
+
+  const [resetMode, setResetMode] = useState(false);
+
   useEffect(() => {
-    // Handle URL hash parameters for email confirmation
+    // Check for reset mode from URL params
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('mode') === 'reset') {
+      setResetMode(true);
+    }
+
+    // Handle URL hash parameters for email confirmation and password reset
     const handleHashParams = () => {
       const hash = window.location.hash.substring(1);
       const params = new URLSearchParams(hash);
@@ -48,10 +61,19 @@ export default function AuthPage() {
         window.history.replaceState(null, '', window.location.pathname);
         
         // Show success message
-          toast({
-            title: 'Email confirmed!',
-            description: 'Your email has been confirmed successfully. Welcome to PrepFox!',
-          });
+        toast({
+          title: 'Email confirmed!',
+          description: 'Your email has been confirmed successfully. Welcome to PrepFox!',
+        });
+      }
+      
+      // Handle password reset tokens
+      if (params.get('type') === 'recovery' && params.get('access_token')) {
+        setResetMode(true);
+        toast({
+          title: 'Password reset ready',
+          description: 'You can now set your new password.',
+        });
       }
     };
 
@@ -207,6 +229,58 @@ export default function AuthPage() {
     }
   };
 
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (resetForm.password !== resetForm.confirmPassword) {
+      toast({
+        title: 'Passwords do not match',
+        description: 'Please make sure both passwords are identical.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (resetForm.password.length < 6) {
+      toast({
+        title: 'Password too short',
+        description: 'Password must be at least 6 characters long.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: resetForm.password
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Password updated successfully',
+        description: 'Your password has been changed. You can now sign in with your new password.',
+      });
+
+      // Clear reset mode and redirect to login
+      setResetMode(false);
+      window.history.replaceState(null, '', '/auth');
+      setActiveTab('login');
+      setResetForm({ password: '', confirmPassword: '' });
+      
+    } catch (error: any) {
+      toast({
+        title: 'Password reset failed',
+        description: error.message || 'Failed to update password. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
       <div className="w-full max-w-md space-y-6">
@@ -221,13 +295,91 @@ export default function AuthPage() {
 
         <Card className="border-border/50 backdrop-blur-sm bg-background/80">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center">Customer Access</CardTitle>
+            <CardTitle className="text-2xl text-center">
+              {resetMode ? 'Reset Your Password' : 'Customer Access'}
+            </CardTitle>
             <CardDescription className="text-center">
-              Sign in to your account or create a new one
+              {resetMode 
+                ? 'Enter your new password below' 
+                : 'Sign in to your account or create a new one'
+              }
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            {resetMode ? (
+              <form onSubmit={handlePasswordReset} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="new-password">New Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="new-password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Enter new password"
+                      className="pl-10 pr-10"
+                      value={resetForm.password}
+                      onChange={(e) => setResetForm(prev => ({ ...prev, password: e.target.value }))}
+                      required
+                      minLength={6}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-1 top-1 h-8 w-8 p-0"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password">Confirm New Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="confirm-password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Confirm new password"
+                      className="pl-10"
+                      value={resetForm.confirmPassword}
+                      onChange={(e) => setResetForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                      required
+                      minLength={6}
+                    />
+                  </div>
+                </div>
+
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Updating Password...
+                    </>
+                  ) : (
+                    'Update Password'
+                  )}
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="link"
+                  className="w-full text-sm"
+                  onClick={() => {
+                    setResetMode(false);
+                    window.history.replaceState(null, '', '/auth');
+                  }}
+                >
+                  Back to Sign In
+                </Button>
+              </form>
+            ) : (
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="login">Sign In</TabsTrigger>
                 <TabsTrigger value="signup">Sign Up</TabsTrigger>
@@ -468,6 +620,7 @@ export default function AuthPage() {
                 </form>
               </TabsContent>
             </Tabs>
+            )}
           </CardContent>
         </Card>
 
