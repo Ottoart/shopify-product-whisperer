@@ -77,63 +77,39 @@ export default function AuthPage() {
       const accessToken = hashParams.get('access_token') || searchParams.get('access_token');
       
       if (resetType === 'recovery' && accessToken) {
-        // Check if this is a recovery code (6 digits) or a JWT token
-        const isRecoveryCode = /^\d{6}$/.test(accessToken);
+        console.log('Recovery flow - token_hash:', accessToken);
         
-        if (isRecoveryCode) {
-          // Use verifyOtp for recovery codes
-          supabase.auth.verifyOtp({
-            token_hash: accessToken,
-            type: 'recovery'
-          }).then(({ error, data }) => {
-            if (!error && data.session) {
-              setResetMode(true);
-              // Clear the URL for security
-              window.history.replaceState(null, '', '/auth?mode=reset');
-              toast({
-                title: 'Password reset ready',
-                description: 'You can now set your new password.',
-              });
-            } else {
-              console.error('Recovery verification error:', error);
-              toast({
-                title: 'Invalid reset link',
-                description: 'This password reset link is invalid or expired. Please request a new one.',
-                variant: 'destructive',
-              });
-            }
-          }).catch((error) => {
-            console.error('Recovery verification failed:', error);
+        // Use verifyOtp for recovery token verification
+        supabase.auth.verifyOtp({
+          token_hash: accessToken,
+          type: 'recovery'
+        }).then(({ error, data }) => {
+          console.log('VerifyOtp result:', { error, session: !!data.session });
+          
+          if (!error && data.session) {
+            setResetMode(true);
+            // Clear the URL for security
+            window.history.replaceState(null, '', '/auth?mode=reset');
             toast({
-              title: 'Authentication error',
-              description: 'Failed to verify reset code. Please try again.',
+              title: 'Password reset ready',
+              description: 'You can now set your new password.',
+            });
+          } else {
+            console.error('Recovery verification error:', error);
+            toast({
+              title: 'Invalid reset link',
+              description: 'This password reset link is invalid or expired. Please request a new one.',
               variant: 'destructive',
             });
+          }
+        }).catch((error) => {
+          console.error('Recovery verification failed:', error);
+          toast({
+            title: 'Authentication error',
+            description: 'Failed to verify reset token. Please try again.',
+            variant: 'destructive',
           });
-        } else {
-          // Handle JWT tokens with setSession
-          const refreshToken = hashParams.get('refresh_token') || searchParams.get('refresh_token');
-          supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken || accessToken
-          }).then(({ error }) => {
-            if (!error) {
-              setResetMode(true);
-              window.history.replaceState(null, '', '/auth?mode=reset');
-              toast({
-                title: 'Password reset ready',
-                description: 'You can now set your new password.',
-              });
-            } else {
-              console.error('Session error:', error);
-              toast({
-                title: 'Invalid reset link',
-                description: 'This password reset link is invalid or expired. Please request a new one.',
-                variant: 'destructive',
-              });
-            }
-          });
-        }
+        });
       }
     };
 

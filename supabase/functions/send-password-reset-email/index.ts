@@ -86,7 +86,7 @@ serve(async (req) => {
     const html = await renderAsync(
       React.createElement(PasswordResetEmail, {
         user_email: user.email,
-        reset_url: `https://prepfox.ca/auth?mode=reset#access_token=${token}&type=recovery`,
+        reset_url: `https://prepfox.ca/auth?mode=reset&access_token=${token_hash}&type=recovery`,
         site_url: "https://prepfox.ca",
       })
     );
