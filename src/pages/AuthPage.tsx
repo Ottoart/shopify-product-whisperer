@@ -75,16 +75,32 @@ export default function AuthPage() {
       // Password reset handling - check both hash and search params
       const resetType = hashParams.get('type') || searchParams.get('type');
       const accessToken = hashParams.get('access_token') || searchParams.get('access_token');
+      const email = hashParams.get('email') || searchParams.get('email');
       
       if (resetType === 'recovery' && accessToken) {
-        console.log('Recovery flow - token_hash:', accessToken);
+        console.log('Recovery flow - token_hash:', accessToken, 'email:', email);
         
-        // Use verifyOtp for recovery token verification
+        if (!email) {
+          console.error('Missing email parameter in reset URL');
+          toast({
+            title: 'Invalid reset link',
+            description: 'This password reset link is missing required information. Please request a new one.',
+            variant: 'destructive',
+          });
+          return;
+        }
+        
+        // Use verifyOtp for recovery token verification with email
         supabase.auth.verifyOtp({
           token_hash: accessToken,
-          type: 'recovery'
+          type: 'recovery',
+          email: email
         }).then(({ error, data }) => {
-          console.log('VerifyOtp result:', { error, session: !!data.session });
+          console.log('VerifyOtp result:', { 
+            error: error?.message, 
+            session: !!data.session, 
+            user: !!data.user 
+          });
           
           if (!error && data.session) {
             setResetMode(true);
@@ -98,7 +114,7 @@ export default function AuthPage() {
             console.error('Recovery verification error:', error);
             toast({
               title: 'Invalid reset link',
-              description: 'This password reset link is invalid or expired. Please request a new one.',
+              description: error?.message || 'This password reset link is invalid or expired. Please request a new one.',
               variant: 'destructive',
             });
           }
