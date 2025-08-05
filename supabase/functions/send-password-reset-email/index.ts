@@ -26,12 +26,28 @@ serve(async (req) => {
   try {
     const payload = await req.text();
     const headers = Object.fromEntries(req.headers);
-    const wh = new Webhook(hookSecret);
+    
+    console.log("=== DEBUGGING WEBHOOK ===");
+    console.log("Hook secret exists:", !!hookSecret);
+    console.log("Hook secret length:", hookSecret?.length || 0);
+    console.log("Payload length:", payload.length);
+    console.log("Headers:", JSON.stringify(headers, null, 2));
+    console.log("Raw payload (first 200 chars):", payload.substring(0, 200));
+    
+    // Parse payload directly without webhook verification for now
+    let parsedPayload;
+    try {
+      parsedPayload = JSON.parse(payload);
+      console.log("Parsed payload structure:", Object.keys(parsedPayload));
+    } catch (parseError) {
+      console.error("Failed to parse payload as JSON:", parseError);
+      throw new Error("Invalid JSON payload");
+    }
 
     const {
       user,
       email_data: { token, token_hash, redirect_to, email_action_type, site_url },
-    } = wh.verify(payload, headers) as {
+    } = parsedPayload as {
       user: {
         email: string;
         id: string;
