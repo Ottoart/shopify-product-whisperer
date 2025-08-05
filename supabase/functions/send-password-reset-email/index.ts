@@ -93,7 +93,7 @@ serve(async (req) => {
 
     // Send the email using Resend
     const { error } = await resend.emails.send({
-      from: "PrepFox <noreply@prepfox.ca>",
+      from: "PrepFox <onboarding@resend.dev>",
       to: [user.email],
       subject: "Reset your PrepFox password",
       html,
