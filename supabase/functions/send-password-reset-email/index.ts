@@ -2,11 +2,9 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@4.0.0";
 import React from "npm:react@18.3.1";
 import { renderAsync } from "npm:@react-email/components@0.0.22";
-import { Webhook } from "https://esm.sh/standardwebhooks@1.0.0";
 import { PasswordResetEmail } from "./_templates/password-reset-email.tsx";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY") as string);
-const hookSecret = Deno.env.get("SEND_EMAIL_HOOK_SECRET") as string;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,52 +12,63 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log("=== PASSWORD RESET WEBHOOK CALLED ===");
+  console.log("Method:", req.method);
+  console.log("URL:", req.url);
+  
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
+    console.log("Handling OPTIONS request");
     return new Response(null, { headers: corsHeaders });
   }
 
   if (req.method !== "POST") {
+    console.log("Invalid method:", req.method);
     return new Response("Method not allowed", { status: 405, headers: corsHeaders });
   }
 
   try {
     const payload = await req.text();
-    const headers = Object.fromEntries(req.headers);
-    
-    console.log("=== DEBUGGING WEBHOOK ===");
-    console.log("Hook secret exists:", !!hookSecret);
-    console.log("Hook secret length:", hookSecret?.length || 0);
+    console.log("Raw payload received:", payload);
     console.log("Payload length:", payload.length);
-    console.log("Headers:", JSON.stringify(headers, null, 2));
-    console.log("Raw payload (first 200 chars):", payload.substring(0, 200));
     
-    // Parse payload directly without webhook verification for now
+    if (!payload) {
+      console.error("Empty payload received");
+      return new Response(JSON.stringify({ error: "Empty payload" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    // Parse payload directly without webhook verification
     let parsedPayload;
     try {
       parsedPayload = JSON.parse(payload);
-      console.log("Parsed payload structure:", Object.keys(parsedPayload));
+      console.log("Successfully parsed payload");
+      console.log("Payload keys:", Object.keys(parsedPayload));
     } catch (parseError) {
       console.error("Failed to parse payload as JSON:", parseError);
-      throw new Error("Invalid JSON payload");
+      return new Response(JSON.stringify({ error: "Invalid JSON payload" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
-    const {
-      user,
-      email_data: { token, token_hash, redirect_to, email_action_type, site_url },
-    } = parsedPayload as {
-      user: {
-        email: string;
-        id: string;
-      };
-      email_data: {
-        token: string;
-        token_hash: string;
-        redirect_to: string;
-        email_action_type: string;
-        site_url: string;
-      };
-    };
+    // Extract data with safer access
+    const user = parsedPayload.user;
+    const emailData = parsedPayload.email_data;
+    
+    if (!user || !emailData) {
+      console.error("Missing user or email_data in payload");
+      console.error("User:", user);
+      console.error("Email data:", emailData);
+      return new Response(JSON.stringify({ error: "Missing required data" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    const { token, token_hash, redirect_to, email_action_type, site_url } = emailData;
 
     console.log("Processing password reset email for:", user.email);
     console.log("Email action type:", email_action_type);
@@ -92,7 +101,10 @@ serve(async (req) => {
 
     if (error) {
       console.error("Error sending password reset email:", error);
-      throw error;
+      return new Response(JSON.stringify({ error: "Email sending failed" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     console.log("Password reset email sent successfully to:", user.email);
@@ -106,11 +118,11 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         error: {
-          message: error.message,
+          message: error.message || "Unknown error",
         },
       }),
       {
-        status: 400,
+        status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       }
     );
