@@ -5,8 +5,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Package } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import StoreFilters from "@/components/store/StoreFilters";
-import ProductCard from "@/components/store/ProductCard";
+import EnhancedStoreFilters from "@/components/store/EnhancedStoreFilters";
+import EnhancedProductGrid from "@/components/store/EnhancedProductGrid";
+import StoreBreadcrumb from "@/components/store/StoreBreadcrumb";
 import { useShoppingCart } from "@/hooks/useShoppingCart";
 import { useWishlist } from "@/hooks/useWishlist";
 
@@ -59,6 +60,7 @@ export default function Store() {
   const [products, setProducts] = useState<StoreProduct[]>([]);
   const [categories, setCategories] = useState<StoreCategory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   
   // Filter state
   const [filters, setFilters] = useState({
@@ -262,105 +264,120 @@ export default function Store() {
     });
   };
 
+  // Get current category info for breadcrumb
+  const getCurrentCategoryInfo = () => {
+    if (filters.category === "all") return null;
+    
+    const category = categories.find(cat => cat.slug === filters.category);
+    if (!category) return null;
+    
+    return {
+      name: category.name,
+      slug: category.slug
+    };
+  };
+
   if (loading) {
     return (
-      <div className="flex h-screen">
-        <div className="w-80 bg-card border-r">
+      <div className="flex h-screen bg-background">
+        <div className={`${sidebarCollapsed ? 'w-16' : 'w-80'} bg-card border-r transition-all duration-300`}>
           <div className="p-6">
             <Skeleton className="h-6 w-32 mb-4" />
             <Skeleton className="h-10 w-full" />
           </div>
         </div>
-        <div className="flex-1 p-8">
-          <div className="mb-8">
-            <Skeleton className="h-8 w-64 mb-2" />
-            <Skeleton className="h-4 w-96" />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="prep-fox-card p-0">
-                <Skeleton className="h-48 w-full rounded-t-lg" />
-                <div className="p-4">
-                  <Skeleton className="h-6 w-full mb-2" />
-                  <Skeleton className="h-4 w-full mb-4" />
-                  <Skeleton className="h-10 w-full" />
-                </div>
+        <div className="flex-1 overflow-hidden">
+          <div className="h-full overflow-y-auto">
+            <StoreBreadcrumb />
+            <div className="p-6">
+              <div className="mb-8">
+                <Skeleton className="h-8 w-64 mb-2" />
+                <Skeleton className="h-4 w-96" />
               </div>
-            ))}
+              <EnhancedProductGrid
+                products={[]}
+                totalProducts={0}
+                isLoading={true}
+                onAddToCart={handleAddToCart}
+                onAddToWishlist={handleAddToWishlist}
+                isInWishlist={isInWishlist}
+                sortBy={filters.sortBy}
+                onSortChange={(sortBy) => setFilters(prev => ({ ...prev, sortBy }))}
+                activeFilterCount={getActiveFilterCount()}
+                onClearFilters={clearAllFilters}
+              />
+            </div>
           </div>
         </div>
       </div>
     );
   }
 
+  const currentCategoryInfo = getCurrentCategoryInfo();
+
   return (
     <div className="flex min-h-screen bg-background">
-      {/* Sidebar Filters */}
-      <StoreFilters
+      {/* Enhanced Sidebar Filters */}
+      <EnhancedStoreFilters
         filters={filters}
         options={filterOptions}
         onFiltersChange={setFilters}
         onClearFilters={clearAllFilters}
         activeFilterCount={getActiveFilterCount()}
+        isCollapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
 
       {/* Main Content */}
       <div className="flex-1 overflow-hidden">
         <div className="h-full overflow-y-auto">
+          {/* Breadcrumb Navigation */}
+          <StoreBreadcrumb 
+            currentCategory={filters.category}
+            categoryHierarchy={currentCategoryInfo ? [currentCategoryInfo] : []}
+          />
+          
           <div className="p-6">
-            {/* Header */}
+            {/* Store Header */}
             <div className="mb-8">
-              <div className="flex items-center gap-3 mb-4">
-                <Package className="h-8 w-8 text-primary" />
-                <h1 className="text-3xl font-bold text-foreground">PrepFox Store</h1>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Package className="h-8 w-8 text-primary" />
+                  </div>
+                  <div>
+                    <h1 className="text-3xl font-bold text-foreground">PrepFox Store</h1>
+                    <p className="text-muted-foreground">
+                      Professional shipping supplies and storage solutions
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Mobile Sidebar Toggle */}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                  className="lg:hidden"
+                >
+                  <Package className="h-4 w-4" />
+                </Button>
               </div>
-              <p className="text-muted-foreground text-lg">
-                Professional shipping supplies and storage solutions for your business
-              </p>
             </div>
 
-            {/* Results Header */}
-            <div className="mb-6 flex items-center justify-between">
-              <div>
-                <p className="text-muted-foreground">
-                  Showing <span className="font-medium text-foreground">{sortedProducts.length}</span> of <span className="font-medium text-foreground">{products.length}</span> products
-                </p>
-                {getActiveFilterCount() > 0 && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {getActiveFilterCount()} filter{getActiveFilterCount() !== 1 ? 's' : ''} applied
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Products Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {sortedProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  onAddToCart={handleAddToCart}
-                  onAddToWishlist={handleAddToWishlist}
-                  isInWishlist={isInWishlist(product.id)}
-                />
-              ))}
-            </div>
-
-            {/* No Results */}
-            {sortedProducts.length === 0 && (
-              <div className="text-center py-16">
-                <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-xl font-medium mb-2">No products found</h3>
-                <p className="text-muted-foreground mb-6">
-                  Try adjusting your search terms or filters to find what you're looking for
-                </p>
-                {getActiveFilterCount() > 0 && (
-                  <Button variant="outline" onClick={clearAllFilters}>
-                    Clear all filters
-                  </Button>
-                )}
-              </div>
-            )}
+            {/* Enhanced Product Grid */}
+            <EnhancedProductGrid
+              products={sortedProducts}
+              totalProducts={products.length}
+              isLoading={loading}
+              onAddToCart={handleAddToCart}
+              onAddToWishlist={handleAddToWishlist}
+              isInWishlist={isInWishlist}
+              sortBy={filters.sortBy}
+              onSortChange={(sortBy) => setFilters(prev => ({ ...prev, sortBy }))}
+              activeFilterCount={getActiveFilterCount()}
+              onClearFilters={clearAllFilters}
+            />
           </div>
         </div>
       </div>
