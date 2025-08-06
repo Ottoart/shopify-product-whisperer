@@ -50,6 +50,8 @@ import RepricingFeatures from "./pages/RepricingFeatures";
 import RepricingPricing from "./pages/RepricingPricing";
 import AdminDashboard from "./pages/AdminDashboard";
 import Products from "./pages/Products";
+import Store from "./pages/Store";
+import StoreCategory from "./pages/StoreCategory";
 import FulfillmentLanding from "./pages/FulfillmentLanding";
 import FulfillmentFeatures from "./pages/FulfillmentFeatures";
 import FulfillmentPricing from "./pages/FulfillmentPricing";
@@ -132,6 +134,8 @@ const AuthenticatedApp = () => {
               <Route path="/packing" element={<PackingDashboard />} />
               <Route path="/shipping-overview" element={<ShippingOverview />} />
               <Route path="/shipping" element={<Shipping />} />
+              <Route path="/store" element={<Store />} />
+              <Route path="/store/:categorySlug" element={<StoreCategory />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/activity" element={<Activity />} />
               <Route path="/bulk-editor" element={<BulkEditor />} />
@@ -223,6 +227,8 @@ const PublicApp = () => {
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/customer-tracking" element={<CustomerTracking />} />
+        <Route path="/store" element={<Store />} />
+        <Route path="/store/:categorySlug" element={<StoreCategory />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/about" element={<AboutUs />} />
         <Route path="*" element={<Navigate to="/" replace />} />

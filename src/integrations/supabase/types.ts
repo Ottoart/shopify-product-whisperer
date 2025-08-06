@@ -3110,6 +3110,59 @@ export type Database = {
         }
         Relationships: []
       }
+      store_categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          name: string
+          parent_id: string | null
+          seo_description: string | null
+          seo_title: string | null
+          slug: string
+          sort_order: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          name: string
+          parent_id?: string | null
+          seo_description?: string | null
+          seo_title?: string | null
+          slug: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          name?: string
+          parent_id?: string | null
+          seo_description?: string | null
+          seo_title?: string | null
+          slug?: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "store_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_configurations: {
         Row: {
           access_token: string
@@ -3149,6 +3202,126 @@ export type Database = {
           storefront_domain?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      store_products: {
+        Row: {
+          barcode: string | null
+          category: string
+          compare_at_price: number | null
+          cost: number | null
+          created_at: string
+          currency: string | null
+          description: string | null
+          dimensions: Json | null
+          featured: boolean | null
+          id: string
+          image_url: string | null
+          images: string[] | null
+          in_stock: boolean | null
+          inventory_policy: string | null
+          inventory_quantity: number | null
+          name: string
+          price: number
+          requires_shipping: boolean | null
+          seo_description: string | null
+          seo_title: string | null
+          shipping_info: Json | null
+          short_description: string | null
+          sku: string | null
+          specifications: Json | null
+          status: string | null
+          subcategory: string | null
+          supplier: string
+          supplier_product_id: string | null
+          supplier_url: string | null
+          tags: string[] | null
+          tax_code: string | null
+          taxable: boolean | null
+          track_quantity: boolean | null
+          updated_at: string
+          visibility: string | null
+          weight_lbs: number | null
+          weight_unit: string | null
+        }
+        Insert: {
+          barcode?: string | null
+          category?: string
+          compare_at_price?: number | null
+          cost?: number | null
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          dimensions?: Json | null
+          featured?: boolean | null
+          id?: string
+          image_url?: string | null
+          images?: string[] | null
+          in_stock?: boolean | null
+          inventory_policy?: string | null
+          inventory_quantity?: number | null
+          name: string
+          price?: number
+          requires_shipping?: boolean | null
+          seo_description?: string | null
+          seo_title?: string | null
+          shipping_info?: Json | null
+          short_description?: string | null
+          sku?: string | null
+          specifications?: Json | null
+          status?: string | null
+          subcategory?: string | null
+          supplier?: string
+          supplier_product_id?: string | null
+          supplier_url?: string | null
+          tags?: string[] | null
+          tax_code?: string | null
+          taxable?: boolean | null
+          track_quantity?: boolean | null
+          updated_at?: string
+          visibility?: string | null
+          weight_lbs?: number | null
+          weight_unit?: string | null
+        }
+        Update: {
+          barcode?: string | null
+          category?: string
+          compare_at_price?: number | null
+          cost?: number | null
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          dimensions?: Json | null
+          featured?: boolean | null
+          id?: string
+          image_url?: string | null
+          images?: string[] | null
+          in_stock?: boolean | null
+          inventory_policy?: string | null
+          inventory_quantity?: number | null
+          name?: string
+          price?: number
+          requires_shipping?: boolean | null
+          seo_description?: string | null
+          seo_title?: string | null
+          shipping_info?: Json | null
+          short_description?: string | null
+          sku?: string | null
+          specifications?: Json | null
+          status?: string | null
+          subcategory?: string | null
+          supplier?: string
+          supplier_product_id?: string | null
+          supplier_url?: string | null
+          tags?: string[] | null
+          tax_code?: string | null
+          taxable?: boolean | null
+          track_quantity?: boolean | null
+          updated_at?: string
+          visibility?: string | null
+          weight_lbs?: number | null
+          weight_unit?: string | null
         }
         Relationships: []
       }
