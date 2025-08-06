@@ -2754,6 +2754,27 @@ export type Database = {
           },
         ]
       }
+      recently_viewed: {
+        Row: {
+          id: string
+          product_id: string
+          user_id: string
+          viewed_at: string
+        }
+        Insert: {
+          id?: string
+          product_id: string
+          user_id: string
+          viewed_at?: string
+        }
+        Update: {
+          id?: string
+          product_id?: string
+          user_id?: string
+          viewed_at?: string
+        }
+        Relationships: []
+      }
       repricing_alerts: {
         Row: {
           alert_type: string

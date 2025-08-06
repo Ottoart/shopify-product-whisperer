@@ -11,7 +11,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/use-toast";
 import { useShoppingCart } from "@/hooks/useShoppingCart";
 import { useWishlist } from "@/hooks/useWishlist";
+import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
 import StoreBreadcrumb from "@/components/store/StoreBreadcrumb";
+import ProductReviews from "@/components/store/ProductReviews";
+import ProductRecommendations from "@/components/store/ProductRecommendations";
 import {
   Star,
   ShoppingCart,
@@ -67,6 +70,7 @@ export default function ProductDetailPage() {
   const { toast } = useToast();
   const { addToCart } = useShoppingCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
+  const { addToRecentlyViewed } = useRecentlyViewed();
   
   const [product, setProduct] = useState<StoreProduct | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<StoreProduct[]>([]);
@@ -81,6 +85,12 @@ export default function ProductDetailPage() {
       fetchRelatedProducts();
     }
   }, [productId]);
+
+  useEffect(() => {
+    if (product && productId) {
+      addToRecentlyViewed(productId);
+    }
+  }, [product, productId, addToRecentlyViewed]);
 
   const fetchProduct = async () => {
     try {
