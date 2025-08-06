@@ -48,10 +48,12 @@ import {
   HardDrive,
   Truck,
   Brain,
-  TestTube
+  TestTube,
+  Store
 } from "lucide-react";
 import { MockDataBadge, LiveDataBadge } from "@/components/ui/mock-data-badge";
 import { CarrierConfigurationManagement } from "./CarrierConfigurationManagement";
+import StoreProductManagement from "../../pages/admin/StoreProductManagement";
 
 interface AdminUser {
   id: string;
@@ -466,10 +468,14 @@ export const EnhancedAdminDashboard = () => {
             </TabsTrigger>
           </TabsList>
 
-          <TabsList className="grid w-full grid-cols-3 bg-muted/50">
+          <TabsList className="grid w-full grid-cols-4 bg-muted/50">
             <TabsTrigger value="carriers" className="data-[state=active]:bg-background">
               <Truck className="h-4 w-4 mr-2" />
               Carriers
+            </TabsTrigger>
+            <TabsTrigger value="store-products" className="data-[state=active]:bg-background">
+              <Store className="h-4 w-4 mr-2" />
+              Store Products
             </TabsTrigger>
             <TabsTrigger value="analytics" className="data-[state=active]:bg-background">
               <BarChart3 className="h-4 w-4 mr-2" />
@@ -596,6 +602,10 @@ export const EnhancedAdminDashboard = () => {
 
         <TabsContent value="carriers" className="space-y-4">
           <CarrierConfigurationManagement />
+        </TabsContent>
+
+        <TabsContent value="store-products" className="space-y-4">
+          <StoreProductManagement />
         </TabsContent>
       </Tabs>
     </div>
