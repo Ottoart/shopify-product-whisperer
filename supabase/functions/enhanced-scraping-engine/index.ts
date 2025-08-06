@@ -38,19 +38,18 @@ const SCRAPING_CONFIGS: Record<string, ScrapingConfig> = {
     supplier: 'staples',
     baseUrl: 'https://www.staples.ca',
     collections: [
-      '/collections/warehouse-facilities-34',
       '/collections/cardboard-boxes-9410',
-      '/collections/mailing-envelopes-8405',
-      '/collections/shipping-tape-8407',
-      '/collections/protective-packaging-8408',
-      '/collections/labels-stickers-4180'
+      '/collections/padded-mailers-8906',
+      '/search?q=shipping+supplies',
+      '/search?q=boxes',
+      '/search?q=envelopes'
     ],
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
-    productSelector: 'div[class*="product"]',
-    nameSelector: 'h[1-6], [title], [alt]',
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    productSelector: 'div[class*="product"], article[class*="product"], .product-item, [data-product], .search-result-item',
+    nameSelector: 'h[1-6], [title], [alt], .product-title, .product-name',
     priceSelector: '\\$\\d+\\.?\\d*',
-    imageSelector: 'img[src*=".jpg"], img[src*=".png"], img[src*=".webp"]',
-    urlSelector: 'a[href*="/products/"]',
+    imageSelector: 'img[src*=".jpg"], img[src*=".png"], img[src*=".webp"], img[data-src]',
+    urlSelector: 'a[href*="/products/"], a[href*="/p/"]',
     maxProducts: 100,
     delayMs: 1000
   },
@@ -102,11 +101,14 @@ async function scrapeWithAntiDetection(url: string, config: ScrapingConfig): Pro
 function extractProducts(html: string, config: ScrapingConfig, collectionUrl: string): ScrapedProduct[] {
   const products: ScrapedProduct[] = [];
   
-  // Enhanced regex patterns for different layouts
+  // Enhanced regex patterns for different layouts and modern Staples structure
   const productPatterns = [
     /<div[^>]*class="[^"]*product[^"]*"[^>]*>(.*?)<\/div>/gs,
     /<article[^>]*class="[^"]*product[^"]*"[^>]*>(.*?)<\/article>/gs,
-    /<li[^>]*class="[^"]*product[^"]*"[^>]*>(.*?)<\/li>/gs
+    /<li[^>]*class="[^"]*product[^"]*"[^>]*>(.*?)<\/li>/gs,
+    /<div[^>]*class="[^"]*search-result[^"]*"[^>]*>(.*?)<\/div>/gs,
+    /<div[^>]*data-product[^>]*>(.*?)<\/div>/gs,
+    /<div[^>]*class="[^"]*grid-item[^"]*"[^>]*>(.*?)<\/div>/gs
   ];
 
   let productMatches: string[] = [];
@@ -259,21 +261,25 @@ async function saveProducts(products: ScrapedProduct[], supabase: any): Promise<
         .select('id, price')
         .eq('supplier_product_id', product.supplierProductId)
         .eq('supplier', product.specifications.source)
-        .single();
+        .maybeSingle();
 
       if (existing) {
         // Update if price changed or other significant updates
         const priceChanged = Math.abs(existing.price - product.price) > 0.01;
         
         if (priceChanged) {
-          // Log price change
-          await supabase.from('price_history').insert({
-            product_id: existing.id,
-            old_price: existing.price,
-            new_price: product.price,
-            change_type: product.price > existing.price ? 'increase' : 'decrease',
-            source: 'automated_scraping'
-          });
+          // Try to log price change (optional table)
+          try {
+            await supabase.from('price_history').insert({
+              product_id: existing.id,
+              old_price: existing.price,
+              new_price: product.price,
+              change_type: product.price > existing.price ? 'increase' : 'decrease',
+              source: 'automated_scraping'
+            });
+          } catch (priceHistoryError) {
+            console.warn('Price history table not available:', priceHistoryError);
+          }
         }
 
         await supabase.from('store_products').update({
@@ -339,6 +345,7 @@ serve(async (req) => {
     let totalProducts: ScrapedProduct[] = [];
     let totalInserted = 0;
     let totalUpdated = 0;
+    let allCollectionsToScrape: string[] = [];
 
     for (const supplierName of suppliers) {
       const config = SCRAPING_CONFIGS[supplierName];
@@ -350,6 +357,7 @@ serve(async (req) => {
       console.log(`📦 Processing supplier: ${supplierName.toUpperCase()}`);
 
       const collectionsToScrape = collections.length > 0 ? collections : config.collections;
+      allCollectionsToScrape.push(...collectionsToScrape);
 
       for (const collection of collectionsToScrape) {
         try {
@@ -382,19 +390,23 @@ serve(async (req) => {
     totalInserted += inserted;
     totalUpdated += updated;
 
-    // Log scraping session
-    await supabase.from('scraping_sessions').insert({
-      suppliers: suppliers,
-      total_products_found: totalProducts.length,
-      products_inserted: totalInserted,
-      products_updated: totalUpdated,
-      status: 'completed',
-      metadata: {
-        collections: collections,
-        maxProducts,
-        timestamp: new Date().toISOString()
-      }
-    });
+    // Try to log scraping session (optional table)
+    try {
+      await supabase.from('scraping_sessions').insert({
+        suppliers: suppliers,
+        total_products_found: totalProducts.length,
+        products_inserted: totalInserted,
+        products_updated: totalUpdated,
+        status: 'completed',
+        metadata: {
+          collections: allCollectionsToScrape,
+          maxProducts,
+          timestamp: new Date().toISOString()
+        }
+      });
+    } catch (sessionLogError) {
+      console.warn('Scraping sessions table not available:', sessionLogError);
+    }
 
     console.log(`🎉 Scraping complete: ${totalInserted} inserted, ${totalUpdated} updated`);
 
@@ -407,7 +419,7 @@ serve(async (req) => {
           totalProductsFound: totalProducts.length,
           inserted: totalInserted,
           updated: totalUpdated,
-          collections: collectionsToScrape
+          collections: allCollectionsToScrape
         }
       }),
       {
