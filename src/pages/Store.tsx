@@ -5,8 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Package } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import EnhancedStoreFilters from "@/components/store/EnhancedStoreFilters";
-import EnhancedProductGrid from "@/components/store/EnhancedProductGrid";
+import ResponsiveMobileStore from "@/components/store/ResponsiveMobileStore";
 import EnhancedProductCard from "@/components/store/EnhancedProductCard";
 import ProductComparison from "@/components/store/ProductComparison";
 import StoreBreadcrumb from "@/components/store/StoreBreadcrumb";
@@ -358,107 +357,20 @@ export default function Store() {
   const currentCategoryInfo = getCurrentCategoryInfo();
 
   return (
-    <div className="flex min-h-screen bg-background">
-      {/* Enhanced Sidebar Filters */}
-      <EnhancedStoreFilters
-        filters={filters}
-        options={filterOptions}
-        onFiltersChange={setFilters}
-        onClearFilters={clearAllFilters}
-        activeFilterCount={getActiveFilterCount()}
-        isCollapsed={sidebarCollapsed}
-        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-      />
-
-      {/* Main Content */}
-      <div className="flex-1 overflow-hidden">
-        <div className="h-full overflow-y-auto">
-          {/* Breadcrumb Navigation */}
-          <StoreBreadcrumb 
-            currentCategory={filters.category}
-            categoryHierarchy={currentCategoryInfo ? [currentCategoryInfo] : []}
-          />
-          
-          <div className="p-6">
-            {/* Promotional Banner */}
-            <PromotionalBanner 
-              type="hero" 
-              className="mb-8"
-              autoRotate={true}
-            />
-
-            {/* Store Header */}
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-primary/10">
-                    <Package className="h-8 w-8 text-primary" />
-                  </div>
-                  <div>
-                    <h1 className="text-3xl font-bold text-foreground">PrepFox Store</h1>
-                    <p className="text-muted-foreground">
-                      Professional shipping supplies and storage solutions
-                    </p>
-                  </div>
-                </div>
-                
-                {/* Mobile Sidebar Toggle */}
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                  className="lg:hidden"
-                >
-                  <Package className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-
-            {/* Featured Sections */}
-            <div className="space-y-12 mb-12">
-              <FeaturedProductsSection 
-                filterType="featured" 
-                maxItems={4}
-                onProductClick={handleProductClick}
-                onAddToCart={handleAddToCart}
-                onAddToWishlist={handleAddToWishlist}
-              />
-              <FeaturedProductsSection 
-                filterType="popular" 
-                maxItems={4}
-                onProductClick={handleProductClick}
-                onAddToCart={handleAddToCart}
-                onAddToWishlist={handleAddToWishlist}
-              />
-            </div>
-
-            {/* Enhanced Product Grid */}
-            <EnhancedProductGrid
-              products={sortedProducts}
-              totalProducts={products.length}
-              isLoading={loading}
-              onAddToCart={handleAddToCart}
-              onAddToWishlist={handleAddToWishlist}
-              onAddToCompare={handleAddToComparison}
-              isInWishlist={isInWishlist}
-              isInComparison={isInComparison}
-              sortBy={filters.sortBy}
-              onSortChange={(sortBy) => setFilters(prev => ({ ...prev, sortBy }))}
-              activeFilterCount={getActiveFilterCount()}
-              onClearFilters={clearAllFilters}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Product Comparison */}
-      <ProductComparison
-        products={comparisonProducts}
-        onRemoveProduct={handleRemoveFromComparison}
-        onAddToCart={handleAddToCart}
-        onAddToWishlist={handleAddToWishlist}
-        isInWishlist={isInWishlist}
-      />
-    </div>
+    <ResponsiveMobileStore
+      products={sortedProducts}
+      filters={filters}
+      options={filterOptions}
+      onFiltersChange={setFilters}
+      onClearFilters={clearAllFilters}
+      activeFilterCount={getActiveFilterCount()}
+      onAddToCart={handleAddToCart}
+      onAddToWishlist={handleAddToWishlist}
+      onAddToCompare={handleAddToComparison}
+      isInWishlist={isInWishlist}
+      isInComparison={isInComparison}
+      onRefresh={fetchProducts}
+      isLoading={loading}
+    />
   );
 }
