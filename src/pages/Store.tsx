@@ -6,14 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Package } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import ResponsiveMobileStore from "@/components/store/ResponsiveMobileStore";
-import EnhancedProductCard from "@/components/store/EnhancedProductCard";
-import ProductComparison from "@/components/store/ProductComparison";
 import StoreBreadcrumb from "@/components/store/StoreBreadcrumb";
 import { useShoppingCart } from "@/hooks/useShoppingCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import { useAnalyticsTracking } from "@/hooks/useAnalyticsTracking";
-import { PromotionalBanner } from "@/components/store/PromotionalBanner";
-import { FeaturedProductsSection } from "@/components/store/FeaturedProductsSection";
 
 interface StoreProduct {
   id: string;
@@ -65,8 +61,6 @@ export default function Store() {
   const [products, setProducts] = useState<StoreProduct[]>([]);
   const [categories, setCategories] = useState<StoreCategory[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [comparisonProducts, setComparisonProducts] = useState<StoreProduct[]>([]);
   
   // Filter state
   const [filters, setFilters] = useState({
@@ -176,33 +170,15 @@ export default function Store() {
   };
 
   const handleAddToComparison = (product: StoreProduct) => {
-    if (comparisonProducts.find(p => p.id === product.id)) {
-      setComparisonProducts(comparisonProducts.filter(p => p.id !== product.id));
-      toast({
-        title: "Removed from Comparison",
-        description: `${product.name} removed from comparison`,
-      });
-    } else if (comparisonProducts.length >= 4) {
-      toast({
-        title: "Comparison Limit Reached",
-        description: "You can compare up to 4 products at a time",
-        variant: "destructive",
-      });
-    } else {
-      setComparisonProducts([...comparisonProducts, product]);
-      toast({
-        title: "Added to Comparison",
-        description: `${product.name} added to comparison`,
-      });
-    }
-  };
-
-  const handleRemoveFromComparison = (productId: string) => {
-    setComparisonProducts(comparisonProducts.filter(p => p.id !== productId));
+    // Comparison functionality handled by ResponsiveMobileStore
+    toast({
+      title: "Feature Coming Soon",
+      description: "Product comparison will be available soon",
+    });
   };
 
   const isInComparison = (productId: string) => {
-    return comparisonProducts.some(p => p.id === productId);
+    return false;
   };
 
   // Advanced filtering logic
@@ -320,32 +296,21 @@ export default function Store() {
 
   if (loading) {
     return (
-      <div className="flex h-screen bg-background">
-        <div className={`${sidebarCollapsed ? 'w-16' : 'w-80'} bg-card border-r transition-all duration-300`}>
-          <div className="p-6">
-            <Skeleton className="h-6 w-32 mb-4" />
-            <Skeleton className="h-10 w-full" />
+      <div className="min-h-screen bg-background p-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-8">
+            <Skeleton className="h-8 w-64 mb-2" />
+            <Skeleton className="h-4 w-96" />
           </div>
-        </div>
-        <div className="flex-1 overflow-hidden">
-          <div className="h-full overflow-y-auto">
-            <StoreBreadcrumb />
-            <div className="p-6">
-              <div className="mb-8">
-                <Skeleton className="h-8 w-64 mb-2" />
-                <Skeleton className="h-4 w-96" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div key={index} className="space-y-3">
+                <Skeleton className="aspect-square w-full" />
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+                <Skeleton className="h-8 w-full" />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {Array.from({ length: 8 }).map((_, index) => (
-                  <div key={index} className="space-y-3">
-                    <Skeleton className="aspect-square w-full" />
-                    <Skeleton className="h-4 w-3/4" />
-                    <Skeleton className="h-4 w-1/2" />
-                    <Skeleton className="h-8 w-full" />
-                  </div>
-                ))}
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>
