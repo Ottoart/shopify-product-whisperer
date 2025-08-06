@@ -7,6 +7,8 @@ import { Package } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import EnhancedStoreFilters from "@/components/store/EnhancedStoreFilters";
 import EnhancedProductGrid from "@/components/store/EnhancedProductGrid";
+import EnhancedProductCard from "@/components/store/EnhancedProductCard";
+import ProductComparison from "@/components/store/ProductComparison";
 import StoreBreadcrumb from "@/components/store/StoreBreadcrumb";
 import { useShoppingCart } from "@/hooks/useShoppingCart";
 import { useWishlist } from "@/hooks/useWishlist";
@@ -61,6 +63,7 @@ export default function Store() {
   const [categories, setCategories] = useState<StoreCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [comparisonProducts, setComparisonProducts] = useState<StoreProduct[]>([]);
   
   // Filter state
   const [filters, setFilters] = useState({
@@ -162,6 +165,36 @@ export default function Store() {
 
   const handleAddToWishlist = async (product: StoreProduct) => {
     await toggleWishlist(product.id);
+  };
+
+  const handleAddToComparison = (product: StoreProduct) => {
+    if (comparisonProducts.find(p => p.id === product.id)) {
+      setComparisonProducts(comparisonProducts.filter(p => p.id !== product.id));
+      toast({
+        title: "Removed from Comparison",
+        description: `${product.name} removed from comparison`,
+      });
+    } else if (comparisonProducts.length >= 4) {
+      toast({
+        title: "Comparison Limit Reached",
+        description: "You can compare up to 4 products at a time",
+        variant: "destructive",
+      });
+    } else {
+      setComparisonProducts([...comparisonProducts, product]);
+      toast({
+        title: "Added to Comparison",
+        description: `${product.name} added to comparison`,
+      });
+    }
+  };
+
+  const handleRemoveFromComparison = (productId: string) => {
+    setComparisonProducts(comparisonProducts.filter(p => p.id !== productId));
+  };
+
+  const isInComparison = (productId: string) => {
+    return comparisonProducts.some(p => p.id === productId);
   };
 
   // Advanced filtering logic
@@ -372,7 +405,9 @@ export default function Store() {
               isLoading={loading}
               onAddToCart={handleAddToCart}
               onAddToWishlist={handleAddToWishlist}
+              onAddToCompare={handleAddToComparison}
               isInWishlist={isInWishlist}
+              isInComparison={isInComparison}
               sortBy={filters.sortBy}
               onSortChange={(sortBy) => setFilters(prev => ({ ...prev, sortBy }))}
               activeFilterCount={getActiveFilterCount()}
@@ -381,6 +416,15 @@ export default function Store() {
           </div>
         </div>
       </div>
+
+      {/* Product Comparison */}
+      <ProductComparison
+        products={comparisonProducts}
+        onRemoveProduct={handleRemoveFromComparison}
+        onAddToCart={handleAddToCart}
+        onAddToWishlist={handleAddToWishlist}
+        isInWishlist={isInWishlist}
+      />
     </div>
   );
 }

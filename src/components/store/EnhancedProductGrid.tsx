@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { LayoutGrid, List, Grid3X3, Package, ArrowUpDown, Filter, Eye } from "lucide-react";
-import ProductCard from "./ProductCard";
+import EnhancedProductCard from "./EnhancedProductCard";
 
 interface StoreProduct {
   id: string;
@@ -43,7 +43,9 @@ interface EnhancedProductGridProps {
   isLoading?: boolean;
   onAddToCart: (product: StoreProduct) => void;
   onAddToWishlist?: (product: StoreProduct) => void;
+  onAddToCompare?: (product: StoreProduct) => void;
   isInWishlist?: (productId: string) => boolean;
+  isInComparison?: (productId: string) => boolean;
   sortBy: string;
   onSortChange: (sortBy: string) => void;
   activeFilterCount: number;
@@ -58,7 +60,9 @@ export default function EnhancedProductGrid({
   isLoading = false,
   onAddToCart,
   onAddToWishlist,
+  onAddToCompare,
   isInWishlist,
+  isInComparison,
   sortBy,
   onSortChange,
   activeFilterCount,
@@ -200,12 +204,15 @@ export default function EnhancedProductGrid({
       {products.length > 0 ? (
         <div className={getGridClasses()}>
           {products.map((product) => (
-            <ProductCard
+            <EnhancedProductCard
               key={product.id}
               product={product}
               onAddToCart={onAddToCart}
               onAddToWishlist={onAddToWishlist}
+              onAddToCompare={onAddToCompare}
               isInWishlist={isInWishlist ? isInWishlist(product.id) : false}
+              isInComparison={isInComparison ? isInComparison(product.id) : false}
+              viewMode={viewMode === 'list' ? 'list' : 'grid'}
             />
           ))}
         </div>
