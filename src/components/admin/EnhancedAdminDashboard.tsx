@@ -13,7 +13,6 @@ import { EnhancedCompanyDashboard } from "./EnhancedCompanyDashboard";
 import { BillingOperationsHub } from "./BillingOperationsHub";
 import { CustomerSupportIntegration } from "./CustomerSupportIntegration";
 import { AdminCommunicationCenter } from "./AdminCommunicationCenter";
-import { OperationalMonitoring } from "./OperationalMonitoring";
 import { AdvancedAnalyticsDashboard } from "./AdvancedAnalyticsDashboard";
 import { CustomReportBuilder } from "./CustomReportBuilder";
 import { DataExportImport } from "./DataExportImport";
@@ -25,6 +24,9 @@ import { BackupRecoveryManagement } from "./BackupRecoveryManagement";
 import { PermissionManagement } from "./PermissionManagement";
 import { RolePermissionsOverview } from "./RolePermissionsOverview";
 import { SystemLogs } from "./SystemLogs";
+import { AIRecommendationPanel } from "@/components/ai/AIRecommendationPanel";
+import { OperationalMonitoring } from "@/components/monitoring/OperationalMonitoring";
+import { ScrapingTestSuite } from "@/components/testing/ScrapingTestSuite";
 import { 
   Users, 
   Building, 
@@ -44,7 +46,9 @@ import {
   Eye,
   Archive,
   HardDrive,
-  Truck
+  Truck,
+  Brain,
+  TestTube
 } from "lucide-react";
 import { MockDataBadge, LiveDataBadge } from "@/components/ui/mock-data-badge";
 import { CarrierConfigurationManagement } from "./CarrierConfigurationManagement";
