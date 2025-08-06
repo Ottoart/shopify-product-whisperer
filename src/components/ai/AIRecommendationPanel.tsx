@@ -62,7 +62,8 @@ export const AIRecommendationPanel = ({ productId, showGeneral = true }: AIRecom
       const transformedData = (data || []).map(item => ({
         ...item,
         type: item.insight_type as 'pricing' | 'categorization' | 'competitive' | 'general',
-        impact: 'medium' as 'low' | 'medium' | 'high'
+        impact: 'medium' as 'low' | 'medium' | 'high',
+        priority: (item.priority || 'medium') as 'low' | 'medium' | 'high' | 'critical'
       }));
       setRecommendations(transformedData);
     } catch (error) {
