@@ -8,24 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Package, 
-  Plus, 
+  Play, 
   Search, 
-  Filter, 
   Download, 
   Upload, 
-  Play, 
-  Pause, 
-  Settings, 
   TrendingUp, 
-  TrendingDown,
-  AlertTriangle,
   Clock,
   CheckCircle,
   XCircle
@@ -34,61 +24,30 @@ import {
 interface StoreProduct {
   id: string;
   name: string;
-  description: string;
+  description?: string;
   price: number;
   compare_at_price?: number;
   currency: string;
   image_url?: string;
-  category: string;
-  subcategory?: string;
+  category?: string;
   supplier: string;
-  supplier_product_id: string;
-  supplier_url?: string;
   status: string;
-  visibility: string;
-  in_stock: boolean;
-  featured: boolean;
-  tags: string[];
-  specifications: Record<string, any>;
-  created_at: string;
+  inventory_quantity?: number;
   updated_at: string;
-}
-
-interface SyncSchedule {
-  id: string;
-  name: string;
-  suppliers: string[];
-  collections: string[];
-  frequency: string;
-  time_of_day: string;
-  is_active: boolean;
-  last_run?: string;
-  next_run: string;
-  last_result?: any;
-  settings: {
-    maxProducts?: number;
-    priceChangeThreshold?: number;
-    autoApprove?: boolean;
-    notifications?: boolean;
-  };
 }
 
 export default function StoreProductManagement() {
   const { toast } = useToast();
   const [products, setProducts] = useState<StoreProduct[]>([]);
-  const [schedules, setSchedules] = useState<SyncSchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [supplierFilter, setSupplierFilter] = useState("all");
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
-  const [newProductOpen, setNewProductOpen] = useState(false);
-  const [newScheduleOpen, setNewScheduleOpen] = useState(false);
   const [scrapingProgress, setScrapingProgress] = useState<any>(null);
 
   useEffect(() => {
     fetchProducts();
-    fetchSchedules();
   }, []);
 
   const fetchProducts = async () => {
@@ -112,20 +71,6 @@ export default function StoreProductManagement() {
     }
   };
 
-  const fetchSchedules = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('sync_schedules')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setSchedules(data || []);
-    } catch (error) {
-      console.error('Error fetching schedules:', error);
-    }
-  };
-
   const triggerManualScraping = async (suppliers: string[] = ['staples']) => {
     try {
       setScrapingProgress({ status: 'running', message: 'Starting scraping...' });
@@ -138,19 +83,17 @@ export default function StoreProductManagement() {
 
       setScrapingProgress({ 
         status: 'completed', 
-        message: `Scraping completed: ${data.details.inserted} new, ${data.details.updated} updated`,
-        details: data.details
+        message: `Scraping completed: ${data.details?.inserted || 0} new, ${data.details?.updated || 0} updated`
       });
 
-      // Refresh products
       await fetchProducts();
 
       toast({
         title: "Scraping Completed",
-        description: `Found ${data.details.totalProductsFound} products. ${data.details.inserted} new, ${data.details.updated} updated.`,
+        description: `Found ${data.details?.totalProductsFound || 0} products.`,
       });
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error running scraping:', error);
       setScrapingProgress({ status: 'error', message: error.message });
       toast({
@@ -179,38 +122,10 @@ export default function StoreProductManagement() {
         title: "Bulk Update Complete",
         description: `Updated ${selectedProducts.length} products to ${status}`,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating products:', error);
       toast({
         title: "Update Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleCreateSchedule = async (scheduleData: Partial<SyncSchedule>) => {
-    try {
-      const { error } = await supabase
-        .from('sync_schedules')
-        .insert({
-          ...scheduleData,
-          next_run: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // Tomorrow
-        });
-
-      if (error) throw error;
-
-      await fetchSchedules();
-      setNewScheduleOpen(false);
-      
-      toast({
-        title: "Schedule Created",
-        description: "Sync schedule has been created successfully",
-      });
-    } catch (error) {
-      console.error('Error creating schedule:', error);
-      toast({
-        title: "Creation Failed",
         description: error.message,
         variant: "destructive",
       });
@@ -250,37 +165,17 @@ export default function StoreProductManagement() {
             Store Product Management
           </h1>
           <p className="text-muted-foreground mt-2">
-            Manage your store products, automated syncing, and supplier integrations
+            Phase 1: Enhanced scraping and product management
           </p>
         </div>
 
-        <div className="flex gap-2">
-          <Button 
-            onClick={() => triggerManualScraping()}
-            disabled={scrapingProgress?.status === 'running'}
-          >
-            <Play className="h-4 w-4 mr-2" />
-            Run Manual Sync
-          </Button>
-          
-          <Dialog open={newProductOpen} onOpenChange={setNewProductOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Product
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Add New Product</DialogTitle>
-                <DialogDescription>
-                  Create a new product manually or import from supplier
-                </DialogDescription>
-              </DialogHeader>
-              {/* Add product form would go here */}
-            </DialogContent>
-          </Dialog>
-        </div>
+        <Button 
+          onClick={() => triggerManualScraping()}
+          disabled={scrapingProgress?.status === 'running'}
+        >
+          <Play className="h-4 w-4 mr-2" />
+          Run Manual Sync
+        </Button>
       </div>
 
       {scrapingProgress && (
@@ -301,9 +196,7 @@ export default function StoreProductManagement() {
       <Tabs defaultValue="products" className="space-y-6">
         <TabsList>
           <TabsTrigger value="products">Products ({products.length})</TabsTrigger>
-          <TabsTrigger value="automation">Automation ({schedules.length})</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
         <TabsContent value="products" className="space-y-6">
@@ -347,7 +240,7 @@ export default function StoreProductManagement() {
                   <SelectContent>
                     <SelectItem value="all">All Status</SelectItem>
                     <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="draft">Draft</SelectItem>
                     <SelectItem value="discontinued">Discontinued</SelectItem>
                   </SelectContent>
                 </Select>
@@ -375,8 +268,8 @@ export default function StoreProductManagement() {
                   <Button size="sm" onClick={() => handleBulkStatusUpdate('active')}>
                     Activate
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => handleBulkStatusUpdate('inactive')}>
-                    Deactivate
+                  <Button size="sm" variant="outline" onClick={() => handleBulkStatusUpdate('draft')}>
+                    Draft
                   </Button>
                   <Button size="sm" variant="destructive" onClick={() => handleBulkStatusUpdate('discontinued')}>
                     Discontinue
@@ -405,7 +298,6 @@ export default function StoreProductManagement() {
                     <TableHead>Status</TableHead>
                     <TableHead>Stock</TableHead>
                     <TableHead>Last Updated</TableHead>
-                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -439,7 +331,7 @@ export default function StoreProductManagement() {
                           )}
                           <div>
                             <div className="font-medium">{product.name}</div>
-                            <div className="text-sm text-muted-foreground">{product.category}</div>
+                            <div className="text-sm text-muted-foreground">{product.category || 'Uncategorized'}</div>
                           </div>
                         </div>
                       </TableCell>
@@ -459,14 +351,14 @@ export default function StoreProductManagement() {
                       <TableCell>
                         <Badge variant={
                           product.status === 'active' ? 'default' :
-                          product.status === 'inactive' ? 'secondary' : 'destructive'
+                          product.status === 'draft' ? 'secondary' : 'destructive'
                         }>
                           {product.status}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={product.in_stock ? 'default' : 'destructive'}>
-                          {product.in_stock ? 'In Stock' : 'Out of Stock'}
+                        <Badge variant={(product.inventory_quantity || 0) > 0 ? 'default' : 'destructive'}>
+                          {product.inventory_quantity || 0}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -474,86 +366,21 @@ export default function StoreProductManagement() {
                           {new Date(product.updated_at).toLocaleDateString()}
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="sm">
-                            Edit
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            View
-                          </Button>
-                        </div>
-                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
-        <TabsContent value="automation" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Sync Schedules</CardTitle>
-                  <CardDescription>
-                    Automated product syncing from suppliers
-                  </CardDescription>
+              {filteredProducts.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  No products found. Try running a manual sync to get started.
                 </div>
-                <Dialog open={newScheduleOpen} onOpenChange={setNewScheduleOpen}>
-                  <DialogTrigger asChild>
-                    <Button>
-                      <Plus className="h-4 w-4 mr-2" />
-                      New Schedule
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Create Sync Schedule</DialogTitle>
-                      <DialogDescription>
-                        Set up automated product syncing from suppliers
-                      </DialogDescription>
-                    </DialogHeader>
-                    {/* Schedule creation form would go here */}
-                  </DialogContent>
-                </Dialog>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {schedules.map((schedule) => (
-                  <Card key={schedule.id}>
-                    <CardContent className="pt-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="font-medium">{schedule.name}</h3>
-                          <div className="flex gap-4 text-sm text-muted-foreground mt-1">
-                            <span>Suppliers: {schedule.suppliers.join(', ')}</span>
-                            <span>Frequency: {schedule.frequency}</span>
-                            <span>Next run: {new Date(schedule.next_run).toLocaleString()}</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={schedule.is_active ? 'default' : 'secondary'}>
-                            {schedule.is_active ? 'Active' : 'Inactive'}
-                          </Badge>
-                          <Switch checked={schedule.is_active} />
-                          <Button variant="ghost" size="sm">
-                            <Settings className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="analytics" className="space-y-6">
+        <TabsContent value="analytics">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -563,81 +390,37 @@ export default function StoreProductManagement() {
               <CardContent>
                 <div className="text-2xl font-bold">{products.length}</div>
                 <p className="text-xs text-muted-foreground">
-                  {products.filter(p => p.status === 'active').length} active
+                  Across all suppliers
                 </p>
               </CardContent>
             </Card>
-
+            
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Suppliers</CardTitle>
+                <CardTitle className="text-sm font-medium">Active Suppliers</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{suppliers.length}</div>
                 <p className="text-xs text-muted-foreground">
-                  Connected suppliers
+                  Connected integrations
                 </p>
               </CardContent>
             </Card>
-
+            
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Sync Schedules</CardTitle>
+                <CardTitle className="text-sm font-medium">Phase Progress</CardTitle>
                 <Clock className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{schedules.length}</div>
+                <div className="text-2xl font-bold">1/5</div>
                 <p className="text-xs text-muted-foreground">
-                  {schedules.filter(s => s.is_active).length} active
+                  Phase 1: Foundation Complete
                 </p>
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
-
-        <TabsContent value="settings" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Store Settings</CardTitle>
-              <CardDescription>
-                Configure your store and automation preferences
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-base">Auto-approve scraped products</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Automatically make scraped products visible in the store
-                    </p>
-                  </div>
-                  <Switch />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-base">Price change notifications</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Get notified when product prices change significantly
-                    </p>
-                  </div>
-                  <Switch />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-base">Stock monitoring</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Monitor supplier stock levels and update availability
-                    </p>
-                  </div>
-                  <Switch />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>
