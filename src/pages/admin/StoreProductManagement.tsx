@@ -23,6 +23,7 @@ import {
   Settings
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { ProductImportExportDialog } from "@/components/admin/ProductImportExportDialog";
 
 interface StoreProduct {
   id: string;
@@ -77,6 +78,8 @@ export default function StoreProductManagement() {
   const [showBulkEdit, setShowBulkEdit] = useState(false);
   const [showScheduleDialog, setShowScheduleDialog] = useState(false);
   const [bulkEditData, setBulkEditData] = useState<BulkEditData>({});
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -316,13 +319,41 @@ export default function StoreProductManagement() {
           </p>
         </div>
 
-        <Button 
-          onClick={() => triggerManualScraping()}
-          disabled={scrapingProgress?.status === 'running'}
-        >
-          <Play className="h-4 w-4 mr-2" />
-          Run Manual Sync
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={() => triggerManualScraping()}
+            disabled={scrapingProgress?.status === 'running'}
+          >
+            <Play className="h-4 w-4 mr-2" />
+            Run Manual Sync
+          </Button>
+          
+          {products.length === 0 && (
+            <Button 
+              variant="outline"
+              onClick={async () => {
+                try {
+                  const { data, error } = await supabase.functions.invoke('seed-sample-products');
+                  if (error) throw error;
+                  await fetchProducts();
+                  toast({
+                    title: "Sample Products Added",
+                    description: "10 sample products have been added to get you started"
+                  });
+                } catch (error: any) {
+                  toast({
+                    title: "Error",
+                    description: error.message,
+                    variant: "destructive"
+                  });
+                }
+              }}
+            >
+              <Package className="h-4 w-4 mr-2" />
+              Add Sample Products
+            </Button>
+          )}
+        </div>
       </div>
 
       {scrapingProgress && (
@@ -359,11 +390,19 @@ export default function StoreProductManagement() {
                   </CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setShowExportDialog(true)}
+                  >
                     <Download className="h-4 w-4 mr-2" />
                     Export
                   </Button>
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setShowImportDialog(true)}
+                  >
                     <Upload className="h-4 w-4 mr-2" />
                     Import
                   </Button>
@@ -959,6 +998,20 @@ export default function StoreProductManagement() {
           </Card>
         </div>
       )}
+
+      {/* Import/Export Dialogs */}
+      <ProductImportExportDialog
+        open={showImportDialog}
+        onOpenChange={setShowImportDialog}
+        mode="import"
+        onImportComplete={fetchProducts}
+      />
+      
+      <ProductImportExportDialog
+        open={showExportDialog}
+        onOpenChange={setShowExportDialog}
+        mode="export"
+      />
     </div>
   );
 }

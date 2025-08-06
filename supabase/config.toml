@@ -195,3 +195,9 @@ verify_jwt = true
 
 [functions.ups-diagnostic]
 verify_jwt = true
+
+[functions.enhanced-scraping-engine]
+verify_jwt = true
+
+[functions.seed-sample-products]
+verify_jwt = true
