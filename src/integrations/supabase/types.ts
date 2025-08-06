@@ -2313,6 +2313,36 @@ export type Database = {
           },
         ]
       }
+      product_views: {
+        Row: {
+          created_at: string
+          id: string
+          metadata: Json | null
+          product_id: string
+          session_id: string | null
+          user_id: string | null
+          view_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          product_id: string
+          session_id?: string | null
+          user_id?: string | null
+          view_type?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          product_id?: string
+          session_id?: string | null
+          user_id?: string | null
+          view_type?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           body_html: string | null
@@ -2484,6 +2514,57 @@ export type Database = {
           phone?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      promotional_banners: {
+        Row: {
+          banner_type: string
+          created_at: string
+          cta_text: string | null
+          cta_url: string | null
+          description: string | null
+          expires_at: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          position: number | null
+          starts_at: string | null
+          target_audience: Json | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          banner_type?: string
+          created_at?: string
+          cta_text?: string | null
+          cta_url?: string | null
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          position?: number | null
+          starts_at?: string | null
+          target_audience?: Json | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          banner_type?: string
+          created_at?: string
+          cta_text?: string | null
+          cta_url?: string | null
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          position?: number | null
+          starts_at?: string | null
+          target_audience?: Json | null
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -3032,6 +3113,33 @@ export type Database = {
         }
         Relationships: []
       }
+      search_queries: {
+        Row: {
+          created_at: string
+          id: string
+          query: string
+          results_count: number | null
+          session_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          query: string
+          results_count?: number | null
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          query?: string
+          results_count?: number | null
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       shipment_labels: {
         Row: {
           carrier: string
@@ -3493,6 +3601,7 @@ export type Database = {
           inventory_quantity: number | null
           material: string | null
           name: string
+          popularity_score: number | null
           price: number
           promotion_type: string | null
           rating_average: number | null
@@ -3516,7 +3625,9 @@ export type Database = {
           tax_code: string | null
           taxable: boolean | null
           track_quantity: boolean | null
+          trending_score: number | null
           updated_at: string
+          view_count: number | null
           visibility: string | null
           warranty_info: string | null
           weight_lbs: number | null
@@ -3543,6 +3654,7 @@ export type Database = {
           inventory_quantity?: number | null
           material?: string | null
           name: string
+          popularity_score?: number | null
           price?: number
           promotion_type?: string | null
           rating_average?: number | null
@@ -3566,7 +3678,9 @@ export type Database = {
           tax_code?: string | null
           taxable?: boolean | null
           track_quantity?: boolean | null
+          trending_score?: number | null
           updated_at?: string
+          view_count?: number | null
           visibility?: string | null
           warranty_info?: string | null
           weight_lbs?: number | null
@@ -3593,6 +3707,7 @@ export type Database = {
           inventory_quantity?: number | null
           material?: string | null
           name?: string
+          popularity_score?: number | null
           price?: number
           promotion_type?: string | null
           rating_average?: number | null
@@ -3616,7 +3731,9 @@ export type Database = {
           tax_code?: string | null
           taxable?: boolean | null
           track_quantity?: boolean | null
+          trending_score?: number | null
           updated_at?: string
+          view_count?: number | null
           visibility?: string | null
           warranty_info?: string | null
           weight_lbs?: number | null
@@ -4214,6 +4331,36 @@ export type Database = {
           updated_at?: string
           usage_count?: number | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_interactions: {
+        Row: {
+          created_at: string
+          data: Json | null
+          id: string
+          interaction_type: string
+          session_id: string | null
+          target_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          data?: Json | null
+          id?: string
+          interaction_type: string
+          session_id?: string | null
+          target_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          data?: Json | null
+          id?: string
+          interaction_type?: string
+          session_id?: string | null
+          target_id?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }

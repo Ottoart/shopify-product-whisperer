@@ -12,6 +12,9 @@ import ProductComparison from "@/components/store/ProductComparison";
 import StoreBreadcrumb from "@/components/store/StoreBreadcrumb";
 import { useShoppingCart } from "@/hooks/useShoppingCart";
 import { useWishlist } from "@/hooks/useWishlist";
+import { useAnalyticsTracking } from "@/hooks/useAnalyticsTracking";
+import { PromotionalBanner } from "@/components/store/PromotionalBanner";
+import { FeaturedProductsSection } from "@/components/store/FeaturedProductsSection";
 
 interface StoreProduct {
   id: string;
@@ -58,6 +61,7 @@ export default function Store() {
   const { toast } = useToast();
   const { addToCart } = useShoppingCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
+  const { trackProductView, trackCartAdd } = useAnalyticsTracking();
   
   const [products, setProducts] = useState<StoreProduct[]>([]);
   const [categories, setCategories] = useState<StoreCategory[]>([]);
@@ -160,11 +164,16 @@ export default function Store() {
   };
 
   const handleAddToCart = async (product: StoreProduct) => {
+    trackCartAdd(product.id, { page: 'store' });
     await addToCart(product.id);
   };
 
   const handleAddToWishlist = async (product: StoreProduct) => {
     await toggleWishlist(product.id);
+  };
+
+  const handleProductClick = (product: StoreProduct) => {
+    trackProductView(product.id);
   };
 
   const handleAddToComparison = (product: StoreProduct) => {
@@ -371,6 +380,13 @@ export default function Store() {
           />
           
           <div className="p-6">
+            {/* Promotional Banner */}
+            <PromotionalBanner 
+              type="hero" 
+              className="mb-8"
+              autoRotate={true}
+            />
+
             {/* Store Header */}
             <div className="mb-8">
               <div className="flex items-center justify-between mb-4">
@@ -396,6 +412,24 @@ export default function Store() {
                   <Package className="h-4 w-4" />
                 </Button>
               </div>
+            </div>
+
+            {/* Featured Sections */}
+            <div className="space-y-12 mb-12">
+              <FeaturedProductsSection 
+                filterType="featured" 
+                maxItems={4}
+                onProductClick={handleProductClick}
+                onAddToCart={handleAddToCart}
+                onAddToWishlist={handleAddToWishlist}
+              />
+              <FeaturedProductsSection 
+                filterType="popular" 
+                maxItems={4}
+                onProductClick={handleProductClick}
+                onAddToCart={handleAddToCart}
+                onAddToWishlist={handleAddToWishlist}
+              />
             </div>
 
             {/* Enhanced Product Grid */}
