@@ -335,18 +335,16 @@ export default function Store() {
                 <Skeleton className="h-8 w-64 mb-2" />
                 <Skeleton className="h-4 w-96" />
               </div>
-              <EnhancedProductGrid
-                products={[]}
-                totalProducts={0}
-                isLoading={true}
-                onAddToCart={handleAddToCart}
-                onAddToWishlist={handleAddToWishlist}
-                isInWishlist={isInWishlist}
-                sortBy={filters.sortBy}
-                onSortChange={(sortBy) => setFilters(prev => ({ ...prev, sortBy }))}
-                activeFilterCount={getActiveFilterCount()}
-                onClearFilters={clearAllFilters}
-              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {Array.from({ length: 8 }).map((_, index) => (
+                  <div key={index} className="space-y-3">
+                    <Skeleton className="aspect-square w-full" />
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                    <Skeleton className="h-8 w-full" />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
