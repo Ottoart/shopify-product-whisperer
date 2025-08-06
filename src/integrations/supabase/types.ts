@@ -113,6 +113,75 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_categorization_suggestions: {
+        Row: {
+          applied_at: string | null
+          confidence_score: number | null
+          created_at: string
+          id: string
+          product_id: string
+          status: string
+          suggestion_data: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          applied_at?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          product_id: string
+          status?: string
+          suggestion_data?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          applied_at?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          product_id?: string
+          status?: string
+          suggestion_data?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_competitive_analysis: {
+        Row: {
+          analysis_data: Json
+          confidence_score: number | null
+          created_at: string
+          id: string
+          product_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          analysis_data?: Json
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          product_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          analysis_data?: Json
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          product_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_insights: {
         Row: {
           action_items: string[] | null
@@ -154,6 +223,75 @@ export type Database = {
           is_read?: boolean | null
           priority?: string | null
           title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_learning_patterns: {
+        Row: {
+          created_at: string
+          effectiveness_score: number | null
+          id: string
+          pattern_data: Json
+          pattern_type: string
+          updated_at: string
+          usage_count: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          effectiveness_score?: number | null
+          id?: string
+          pattern_data?: Json
+          pattern_type: string
+          updated_at?: string
+          usage_count?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          effectiveness_score?: number | null
+          id?: string
+          pattern_data?: Json
+          pattern_type?: string
+          updated_at?: string
+          usage_count?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_pricing_recommendations: {
+        Row: {
+          applied_at: string | null
+          confidence_score: number | null
+          created_at: string
+          id: string
+          product_id: string
+          recommendation_data: Json
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          applied_at?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          product_id: string
+          recommendation_data?: Json
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          applied_at?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          product_id?: string
+          recommendation_data?: Json
+          status?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
