@@ -836,6 +836,48 @@ export default function MainLayout({ children }: MainLayoutProps) {
                       </div>
                     </AccordionContent>
                   </AccordionItem>
+                  
+                  <AccordionItem value="resources">
+                    <AccordionTrigger className="text-left">Resources</AccordionTrigger>
+                    <AccordionContent>
+                      <div className="space-y-2 pl-4">
+                        <div className="text-sm font-medium text-muted-foreground mb-2">Company</div>
+                        <Link to="/about-us" className="flex items-center space-x-2 p-2 rounded-lg hover:bg-accent/50 transition-colors">
+                          <Users className="h-4 w-4 text-primary" />
+                          <span className="text-sm">About Us</span>
+                        </Link>
+                        <Link to="#careers" className="flex items-center space-x-2 p-2 rounded-lg hover:bg-accent/50 transition-colors">
+                          <Target className="h-4 w-4 text-primary" />
+                          <span className="text-sm">Careers</span>
+                        </Link>
+                        <Link to="#contact" className="flex items-center space-x-2 p-2 rounded-lg hover:bg-accent/50 transition-colors">
+                          <Phone className="h-4 w-4 text-primary" />
+                          <span className="text-sm">Contact Us</span>
+                        </Link>
+                        <Link to="/privacy-policy" className="flex items-center space-x-2 p-2 rounded-lg hover:bg-accent/50 transition-colors">
+                          <Shield className="h-4 w-4 text-primary" />
+                          <span className="text-sm">Privacy Policy</span>
+                        </Link>
+                        <div className="text-sm font-medium text-muted-foreground mb-2 mt-4">Resources</div>
+                        <Link to="#documentation" className="flex items-center space-x-2 p-2 rounded-lg hover:bg-accent/50 transition-colors">
+                          <BookOpen className="h-4 w-4 text-primary" />
+                          <span className="text-sm">Documentation</span>
+                        </Link>
+                        <Link to="#support" className="flex items-center space-x-2 p-2 rounded-lg hover:bg-accent/50 transition-colors">
+                          <HelpCircle className="h-4 w-4 text-primary" />
+                          <span className="text-sm">Support Center</span>
+                        </Link>
+                        <Link to="#blog" className="flex items-center space-x-2 p-2 rounded-lg hover:bg-accent/50 transition-colors">
+                          <Globe className="h-4 w-4 text-primary" />
+                          <span className="text-sm">Blog</span>
+                        </Link>
+                        <Link to="#api" className="flex items-center space-x-2 p-2 rounded-lg hover:bg-accent/50 transition-colors">
+                          <Zap className="h-4 w-4 text-primary" />
+                          <span className="text-sm">API Reference</span>
+                        </Link>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
                 </Accordion>
                 
                 <div className="space-y-2">
