@@ -10,6 +10,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Search, Filter, ChevronDown, ChevronUp, X, Star, SlidersHorizontal } from "lucide-react";
+import FilterSectionSearch from "./enhanced-filters/FilterSectionSearch";
+import FilterSuggestions from "./enhanced-filters/FilterSuggestions";
 
 interface FilterState {
   search: string;
@@ -76,6 +78,10 @@ export default function StoreFilters({
   const removeFilterItem = (key: keyof FilterState, value: string) => {
     const currentArray = filters[key] as string[];
     updateFilter(key, currentArray.filter(item => item !== value));
+  };
+
+  const handleApplySuggestion = (suggestedFilters: Record<string, any>) => {
+    onFiltersChange({ ...filters, ...suggestedFilters });
   };
 
   return (
@@ -212,23 +218,13 @@ export default function StoreFilters({
             </div>
           </CollapsibleTrigger>
           <CollapsibleContent className="p-4 border-b">
-            <div className="space-y-2 max-h-40 overflow-y-auto">
-              {options.brands.map((brand) => (
-                <div key={brand} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`brand-${brand}`}
-                    checked={filters.brand.includes(brand)}
-                    onCheckedChange={() => toggleArrayFilter('brand', brand)}
-                  />
-                  <Label 
-                    htmlFor={`brand-${brand}`} 
-                    className="text-sm cursor-pointer flex-1"
-                  >
-                    {brand}
-                  </Label>
-                </div>
-              ))}
-            </div>
+            <FilterSectionSearch
+              title="Brand"
+              items={options.brands}
+              selectedItems={filters.brand}
+              onToggleItem={(brand) => toggleArrayFilter('brand', brand)}
+              placeholder="Search brands..."
+            />
           </CollapsibleContent>
         </Collapsible>
 
@@ -330,49 +326,23 @@ export default function StoreFilters({
             </div>
           </CollapsibleTrigger>
           <CollapsibleContent className="p-4 border-b space-y-4">
-            {/* Material */}
-            <div>
-              <Label className="text-xs font-medium mb-2 block">Material</Label>
-              <div className="space-y-2 max-h-32 overflow-y-auto">
-                {options.materials.map((material) => (
-                  <div key={material} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`material-${material}`}
-                      checked={filters.material.includes(material)}
-                      onCheckedChange={() => toggleArrayFilter('material', material)}
-                    />
-                    <Label 
-                      htmlFor={`material-${material}`} 
-                      className="text-sm cursor-pointer flex-1"
-                    >
-                      {material}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <FilterSectionSearch
+              title="Material"
+              items={options.materials}
+              selectedItems={filters.material}
+              onToggleItem={(material) => toggleArrayFilter('material', material)}
+              placeholder="Search materials..."
+              maxHeight="max-h-32"
+            />
 
-            {/* Color */}
-            <div>
-              <Label className="text-xs font-medium mb-2 block">Color</Label>
-              <div className="space-y-2 max-h-32 overflow-y-auto">
-                {options.colors.map((color) => (
-                  <div key={color} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`color-${color}`}
-                      checked={filters.color.includes(color)}
-                      onCheckedChange={() => toggleArrayFilter('color', color)}
-                    />
-                    <Label 
-                      htmlFor={`color-${color}`} 
-                      className="text-sm cursor-pointer flex-1"
-                    >
-                      {color}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <FilterSectionSearch
+              title="Color"
+              items={options.colors}
+              selectedItems={filters.color}
+              onToggleItem={(color) => toggleArrayFilter('color', color)}
+              placeholder="Search colors..."
+              maxHeight="max-h-32"
+            />
           </CollapsibleContent>
         </Collapsible>
 
@@ -412,6 +382,14 @@ export default function StoreFilters({
             </div>
           </CollapsibleContent>
         </Collapsible>
+
+        {/* Filter Suggestions */}
+        <div className="p-4">
+          <FilterSuggestions
+            onApplySuggestion={handleApplySuggestion}
+            currentFilters={filters}
+          />
+        </div>
       </div>
     </div>
   );

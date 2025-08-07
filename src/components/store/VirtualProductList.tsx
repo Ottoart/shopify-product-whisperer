@@ -53,6 +53,7 @@ interface VirtualProductListProps {
   onLoadMore?: () => void;
   hasNextPage?: boolean;
   loadMoreThreshold?: number;
+  viewMode?: 'grid-4' | 'grid-3' | 'grid-2' | 'list';
 }
 
 export default function VirtualProductList({
@@ -71,19 +72,35 @@ export default function VirtualProductList({
   isLoading = false,
   onLoadMore,
   hasNextPage = false,
-  loadMoreThreshold = 5
+  loadMoreThreshold = 5,
+  viewMode = 'grid-4'
 }: VirtualProductListProps) {
   const [containerWidth, setContainerWidth] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<List>(null);
 
-  // Calculate responsive items per row
+  // Calculate responsive items per row based on viewMode
   const responsiveItemsPerRow = useMemo(() => {
+    // For mobile, always use single column for better UX
     if (containerWidth < 640) return 1; // sm
-    if (containerWidth < 768) return 2; // md
-    if (containerWidth < 1024) return 3; // lg
-    return Math.min(itemsPerRow, 4); // xl
-  }, [containerWidth, itemsPerRow]);
+
+    // Desktop behavior based on viewMode
+    switch (viewMode) {
+      case 'grid-4':
+        if (containerWidth < 768) return 2; // md
+        if (containerWidth < 1024) return 3; // lg
+        return 4; // xl
+      case 'grid-3':
+        if (containerWidth < 768) return 2; // md
+        return 3; // lg+
+      case 'grid-2':
+        return 2; // Always 2 columns on desktop
+      case 'list':
+        return 1; // Always single column for list view
+      default:
+        return Math.min(itemsPerRow, 4);
+    }
+  }, [containerWidth, viewMode, itemsPerRow]);
 
   // Group products into rows
   const productRows = useMemo(() => {
@@ -143,7 +160,7 @@ export default function VirtualProductList({
                 onShare={onShare}
                 isInWishlist={isInWishlist ? isInWishlist(product.id) : false}
                 isInComparison={isInComparison ? isInComparison(product.id) : false}
-                viewMode="grid"
+                viewMode={viewMode === 'list' ? 'list' : 'grid'}
                 className="h-full"
               />
             </div>

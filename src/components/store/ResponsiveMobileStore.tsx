@@ -8,6 +8,7 @@ import TouchOptimizedProductCard from "./TouchOptimizedProductCard";
 import PullToRefreshIndicator from "./PullToRefreshIndicator";
 import EnhancedStoreFilters from "./EnhancedStoreFilters";
 import VirtualProductList from "./VirtualProductList";
+import ViewModeToggle from "./enhanced-filters/ViewModeToggle";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -102,6 +103,7 @@ export default function ResponsiveMobileStore({
 }: ResponsiveMobileStoreProps) {
   const isMobile = useIsMobile();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid-4' | 'grid-3' | 'grid-2' | 'list'>('grid-4');
   const { announceToScreenReader } = useAccessibility();
 
   // Pull to refresh functionality
@@ -136,8 +138,23 @@ export default function ResponsiveMobileStore({
           activeFilterCount={activeFilterCount}
         />
         <div className="flex-1 overflow-hidden">
-          <div className="h-full overflow-y-auto p-6">
-            <VirtualProductList
+          <div className="h-full overflow-y-auto">
+            {/* Desktop Header with View Mode Toggle */}
+            <div className="flex items-center justify-between p-6 pb-4 border-b bg-background/95 backdrop-blur-sm sticky top-0 z-10">
+              <div>
+                <h1 className="text-2xl font-bold">Store</h1>
+                <p className="text-sm text-muted-foreground">
+                  Discover our complete product catalog
+                </p>
+              </div>
+              <ViewModeToggle
+                viewMode={viewMode}
+                onViewModeChange={setViewMode}
+              />
+            </div>
+            
+            <div className="p-6">
+              <VirtualProductList
               products={products}
               onAddToCart={onAddToCart}
               onAddToWishlist={onAddToWishlist}
@@ -148,7 +165,9 @@ export default function ResponsiveMobileStore({
               hasNextPage={hasNextPage}
               onLoadMore={onLoadMore}
               height={600}
+              viewMode={viewMode}
             />
+            </div>
           </div>
         </div>
       </div>
