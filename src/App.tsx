@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
 import { StoreProvider } from "@/contexts/StoreContext";
+import MainLayout from "@/components/MainLayout";
 import Index from "./pages/Index";
 import MainDashboard from "./pages/MainDashboard";
 import PrepFoxDashboard from "./pages/PrepFoxDashboard";
@@ -134,8 +135,6 @@ const AuthenticatedApp = () => {
               <Route path="/packing" element={<PackingDashboard />} />
               <Route path="/shipping-overview" element={<ShippingOverview />} />
               <Route path="/shipping" element={<Shipping />} />
-              <Route path="/store" element={<Store />} />
-              <Route path="/store/:categorySlug" element={<StoreCategory />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/activity" element={<Activity />} />
               <Route path="/bulk-editor" element={<BulkEditor />} />
@@ -164,7 +163,7 @@ const AuthenticatedApp = () => {
 // Public routes (marketing site)
 const PublicApp = () => {
   return (
-    <main className="min-h-screen">
+    <MainLayout>
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/shipping-landing" element={<ShippingLanding />} />
@@ -233,7 +232,7 @@ const PublicApp = () => {
         <Route path="/about" element={<AboutUs />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </main>
+    </MainLayout>
   );
 };
 
