@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useSessionContext } from '@supabase/auth-helpers-react';
 import { Product } from '@/types/product';
+import { useShopifyCredentials } from '@/hooks/useShopifyCredentials';
 
 interface ProductListItemProps {
   product: Product;
@@ -31,7 +32,6 @@ export const ProductListItem = ({
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [storeConfig, setStoreConfig] = useState<{domain: string} | null>(null);
   const [editedProduct, setEditedProduct] = useState({
     title: product.title,
     vendor: product.vendor,
@@ -48,6 +48,7 @@ export const ProductListItem = ({
   
   const { session } = useSessionContext();
   const { toast } = useToast();
+  const { storeUrl: activeStoreUrl } = useShopifyCredentials();
 
   // Helper function to provide user-friendly error messages and solutions
   const getUserFriendlyError = (error: any) => {
@@ -93,29 +94,6 @@ export const ProductListItem = ({
     };
   };
 
-  useEffect(() => {
-    const fetchStoreConfig = async () => {
-      if (!session?.user?.id) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from('store_configurations')
-          .select('domain')
-          .eq('user_id', session.user.id)
-          .eq('is_active', true)
-          .limit(1);
-          
-        if (error) throw error;
-        if (data && data.length > 0) {
-          setStoreConfig(data[0]);
-        }
-      } catch (error) {
-        console.error('Error fetching store config:', error);
-      }
-    };
-
-    fetchStoreConfig();
-  }, [session?.user?.id]);
 
   const getProductUrl = (handle: string) => {
     if (storeUrl && storeUrl.trim()) {
@@ -126,11 +104,11 @@ export const ProductListItem = ({
   };
 
   const getShopifyAdminUrl = (handle: string) => {
-    if (!storeConfig?.domain) {
-      return null;
-    }
-    
-    const storeName = storeConfig.domain.replace('.myshopify.com', '');
+    const base = (activeStoreUrl || storeUrl || '').trim();
+    if (!base) return null;
+    const domain = base.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    const storeName = domain.replace('.myshopify.com', '').split('/')[0];
+    if (!storeName) return null;
     return `https://admin.shopify.com/store/${storeName}/products/${handle}`;
   };
 

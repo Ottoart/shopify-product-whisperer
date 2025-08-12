@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSessionContext } from '@supabase/auth-helpers-react';
 import { useToast } from '@/hooks/use-toast';
+import { useShopifyCredentials } from '@/hooks/useShopifyCredentials';
 
 interface SyncStatus {
   id: string;
@@ -21,36 +22,16 @@ export const useShopifyProductSync = () => {
   const queryClient = useQueryClient();
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncProgress, setSyncProgress] = useState<{ current: number; total: number; message?: string }>({ current: 0, total: 0 });
+  const { storeUrl, accessToken } = useShopifyCredentials();
 
-  // Get Shopify credentials from stores table instead of localStorage
-  const getShopifyCredentials = async () => {
-    if (!session?.user?.id) return { storeUrl: null, accessToken: null };
-    
-    const { data: stores } = await supabase
-      .from('store_configurations')
-      .select('domain, access_token')
-      .eq('user_id', session.user.id)
-      .eq('platform', 'shopify')
-      .eq('is_active', true)
-      .limit(1);
-    
-    if (!stores || stores.length === 0) {
-      return { storeUrl: null, accessToken: null };
-    }
-    
-    const store = stores[0];
-    let accessToken = store.access_token;
-    
-    // Parse access token if it's JSON and clean it
+  // Clean token helper for legacy stored JSON tokens
+  const cleanAccessToken = (token?: string | null) => {
+    if (!token) return null;
     try {
-      const parsed = JSON.parse(accessToken);
-      accessToken = (parsed.access_token || parsed.accessToken || accessToken).trim().split(' ')[0];
-    } catch {
-      // If parsing fails, clean the token anyway
-      accessToken = accessToken.trim().split(' ')[0];
-    }
-    
-    return { storeUrl: store.domain, accessToken };
+      const parsed = JSON.parse(token);
+      token = parsed.access_token || parsed.accessToken || token;
+    } catch {}
+    return token.toString().trim().split(' ')[0];
   };
 
   // Get sync status
@@ -136,14 +117,13 @@ export const useShopifyProductSync = () => {
   // Sync batch mutation
   const syncBatchMutation = useMutation({
     mutationFn: async ({ batchSize = 250, startPage = 1, silent = false }: { batchSize?: number; startPage?: number; silent?: boolean }) => {
-      const { storeUrl, accessToken } = await getShopifyCredentials();
-      
-      if (!storeUrl || !accessToken) {
+      const token = cleanAccessToken(accessToken);
+      if (!storeUrl || !token) {
         throw new Error('Shopify credentials not found. Please configure your store settings first.');
       }
 
       const { data, error } = await supabase.functions.invoke('sync-shopify-products', {
-        body: { storeUrl, accessToken, batchSize, startPage }
+        body: { storeUrl, accessToken: token, batchSize, startPage }
       });
 
       if (error) throw error;
@@ -182,8 +162,8 @@ export const useShopifyProductSync = () => {
     setSyncProgress({ current: 0, total: 100 });
     
     try {
-      // Get initial count from Shopify to estimate progress
-      const { storeUrl, accessToken } = await getShopifyCredentials();
+      const token = cleanAccessToken(accessToken);
+      if (!storeUrl || !token) throw new Error('Missing Shopify credentials');
       
       let page = 1;
       let hasMorePages = true;
@@ -270,7 +250,6 @@ export const useShopifyProductSync = () => {
     
     // Helpers
     hasCredentials: async () => {
-      const { storeUrl, accessToken } = await getShopifyCredentials();
       return Boolean(storeUrl && accessToken);
     },
     

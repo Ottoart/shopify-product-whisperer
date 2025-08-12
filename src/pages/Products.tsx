@@ -40,6 +40,7 @@ import { StoreSync } from "@/components/StoreSync";
 import { SyncStatusDisplay } from "@/components/SyncStatusDisplay";
 import { AIRecommendationPanel } from "@/components/ai/AIRecommendationPanel";
 import { useStores } from "@/contexts/StoreContext";
+import { useShopifyCredentials } from "@/hooks/useShopifyCredentials";
 
 interface Product {
   id: string;
@@ -116,6 +117,7 @@ export default function Products() {
   const session = useSession();
   const { toast } = useToast();
   const { stores } = useStores();
+  const { storeUrl } = useShopifyCredentials();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
@@ -481,7 +483,7 @@ export default function Products() {
                 });
                 fetchProducts();
               }}
-              storeUrl={stores.find(s => s.platform === 'shopify')?.domain || ''}
+              storeUrl={storeUrl || ''}
             />
           )}
         </>

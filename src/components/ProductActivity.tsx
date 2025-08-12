@@ -25,7 +25,6 @@ export const ProductActivity = ({ onProductsUpdated, storeUrl }: ProductActivity
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [storeConfig, setStoreConfig] = useState<{domain: string} | null>(null);
   const { session } = useSessionContext();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useTabPersistence('product-activity', 'recent');
@@ -112,11 +111,11 @@ export const ProductActivity = ({ onProductsUpdated, storeUrl }: ProductActivity
   };
 
   const getShopifyAdminUrl = (handle: string) => {
-    if (!storeConfig?.domain) {
-      return null;
-    }
-    
-    const storeName = storeConfig.domain.replace('.myshopify.com', '');
+    const base = (storeUrl || '').trim();
+    if (!base) return null;
+    const domain = base.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    const storeName = domain.replace('.myshopify.com', '').split('/')[0];
+    if (!storeName) return null;
     return `https://admin.shopify.com/store/${storeName}/products/${handle}`;
   };
 
@@ -309,29 +308,6 @@ export const ProductActivity = ({ onProductsUpdated, storeUrl }: ProductActivity
     }
   };
 
-  useEffect(() => {
-    const fetchStoreConfig = async () => {
-      if (!session?.user?.id) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from('store_configurations')
-          .select('domain')
-          .eq('user_id', session.user.id)
-          .eq('is_active', true)
-          .limit(1);
-          
-        if (error) throw error;
-        if (data && data.length > 0) {
-          setStoreConfig(data[0]);
-        }
-      } catch (error) {
-        console.error('Error fetching store config:', error);
-      }
-    };
-
-    fetchStoreConfig();
-  }, [session?.user?.id]);
 
   useEffect(() => {
     fetchActivityData();
