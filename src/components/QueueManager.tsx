@@ -27,6 +27,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ProductComparison } from '@/components/ProductComparison';
 import { BulkWarningDialog } from '@/components/BulkWarningDialog';
+import { useShopifyCredentials } from '@/hooks/useShopifyCredentials';
 
 interface QueueItem {
   productId: string;

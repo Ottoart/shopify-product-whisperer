@@ -34,6 +34,7 @@ export const ProductEditor = ({ product, isOpen, onClose, onProductUpdated }: Pr
   const [isSaving, setIsSaving] = useState(false);
   const { session } = useSessionContext();
   const { toast } = useToast();
+  const { storeId } = useShopifyCredentials();
 
   // Debug authentication
   console.log('ProductEditor - Session:', session?.user?.id ? 'authenticated' : 'not authenticated');
