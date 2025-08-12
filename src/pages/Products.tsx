@@ -38,7 +38,6 @@ import { QueueManager } from "@/components/QueueManager";
 import { SyncProgressDialog } from "@/components/SyncProgressDialog";
 import { StoreSync } from "@/components/StoreSync";
 import { SyncStatusDisplay } from "@/components/SyncStatusDisplay";
-import { AIRecommendationPanel } from "@/components/ai/AIRecommendationPanel";
 import { useStores } from "@/contexts/StoreContext";
 import { useShopifyCredentials } from "@/hooks/useShopifyCredentials";
 
@@ -415,13 +414,6 @@ export default function Products() {
         </div>
       )}
 
-      {/* AI Recommendations Panel */}
-      {stores.length > 0 && products.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">AI Recommendations</h2>
-          <AIRecommendationPanel showGeneral={true} />
-        </div>
-      )}
 
       {/* Products with Advanced Filtering */}
       {stores.length > 0 && !loading && (

@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { ListingsTab } from "./tabs/ListingsTab";
 import { CalendarDays } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RepricingAIRecommendations } from "./components/RepricingAIRecommendations";
 
 export function RepricingListings() {
   const [searchParams] = useSearchParams();
@@ -55,6 +56,9 @@ export function RepricingListings() {
           </Select>
         </div>
       </div>
+
+      {/* AI Recommendations */}
+      <RepricingAIRecommendations />
 
       {/* Listings Content */}
       <ListingsTab 
