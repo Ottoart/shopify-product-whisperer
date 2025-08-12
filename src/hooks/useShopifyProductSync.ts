@@ -122,6 +122,19 @@ export const useShopifyProductSync = () => {
         throw new Error('Shopify credentials not found. Please configure your store settings first.');
       }
 
+      // Verify the selected store still exists and is active
+      const { data: exists, error: verifyError } = await supabase
+        .from('store_configurations')
+        .select('id')
+        .eq('domain', storeUrl)
+        .eq('user_id', session?.user?.id || '')
+        .eq('is_active', true)
+        .maybeSingle();
+      if (verifyError && verifyError.code !== 'PGRST116') throw verifyError;
+      if (!exists) {
+        throw new Error('Selected store no longer exists or is inactive. Please refresh stores.');
+      }
+
       const { data, error } = await supabase.functions.invoke('sync-shopify-products', {
         body: { storeUrl, accessToken: token, batchSize, startPage }
       });

@@ -100,6 +100,19 @@ export const StoreSync = ({ onSyncComplete }: StoreSyncProps) => {
     });
 
     try {
+      // Verify store still exists and is active before syncing
+      const { data: exists, error: verifyError } = await supabase
+        .from('store_configurations')
+        .select('id')
+        .eq('id', store.id)
+        .eq('user_id', session?.user?.id || '')
+        .eq('is_active', true)
+        .maybeSingle();
+      if (verifyError && verifyError.code !== 'PGRST116') throw verifyError;
+      if (!exists) {
+        throw new Error('Selected store no longer exists or is inactive. Please refresh stores.');
+      }
+
       if (store.platform === 'shopify') {
         const accessToken = cleanAccessToken(store.access_token);
         const activeOnly = syncSettings['shopify'] ?? true;
