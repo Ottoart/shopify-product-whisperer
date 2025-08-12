@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSessionContext } from '@supabase/auth-helpers-react';
 import { useToast } from '@/hooks/use-toast';
 import { Product } from '@/types/product';
+import { getPublicProductUrl, getShopifyAdminProductUrl } from '@/utils/shopify';
 
 interface ProductActivityProps {
   onProductsUpdated: () => void;
@@ -103,20 +104,11 @@ export const ProductActivity = ({ onProductsUpdated, storeUrl }: ProductActivity
   });
 
   const getProductUrl = (handle: string) => {
-    if (storeUrl && storeUrl.trim()) {
-      const cleanUrl = storeUrl.replace(/\/+$/, '');
-      return `${cleanUrl}/products/${handle}`;
-    }
-    return null;
+    return storeUrl ? getPublicProductUrl(storeUrl, handle) : null;
   };
 
   const getShopifyAdminUrl = (handle: string) => {
-    const base = (storeUrl || '').trim();
-    if (!base) return null;
-    const domain = base.replace(/^https?:\/\//, '').replace(/\/$/, '');
-    const storeName = domain.replace('.myshopify.com', '').split('/')[0];
-    if (!storeName) return null;
-    return `https://admin.shopify.com/store/${storeName}/products/${handle}`;
+    return storeUrl ? getShopifyAdminProductUrl(storeUrl, handle) : null;
   };
 
   const formatTimeAgo = (dateString: string) => {

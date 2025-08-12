@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSessionContext } from '@supabase/auth-helpers-react';
 import { Product } from '@/types/product';
 import { useShopifyCredentials } from '@/hooks/useShopifyCredentials';
+import { getPublicProductUrl, getShopifyAdminProductUrl } from '@/utils/shopify';
 
 interface ProductListItemProps {
   product: Product;
@@ -96,20 +97,13 @@ export const ProductListItem = ({
 
 
   const getProductUrl = (handle: string) => {
-    if (storeUrl && storeUrl.trim()) {
-      const cleanUrl = storeUrl.replace(/\/+$/, '');
-      return `${cleanUrl}/products/${handle}`;
-    }
-    return null;
+    const base = (activeStoreUrl || storeUrl || '').trim();
+    return base ? getPublicProductUrl(base, handle) : null;
   };
 
   const getShopifyAdminUrl = (handle: string) => {
     const base = (activeStoreUrl || storeUrl || '').trim();
-    if (!base) return null;
-    const domain = base.replace(/^https?:\/\//, '').replace(/\/$/, '');
-    const storeName = domain.replace('.myshopify.com', '').split('/')[0];
-    if (!storeName) return null;
-    return `https://admin.shopify.com/store/${storeName}/products/${handle}`;
+    return base ? getShopifyAdminProductUrl(base, handle) : null;
   };
 
   const handleSave = async () => {
