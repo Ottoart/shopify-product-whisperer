@@ -15,16 +15,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { action, products, brand, filterType, filterValue } = body;
-    
-    const shopifyDomain = Deno.env.get('SHOPIFY_DOMAIN');
-    const shopifyToken = Deno.env.get('SHOPIFY_ACCESS_TOKEN');
-    
-    if (!shopifyDomain || !shopifyToken) {
-      throw new Error('Shopify credentials not configured');
-    }
-
-    const shopifyUrl = `https://${shopifyDomain}/admin/api/2023-10/`;
+    const { action, products, brand, filterType, filterValue, storeId, store } = body;
     
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -43,6 +34,44 @@ serve(async (req) => {
     if (userError || !user) {
       throw new Error('Invalid user token');
     }
+
+    // Resolve user's active Shopify store (by storeId, store param, or first active)
+    const { data: stores, error: storesError } = await supabase
+      .from('store_configurations')
+      .select('id, store_name, domain, access_token, platform, is_active')
+      .eq('user_id', user.id)
+      .eq('platform', 'shopify')
+      .eq('is_active', true);
+
+    if (storesError) {
+      throw new Error(`Failed to load store configurations: ${storesError.message}`);
+    }
+
+    const normalize = (s: string) => (s || '').toLowerCase().replace(/^https?:\/\//, '').replace(/\/$/, '');
+
+    let selectedStore: any = null;
+    if (stores && stores.length) {
+      if (storeId) {
+        selectedStore = stores.find((s: any) => s.id === storeId) || null;
+      } else if (store && typeof store === 'string') {
+        const target = normalize(store);
+        selectedStore = stores.find((s: any) => {
+          const name = (s.store_name || '').toLowerCase();
+          const domain = normalize(s.domain || '');
+          const prefix = domain.split('.')[0];
+          return name === target || domain.includes(target) || prefix === target;
+        }) || null;
+      }
+      if (!selectedStore) selectedStore = stores[0];
+    }
+
+    if (!selectedStore?.domain || !selectedStore?.access_token) {
+      throw new Error('No active Shopify store configured. Please connect your Shopify store in Store Settings.');
+    }
+
+    const shopifyDomain = normalize(selectedStore.domain);
+    const shopifyToken = (selectedStore.access_token || '').replace(/\s+/g, '');
+    const shopifyUrl = `https://${shopifyDomain}/admin/api/2023-10/`;
 
     switch (action) {
       case 'fetch-filters': {
@@ -149,7 +178,8 @@ serve(async (req) => {
               JSON.stringify({ 
                 success: true, 
                 items: collections,
-                message: `Found ${collections.length} collections`
+                message: `Found ${collections.length} collections`,
+                store: { id: selectedStore.id, domain: shopifyDomain, store_name: selectedStore.store_name }
               }),
               { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
@@ -208,7 +238,8 @@ serve(async (req) => {
           JSON.stringify({ 
             success: true, 
             items,
-            message: `Found ${items.length} ${filterType}`
+            message: `Found ${items.length} ${filterType}`,
+            store: { id: selectedStore.id, domain: shopifyDomain, store_name: selectedStore.store_name }
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -374,7 +405,8 @@ serve(async (req) => {
             message,
             count: transformedProducts.length,
             brands: allBrands,
-            brand: brand || 'all'
+            brand: brand || 'all',
+            store: { id: selectedStore.id, domain: shopifyDomain, store_name: selectedStore.store_name }
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -452,7 +484,8 @@ serve(async (req) => {
           JSON.stringify({ 
             success: true, 
             message: `Updated ${successCount}/${products.length} products in Shopify`,
-            results
+            results,
+            store: { id: selectedStore.id, domain: shopifyDomain, store_name: selectedStore.store_name }
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );

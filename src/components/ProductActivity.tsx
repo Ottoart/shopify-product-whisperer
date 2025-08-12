@@ -12,6 +12,7 @@ import { useSessionContext } from '@supabase/auth-helpers-react';
 import { useToast } from '@/hooks/use-toast';
 import { Product } from '@/types/product';
 import { getPublicProductUrl, getShopifyAdminProductUrl } from '@/utils/shopify';
+import { useShopifyCredentials } from '@/hooks/useShopifyCredentials';
 
 interface ProductActivityProps {
   onProductsUpdated: () => void;
@@ -29,6 +30,7 @@ export const ProductActivity = ({ onProductsUpdated, storeUrl }: ProductActivity
   const { session } = useSessionContext();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useTabPersistence('product-activity', 'recent');
+  const { storeId } = useShopifyCredentials();
 
   const fetchActivityData = async () => {
     if (!session?.user?.id) return;
@@ -187,6 +189,7 @@ export const ProductActivity = ({ onProductsUpdated, storeUrl }: ProductActivity
       const { data, error } = await supabase.functions.invoke('shopify-products', {
         body: { 
           action: 'update',
+          storeId,
           products: productsToUpload.map(p => ({
             handle: p.handle,
             title: p.title,

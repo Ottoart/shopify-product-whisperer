@@ -49,7 +49,7 @@ export const ProductListItem = ({
   
   const { session } = useSessionContext();
   const { toast } = useToast();
-  const { storeUrl: activeStoreUrl } = useShopifyCredentials();
+  const { storeUrl: activeStoreUrl, storeId } = useShopifyCredentials();
 
   // Helper function to provide user-friendly error messages and solutions
   const getUserFriendlyError = (error: any) => {
@@ -221,6 +221,7 @@ export const ProductListItem = ({
       const { data: syncData, error: syncError } = await supabase.functions.invoke('shopify-products', {
         body: { 
           action: 'update',
+          storeId,
           products: [{
             handle: product.handle,
             title: editedProduct.title,
