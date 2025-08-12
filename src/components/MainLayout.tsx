@@ -233,7 +233,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
     },
     {
       title: "Multi-Channel Sync",
-      href: "/product-management/features/sync",
+      href: "/product-management/features/multi-channel-sync",
       description: "Synchronize products across all sales channels",
       icon: Globe,
     },
@@ -254,7 +254,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
     },
     {
       title: "Amazon FBA",
-      href: "/product-management/solutions/fba",
+      href: "/product-management/solutions/amazon-fba",
       description: "Specialized tools for Amazon FBA sellers",
       icon: Warehouse,
     },
