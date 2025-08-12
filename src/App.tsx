@@ -68,6 +68,8 @@ import B2BFulfillment from "./pages/fulfillment/B2BFulfillment";
 import OmniChannelFulfillment from "./pages/fulfillment/OmniChannelFulfillment";
 import InternationalFreight from "./pages/fulfillment/InternationalFreight";
 import SubscriptionFulfillment from "./pages/fulfillment/SubscriptionFulfillment";
+import AdminPlans from "./pages/admin/AdminPlans";
+import AdminSubscriptions from "./pages/admin/AdminSubscriptions";
 
 // Phase 2A - Software & Technology Products
 import PrepSoftware from "./pages/fulfillment/PrepSoftware";
@@ -147,6 +149,8 @@ const AuthenticatedApp = () => {
               <Route path="/settings" element={<Settings />} />
               <Route path="/carriers" element={<Carriers />} />
               <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/plans" element={<AdminPlans />} />
+              <Route path="/admin/subscriptions" element={<AdminSubscriptions />} />
               <Route path="/sync-status" element={<SyncStatus />} />
               <Route path="/logs" element={<Logs />} />
               
