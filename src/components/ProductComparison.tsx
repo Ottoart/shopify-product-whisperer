@@ -161,12 +161,6 @@ export function ProductComparison({
     return originalValue !== currentValue;
   };
 
-  // Get Shopify credentials
-  const getShopifyCredentials = () => {
-    const storeUrl = localStorage.getItem('shopify_domain');
-    const accessToken = localStorage.getItem('shopify_access_token');
-    return { storeUrl, accessToken };
-  };
 
   const handleSave = async () => {
     if (!session?.user?.id) {

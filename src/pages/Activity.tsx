@@ -1,9 +1,9 @@
-import { useState } from 'react';
 import { Activity as ActivityIcon } from 'lucide-react';
 import { ProductActivity } from '@/components/ProductActivity';
+import { useShopifyCredentials } from '@/hooks/useShopifyCredentials';
 
 const Activity = () => {
-  const [storeUrl] = useState(() => localStorage.getItem('shopify_domain') || '');
+  const { storeUrl } = useShopifyCredentials();
 
   const handleProductsUpdated = () => {
     // This will trigger a refetch of products
