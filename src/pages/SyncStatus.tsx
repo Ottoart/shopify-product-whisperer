@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useShopifyProductSync } from '@/hooks/useShopifyProductSync';
+import { useShopifyCredentials } from '@/hooks/useShopifyCredentials';
 
 const SyncStatus = () => {
   const {
@@ -15,6 +16,7 @@ const SyncStatus = () => {
     isInProgress,
     lastSyncAt
   } = useShopifyProductSync();
+  const { store } = useShopifyCredentials();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -40,6 +42,9 @@ const SyncStatus = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground">Sync Status</h1>
           <p className="text-muted-foreground">Monitor Shopify synchronization operations</p>
+          {store?.store_name && (
+            <p className="text-sm text-muted-foreground">Active store: {store.store_name}</p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
