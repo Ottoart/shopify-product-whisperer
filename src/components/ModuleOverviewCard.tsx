@@ -44,6 +44,15 @@ interface ModuleOverviewCardProps {
   }[];
   healthScore?: number;
   alertsCount?: number;
+  // Subscription-related props
+  enabled: boolean;
+  upgradeRequired?: boolean;
+  usagePercent?: number;
+  primaryCTA?: {
+    label: string;
+    onClick: () => void;
+    variant?: 'default' | 'outline' | 'secondary';
+  };
 }
 
 export function ModuleOverviewCard({
@@ -54,7 +63,11 @@ export function ModuleOverviewCard({
   quickActions,
   recentActivity = [],
   healthScore,
-  alertsCount = 0
+  alertsCount = 0,
+  enabled,
+  upgradeRequired = false,
+  usagePercent,
+  primaryCTA
 }: ModuleOverviewCardProps) {
   const navigate = useNavigate();
 
@@ -101,12 +114,21 @@ export function ModuleOverviewCard({
   };
 
   return (
-    <Card className="relative overflow-hidden">
-      {alertsCount > 0 && (
+    <Card className={`relative overflow-hidden ${!enabled ? 'opacity-60' : ''}`}>
+      {alertsCount > 0 && enabled && (
         <div className="absolute top-4 right-4">
           <Badge variant="destructive" className="gap-1">
             <AlertTriangle className="h-3 w-3" />
             {alertsCount}
+          </Badge>
+        </div>
+      )}
+      
+      {upgradeRequired && (
+        <div className="absolute top-4 right-4">
+          <Badge variant="outline" className="gap-1 bg-orange-50 text-orange-700 border-orange-200">
+            <Zap className="h-3 w-3" />
+            Upgrade Required
           </Badge>
         </div>
       )}
@@ -188,21 +210,51 @@ export function ModuleOverviewCard({
           </div>
         )}
 
-        {/* Quick Actions */}
-        <div className="space-y-2 pt-2 border-t">
-          {quickActions.map((action, index) => (
+        {/* Usage Progress */}
+        {usagePercent !== undefined && enabled && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Usage this month</span>
+              <span className="font-medium">{usagePercent}%</span>
+            </div>
+            <Progress value={usagePercent} className="h-2" />
+          </div>
+        )}
+
+        {/* Primary CTA */}
+        {primaryCTA && (
+          <div className="pt-2 border-t">
             <Button
-              key={index}
-              variant={action.variant || 'outline'}
+              variant={primaryCTA.variant || 'default'}
               size="sm"
-              className="w-full justify-between"
-              onClick={() => navigate(action.path)}
+              className="w-full"
+              onClick={primaryCTA.onClick}
+              disabled={!enabled && !upgradeRequired}
             >
-              {action.label}
-              <ArrowRight className="h-4 w-4" />
+              {primaryCTA.label}
+              {upgradeRequired && <Zap className="h-4 w-4 ml-2" />}
             </Button>
-          ))}
-        </div>
+          </div>
+        )}
+
+        {/* Quick Actions */}
+        {quickActions.length > 0 && (
+          <div className="space-y-2 pt-2 border-t">
+            {quickActions.map((action, index) => (
+              <Button
+                key={index}
+                variant={action.variant || 'outline'}
+                size="sm"
+                className="w-full justify-between"
+                onClick={() => navigate(action.path)}
+                disabled={!enabled}
+              >
+                {action.label}
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
