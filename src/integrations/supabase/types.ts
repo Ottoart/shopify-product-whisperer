@@ -4696,6 +4696,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_data: {
+        Args: { action_type: string; user_data?: Json }
+        Returns: Json
+      }
       check_low_stock: {
         Args: Record<PropertyKey, never>
         Returns: undefined

@@ -368,8 +368,9 @@ export function AppSidebar() {
                     <SidebarMenuButton asChild>
                       {'permission' in item && item.permission ? (
                         <PermissionGate 
-                          permission={item.permission as any} 
-                          resourceType={item.resourceType || ""}
+                          module={item.permission as any}
+                          showUpgrade={false}
+                          fallback={menuContent}
                         >
                           {menuContent}
                         </PermissionGate>
@@ -523,8 +524,9 @@ export function AppSidebar() {
                     <SidebarMenuButton asChild>
                       {'permission' in item && item.permission ? (
                         <PermissionGate 
-                          permission={item.permission as any} 
-                          resourceType={item.resourceType || ""}
+                          module={item.permission as any}
+                          showUpgrade={false}
+                          fallback={menuContent}
                         >
                           {menuContent}
                         </PermissionGate>
