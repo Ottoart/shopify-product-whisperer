@@ -23,22 +23,35 @@ import {
 import { UserSelector } from './UserSelector';
 import { AdminSubscriptionCard } from './AdminSubscriptionCard';
 import { AdminActionButtons } from './AdminActionButtons';
-import { useAdminUsers, useUpdateSubscription, useSubscriptionAction } from '@/hooks/useAdminUsers';
+import { useAdminUsers, useUpdateSubscription, useSubscriptionAction, type AdminUser } from '@/hooks/useAdminUsers';
 import { useSubscription } from '@/hooks/useSubscription';
 import { ModuleOverviewGrid } from '@/components/ModuleOverviewGrid';
+import { AdminAnalytics } from './AdminAnalytics';
+import { SubscriptionBadge } from '../subscription/SubscriptionBadge';
 
 // Import existing admin components (simplified)
 import { AdvancedUserManagement } from "./AdvancedUserManagement";
 
 export const EnhancedAdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
-  const [selectedUserId, setSelectedUserId] = useState<string>('');
+  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
 
   // Admin data hooks
-  const { data: users, isLoading: usersLoading } = useAdminUsers();
-  const { data: selectedUserSubscription } = useSubscription(selectedUserId);
-  const updateSubscriptionMutation = useUpdateSubscription();
-  const subscriptionActionMutation = useSubscriptionAction();
+  const { data: users, isLoading: isLoadingUsers } = useAdminUsers();
+  const { data: userSubscription } = useSubscription(selectedUser?.id);
+  const updateSubscription = useUpdateSubscription();
+  const subscriptionAction = useSubscriptionAction();
+
+  const handleSubscriptionUpdate = async (data: any) => {
+    updateSubscription.mutate(data);
+  };
+
+  const handleSubscriptionAction = async (data: any) => {
+    subscriptionAction.mutate(data);
+  };
+
+  const isUpdating = updateSubscription.isPending;
+  const isProcessing = subscriptionAction.isPending;
 
   // Mock stats
   const stats = {
@@ -70,7 +83,7 @@ export const EnhancedAdminDashboard = () => {
     }
   };
 
-  if (usersLoading) {
+  if (isLoadingUsers) {
     return (
       <div className="container mx-auto p-6">
         <div className="flex items-center justify-center h-64">
@@ -214,12 +227,11 @@ export const EnhancedAdminDashboard = () => {
 
       {/* Admin Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -281,35 +293,36 @@ export const EnhancedAdminDashboard = () => {
                 {users && (
                   <UserSelector
                     users={users}
-                    selectedUserId={selectedUserId}
-                    onSelectUser={setSelectedUserId}
+                    selectedUser={selectedUser}
+                    onUserSelect={setSelectedUser}
+                    isLoading={isLoadingUsers}
                   />
                 )}
 
-                {selectedUserId && selectedUserSubscription && (
+                {selectedUser && userSubscription && (
                   <div className="grid lg:grid-cols-2 gap-6">
                     <AdminSubscriptionCard
-                      user={users?.find(u => u.id === selectedUserId)!}
-                      subscription={selectedUserSubscription}
-                      onUpdate={updateSubscriptionMutation.mutate}
-                      isUpdating={updateSubscriptionMutation.isPending}
+                      user={selectedUser}
+                      subscription={userSubscription}
+                      onUpdate={handleSubscriptionUpdate}
+                      isUpdating={isUpdating}
                     />
                     
                     <div className="space-y-4">
                       <AdminActionButtons
-                        userId={selectedUserId}
-                        subscription={selectedUserSubscription}
-                        onAction={subscriptionActionMutation.mutate}
-                        isProcessing={subscriptionActionMutation.isPending}
+                        userId={selectedUser.id}
+                        subscription={userSubscription}
+                        onAction={handleSubscriptionAction}
+                        isProcessing={isProcessing}
                       />
                     </div>
                   </div>
                 )}
 
-                {selectedUserId && selectedUserSubscription && (
+                {selectedUser && userSubscription && (
                   <div className="mt-6">
                     <h3 className="text-lg font-medium mb-4">User Module Overview</h3>
-                    <ModuleOverviewGrid targetUserId={selectedUserId} />
+                    <ModuleOverviewGrid targetUserId={selectedUser.id} />
                   </div>
                 )}
               </CardContent>
@@ -318,37 +331,7 @@ export const EnhancedAdminDashboard = () => {
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                Analytics Dashboard
-              </CardTitle>
-              <CardDescription>
-                System analytics and reporting
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">Analytics components will be available here.</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="settings" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5" />
-                System Settings
-              </CardTitle>
-              <CardDescription>
-                Configure system-wide settings
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">Settings panel will be available here.</p>
-            </CardContent>
-          </Card>
+          <AdminAnalytics />
         </TabsContent>
       </Tabs>
     </div>

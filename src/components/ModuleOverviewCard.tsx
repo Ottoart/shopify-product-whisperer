@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { useAnalyticsTracking } from '@/hooks/useAnalyticsTracking';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -70,6 +71,7 @@ export function ModuleOverviewCard({
   primaryCTA
 }: ModuleOverviewCardProps) {
   const navigate = useNavigate();
+  const { trackEvent } = useAnalyticsTracking();
 
   const getTrendIcon = (trend?: 'up' | 'down' | 'neutral') => {
     switch (trend) {
@@ -113,8 +115,30 @@ export function ModuleOverviewCard({
     }
   };
 
+  const handleCardClick = () => {
+    trackEvent({
+      event_type: 'module_card_view',
+      data: {
+        module: title,
+        enabled
+      }
+    });
+  };
+
+  const handleActionClick = (action: string) => {
+    trackEvent({
+      event_type: 'module_card_action',
+      data: {
+        module: title,
+        action,
+        enabled
+      }
+    });
+    navigate(action);
+  };
+
   return (
-    <Card className={`relative overflow-hidden ${!enabled ? 'opacity-60' : ''}`}>
+    <Card className={`relative overflow-hidden ${!enabled ? 'opacity-60' : ''}`} onClick={handleCardClick}>
       {alertsCount > 0 && enabled && (
         <div className="absolute top-4 right-4">
           <Badge variant="destructive" className="gap-1">
@@ -246,7 +270,7 @@ export function ModuleOverviewCard({
                 variant={action.variant || 'outline'}
                 size="sm"
                 className="w-full justify-between"
-                onClick={() => navigate(action.path)}
+                onClick={() => handleActionClick(action.path)}
                 disabled={!enabled}
               >
                 {action.label}

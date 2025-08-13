@@ -1,116 +1,122 @@
-import { useCallback, useRef } from 'react';
+import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
-interface AnalyticsEvent {
-  type: 'product_view' | 'product_click' | 'cart_add' | 'search' | 'filter' | 'sort' | 'banner_click';
-  productId?: string;
-  bannerId?: string;
+export interface AnalyticsEvent {
+  event_type: string;
+  product_id?: string;
+  banner_id?: string;
   data?: Record<string, any>;
 }
 
-interface UseAnalyticsTrackingReturn {
-  trackEvent: (event: AnalyticsEvent) => void;
-  trackProductView: (productId: string, metadata?: Record<string, any>) => void;
-  trackProductClick: (productId: string, metadata?: Record<string, any>) => void;
-  trackCartAdd: (productId: string, metadata?: Record<string, any>) => void;
-  trackSearch: (query: string, resultsCount: number, metadata?: Record<string, any>) => void;
-  trackFilter: (filterType: string, filterValue: string, metadata?: Record<string, any>) => void;
-  trackSort: (sortBy: string, metadata?: Record<string, any>) => void;
-  trackBannerClick: (bannerId: string, metadata?: Record<string, any>) => void;
+export interface UseAnalyticsTrackingReturn {
+  trackEvent: (event: AnalyticsEvent) => Promise<void>;
+  trackProductView: (productId: string, data?: Record<string, any>) => Promise<void>;
+  trackProductClick: (productId: string, data?: Record<string, any>) => Promise<void>;
+  trackCartAdd: (productId: string, data?: Record<string, any>) => Promise<void>;
+  trackSearch: (query: string, data?: Record<string, any>) => Promise<void>;
+  trackFilter: (filter: string, value: string, data?: Record<string, any>) => Promise<void>;
+  trackSort: (sortBy: string, data?: Record<string, any>) => Promise<void>;
+  trackBannerClick: (bannerId: string, data?: Record<string, any>) => Promise<void>;
 }
 
 export const useAnalyticsTracking = (): UseAnalyticsTrackingReturn => {
-  const sessionId = useRef(crypto.randomUUID());
-
-  const getCurrentUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    return user;
-  };
+  const sessionId = Date.now().toString(); // Simple session ID
 
   const trackEvent = useCallback(async (event: AnalyticsEvent) => {
     try {
-      const user = await getCurrentUser();
+      const { data: { user } } = await supabase.auth.getUser();
       
-      // Track user interaction
-      await supabase.from('user_interactions').insert({
-        user_id: user?.id || null,
-        interaction_type: event.type,
-        target_id: event.productId || event.bannerId || null,
-        data: event.data || {},
-        session_id: sessionId.current
+      // Track main event
+      await supabase.from('analytics_events').insert({
+        user_id: user?.id,
+        session_id: sessionId,
+        event_type: event.event_type,
+        event_data: {
+          ...event.data,
+          timestamp: new Date().toISOString(),
+          product_id: event.product_id,
+          banner_id: event.banner_id
+        }
       });
 
-      // Track product view specifically for popularity
-      if (event.type === 'product_view' && event.productId) {
+      // Special handling for product views
+      if (event.event_type === 'product_view' && event.product_id) {
         await supabase.from('product_views').insert({
-          user_id: user?.id || null,
-          product_id: event.productId,
+          user_id: user?.id,
+          product_id: event.product_id,
+          session_id: sessionId,
           view_type: 'view',
-          session_id: sessionId.current,
-          metadata: event.data || {}
+          viewed_at: new Date().toISOString()
         });
       }
 
-      // Track cart add for popularity
-      if (event.type === 'cart_add' && event.productId) {
+      // Special handling for cart adds
+      if (event.event_type === 'cart_add' && event.product_id) {
         await supabase.from('product_views').insert({
-          user_id: user?.id || null,
-          product_id: event.productId,
+          user_id: user?.id,
+          product_id: event.product_id,
+          session_id: sessionId,
           view_type: 'cart_add',
-          session_id: sessionId.current,
-          metadata: event.data || {}
+          viewed_at: new Date().toISOString()
         });
       }
 
-      // Track search queries
-      if (event.type === 'search' && event.data?.query) {
-        await supabase.from('search_queries').insert({
-          user_id: user?.id || null,
-          query: event.data.query,
-          results_count: event.data.resultsCount || 0,
-          session_id: sessionId.current
-        });
-      }
     } catch (error) {
       console.error('Analytics tracking error:', error);
     }
-  }, []);
+  }, [sessionId]);
 
-  const trackProductView = useCallback((productId: string, metadata?: Record<string, any>) => {
-    trackEvent({ type: 'product_view', productId, data: metadata });
-  }, [trackEvent]);
-
-  const trackProductClick = useCallback((productId: string, metadata?: Record<string, any>) => {
-    trackEvent({ type: 'product_click', productId, data: metadata });
-  }, [trackEvent]);
-
-  const trackCartAdd = useCallback((productId: string, metadata?: Record<string, any>) => {
-    trackEvent({ type: 'cart_add', productId, data: metadata });
-  }, [trackEvent]);
-
-  const trackSearch = useCallback((query: string, resultsCount: number, metadata?: Record<string, any>) => {
-    trackEvent({ 
-      type: 'search', 
-      data: { query, resultsCount, ...metadata } 
+  const trackProductView = useCallback(async (productId: string, data?: Record<string, any>) => {
+    await trackEvent({
+      event_type: 'product_view',
+      product_id: productId,
+      data
     });
   }, [trackEvent]);
 
-  const trackFilter = useCallback((filterType: string, filterValue: string, metadata?: Record<string, any>) => {
-    trackEvent({ 
-      type: 'filter', 
-      data: { filterType, filterValue, ...metadata } 
+  const trackProductClick = useCallback(async (productId: string, data?: Record<string, any>) => {
+    await trackEvent({
+      event_type: 'product_click',
+      product_id: productId,
+      data
     });
   }, [trackEvent]);
 
-  const trackSort = useCallback((sortBy: string, metadata?: Record<string, any>) => {
-    trackEvent({ 
-      type: 'sort', 
-      data: { sortBy, ...metadata } 
+  const trackCartAdd = useCallback(async (productId: string, data?: Record<string, any>) => {
+    await trackEvent({
+      event_type: 'cart_add',
+      product_id: productId,
+      data
     });
   }, [trackEvent]);
 
-  const trackBannerClick = useCallback((bannerId: string, metadata?: Record<string, any>) => {
-    trackEvent({ type: 'banner_click', bannerId, data: metadata });
+  const trackSearch = useCallback(async (query: string, data?: Record<string, any>) => {
+    await trackEvent({
+      event_type: 'search',
+      data: { query, ...data }
+    });
+  }, [trackEvent]);
+
+  const trackFilter = useCallback(async (filter: string, value: string, data?: Record<string, any>) => {
+    await trackEvent({
+      event_type: 'filter',
+      data: { filter, value, ...data }
+    });
+  }, [trackEvent]);
+
+  const trackSort = useCallback(async (sortBy: string, data?: Record<string, any>) => {
+    await trackEvent({
+      event_type: 'sort',
+      data: { sort_by: sortBy, ...data }
+    });
+  }, [trackEvent]);
+
+  const trackBannerClick = useCallback(async (bannerId: string, data?: Record<string, any>) => {
+    await trackEvent({
+      event_type: 'banner_click',
+      banner_id: bannerId,
+      data
+    });
   }, [trackEvent]);
 
   return {
