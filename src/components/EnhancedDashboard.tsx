@@ -22,6 +22,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { MockDataBadge, LiveDataBadge } from '@/components/ui/mock-data-badge';
+import { ModuleOverviewGrid } from './ModuleOverviewGrid';
 
 interface Insight {
   id: string;
@@ -296,6 +297,9 @@ export function EnhancedDashboard() {
           </CardContent>
         </Card>
       )}
+
+      {/* Module Overview Grid */}
+      <ModuleOverviewGrid />
 
       {/* KPI Cards */}
       {metrics && (
