@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { validateAdminAuth } from "../_shared/admin-auth.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -26,30 +27,20 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    // Verify admin auth
+    // Verify admin auth using shared validation
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header provided");
-
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw new Error(`Authentication error: ${userError.message}`);
-    
-    const user = userData.user;
-    if (!user) throw new Error("User not authenticated");
-
-    // Check if user is admin
-    const { data: adminUser } = await supabaseClient
-      .from('admin_users')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('is_active', true)
-      .single();
-
-    if (!adminUser || !['master_admin', 'admin'].includes(adminUser.role)) {
-      throw new Error("Access denied: Admin privileges required");
+    if (!authHeader) {
+      throw new Error("No authorization header provided");
     }
 
-    logStep("Admin authorization confirmed", { userId: user.id, role: adminUser.role });
+    const authResult = await validateAdminAuth(authHeader);
+    if (authResult.error) {
+      throw new Error(authResult.error);
+    }
+
+    const user = authResult.user!;
+    const adminRole = authResult.adminRole;
+    logStep("Admin authenticated", { userId: user.id, email: user.email, role: adminRole });
 
     // Fetch analytics data
     const analytics = {
