@@ -38,7 +38,7 @@ import { QueueManager } from "@/components/QueueManager";
 import { SyncProgressDialog } from "@/components/SyncProgressDialog";
 import { StoreSync } from "@/components/StoreSync";
 import { SyncStatusDisplay } from "@/components/SyncStatusDisplay";
-import { CleanupDisconnectedProducts } from "@/components/CleanupDisconnectedProducts";
+
 import { useStores } from "@/contexts/StoreContext";
 import { useShopifyCredentials } from "@/hooks/useShopifyCredentials";
 
@@ -438,7 +438,7 @@ export default function Products() {
       )}
 
       {/* Cleanup Component */}
-      <CleanupDisconnectedProducts onCleanupComplete={fetchProducts} />
+      
 
 
       {/* Products with Advanced Filtering */}
