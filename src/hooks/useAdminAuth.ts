@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { clearAllAdminAuth } from '@/utils/adminAuth';
 
 interface AdminSession {
   user: {
@@ -85,8 +86,7 @@ export function useAdminAuth() {
       console.log('🔐 Starting admin sign-in for:', email);
       
       // Clear any existing session first to ensure fresh token
-      localStorage.removeItem(ADMIN_SESSION_KEY);
-      setAdminSession(null);
+      clearAllAdminAuth();
       
       const { data, error } = await supabase.functions.invoke('admin-auth', {
         body: { email, password }
@@ -132,8 +132,8 @@ export function useAdminAuth() {
   };
 
   const signOut = async () => {
+    clearAllAdminAuth();
     setAdminSession(null);
-    localStorage.removeItem(ADMIN_SESSION_KEY);
   };
 
   // Simple authentication checks

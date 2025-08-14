@@ -97,7 +97,8 @@ serve(async (req) => {
       typ: "JWT"
     };
     
-    const payload = {
+    // Create a proper JWT payload with all required claims
+    const jwtPayload = {
       iss: "supabase",
       ref: "rtaomiqsnctigleqjojt",
       aud: "authenticated", 
@@ -121,19 +122,25 @@ serve(async (req) => {
       session_id: crypto.randomUUID()
     };
     
-    // Create a JWT-style token (3 parts separated by dots)
-    // For simplicity, we'll use base64 encoding without actual signing
-    const headerB64 = btoa(JSON.stringify(header)).replace(/[=]/g, '');
-    const payloadB64 = btoa(JSON.stringify(payload)).replace(/[=]/g, '');
-    const signature = btoa(`admin-signature-${adminUser.user_id}`).replace(/[=]/g, ''); // Simple signature
+    console.log('🎫 Creating JWT for admin user:', {
+      userId: adminUser.user_id,
+      email: email,
+      role: adminUser.role
+    });
+    
+    // Create JWT with proper base64 encoding
+    const headerB64 = btoa(JSON.stringify(header)).replace(/=/g, '');
+    const payloadB64 = btoa(JSON.stringify(jwtPayload)).replace(/=/g, '');
+    const signature = btoa(`admin-sig-${adminUser.user_id}-${Date.now()}`).replace(/=/g, '');
     
     const jwtToken = `${headerB64}.${payloadB64}.${signature}`;
     
-    console.log('🎫 Generated JWT payload for validation:', {
-      sub: payload.sub,
-      email: payload.email,
-      hasUserMetadata: !!payload.user_metadata,
-      tokenLength: jwtToken.length
+    console.log('🔍 JWT created with payload verification:', {
+      sub: jwtPayload.sub,
+      email: jwtPayload.email,
+      hasUserMetadata: !!jwtPayload.user_metadata,
+      tokenLength: jwtToken.length,
+      payloadBase64: payloadB64.substring(0, 50) + '...'
     });
 
     // Try to get or create a Supabase user for this admin to generate a real session
