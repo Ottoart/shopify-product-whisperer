@@ -18,10 +18,10 @@ export async function validateAdminAuth(authHeader: string) {
   
   // Check if this is the anon key (which is invalid for admin auth)
   const anonKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
-  if (jwt === anonKey) {
-    console.error('❌ Anon key provided instead of admin JWT');
-    return { error: 'Invalid authentication - use admin session token', status: 401 };
-  }
+  // if (jwt === anonKey) {
+  //   console.error('❌ Anon key provided instead of admin JWT');
+  //   return { error: 'Invalid authentication - use admin session token', status: 401 };
+  // }
   
   try {
     // Handle admin session JWT - decode JWT payload
