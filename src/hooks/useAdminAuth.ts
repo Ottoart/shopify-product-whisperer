@@ -11,6 +11,7 @@ interface AdminSession {
   };
   expires_at: string;
   session_id: string;
+  jwt_token?: string;
 }
 
 const ADMIN_SESSION_KEY = 'admin_session';

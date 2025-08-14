@@ -156,7 +156,8 @@ serve(async (req) => {
         display_name: "Admin"
       },
       expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
-      session_id: crypto.randomUUID()
+      session_id: crypto.randomUUID(),
+      jwt_token: jwtToken
     };
 
     console.log("Admin login successful for:", email);

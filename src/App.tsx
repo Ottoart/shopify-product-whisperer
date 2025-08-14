@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { SessionContextProvider, useSession } from "@supabase/auth-helpers-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -112,6 +112,27 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 // App layout for authenticated users
 const AuthenticatedApp = () => {
+  const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith('/admin');
+  
+  if (isAdminRoute) {
+    // Admin layout without the regular sidebar
+    return (
+      <div className="min-h-screen flex w-full">
+        <div className="flex-1 flex flex-col">
+          <main className="flex-1 overflow-auto">
+            <Routes>
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/plans" element={<AdminPlans />} />
+              <Route path="/admin/subscriptions" element={<AdminSubscriptions />} />
+            </Routes>
+          </main>
+        </div>
+      </div>
+    );
+  }
+
+  // Regular user layout with sidebar
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
@@ -148,9 +169,6 @@ const AuthenticatedApp = () => {
               <Route path="/products" element={<Products />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/carriers" element={<Carriers />} />
-              <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/admin/plans" element={<AdminPlans />} />
-              <Route path="/admin/subscriptions" element={<AdminSubscriptions />} />
               <Route path="/sync-status" element={<SyncStatus />} />
               <Route path="/logs" element={<Logs />} />
               

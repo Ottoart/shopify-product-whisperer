@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAdminAuth } from './useAdminAuth';
+import { useAdminAPI } from './useAdminAPI';
 import { useToast } from './use-toast';
 
 export interface AdminUser {
@@ -42,6 +43,7 @@ export interface SubscriptionActionData {
 
 export const useAdminUsers = () => {
   const { isAdmin } = useAdminAuth();
+  const { getUsers } = useAdminAPI();
   const { toast } = useToast();
   
   const fetchAdminUsers = async (): Promise<AdminUser[]> => {
@@ -49,11 +51,7 @@ export const useAdminUsers = () => {
       throw new Error('Unauthorized: Admin access required');
     }
 
-    const { data, error } = await supabase.functions.invoke('admin-data', {
-      body: { action: 'get_users' }
-    });
-
-    if (error) throw error;
+    const data = await getUsers();
     if (!data.success) throw new Error(data.error);
 
     return data.users;
