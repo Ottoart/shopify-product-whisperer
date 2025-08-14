@@ -55,8 +55,9 @@ export async function validateAdminAuth(authHeader: string) {
       return { error: 'Invalid token format', status: 401 };
     }
   } catch (error) {
-    console.error('❌ Authentication error:', error);
-    return { error: 'Authentication failed', status: 401 };
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('❌ Authentication error:', errorMessage);
+    return { error: `Authentication failed: ${errorMessage}`, status: 401 };
   }
   
   if (!user) {
@@ -72,7 +73,8 @@ export async function validateAdminAuth(authHeader: string) {
     .single();
 
   if (adminError || !adminUser || !['master_admin', 'admin'].includes(adminUser.role)) {
-    console.error('Admin authorization error:', adminError);
+    const errorMessage = adminError ? adminError.message || String(adminError) : 'Invalid admin role';
+    console.error('Admin authorization error:', errorMessage);
     return { error: 'Admin access required', status: 403 };
   }
 

@@ -41,8 +41,9 @@ serve(async (req) => {
     const adminRole = authResult.adminRole;
     logStep("Admin authenticated", { userId: user.id, email: user.email, role: adminRole });
 
-    const { action } = await req.json();
-    logStep("Processing action", { action });
+    const requestBody = await req.json();
+    const { action, userId } = requestBody;
+    logStep("Processing action", { action, userId });
 
     if (action === 'get_users') {
       // Get all users with their subscription data using the database function
@@ -51,8 +52,8 @@ serve(async (req) => {
       });
 
       if (error) {
-        logStep("Database error", { error });
-        throw error;
+        logStep("Database error", { error: error.message || error });
+        throw new Error(`Database error: ${error.message || String(error)}`);
       }
 
       logStep("Users fetched successfully", { count: result?.users?.length || 0 });
@@ -66,7 +67,9 @@ serve(async (req) => {
       });
 
     } else if (action === 'get_user_subscription') {
-      const { userId } = await req.json();
+      if (!userId) {
+        throw new Error('userId is required for get_user_subscription action');
+      }
       
       const { data: result, error } = await supabaseClient.rpc('admin_data', {
         action_type: 'get_user_subscription',
@@ -74,8 +77,8 @@ serve(async (req) => {
       });
 
       if (error) {
-        logStep("Database error", { error });
-        throw error;
+        logStep("Database error", { error: error.message || error });
+        throw new Error(`Database error: ${error.message || String(error)}`);
       }
 
       logStep("User subscription fetched successfully", { userId });
@@ -93,8 +96,17 @@ serve(async (req) => {
     }
 
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR", { message: errorMessage });
+    let errorMessage = 'Unknown error occurred';
+    
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    } else if (error && typeof error === 'object') {
+      errorMessage = error.message || JSON.stringify(error);
+    }
+    
+    logStep("ERROR", { message: errorMessage, errorType: typeof error });
     
     return new Response(JSON.stringify({
       success: false,
