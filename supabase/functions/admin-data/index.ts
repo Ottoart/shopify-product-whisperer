@@ -41,9 +41,10 @@ serve(async (req) => {
     const adminRole = authResult.adminRole;
     logStep("Admin authenticated", { userId: user.id, email: user.email, role: adminRole });
 
-    const requestBody = await req.json();
-   const { data_type:action, userId } = requestBody;
-  logStep("Processing action", { action, userId });
+     const requestBody = await req.json();
+    const { data_type: action, userId } = requestBody;
+    
+    logStep("Processing action", { action, userId });
 
     if (action === 'get_users') {
       // Get all users with their subscription data using the database function
