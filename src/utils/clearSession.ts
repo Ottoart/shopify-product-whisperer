@@ -15,4 +15,4 @@ export const clearExistingSession = async () => {
 };
 
 // Auto-execute on import
-//clearExistingSession();
+clearExistingSession();
