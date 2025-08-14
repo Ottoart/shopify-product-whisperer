@@ -27,7 +27,7 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.admin-data]
-verify_jwt = true
+verify_jwt = false
 
 [functions.billing-get-subscription]
 verify_jwt = true
