@@ -38,6 +38,7 @@ import { QueueManager } from "@/components/QueueManager";
 import { SyncProgressDialog } from "@/components/SyncProgressDialog";
 import { StoreSync } from "@/components/StoreSync";
 import { SyncStatusDisplay } from "@/components/SyncStatusDisplay";
+import { CleanupDisconnectedProducts } from "@/components/CleanupDisconnectedProducts";
 import { useStores } from "@/contexts/StoreContext";
 import { useShopifyCredentials } from "@/hooks/useShopifyCredentials";
 
@@ -145,18 +146,41 @@ export default function Products() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      console.log('Fetching ALL products for user:', session?.user?.id);
+      console.log('Fetching products from active stores for user:', session?.user?.id);
+      
+      // First, get active store configurations for this user
+      const { data: activeStores, error: storeError } = await supabase
+        .from('store_configurations')
+        .select('store_name')
+        .eq('user_id', session?.user?.id)
+        .eq('is_active', true);
+
+      if (storeError) {
+        console.error('Error fetching active stores:', storeError);
+        setProducts([]);
+        return;
+      }
+
+      if (!activeStores || activeStores.length === 0) {
+        console.log('No active stores found');
+        setProducts([]);
+        return;
+      }
+
+      const activeStoreNames = activeStores.map(store => store.store_name);
+      console.log('Active stores:', activeStoreNames);
       
       let allProducts: any[] = [];
       let hasMore = true;
       let page = 0;
-      const pageSize = 1000; // Increased page size
+      const pageSize = 1000;
       
       while (hasMore) {
         const { data, error } = await supabase
           .from('products')
           .select('*')
           .eq('user_id', session?.user?.id)
+          .in('vendor', activeStoreNames)
           .order('updated_at', { ascending: false })
           .range(page * pageSize, (page + 1) * pageSize - 1);
         
@@ -166,7 +190,6 @@ export default function Products() {
           allProducts = [...allProducts, ...data];
           console.log(`Fetched page ${page + 1}: ${data.length} products. Total so far: ${allProducts.length}`);
           
-          // If we got less than pageSize, we've reached the end
           hasMore = data.length === pageSize;
           page++;
         } else {
@@ -174,7 +197,7 @@ export default function Products() {
         }
       }
       
-      console.log('Total products fetched:', allProducts.length);
+      console.log('Total products from active stores:', allProducts.length);
       setProducts(allProducts || []);
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -413,6 +436,9 @@ export default function Products() {
           <SyncStatusDisplay />
         </div>
       )}
+
+      {/* Cleanup Component */}
+      <CleanupDisconnectedProducts onCleanupComplete={fetchProducts} />
 
 
       {/* Products with Advanced Filtering */}
