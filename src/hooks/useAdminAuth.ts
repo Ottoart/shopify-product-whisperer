@@ -80,27 +80,48 @@ export function useAdminAuth() {
   }, []);
 
   const signIn = async (email: string, password: string) => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
+      console.log('🔐 Starting admin sign-in for:', email);
+      
+      // Clear any existing session first to ensure fresh token
+      localStorage.removeItem(ADMIN_SESSION_KEY);
+      setAdminSession(null);
+      
       const { data, error } = await supabase.functions.invoke('admin-auth', {
         body: { email, password }
       });
 
-      if (error) throw error;
-      if (!data.success) throw new Error(data.error);
+      if (error) {
+        console.error('❌ Admin auth function error:', error);
+        throw error;
+      }
+
+      if (!data.success) {
+        console.error('❌ Admin auth failed:', data.error);
+        throw new Error(data.error || 'Authentication failed');
+      }
 
       const session = data.session;
-      
+      console.log('✅ Admin auth successful:', { 
+        userId: session.user.id, 
+        email: session.user.email,
+        hasJwtToken: !!session.jwt_token,
+        jwtTokenPreview: session.jwt_token?.substring(0, 50) + '...'
+      });
+
       if (!validateSession(session)) {
-        throw new Error('Invalid session received from server');
+        throw new Error('Invalid session received');
       }
-      
+
       setAdminSession(session);
       localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(session));
       
       return { success: true };
     } catch (error) {
-      console.error('Admin sign in error:', error);
+      console.error('❌ Admin sign-in error:', error);
+      setAdminSession(null);
+      localStorage.removeItem(ADMIN_SESSION_KEY);
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Authentication failed' 

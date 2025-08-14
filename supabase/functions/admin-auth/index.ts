@@ -125,9 +125,16 @@ serve(async (req) => {
     // For simplicity, we'll use base64 encoding without actual signing
     const headerB64 = btoa(JSON.stringify(header)).replace(/[=]/g, '');
     const payloadB64 = btoa(JSON.stringify(payload)).replace(/[=]/g, '');
-    const signature = btoa('admin-signature').replace(/[=]/g, ''); // Simple signature
+    const signature = btoa(`admin-signature-${adminUser.user_id}`).replace(/[=]/g, ''); // Simple signature
     
     const jwtToken = `${headerB64}.${payloadB64}.${signature}`;
+    
+    console.log('🎫 Generated JWT payload for validation:', {
+      sub: payload.sub,
+      email: payload.email,
+      hasUserMetadata: !!payload.user_metadata,
+      tokenLength: jwtToken.length
+    });
 
     // Try to get or create a Supabase user for this admin to generate a real session
     try {
