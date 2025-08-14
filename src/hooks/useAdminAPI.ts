@@ -1,4 +1,3 @@
-import { supabase } from '@/integrations/supabase/client';
 import { useAdminAuth } from './useAdminAuth';
 
 export function useAdminAPI() {
@@ -9,17 +8,22 @@ export function useAdminAPI() {
       throw new Error('No admin session available');
     }
 
-    const { data, error } = await supabase.functions.invoke(functionName, {
-      body: payload,
+    // Use direct fetch instead of supabase.functions.invoke to control headers
+    const response = await fetch(`https://rtaomiqsnctigleqjojt.supabase.co/functions/v1/${functionName}`, {
+      method: 'POST',
       headers: {
-        Authorization: `Bearer ${adminSession.jwt_token}`,
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${adminSession.jwt_token}`,
       },
+      body: JSON.stringify(payload),
     });
 
-    if (error) {
-      throw error;
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
 
+    const data = await response.json();
     return data;
   };
 
