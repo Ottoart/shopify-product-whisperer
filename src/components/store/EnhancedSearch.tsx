@@ -129,7 +129,7 @@ export const EnhancedSearch: React.FC<EnhancedSearchProps> = ({
     if (!query.trim()) return;
 
     // Track search
-    trackSearch(query, 0); // Results count will be updated by parent component
+    trackSearch(query, { resultsCount: 0 }); // Results count will be updated by parent component
     
     // Add to recent searches
     const updatedRecent = [query, ...recentSearches.filter(s => s !== query)].slice(0, MAX_RECENT_SEARCHES);

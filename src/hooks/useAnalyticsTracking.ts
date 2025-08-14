@@ -27,7 +27,7 @@ export const useAnalyticsTracking = (): UseAnalyticsTrackingReturn => {
       const { data: { user } } = await supabase.auth.getUser();
       
       // Track main event
-      await supabase.from('analytics_events').insert({
+      const { error: eventError } = await supabase.from('analytics_events').insert({
         user_id: user?.id,
         session_id: sessionId,
         event_type: event.event_type,
@@ -39,26 +39,33 @@ export const useAnalyticsTracking = (): UseAnalyticsTrackingReturn => {
         }
       });
 
+      if (eventError) {
+        console.warn('Analytics event tracking failed:', eventError);
+        return;
+      }
+
       // Special handling for product views
       if (event.event_type === 'product_view' && event.product_id) {
-        await supabase.from('product_views').insert({
+        const { error: viewError } = await supabase.from('product_views').insert({
           user_id: user?.id,
           product_id: event.product_id,
           session_id: sessionId,
           view_type: 'view',
           viewed_at: new Date().toISOString()
         });
+        if (viewError) console.warn('Product view tracking failed:', viewError);
       }
 
       // Special handling for cart adds
       if (event.event_type === 'cart_add' && event.product_id) {
-        await supabase.from('product_views').insert({
+        const { error: cartError } = await supabase.from('product_views').insert({
           user_id: user?.id,
           product_id: event.product_id,
           session_id: sessionId,
           view_type: 'cart_add',
           viewed_at: new Date().toISOString()
         });
+        if (cartError) console.warn('Cart add tracking failed:', cartError);
       }
 
     } catch (error) {

@@ -50,7 +50,7 @@ export const DebouncedSearch: React.FC<DebouncedSearchProps> = ({
       setIsSearching(true);
       onSearch(debouncedValue);
       if (debouncedValue.trim()) {
-        trackSearch(debouncedValue, 0);
+        trackSearch(debouncedValue, { resultsCount: 0 });
       }
       setIsSearching(false);
     }
