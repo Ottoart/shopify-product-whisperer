@@ -99,16 +99,26 @@ serve(async (req) => {
     
     const payload = {
       iss: "supabase",
-      sub: adminUser.user_id,
-      aud: "authenticated",
+      ref: "rtaomiqsnctigleqjojt",
+      aud: "authenticated", 
       exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60, // 24 hours
       iat: Math.floor(Date.now() / 1000),
-      email: email,
-      role: "authenticated",
+      sub: adminUser.user_id, // User ID - REQUIRED
+      email: email, // Email - REQUIRED
+      phone: "",
+      app_metadata: {
+        provider: "admin",
+        providers: ["admin"]
+      },
       user_metadata: {
         role: adminUser.role,
-        is_admin: true
-      }
+        is_admin: true,
+        display_name: "Admin"
+      },
+      role: "authenticated",
+      aal: "aal1",
+      amr: [{ method: "password", timestamp: Math.floor(Date.now() / 1000) }],
+      session_id: crypto.randomUUID()
     };
     
     // Create a JWT-style token (3 parts separated by dots)
