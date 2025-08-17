@@ -92,6 +92,21 @@ serve(async (req) => {
     }
     const baseUrl = `https://${shopifyDomain}/admin/api/2023-10`;
 
+    // Fetch store configuration
+    const { data: storeConfig, error: storeError } = await supabase
+      .from('store_configurations')
+      .select('id, store_name, domain')
+      .eq('user_id', user.id)
+      .eq('domain', shopifyDomain)
+      .eq('platform', 'shopify')
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (storeError || !storeConfig) {
+      console.error('Store configuration error:', storeError);
+      throw new Error(`Store configuration not found for domain: ${shopifyDomain}`);
+    }
+
     console.log(`Starting batch sync for user ${user.id}, page ${startPage}, batch size ${batchSize}`);
 
     // Fetch products for this batch with cursor-based pagination
