@@ -98,6 +98,8 @@ interface Product {
   seo_title?: string;
   seo_description?: string;
   listing_status?: string;
+  store_name?: string;
+  store_id?: string;
 }
 
 interface QueueItem {
@@ -364,10 +366,15 @@ export default function Products() {
             }
             {products.length > 0 && (
               <span className="block mt-1 text-sm font-medium">
-                Showing {filteredProducts.length} of {products.length} products
+                {storeParam 
+                  ? `Showing ${filteredProducts.length} products from ${currentStore?.store_name || storeParam}`
+                  : `Showing ${filteredProducts.length} of ${products.length} products`
+                }
                 {!storeParam && stores.map(store => {
-                  // Count products by vendor name (approximation)
-                  const storeProducts = products.filter(p => p.vendor === store.store_name);
+                  // Count products by store_name or vendor name
+                  const storeProducts = products.filter(p => 
+                    p.store_name === store.store_name || p.vendor === store.store_name
+                  );
                   return storeProducts.length > 0 ? (
                     <span key={store.id} className="block text-xs text-muted-foreground/70">
                       {store.store_name}: {storeProducts.length} products

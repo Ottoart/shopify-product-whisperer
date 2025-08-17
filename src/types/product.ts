@@ -32,6 +32,8 @@ export interface Product {
   shopifySyncStatus?: string;
   shopifySyncedAt?: string;
   listingStatus?: string;
+  store_name?: string;
+  store_id?: string;
 }
 
 export interface UpdatedProduct {

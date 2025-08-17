@@ -190,6 +190,10 @@ serve(async (req) => {
         created_at: product.created_at || new Date().toISOString(),
         updated_at: product.updated_at || new Date().toISOString(),
         
+        // Store identification
+        store_name: storeUrl.replace('.myshopify.com', '').replace('https://', '').replace('http://', ''),
+        store_id: null, // Will be populated if we can find matching store configuration
+        
         // Variant data (first variant only for simplicity)
         variant_sku: variant.sku || null,
         variant_price: variant.price ? parseFloat(variant.price) : null,

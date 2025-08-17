@@ -2462,6 +2462,8 @@ export type Database = {
           shopify_sync_status: string | null
           shopify_synced_at: string | null
           start_time: string | null
+          store_id: string | null
+          store_name: string | null
           tags: string | null
           title: string
           type: string | null
@@ -2508,6 +2510,8 @@ export type Database = {
           shopify_sync_status?: string | null
           shopify_synced_at?: string | null
           start_time?: string | null
+          store_id?: string | null
+          store_name?: string | null
           tags?: string | null
           title: string
           type?: string | null
@@ -2554,6 +2558,8 @@ export type Database = {
           shopify_sync_status?: string | null
           shopify_synced_at?: string | null
           start_time?: string | null
+          store_id?: string | null
+          store_name?: string | null
           tags?: string | null
           title?: string
           type?: string | null
@@ -2572,7 +2578,15 @@ export type Database = {
           variant_taxable?: boolean | null
           vendor?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "products_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_configurations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
