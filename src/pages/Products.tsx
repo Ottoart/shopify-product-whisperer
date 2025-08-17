@@ -310,9 +310,10 @@ export default function Products() {
       product.tags?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.category?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    // When viewing a specific store (?store=...), don't filter by vendor/store
-    // The products are already filtered by the store URL parameter
-    const matchesStore = storeParam ? true : (selectedStore === "all" || product.vendor === selectedStore);
+    // When viewing a specific store (?store=...), filter by store_name
+    const matchesStore = storeParam 
+      ? (product.store_name === storeParam)  // Filter by store_name when viewing specific store
+      : (selectedStore === "all" || product.vendor === selectedStore);
     const matchesStatus = selectedStatus === "all" || product.status === selectedStatus;
     
     return matchesSearch && matchesStore && matchesStatus;
