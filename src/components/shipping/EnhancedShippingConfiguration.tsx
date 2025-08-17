@@ -446,7 +446,7 @@ export function EnhancedShippingConfiguration({
         .select('*')
         .eq('is_active', true);
 
-      if (carriersError || !carriers || carriers.length === 0) {
+      if (carriersError) {
         toast({
           title: "No Active Carriers",
           description: "Please activate a carrier in your shipping settings first",
