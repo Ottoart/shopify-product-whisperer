@@ -192,7 +192,7 @@ serve(async (req) => {
         
         // Store identification
         store_name: storeConfig.store_name,
-        store_id: storeConfig.id
+        store_id: storeConfig.id,
         
         // Variant data (first variant only for simplicity)
         variant_sku: variant.sku || null,
