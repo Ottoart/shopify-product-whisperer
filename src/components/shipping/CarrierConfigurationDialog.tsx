@@ -147,7 +147,7 @@ export function CarrierConfigurationDialog({ isOpen, onClose }: CarrierConfigura
 
   const resetCarrierConfig = () => {
     setUpsConfig({
-      account_number: '', client_id: '', client_secret: '', account_type: '',
+      account_number: '', client_id: 'N5XiLLofK1jxYUaSP8fn80cUxc7Bq975UCJ1P2B90A8kQaAr', client_secret: 'SgmbUd76TeYCx8VKRU9rjcVX8g5klRzst6cEFMn3v3elnbcxBLitW8pcHUZQGsKn', account_type: '',
       environment: 'sandbox', // Always reset to sandbox for safety
       mi_endorsement: '', mi_cost_center: '', mi_customer_id: '', mi_customer_guid: '',
       postal_code: '', country_code: 'US', enable_negotiated_rates: false,
