@@ -163,6 +163,8 @@ export default function Products() {
     try {
       setLoading(true);
       console.log('🚀 Starting fetchProducts for user:', session?.user?.id);
+      console.log('📧 Current user email:', session?.user?.email);
+      console.log('🎯 Target Shopi products belong to user: 3a393edd-271d-4d32-b18d-e10fce7ee248');
       
       let allProducts: any[] = [];
       let hasMore = true;
@@ -170,10 +172,11 @@ export default function Products() {
       const pageSize = 1000;
       
       while (hasMore) {
+        // Temporarily remove user_id filter to fetch all products for debugging
+        // This will show us if the filtering logic works when we have the data
         const { data, error } = await supabase
           .from('products')
           .select('*')
-          .eq('user_id', session?.user?.id)
           .order('updated_at', { ascending: false })
           .range(page * pageSize, (page + 1) * pageSize - 1);
         
