@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSession } from "@supabase/auth-helpers-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -139,6 +139,7 @@ export default function Products() {
   const [showQueue, setShowQueue] = useState(false);
 
   useEffect(() => {
+    console.log('🔄 Products useEffect triggered:', { sessionExists: !!session?.user, sessionIsNull: session === null });
     if (session?.user) {
       fetchProducts().finally(() => {
         setInitialLoad(false);
@@ -149,10 +150,19 @@ export default function Products() {
     }
   }, [session]);
 
-  const fetchProducts = async () => {
+  // Log when products state changes
+  useEffect(() => {
+    console.log('📦 Products state changed:', { 
+      totalProducts: products.length, 
+      firstFewProducts: products.slice(0, 3).map(p => ({ title: p.title, store_name: p.store_name })),
+      storeParam 
+    });
+  }, [products, storeParam]);
+
+  const fetchProducts = useCallback(async () => {
     try {
       setLoading(true);
-      console.log('Fetching products for user:', session?.user?.id);
+      console.log('🚀 Starting fetchProducts for user:', session?.user?.id);
       
       let allProducts: any[] = [];
       let hasMore = true;
@@ -171,7 +181,7 @@ export default function Products() {
         
         if (data && data.length > 0) {
           allProducts = [...allProducts, ...data];
-          console.log(`Fetched page ${page + 1}: ${data.length} products. Total so far: ${allProducts.length}`);
+          console.log(`📄 Fetched page ${page + 1}: ${data.length} products. Total so far: ${allProducts.length}`);
           
           hasMore = data.length === pageSize;
           page++;
@@ -180,10 +190,19 @@ export default function Products() {
         }
       }
       
-      console.log('Total products:', allProducts.length);
+      console.log('✅ Total products fetched:', allProducts.length);
+      console.log('📊 Store distribution:', {
+        uniqueStoreNames: [...new Set(allProducts.map(p => p.store_name).filter(Boolean))],
+        storeNameCounts: allProducts.reduce((acc, p) => {
+          const storeName = p.store_name || 'Unknown';
+          acc[storeName] = (acc[storeName] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>)
+      });
+      
       setProducts(allProducts || []);
     } catch (error) {
-      console.error('Error fetching products:', error);
+      console.error('❌ Error fetching products:', error);
       toast({
         title: "Error",
         description: "Failed to load products",
@@ -191,8 +210,9 @@ export default function Products() {
       });
     } finally {
       setLoading(false);
+      console.log('✅ fetchProducts completed');
     }
-  };
+  }, [session?.user?.id, toast]);
 
 
   const optimizeWithAI = async (productId: string) => {
@@ -301,34 +321,81 @@ export default function Products() {
     fetchProducts();
   };
 
-  // Filter products based on search and filters
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = searchTerm === '' || 
-      product.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.vendor?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.handle?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.tags?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.category?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    // When viewing a specific store (?store=...), filter by store_name
-    const matchesStore = storeParam 
-      ? (product.store_name?.toLowerCase() === storeParam.toLowerCase())  // Case-insensitive filter by store_name
-      : (selectedStore === "all" || product.vendor === selectedStore);
-    const matchesStatus = selectedStatus === "all" || product.status === selectedStatus;
-    
-    return matchesSearch && matchesStore && matchesStatus;
-  });
+  // Memoized filtering with proper dependencies and enhanced debugging
+  const filteredProducts = useMemo(() => {
+    console.log('🎯 Computing filteredProducts with dependencies:', {
+      productsLength: products.length,
+      storeParam,
+      searchTerm,
+      selectedStore,
+      selectedStatus,
+      loading,
+      hasProducts: products.length > 0
+    });
 
-  // Debug logging for store filtering
-  if (storeParam) {
-    console.log('🔍 Store Filtering Debug:', {
+    // Don't filter if still loading or no products
+    if (loading || products.length === 0) {
+      console.log('⏳ Skipping filtering - still loading or no products');
+      return [];
+    }
+
+    const filtered = products.filter(product => {
+      // Validate product has required fields for debugging
+      if (!product.store_name && !product.vendor) {
+        console.warn('⚠️ Product missing store_name and vendor:', { title: product.title, id: product.id });
+      }
+
+      const matchesSearch = searchTerm === '' || 
+        product.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.vendor?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.handle?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.tags?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.category?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      // Enhanced store matching with debugging
+      let matchesStore = false;
+      if (storeParam) {
+        // When viewing a specific store (?store=...), filter by store_name
+        matchesStore = product.store_name?.toLowerCase() === storeParam.toLowerCase();
+        
+        // Debug specific product matches
+        if (product.store_name?.toLowerCase() === storeParam.toLowerCase()) {
+          console.log('✅ Product matches store filter:', { 
+            title: product.title, 
+            store_name: product.store_name, 
+            storeParam 
+          });
+        }
+      } else {
+        matchesStore = selectedStore === "all" || product.vendor === selectedStore;
+      }
+      
+      const matchesStatus = selectedStatus === "all" || product.status === selectedStatus;
+      
+      return matchesSearch && matchesStore && matchesStatus;
+    });
+
+    console.log('🔍 Filtering Results:', {
       storeParam,
       totalProducts: products.length,
-      filteredProducts: filteredProducts.length,
-      sampleStoreNames: products.slice(0, 5).map(p => ({ title: p.title, store_name: p.store_name })),
-      matchingProducts: filteredProducts.slice(0, 3).map(p => ({ title: p.title, store_name: p.store_name }))
+      filteredCount: filtered.length,
+      matchingStoreNames: products
+        .filter(p => p.store_name?.toLowerCase() === storeParam?.toLowerCase())
+        .slice(0, 5)
+        .map(p => ({ title: p.title, store_name: p.store_name })),
+      allUniqueStoreNames: [...new Set(products.map(p => p.store_name).filter(Boolean))]
     });
-  }
+
+    return filtered;
+  }, [products, storeParam, searchTerm, selectedStore, selectedStatus, loading]);
+
+  // Log filtered products changes
+  useEffect(() => {
+    console.log('📊 Filtered products updated:', {
+      count: filteredProducts.length,
+      firstThree: filteredProducts.slice(0, 3).map(p => ({ title: p.title, store_name: p.store_name }))
+    });
+  }, [filteredProducts]);
 
   // Show consistent loading for both users
   if (initialLoad) {
