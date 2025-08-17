@@ -299,16 +299,6 @@ export default function Products() {
     fetchProducts();
   };
 
-  // Helper function to map product vendor to store configuration
-  const getStoreFromVendor = (vendor: string) => {
-    // Map vendor names to store configurations
-    const storeMapping: Record<string, string> = {
-      'eBay': 'eBay Store',
-      'Prohair': 'Prohair'
-    };
-    return storeMapping[vendor] || vendor;
-  };
-
   // Filter products based on search and filters
   const filteredProducts = products.filter(product => {
     const matchesSearch = searchTerm === '' || 
@@ -318,9 +308,9 @@ export default function Products() {
       product.tags?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.category?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    // Map vendor to store name for proper filtering
-    const productStoreName = getStoreFromVendor(product.vendor || '');
-    const matchesStore = selectedStore === "all" || productStoreName === selectedStore;
+    // When viewing a specific store (?store=...), don't filter by vendor/store
+    // The products are already filtered by the store URL parameter
+    const matchesStore = storeParam ? true : (selectedStore === "all" || product.vendor === selectedStore);
     const matchesStatus = selectedStatus === "all" || product.status === selectedStatus;
     
     return matchesSearch && matchesStore && matchesStatus;
@@ -376,8 +366,8 @@ export default function Products() {
               <span className="block mt-1 text-sm font-medium">
                 Showing {filteredProducts.length} of {products.length} products
                 {!storeParam && stores.map(store => {
-                  // Count products by mapping vendor to store name
-                  const storeProducts = products.filter(p => getStoreFromVendor(p.vendor || '') === store.store_name);
+                  // Count products by vendor name (approximation)
+                  const storeProducts = products.filter(p => p.vendor === store.store_name);
                   return storeProducts.length > 0 ? (
                     <span key={store.id} className="block text-xs text-muted-foreground/70">
                       {store.store_name}: {storeProducts.length} products
@@ -414,20 +404,19 @@ export default function Products() {
       )}
 
       {/* Sync Status Display */}
-      {stores.length > 0 && (
+      {stores.length > 0 && !storeParam && (
         <div className="space-y-4">
-          {storeParam && currentStore ? (
-            <StoreSpecificSyncProgress 
-              storeName={currentStore.store_name} 
-              platform={currentStore.platform} 
-            />
-          ) : (
-            <>
-              <h2 className="text-xl font-semibold">Sync Status</h2>
-              <SyncStatusDisplay />
-            </>
-          )}
+          <h2 className="text-xl font-semibold">Sync Status</h2>
+          <SyncStatusDisplay />
         </div>
+      )}
+      
+      {/* Store-specific sync status only when viewing specific store */}
+      {storeParam && currentStore && (
+        <StoreSpecificSyncProgress 
+          storeName={currentStore.store_name} 
+          platform={currentStore.platform} 
+        />
       )}
 
       {/* Cleanup Component */}
