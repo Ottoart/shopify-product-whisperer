@@ -38,9 +38,11 @@ import { QueueManager } from "@/components/QueueManager";
 import { SyncProgressDialog } from "@/components/SyncProgressDialog";
 import { StoreSync } from "@/components/StoreSync";
 import { SyncStatusDisplay } from "@/components/SyncStatusDisplay";
+import { StoreSpecificSyncProgress } from "@/components/StoreSpecificSyncProgress";
 
 import { useStores } from "@/contexts/StoreContext";
 import { useShopifyCredentials } from "@/hooks/useShopifyCredentials";
+import { useSearchParams } from "react-router-dom";
 
 interface Product {
   id: string;
@@ -117,7 +119,9 @@ export default function Products() {
   const session = useSession();
   const { toast } = useToast();
   const { stores } = useStores();
-  const { storeUrl } = useShopifyCredentials();
+  const { storeUrl, store: currentStore } = useShopifyCredentials();
+  const [searchParams] = useSearchParams();
+  const storeParam = searchParams.get('store');
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
@@ -356,7 +360,7 @@ export default function Products() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">
-            Products
+            {storeParam && currentStore ? `${currentStore.store_name} Products` : 'Products'}
             {queueItems.length > 0 && (
               <Badge variant="secondary" className="ml-2">
                 {queueItems.filter(item => item.status === 'pending').length} in queue
@@ -364,11 +368,14 @@ export default function Products() {
             )}
           </h1>
           <p className="text-muted-foreground">
-            Manage and optimize your product listings across all stores
+            {storeParam && currentStore 
+              ? `Manage and optimize products from ${currentStore.store_name}`
+              : 'Manage and optimize your product listings across all stores'
+            }
             {products.length > 0 && (
               <span className="block mt-1 text-sm font-medium">
                 Showing {filteredProducts.length} of {products.length} products
-                {stores.map(store => {
+                {!storeParam && stores.map(store => {
                   // Count products by mapping vendor to store name
                   const storeProducts = products.filter(p => getStoreFromVendor(p.vendor || '') === store.store_name);
                   return storeProducts.length > 0 ? (
@@ -409,8 +416,17 @@ export default function Products() {
       {/* Sync Status Display */}
       {stores.length > 0 && (
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Sync Status</h2>
-          <SyncStatusDisplay />
+          {storeParam && currentStore ? (
+            <StoreSpecificSyncProgress 
+              storeName={currentStore.store_name} 
+              platform={currentStore.platform} 
+            />
+          ) : (
+            <>
+              <h2 className="text-xl font-semibold">Sync Status</h2>
+              <SyncStatusDisplay />
+            </>
+          )}
         </div>
       )}
 
