@@ -312,12 +312,23 @@ export default function Products() {
     
     // When viewing a specific store (?store=...), filter by store_name
     const matchesStore = storeParam 
-      ? (product.store_name === storeParam)  // Filter by store_name when viewing specific store
+      ? (product.store_name?.toLowerCase() === storeParam.toLowerCase())  // Case-insensitive filter by store_name
       : (selectedStore === "all" || product.vendor === selectedStore);
     const matchesStatus = selectedStatus === "all" || product.status === selectedStatus;
     
     return matchesSearch && matchesStore && matchesStatus;
   });
+
+  // Debug logging for store filtering
+  if (storeParam) {
+    console.log('🔍 Store Filtering Debug:', {
+      storeParam,
+      totalProducts: products.length,
+      filteredProducts: filteredProducts.length,
+      sampleStoreNames: products.slice(0, 5).map(p => ({ title: p.title, store_name: p.store_name })),
+      matchingProducts: filteredProducts.slice(0, 3).map(p => ({ title: p.title, store_name: p.store_name }))
+    });
+  }
 
   // Show consistent loading for both users
   if (initialLoad) {
