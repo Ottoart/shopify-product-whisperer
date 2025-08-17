@@ -32,18 +32,6 @@ serve(async (req) => {
 
     const { storeUrl, accessToken, batchSize = 250, startPage = 1, syncActiveOnly = true } = await req.json();
     
-    // Get store configuration for store name
-    const { data: storeConfig, error: storeError } = await supabase
-      .from('store_configurations')
-      .select('store_name')
-      .eq('user_id', user.id)
-      .eq('domain', storeUrl.replace(/^https?:\/\//, '').replace(/\/$/, ''))
-      .single();
-    
-    if (storeError || !storeConfig) {
-      throw new Error('Store configuration not found');
-    }
-    
     // Load user sync settings from database
     const { data: syncSettings } = await supabase
       .from('sync_settings')
@@ -189,8 +177,7 @@ serve(async (req) => {
         user_id: user.id,
         handle: product.handle,
         title: product.title,
-        vendor: storeConfig.store_name || null, // Use store name instead of product vendor
-        original_vendor: product.vendor || null, // Save original vendor
+        vendor: product.vendor || null,
         type: product.product_type || null,
         tags: product.tags || null,
         published: Boolean(product.published_at),
