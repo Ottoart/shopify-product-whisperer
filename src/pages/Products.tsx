@@ -146,29 +146,7 @@ export default function Products() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      console.log('Fetching products from active stores for user:', session?.user?.id);
-      
-      // First, get active store configurations for this user
-      const { data: activeStores, error: storeError } = await supabase
-        .from('store_configurations')
-        .select('store_name')
-        .eq('user_id', session?.user?.id)
-        .eq('is_active', true);
-
-      if (storeError) {
-        console.error('Error fetching active stores:', storeError);
-        setProducts([]);
-        return;
-      }
-
-      if (!activeStores || activeStores.length === 0) {
-        console.log('No active stores found');
-        setProducts([]);
-        return;
-      }
-
-      const activeStoreNames = activeStores.map(store => store.store_name);
-      console.log('Active stores:', activeStoreNames);
+      console.log('Fetching products for user:', session?.user?.id);
       
       let allProducts: any[] = [];
       let hasMore = true;
@@ -180,7 +158,6 @@ export default function Products() {
           .from('products')
           .select('*')
           .eq('user_id', session?.user?.id)
-          .in('vendor', activeStoreNames)
           .order('updated_at', { ascending: false })
           .range(page * pageSize, (page + 1) * pageSize - 1);
         
@@ -197,7 +174,7 @@ export default function Products() {
         }
       }
       
-      console.log('Total products from active stores:', allProducts.length);
+      console.log('Total products:', allProducts.length);
       setProducts(allProducts || []);
     } catch (error) {
       console.error('Error fetching products:', error);
