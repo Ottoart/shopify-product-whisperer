@@ -191,8 +191,8 @@ serve(async (req) => {
         updated_at: product.updated_at || new Date().toISOString(),
         
         // Store identification
-        store_name: storeUrl.replace('.myshopify.com', '').replace('https://', '').replace('http://', ''),
-        store_id: null, // Will be populated if we can find matching store configuration
+        store_name: storeConfig.store_name,
+        store_id: storeConfig.id
         
         // Variant data (first variant only for simplicity)
         variant_sku: variant.sku || null,
