@@ -42,7 +42,7 @@ serve(async (req) => {
     logStep("Admin authenticated", { userId: user.id, email: user.email, role: adminRole });
 
      const requestBody = await req.json();
-    const { data_type: action, userId } = requestBody;
+    const { action, userId } = requestBody;
     
     logStep("Processing action", { action, userId });
 
