@@ -512,7 +512,7 @@ export function EnhancedShippingConfiguration({
 
       if (error) throw error;
 
-      if (data?.rates && data.rates.length > 0) {
+      if (data?.rates) {
         // Add confirmation options to each rate
         const ratesWithConfirmation = data.rates.map((rate: ShippingRate) => ({
           ...rate,
@@ -522,7 +522,11 @@ export function EnhancedShippingConfiguration({
             { type: 'adult_signature', label: 'Adult Signature Required', fee: 3.75 }
           ]
         }));
-
+        toast({
+          title: "Yesss", 
+          description: "tous va bien",
+          variant: "destructive"
+        });
         setShippingRates(ratesWithConfirmation);
         toast({
           title: "Rates Found",
