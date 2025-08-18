@@ -530,7 +530,7 @@ export function EnhancedShippingConfiguration({
         setShippingRates(ratesWithConfirmation);
         toast({
           title: "Rates Found",
-          description: `Found ${data.rates.length} shipping options`
+          description: `Found ${data} shipping options`
         });
       } else {
         setShippingRates([]);
