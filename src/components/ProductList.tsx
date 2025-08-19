@@ -73,8 +73,15 @@ export const ProductList = ({
     const normalizedStoreFilter = storeFilter.toLowerCase();
     const productStoreName = product.store_name?.toLowerCase() || '';
     
-    // Direct match with store_name
-    return productStoreName.includes(normalizedStoreFilter) || normalizedStoreFilter.includes(productStoreName);
+    // Debug logging to understand what's being matched
+    console.log('Store filtering:', {
+      storeFilter: normalizedStoreFilter,
+      productStoreName,
+      productId: product.id
+    });
+    
+    // Exact match with store_name - no partial matching
+    return productStoreName === normalizedStoreFilter;
   });
 
   // Extract unique values for filters FROM STORE-FILTERED PRODUCTS ONLY
