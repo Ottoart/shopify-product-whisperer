@@ -4741,6 +4741,10 @@ export type Database = {
         Args: { action_type: string; user_data?: Json }
         Returns: Json
       }
+      cascade_delete_user_data: {
+        Args: { user_uuid: string }
+        Returns: undefined
+      }
       check_low_stock: {
         Args: Record<PropertyKey, never>
         Returns: undefined
