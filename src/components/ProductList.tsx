@@ -73,14 +73,12 @@ export const ProductList = ({
     const normalizedStoreFilter = storeFilter.toLowerCase();
     const productStoreName = product.store_name?.toLowerCase() || '';
     
-    // Debug logging to understand what's being matched
-    console.log('Store filtering:', {
-      storeFilter: normalizedStoreFilter,
-      productStoreName,
-      productId: product.id
-    });
+    // Handle empty store names: if product has no store_name, it should only show in "All stores"
+    if (!productStoreName) {
+      return false; // Don't show products with empty store_name when filtering by specific store
+    }
     
-    // Exact match with store_name - no partial matching
+    // Exact match with store_name
     return productStoreName === normalizedStoreFilter;
   });
 
