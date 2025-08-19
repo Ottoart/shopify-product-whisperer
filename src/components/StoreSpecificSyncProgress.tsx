@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { RefreshCw, CheckCircle, AlertCircle, Clock } from 'lucide-react';
+import { RefreshCw, CheckCircle, AlertCircle, Clock, RotateCcw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@supabase/auth-helpers-react';
 
@@ -52,12 +53,28 @@ export const StoreSpecificSyncProgress = ({ storeName, platform }: StoreSpecific
     }
   };
 
+  const refreshSyncStatus = async () => {
+    if (!session?.user?.id) return;
+    
+    try {
+      // Call reconcile function to ensure accuracy
+      await supabase.functions.invoke('reconcile-sync-status', {
+        body: { marketplace: platform.toLowerCase() }
+      });
+      
+      // Refresh the displayed data
+      await fetchSyncStatus();
+    } catch (error) {
+      console.error('Error refreshing sync status:', error);
+    }
+  };
+
   useEffect(() => {
     fetchSyncStatus();
 
-    // Set up real-time subscription for sync status updates
+    // Set up real-time subscription for sync status updates with enhanced handling
     const channel = supabase
-      .channel(`sync-status-${platform}`)
+      .channel(`sync-status-${platform}-${session?.user?.id}`)
       .on('postgres_changes' as any, {
         event: '*',
         schema: 'public',
@@ -65,12 +82,31 @@ export const StoreSpecificSyncProgress = ({ storeName, platform }: StoreSpecific
         filter: `user_id=eq.${session?.user?.id}&marketplace=eq.${platform.toLowerCase()}`
       }, (payload: any) => {
         console.log('Real-time sync status update:', payload);
-        setSyncStatus(payload.new || payload.record);
+        const newData = payload.new || payload.record;
+        if (newData) {
+          setSyncStatus(newData);
+        }
+      })
+      .subscribe();
+
+    // Also listen to shopify_sync_status for more comprehensive updates
+    const shopifyChannel = supabase
+      .channel(`shopify-sync-${session?.user?.id}`)
+      .on('postgres_changes' as any, {
+        event: '*',
+        schema: 'public',
+        table: 'shopify_sync_status',
+        filter: `user_id=eq.${session?.user?.id}`
+      }, (payload: any) => {
+        console.log('Shopify sync status update:', payload);
+        // Refresh sync status when shopify status changes
+        fetchSyncStatus();
       })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(shopifyChannel);
     };
   }, [session?.user?.id, platform]);
 
@@ -101,8 +137,14 @@ export const StoreSpecificSyncProgress = ({ storeName, platform }: StoreSpecific
   }
 
   const { products_synced, total_products_found, sync_status, error_message, sync_settings, active_products_synced, inactive_products_skipped } = syncStatus;
-  const percentage = total_products_found && total_products_found > 0 ? Math.round((products_synced / total_products_found) * 100) : 0;
-  const remaining = total_products_found ? total_products_found - products_synced : 0;
+  
+  // Fallback logic for missing total count
+  const fallbackTotal = !total_products_found || total_products_found === 0 ? 
+    Math.max(products_synced * 1.2, products_synced + 100) : total_products_found;
+  const effectiveTotal = total_products_found && total_products_found > 0 ? total_products_found : fallbackTotal;
+  
+  const percentage = effectiveTotal > 0 ? Math.round((products_synced / effectiveTotal) * 100) : 0;
+  const remaining = effectiveTotal - products_synced;
   const isComplete = sync_status === 'completed';
   const isError = sync_status === 'error' || sync_status === 'failed';
   const isInProgress = sync_status === 'in_progress' || sync_status === 'syncing';
@@ -146,7 +188,18 @@ export const StoreSpecificSyncProgress = ({ storeName, platform }: StoreSpecific
             {getStatusIcon()}
             <span>Syncing {storeName} Products</span>
           </CardTitle>
-          {getStatusBadge()}
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={refreshSyncStatus}
+              disabled={loading}
+              className="h-8 px-2"
+            >
+              <RotateCcw className="h-3 w-3" />
+            </Button>
+            {getStatusBadge()}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -160,7 +213,7 @@ export const StoreSpecificSyncProgress = ({ storeName, platform }: StoreSpecific
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Sync Progress</span>
             <span className="font-medium">
-              {products_synced.toLocaleString()} of {total_products_found?.toLocaleString() || '?'} products
+              {products_synced.toLocaleString()} of {total_products_found?.toLocaleString() || `~${effectiveTotal.toLocaleString()}`} products
             </span>
           </div>
           

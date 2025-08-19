@@ -407,11 +407,17 @@ serve(async (req) => {
       .eq('marketplace', 'shopify')
       .maybeSingle();
 
-    // Calculate accumulated products_synced
+    // Calculate accumulated products_synced with safety checks
     const currentProductsSynced = currentSyncStatus?.products_synced || 0;
-    const totalProductsSynced = currentProductsSynced + products.length;
+    const batchProductCount = products.length;
+    
+    // Use the actual database count for accuracy
+    const actualDbCount = totalSynced || 0;
+    
+    // Choose the most accurate count (prefer database count over accumulation)
+    const totalProductsSynced = Math.max(actualDbCount, currentProductsSynced + batchProductCount);
 
-    console.log(`Batch ${startPage}: Current synced: ${currentProductsSynced}, This batch: ${products.length}, Total synced: ${totalProductsSynced}`);
+    console.log(`Batch ${startPage}: Current synced: ${currentProductsSynced}, This batch: ${batchProductCount}, DB total: ${actualDbCount}, Final count: ${totalProductsSynced}`);
 
     // Prepare marketplace sync status update
     const marketplaceUpdateData: any = {
