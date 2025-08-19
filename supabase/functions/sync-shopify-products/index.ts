@@ -109,6 +109,93 @@ serve(async (req) => {
 
     console.log(`Starting batch sync for user ${user.id}, page ${startPage}, batch size ${batchSize}`);
 
+    // Handle edge cases and state management
+    try {
+      // Check for stuck sync states (in_progress for more than 30 minutes)
+      const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+      const { data: stuckSyncs } = await supabase
+        .from('marketplace_sync_status')
+        .select('id, sync_status, last_sync_at')
+        .eq('user_id', user.id)
+        .eq('marketplace', 'shopify')
+        .eq('sync_status', 'in_progress')
+        .lt('last_sync_at', thirtyMinutesAgo);
+
+      if (stuckSyncs && stuckSyncs.length > 0) {
+        console.log(`Found ${stuckSyncs.length} stuck sync(s), resetting to 'failed' status`);
+        await supabase
+          .from('marketplace_sync_status')
+          .update({
+            sync_status: 'failed',
+            error_message: 'Sync was stuck in progress for more than 30 minutes and was automatically reset'
+          })
+          .eq('user_id', user.id)
+          .eq('marketplace', 'shopify')
+          .eq('sync_status', 'in_progress');
+      }
+
+      // Concurrent sync prevention (only for first page)
+      if (startPage === 1) {
+        const { data: currentSync } = await supabase
+          .from('marketplace_sync_status')
+          .select('sync_status, last_sync_at')
+          .eq('user_id', user.id)
+          .eq('marketplace', 'shopify')
+          .maybeSingle();
+
+        if (currentSync?.sync_status === 'in_progress') {
+          const lastSyncTime = new Date(currentSync.last_sync_at || 0);
+          const timeDiff = Date.now() - lastSyncTime.getTime();
+          
+          // If sync started less than 5 minutes ago, prevent concurrent sync
+          if (timeDiff < 5 * 60 * 1000) {
+            throw new Error('A sync is already in progress for this store. Please wait for it to complete.');
+          }
+        }
+
+        // Reset sync status for new sync
+        console.log('Initializing new sync session');
+        await supabase
+          .from('marketplace_sync_status')
+          .upsert({
+            user_id: user.id,
+            marketplace: 'shopify',
+            sync_status: 'in_progress',
+            last_sync_at: new Date().toISOString(),
+            products_synced: 0,
+            error_message: null,
+            sync_settings: {
+              active_only: shouldSyncActiveOnly,
+              sync_timestamp: new Date().toISOString(),
+              batch_size: batchSize
+            }
+          }, {
+            onConflict: 'user_id,marketplace'
+          });
+      }
+
+      // Resume scenario handling - check if this is a continuation
+      const { data: resumeSync } = await supabase
+        .from('marketplace_sync_status')
+        .select('sync_status, products_synced, total_products_found')
+        .eq('user_id', user.id)
+        .eq('marketplace', 'shopify')
+        .maybeSingle();
+
+      if (resumeSync?.sync_status === 'in_progress' && startPage > 1) {
+        console.log(`Resuming sync at page ${startPage}, previously synced: ${resumeSync.products_synced} products`);
+      }
+
+    } catch (stateError) {
+      console.error('Error in state management:', stateError);
+      if (startPage === 1) {
+        // Only throw for first page state errors to prevent sync from starting
+        throw stateError;
+      }
+      // For continuation pages, log but continue
+      console.log('Continuing with sync despite state management error');
+    }
+
     // Get total product count from Shopify on first batch only
     let totalProductsInStore = null;
     if (startPage === 1) {
@@ -372,9 +459,48 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in sync-shopify-products:', error);
+    
+    // Enhanced error handling - update sync status on failure
+    try {
+      const supabase = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      );
+      
+      const authHeader = req.headers.get('Authorization');
+      if (authHeader) {
+        const token = authHeader.replace('Bearer ', '');
+        const { data: { user } } = await supabase.auth.getUser(token);
+        
+        if (user) {
+          // Update marketplace sync status to failed
+          await supabase
+            .from('marketplace_sync_status')
+            .upsert({
+              user_id: user.id,
+              marketplace: 'shopify',
+              sync_status: 'failed',
+              last_sync_at: new Date().toISOString(),
+              error_message: error.message || 'Unknown error occurred during sync',
+              sync_settings: {
+                error_occurred_at: new Date().toISOString(),
+                error_type: error.name || 'SyncError'
+              }
+            }, {
+              onConflict: 'user_id,marketplace'
+            });
+          
+          console.log('Updated sync status to failed due to error');
+        }
+      }
+    } catch (statusUpdateError) {
+      console.error('Failed to update sync status on error:', statusUpdateError);
+    }
+    
     return new Response(JSON.stringify({
       error: error.message,
-      success: false
+      success: false,
+      timestamp: new Date().toISOString()
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
