@@ -430,10 +430,14 @@ serve(async (req) => {
       error_message: null
     };
 
-    // Only set total_products_found on the first batch when we have the real count
+    // Set total_products_found properly
     if (startPage === 1 && totalProductsInStore !== null) {
+      // First batch: set the actual count from Shopify API
       marketplaceUpdateData.total_products_found = totalProductsInStore;
       console.log(`Setting total_products_found to ${totalProductsInStore} for first batch`);
+    } else if (currentSyncStatus?.total_products_found) {
+      // Subsequent batches: preserve the existing total_products_found
+      marketplaceUpdateData.total_products_found = currentSyncStatus.total_products_found;
     }
 
     // Update marketplace sync status
