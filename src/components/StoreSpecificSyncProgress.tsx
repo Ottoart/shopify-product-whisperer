@@ -18,6 +18,9 @@ interface SyncStatus {
   products_synced: number;
   total_products_found?: number;
   error_message: string | null;
+  sync_settings?: any;
+  active_products_synced?: number;
+  inactive_products_skipped?: number;
 }
 
 export const StoreSpecificSyncProgress = ({ storeName, platform }: StoreSpecificSyncProgressProps) => {
@@ -97,11 +100,13 @@ export const StoreSpecificSyncProgress = ({ storeName, platform }: StoreSpecific
     );
   }
 
-  const { products_synced, total_products_found, sync_status, error_message } = syncStatus;
-  const percentage = total_products_found ? Math.round((products_synced / total_products_found) * 100) : 0;
+  const { products_synced, total_products_found, sync_status, error_message, sync_settings, active_products_synced, inactive_products_skipped } = syncStatus;
+  const percentage = total_products_found && total_products_found > 0 ? Math.round((products_synced / total_products_found) * 100) : 0;
+  const remaining = total_products_found ? total_products_found - products_synced : 0;
   const isComplete = sync_status === 'completed';
   const isError = sync_status === 'error' || sync_status === 'failed';
   const isInProgress = sync_status === 'in_progress' || sync_status === 'syncing';
+  const isActiveOnly = sync_settings?.active_only;
 
   const getStatusIcon = () => {
     if (isComplete) return <CheckCircle className="h-4 w-4 text-green-500" />;
@@ -112,9 +117,25 @@ export const StoreSpecificSyncProgress = ({ storeName, platform }: StoreSpecific
 
   const getStatusBadge = () => {
     if (isComplete) return <Badge variant="default" className="bg-green-500">Complete</Badge>;
-    if (isError) return <Badge variant="destructive">Error</Badge>;
-    if (isInProgress) return <Badge variant="secondary">Syncing...</Badge>;
-    return <Badge variant="outline">Pending</Badge>;
+    if (isError) return <Badge variant="destructive">Failed</Badge>;
+    if (isInProgress) return <Badge variant="secondary">In Progress</Badge>;
+    return <Badge variant="outline">Waiting</Badge>;
+  };
+
+  const getStatusMessage = () => {
+    if (isComplete) {
+      return `All ${products_synced} products have been successfully synced from ${storeName}`;
+    }
+    if (isError) {
+      return `Sync failed for ${storeName}. Please try again.`;
+    }
+    if (isInProgress) {
+      if (total_products_found && total_products_found > 0) {
+        return `Syncing products from ${storeName}... ${remaining} remaining`;
+      }
+      return `Discovering and syncing products from ${storeName}...`;
+    }
+    return `Ready to sync products from ${storeName}`;
   };
 
   return (
@@ -129,44 +150,108 @@ export const StoreSpecificSyncProgress = ({ storeName, platform }: StoreSpecific
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-2">
+        {/* Status Message */}
+        <div className="text-sm text-muted-foreground">
+          {getStatusMessage()}
+        </div>
+
+        {/* Progress Bar and Stats */}
+        <div className="space-y-3">
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Progress</span>
+            <span className="text-muted-foreground">Sync Progress</span>
             <span className="font-medium">
-              {products_synced} of {total_products_found || '?'} products synced
+              {products_synced.toLocaleString()} of {total_products_found?.toLocaleString() || '?'} products
             </span>
           </div>
+          
           <Progress 
             value={percentage} 
-            className="h-2"
+            className="h-3"
           />
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>{percentage}% complete</span>
-            {total_products_found && (
-              <span>{total_products_found - products_synced} remaining</span>
-            )}
+          
+          <div className="grid grid-cols-3 gap-4 text-xs">
+            <div className="text-center">
+              <div className="font-medium text-foreground">{percentage}%</div>
+              <div className="text-muted-foreground">Complete</div>
+            </div>
+            <div className="text-center">
+              <div className="font-medium text-foreground">{products_synced.toLocaleString()}</div>
+              <div className="text-muted-foreground">Synced</div>
+            </div>
+            <div className="text-center">
+              <div className="font-medium text-foreground">{remaining.toLocaleString()}</div>
+              <div className="text-muted-foreground">Remaining</div>
+            </div>
           </div>
         </div>
 
+        {/* Additional Sync Details */}
+        {(isActiveOnly || inactive_products_skipped) && (
+          <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+            <div className="text-xs space-y-1">
+              {isActiveOnly && (
+                <div className="flex justify-between">
+                  <span className="text-blue-700 dark:text-blue-300">Sync Mode:</span>
+                  <span className="font-medium text-blue-800 dark:text-blue-200">Active products only</span>
+                </div>
+              )}
+              {inactive_products_skipped && inactive_products_skipped > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-blue-700 dark:text-blue-300">Skipped:</span>
+                  <span className="font-medium text-blue-800 dark:text-blue-200">{inactive_products_skipped} inactive products</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Error Display */}
         {error_message && (
           <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
             <div className="flex items-start space-x-2">
-              <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />
-              <div>
-                <p className="text-sm font-medium text-destructive">Sync Error</p>
+              <AlertCircle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-destructive">Sync Failed</p>
                 <p className="text-xs text-destructive/80 mt-1">{error_message}</p>
               </div>
             </div>
           </div>
         )}
 
+        {/* Success Display */}
         {isComplete && (
           <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3">
+            <div className="flex items-start space-x-2">
+              <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-green-700 dark:text-green-400">
+                  Sync Complete!
+                </p>
+                <p className="text-xs text-green-600 dark:text-green-500 mt-1">
+                  Successfully synced {products_synced.toLocaleString()} products from {storeName}
+                  {isActiveOnly && ' (active products only)'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* In Progress Display */}
+        {isInProgress && (
+          <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
             <div className="flex items-center space-x-2">
-              <CheckCircle className="h-4 w-4 text-green-500" />
-              <p className="text-sm font-medium text-green-700 dark:text-green-400">
-                Successfully synced all {products_synced} products from {storeName}
-              </p>
+              <RefreshCw className="h-4 w-4 text-primary animate-spin" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-primary">
+                  Sync in progress...
+                </p>
+                <p className="text-xs text-primary/80 mt-1">
+                  {total_products_found ? 
+                    `Processing ${remaining.toLocaleString()} remaining products` : 
+                    'Discovering products and syncing data'
+                  }
+                </p>
+              </div>
             </div>
           </div>
         )}
