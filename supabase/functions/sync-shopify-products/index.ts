@@ -109,6 +109,41 @@ serve(async (req) => {
 
     console.log(`Starting batch sync for user ${user.id}, page ${startPage}, batch size ${batchSize}`);
 
+    // Get total product count from Shopify on first batch only
+    let totalProductsInStore = null;
+    if (startPage === 1) {
+      try {
+        console.log('Fetching total product count from Shopify...');
+        let countUrl = `${baseUrl}/products/count.json`;
+        
+        // Apply the same filters to count API as products API
+        if (shouldSyncActiveOnly) {
+          countUrl += `?status=active`;
+        }
+        
+        const countResponse = await fetch(countUrl, {
+          headers: {
+            'X-Shopify-Access-Token': cleanAccessToken,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'User-Agent': 'Supabase-Edge-Function/1.0'
+          },
+        });
+
+        if (countResponse.ok) {
+          const countData = await countResponse.json();
+          totalProductsInStore = countData.count || 0;
+          console.log(`Total products in Shopify store: ${totalProductsInStore}`);
+        } else {
+          console.warn(`Failed to fetch product count: ${countResponse.status} ${countResponse.statusText}`);
+          // Continue without total count - will fall back to batch-based counting
+        }
+      } catch (countError) {
+        console.warn('Error fetching product count:', countError);
+        // Continue without total count - will fall back to batch-based counting
+      }
+    }
+
     // Fetch products for this batch with cursor-based pagination
     let url = `${baseUrl}/products.json?limit=${batchSize}&fields=id,title,handle,vendor,product_type,tags,published_at,created_at,updated_at,status,variants,images,body_html,seo_title,seo_description`;
     
@@ -278,23 +313,30 @@ serve(async (req) => {
       });
 
     // Also update marketplace sync status
+    const marketplaceUpdateData: any = {
+      user_id: user.id,
+      marketplace: 'shopify',
+      sync_status: nextPageInfo ? 'in_progress' : 'completed',
+      last_sync_at: new Date().toISOString(),
+      products_synced: products.length,
+      active_products_synced: shouldSyncActiveOnly ? products.length : undefined,
+      inactive_products_skipped: shouldSyncActiveOnly ? skippedCount : undefined,
+      sync_settings: {
+        active_only: shouldSyncActiveOnly,
+        sync_timestamp: new Date().toISOString()
+      },
+      error_message: null
+    };
+
+    // Only set total_products_found on the first batch when we have the real count
+    if (startPage === 1 && totalProductsInStore !== null) {
+      marketplaceUpdateData.total_products_found = totalProductsInStore;
+      console.log(`Setting total_products_found to ${totalProductsInStore} for first batch`);
+    }
+
     await supabase
       .from('marketplace_sync_status')
-      .upsert({
-        user_id: user.id,
-        marketplace: 'shopify',
-        sync_status: nextPageInfo ? 'in_progress' : 'completed',
-        last_sync_at: new Date().toISOString(),
-        products_synced: products.length,
-        total_products_found: allProducts.length,
-        active_products_synced: shouldSyncActiveOnly ? products.length : undefined,
-        inactive_products_skipped: shouldSyncActiveOnly ? skippedCount : undefined,
-        sync_settings: {
-          active_only: shouldSyncActiveOnly,
-          sync_timestamp: new Date().toISOString()
-        },
-        error_message: null
-      }, {
+      .upsert(marketplaceUpdateData, {
         onConflict: 'user_id,marketplace'
       });
 
