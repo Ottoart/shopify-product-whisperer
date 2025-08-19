@@ -48,6 +48,7 @@ import { AdminCommunicationCenter } from "./AdminCommunicationCenter";
 import { BillingOperationsHub } from "./BillingOperationsHub";
 import { OperationalMonitoring } from "./OperationalMonitoring";
 import { EnhancedCompanyDashboard } from "./EnhancedCompanyDashboard";
+import { CarrierConfigurationManagement } from "./CarrierConfigurationManagement";
 
 // Navigation configuration
 const primaryNavItems = [
@@ -406,27 +407,7 @@ export const EnhancedAdminDashboard = () => {
           
           {activeSection === 'monitoring' && <OperationalMonitoring />}
           
-          {activeSection === 'carriers' && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Truck className="h-5 w-5" />
-                  Carrier Management
-                </CardTitle>
-                <CardDescription>
-                  Configure and manage shipping carriers
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground mb-4">
-                  Manage shipping carrier configurations and settings.
-                </p>
-                <Button asChild>
-                  <a href="/carriers">Go to Carriers</a>
-                </Button>
-              </CardContent>
-            </Card>
-          )}
+          {activeSection === 'carriers' && <CarrierConfigurationManagement />}
           
           {activeSection === 'analytics' && <AdminAnalytics />}
           
