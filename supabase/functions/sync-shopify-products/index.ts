@@ -312,18 +312,33 @@ serve(async (req) => {
         onConflict: 'user_id'
       });
 
-    // Also update marketplace sync status
+    // Get current sync status to accumulate products_synced across batches
+    const { data: currentSyncStatus } = await supabase
+      .from('marketplace_sync_status')
+      .select('products_synced, total_products_found')
+      .eq('user_id', user.id)
+      .eq('marketplace', 'shopify')
+      .maybeSingle();
+
+    // Calculate accumulated products_synced
+    const currentProductsSynced = currentSyncStatus?.products_synced || 0;
+    const totalProductsSynced = currentProductsSynced + products.length;
+
+    console.log(`Batch ${startPage}: Current synced: ${currentProductsSynced}, This batch: ${products.length}, Total synced: ${totalProductsSynced}`);
+
+    // Prepare marketplace sync status update
     const marketplaceUpdateData: any = {
       user_id: user.id,
       marketplace: 'shopify',
       sync_status: nextPageInfo ? 'in_progress' : 'completed',
       last_sync_at: new Date().toISOString(),
-      products_synced: products.length,
-      active_products_synced: shouldSyncActiveOnly ? products.length : undefined,
+      products_synced: totalProductsSynced, // Accumulate across batches
+      active_products_synced: shouldSyncActiveOnly ? totalProductsSynced : undefined,
       inactive_products_skipped: shouldSyncActiveOnly ? skippedCount : undefined,
       sync_settings: {
         active_only: shouldSyncActiveOnly,
-        sync_timestamp: new Date().toISOString()
+        sync_timestamp: new Date().toISOString(),
+        batch_number: startPage
       },
       error_message: null
     };
@@ -334,6 +349,7 @@ serve(async (req) => {
       console.log(`Setting total_products_found to ${totalProductsInStore} for first batch`);
     }
 
+    // Update marketplace sync status
     await supabase
       .from('marketplace_sync_status')
       .upsert(marketplaceUpdateData, {
