@@ -6,11 +6,21 @@ import { PrintingSettings } from '@/components/shipping/PrintingSettings';
 import { PatternManagement } from '@/components/patterns/PatternManagement';
 import { PatternAnalyzer } from '@/components/patterns/PatternAnalyzer';
 import { AIPromptVisualizer } from '@/components/AIPromptVisualizer';
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import Logs from '@/pages/Logs';
 
 const Settings = () => {
   const [refreshKey, setRefreshKey] = useState(0);
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState("ai-learning");
+
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
 
   const handleAnalysisComplete = () => {
     setRefreshKey(prev => prev + 1);
@@ -24,7 +34,7 @@ const Settings = () => {
           <p className="text-muted-foreground">Configure your PrepFox application and AI learning preferences</p>
         </div>
 
-        <Tabs defaultValue="ai-learning" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="ai-learning">AI Learning</TabsTrigger>
             <TabsTrigger value="store">Store</TabsTrigger>

@@ -88,7 +88,33 @@ export default function Shipping() {
 
         <TabsContent value="stores">
           <div className="space-y-6">
-            <StoreConfig />
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Store className="h-5 w-5" />
+                  Store Management
+                </CardTitle>
+                <CardDescription>
+                  Store configuration has been centralized in Settings for better organization.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <Store className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Manage Stores in Settings</h3>
+                  <p className="text-muted-foreground mb-4">
+                    All store configuration, connection, and management features are now available in the Settings page.
+                  </p>
+                  <Button 
+                    onClick={() => window.location.href = '/settings?tab=store'}
+                    className="animate-fade-in"
+                  >
+                    Go to Settings → Stores
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+            
             <div className="mt-6">
               <h3 className="text-lg font-semibold mb-4">Connection Diagnostics</h3>
               {store ? (
@@ -97,7 +123,13 @@ export default function Shipping() {
                   storeName={store.store_name}
                 />
               ) : (
-                <p className="text-sm text-muted-foreground">No active Shopify store selected.</p>
+                <Card>
+                  <CardContent className="pt-6">
+                    <p className="text-sm text-muted-foreground text-center">
+                      No active Shopify store selected. Configure stores in Settings first.
+                    </p>
+                  </CardContent>
+                </Card>
               )}
             </div>
           </div>

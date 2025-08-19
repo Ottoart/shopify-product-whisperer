@@ -471,6 +471,7 @@ export default function Products() {
           )}
           <ConnectStoreButton 
             variant="default"
+            redirectToSettings={true}
           />
         </div>
       </div>
@@ -484,7 +485,7 @@ export default function Products() {
             <p className="text-muted-foreground mb-6">
               Connect your first store to start managing products
             </p>
-            <ConnectStoreButton />
+            <ConnectStoreButton redirectToSettings={true} />
           </CardContent>
         </Card>
       )}

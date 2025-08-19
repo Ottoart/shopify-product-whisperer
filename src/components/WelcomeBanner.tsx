@@ -88,7 +88,7 @@ export function WelcomeBanner() {
       description: "Link your Shopify, eBay, or other marketplace account",
       icon: Store,
       completed: storeCount > 0,
-      action: <ConnectStoreButton size="sm" onStoreConnected={checkSetupStatus} />
+      action: <ConnectStoreButton size="sm" onStoreConnected={checkSetupStatus} redirectToSettings={true} />
     },
     {
       id: "products",
