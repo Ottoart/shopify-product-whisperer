@@ -97,6 +97,8 @@ export function StoreConfig() {
 
   const handleDelete = async (id: string) => {
     try {
+      // The delete operation will now automatically trigger cascade deletion
+      // of all associated products, orders, and analytics data via the database trigger
       const { error } = await supabase
         .from('store_configurations')
         .delete()
@@ -105,8 +107,8 @@ export function StoreConfig() {
       if (error) throw error;
 
       toast({
-        title: "Store removed",
-        description: "Store configuration has been deleted"
+        title: "Store and data removed",
+        description: "Store configuration and all associated data have been permanently deleted"
       });
 
       fetchStores();
