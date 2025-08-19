@@ -67,23 +67,14 @@ export const ProductList = ({
 
   // Filter products first by store to ensure accurate filter counts
   const storeFilteredProducts = products.filter(product => {
-    // Improved store filtering to handle eBay Store -> eBay mapping
+    // Store filtering using store_name field
     if (!storeFilter) return true;
     
     const normalizedStoreFilter = storeFilter.toLowerCase();
-    const productVendor = product.vendor?.toLowerCase() || '';
+    const productStoreName = product.store_name?.toLowerCase() || '';
     
-    // Direct match
-    if (productVendor.includes(normalizedStoreFilter)) return true;
-    
-    // Handle "eBay Store" -> "eBay" mapping
-    if (normalizedStoreFilter.includes('ebay') && productVendor === 'ebay') return true;
-    if (normalizedStoreFilter.includes('shopify') && productVendor.includes('shopify')) return true;
-    
-    // Bidirectional check - store name contains vendor or vendor contains store name
-    if (normalizedStoreFilter.includes(productVendor) || productVendor.includes(normalizedStoreFilter.replace(' store', ''))) return true;
-    
-    return false;
+    // Direct match with store_name
+    return productStoreName.includes(normalizedStoreFilter) || normalizedStoreFilter.includes(productStoreName);
   });
 
   // Extract unique values for filters FROM STORE-FILTERED PRODUCTS ONLY
