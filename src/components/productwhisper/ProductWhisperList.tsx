@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { ProductWhisperCard } from './ProductWhisperCard';
 import { ProductWhisperFilters } from './ProductWhisperFilters';
+import { ProductWhisperBulkEdit } from './ProductWhisperBulkEdit';
+import { ActiveFilters } from './ActiveFilters';
+import { FilterPresets } from './FilterPresets';
 import { ProductWhisperItem, ProductWhisperFilters as Filters } from '@/types/productwhisper';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -16,6 +19,7 @@ interface ProductWhisperListProps {
   showFilters: boolean;
   onFiltersChange: (filters: Partial<Filters>) => void;
   onClearFilters: () => void;
+  onProductsUpdated: () => void;
 }
 
 const PRODUCTS_PER_PAGE = 50;
@@ -26,7 +30,8 @@ export const ProductWhisperList = ({
   filterOptions,
   showFilters,
   onFiltersChange,
-  onClearFilters
+  onClearFilters,
+  onProductsUpdated
 }: ProductWhisperListProps) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
@@ -142,6 +147,7 @@ export const ProductWhisperList = ({
             product={product}
             isSelected={selectedProducts.has(product.id)}
             onSelect={(selected) => handleSelectProduct(product.id, selected)}
+            onProductUpdated={onProductsUpdated}
           />
         ))}
       </div>

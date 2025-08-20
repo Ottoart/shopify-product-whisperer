@@ -21,15 +21,23 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ProductWhisperItem } from '@/types/productwhisper';
 import { formatDistanceToNow } from 'date-fns';
+import { ProductWhisperEditor } from './ProductWhisperEditor';
 
 interface ProductWhisperCardProps {
   product: ProductWhisperItem;
   isSelected: boolean;
   onSelect: (selected: boolean) => void;
+  onProductUpdated: () => void;
 }
 
-export const ProductWhisperCard = ({ product, isSelected, onSelect }: ProductWhisperCardProps) => {
+export const ProductWhisperCard = ({ 
+  product, 
+  isSelected, 
+  onSelect,
+  onProductUpdated 
+}: ProductWhisperCardProps) => {
   const [imageError, setImageError] = useState(false);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
 
   const handleImageError = () => {
     setImageError(true);
@@ -78,7 +86,7 @@ export const ProductWhisperCard = ({ product, isSelected, onSelect }: ProductWhi
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setIsEditorOpen(true)}>
                 <Edit className="h-4 w-4 mr-2" />
                 Edit Product
               </DropdownMenuItem>
@@ -180,6 +188,7 @@ export const ProductWhisperCard = ({ product, isSelected, onSelect }: ProductWhi
             size="sm" 
             variant="outline" 
             className="flex-1 text-xs"
+            onClick={() => setIsEditorOpen(true)}
           >
             <Edit className="h-3 w-3 mr-1" />
             Edit
@@ -201,6 +210,13 @@ export const ProductWhisperCard = ({ product, isSelected, onSelect }: ProductWhi
           </span>
         </div>
       </CardContent>
+      
+      <ProductWhisperEditor
+        product={product}
+        isOpen={isEditorOpen}
+        onClose={() => setIsEditorOpen(false)}
+        onProductUpdated={onProductUpdated}
+      />
     </Card>
   );
 };

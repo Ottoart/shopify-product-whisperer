@@ -25,7 +25,8 @@ export default function ProductWhisper() {
     filterOptions,
     isLoading,
     updateFilters,
-    clearFilters
+    clearFilters,
+    refetch
   } = useProductWhisper();
 
   const [showFilters, setShowFilters] = useState(false);
@@ -177,6 +178,7 @@ export default function ProductWhisper() {
         showFilters={showFilters}
         onFiltersChange={updateFilters}
         onClearFilters={clearFilters}
+        onProductsUpdated={refetch}
       />
     </div>
   );
