@@ -45,7 +45,7 @@ serve(async (req) => {
       );
     }
 
-    console.log("supabase----------------",user)
+    console.log("I am getting user----------------",user)
     
 
     // Import and use the UPS auth helper to ensure we have a valid token
