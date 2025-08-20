@@ -33,6 +33,7 @@ serve(async (req) => {
       }
     });
 
+    console.log("supabase----------------",supabase)
     // Get user from auth header
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
