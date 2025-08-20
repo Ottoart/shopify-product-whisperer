@@ -48,6 +48,7 @@ serve(async (req) => {
       );
     }
 
+    console.log("user-----------",user)
     // Update UPS carrier configuration with real credentials
     const { data: existingConfig, error: fetchError } = await supabase
       .from('carrier_configurations')
