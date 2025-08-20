@@ -8,10 +8,15 @@ import { useShopifyCredentials } from '@/hooks/useShopifyCredentials';
 interface SyncStatus {
   id: string;
   user_id: string;
+  marketplace: string;
   last_sync_at: string | null;
-  last_page_info: string | null;
-  total_synced: number;
-  sync_status: 'pending' | 'in_progress' | 'completed' | 'error';
+  sync_status: 'pending' | 'in_progress' | 'error' | 'success' | 'syncing';
+  error_message: string | null;
+  products_synced: number;
+  total_products_found: number;
+  active_products_synced: number;
+  inactive_products_skipped: number;
+  sync_settings: Record<string, any>;
   created_at: string;
   updated_at: string;
 }
@@ -73,14 +78,15 @@ export const useShopifyProductSync = () => {
 
   // Get sync status
   const { data: syncStatus, isLoading: statusLoading } = useQuery({
-    queryKey: ['shopify-sync-status'],
+    queryKey: ['syncStatus'],
     queryFn: async () => {
       if (!session?.user?.id) return null;
       
       const { data, error } = await supabase
-        .from('shopify_sync_status')
+        .from('marketplace_sync_status')
         .select('*')
         .eq('user_id', session.user.id)
+        .eq('marketplace', 'shopify')
         .maybeSingle();
       
       if (error && error.code !== 'PGRST116') {
@@ -187,7 +193,7 @@ export const useShopifyProductSync = () => {
       return data;
     },
     onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['shopify-sync-status'] });
+      queryClient.invalidateQueries({ queryKey: ['syncStatus'] });
       queryClient.invalidateQueries({ queryKey: ['local-products-count'] });
       queryClient.invalidateQueries({ queryKey: ['local-products'] });
       
@@ -210,6 +216,117 @@ export const useShopifyProductSync = () => {
       }
     },
   });
+
+  // GraphQL Bulk Sync function - handles 4000+ products efficiently
+  const startGraphQLBulkSync = async () => {
+    setIsSyncing(true);
+    setSyncProgress({ current: 0, total: 100 });
+    
+    try {
+      const token = cleanAccessToken(accessToken);
+      if (!storeUrl || !token) throw new Error('Missing Shopify credentials');
+      
+      // Step 1: Start bulk operation
+      toast({
+        title: "Starting Bulk Sync",
+        description: "Initiating GraphQL bulk operation for all products...",
+      });
+
+      setSyncProgress({ current: 5, total: 100, message: "Starting bulk operation..." });
+
+      const startResponse = await supabase.functions.invoke('sync-shopify-graphql', {
+        body: { 
+          storeUrl: storeUrl.replace(/^https?:\/\//, ''), 
+          accessToken: token,
+          operation: 'start_bulk'
+        }
+      });
+
+      if (startResponse.error) {
+        throw new Error(startResponse.error.message);
+      }
+
+      const bulkOperationId = startResponse.data?.bulkOperation?.id;
+      if (!bulkOperationId) {
+        throw new Error('Failed to start bulk operation');
+      }
+
+      setSyncProgress({ current: 10, total: 100, message: "Bulk operation started..." });
+      console.log('📊 Bulk operation started:', bulkOperationId);
+
+      // Step 2: Poll for completion
+      let isCompleted = false;
+      let checkCount = 0;
+      const maxChecks = 60; // Max 5 minutes of polling
+      
+      while (!isCompleted && checkCount < maxChecks) {
+        await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+        checkCount++;
+        
+        const checkResponse = await supabase.functions.invoke('sync-shopify-graphql', {
+          body: { 
+            storeUrl: storeUrl.replace(/^https?:\/\//, ''), 
+            accessToken: token,
+            operation: 'check_bulk',
+            bulkOperationId
+          }
+        });
+
+        if (checkResponse.error) {
+          console.error('❌ Error checking bulk operation:', checkResponse.error);
+          continue;
+        }
+
+        const status = checkResponse.data?.bulkOperation?.status;
+        const progress = Math.min(90, 10 + (checkCount / maxChecks) * 80);
+        setSyncProgress({ 
+          current: progress, 
+          total: 100, 
+          message: `Processing bulk operation... (${status})` 
+        });
+
+        console.log(`📊 Bulk operation status: ${status} (check ${checkCount}/${maxChecks})`);
+
+        if (checkResponse.data?.operation === 'bulk_completed') {
+          isCompleted = true;
+          setSyncProgress({ current: 100, total: 100, message: "Sync completed!" });
+          
+          const processedProducts = checkResponse.data?.processedProducts || 0;
+          const totalProducts = checkResponse.data?.totalProducts || 0;
+          
+          // Force refresh all related queries
+          await queryClient.invalidateQueries({ queryKey: ['syncStatus'] });
+          await queryClient.invalidateQueries({ queryKey: ['local-products'] });
+          await queryClient.invalidateQueries({ queryKey: ['local-products-count'] });
+
+          toast({
+            title: "GraphQL Bulk Sync Completed! 🎉",
+            description: `Successfully synced ${processedProducts} of ${totalProducts} products using GraphQL bulk operations.`,
+          });
+
+          console.log(`✅ GraphQL bulk sync completed: ${processedProducts}/${totalProducts} products`);
+          break;
+        } else if (status === 'FAILED' || status === 'CANCELLED') {
+          throw new Error(`Bulk operation ${status.toLowerCase()}`);
+        }
+      }
+
+      if (!isCompleted) {
+        throw new Error('Bulk operation timed out. Please try again.');
+      }
+
+    } catch (error: any) {
+      console.error('❌ GraphQL bulk sync error:', error);
+      toast({
+        title: "GraphQL Bulk Sync Failed",
+        description: error.message || "Failed to complete GraphQL bulk sync.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSyncing(false);
+      setSyncProgress({ current: 0, total: 0 });
+    }
+  };
 
   // Full sync function (multiple batches)
   const startFullSync = async () => {
@@ -341,7 +458,7 @@ export const useShopifyProductSync = () => {
   // Single batch sync
   const syncBatch = async (batchSize?: number) => {
     const nextPage = syncStatus?.sync_status === 'in_progress' ? 
-      Math.floor((syncStatus.total_synced || 0) / (batchSize || advancedSettings.batch_size)) + 1 : 1;
+      Math.floor((syncStatus.products_synced || 0) / (batchSize || advancedSettings.batch_size)) + 1 : 1;
     
     return syncBatchMutation.mutateAsync({ 
       batchSize: batchSize || advancedSettings.batch_size, 
@@ -363,6 +480,7 @@ export const useShopifyProductSync = () => {
     
     // Actions
     startFullSync,
+    startGraphQLBulkSync, // New GraphQL bulk sync for 4000+ products
     syncBatch,
     
     // Helpers
@@ -371,8 +489,8 @@ export const useShopifyProductSync = () => {
     },
     
     // Status checks
-    isCompleted: syncStatus?.sync_status === 'completed',
-    isInProgress: syncStatus?.sync_status === 'in_progress',
+    isCompleted: syncStatus?.sync_status === 'success',
+    isInProgress: syncStatus?.sync_status === 'in_progress' || syncStatus?.sync_status === 'syncing',
     lastSyncAt: syncStatus?.last_sync_at,
   };
 };

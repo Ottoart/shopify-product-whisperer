@@ -12,6 +12,7 @@ const SyncStatus = () => {
     localProductsCount,
     isSyncing,
     startFullSync,
+    startGraphQLBulkSync,
     syncBatch,
     isCompleted,
     isInProgress,
@@ -79,7 +80,7 @@ const SyncStatus = () => {
               <CheckCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{syncStatus?.total_synced || 0}</div>
+              <div className="text-2xl font-bold">{syncStatus?.products_synced || 0}</div>
               <p className="text-xs text-muted-foreground">Products processed</p>
             </CardContent>
           </Card>
@@ -103,9 +104,9 @@ const SyncStatus = () => {
               </div>
             )}
             
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button 
-                onClick={startFullSync}
+                onClick={startGraphQLBulkSync}
                 disabled={isSyncing}
                 className="flex items-center gap-2"
               >
@@ -114,7 +115,17 @@ const SyncStatus = () => {
                 ) : (
                   <Database className="h-4 w-4" />
                 )}
-                {isSyncing ? 'Syncing...' : 'Full Sync'}
+                {isSyncing ? 'Syncing...' : 'GraphQL Bulk Sync (4000+ Products)'}
+              </Button>
+              
+              <Button 
+                variant="outline"
+                onClick={startFullSync}
+                disabled={isSyncing}
+                className="flex items-center gap-2"
+              >
+                <Database className="h-4 w-4" />
+                Legacy REST Sync
               </Button>
               
               <Button 
@@ -162,7 +173,7 @@ const SyncStatus = () => {
               
               <div className="flex justify-between">
                 <span className="text-sm font-medium">Products Synced:</span>
-                <span className="text-sm">{syncStatus?.total_synced || 0}</span>
+                <span className="text-sm">{syncStatus?.products_synced || 0}</span>
               </div>
               
               <div className="flex justify-between">
