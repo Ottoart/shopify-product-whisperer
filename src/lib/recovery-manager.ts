@@ -1,6 +1,3 @@
-import { supabase } from '@/integrations/supabase/client';
-import { errorHandler, EnhancedError, ErrorContext } from './error-handler';
-import { transactionManager, TransactionOperation } from './transaction-manager';
 import { logger } from './logger';
 
 export interface RecoveryStrategy {
@@ -16,6 +13,15 @@ export interface RecoveryResult {
   message: string;
   data?: any;
   nextSteps?: string[];
+}
+
+export interface ErrorContext {
+  correlationId: string;
+  operation: string;
+  component: string;
+  metadata?: Record<string, any>;
+  userId?: string;
+  timestamp: string;
 }
 
 export class RecoveryManager {
@@ -110,22 +116,31 @@ export class RecoveryManager {
     marketplace: string,
     context: ErrorContext
   ): RecoveryStrategy[] {
+    // Import supabase locally to avoid type complexity at module level
+    const { supabase } = require('@/integrations/supabase/client');
+    const currentTime = new Date().toISOString();
+    
     return [
       // Strategy 1: Simple database update without transaction manager
       {
         name: 'resume_sync',
         description: 'Resume sync from last known good state',
         execute: async () => {
-          await supabase
-            .from('marketplace_sync_status')
-            .update({ 
-              sync_status: 'pending',
-              error_message: null,
-              updated_at: new Date().toISOString()
-            } as any)
-            .eq('user_id', userId)
-            .eq('marketplace_name', marketplace);
-          return true;
+          try {
+            const result = await supabase
+              .from('marketplace_sync_status')
+              .update({ 
+                sync_status: 'pending',
+                error_message: null,
+                updated_at: currentTime
+              })
+              .eq('user_id', userId)
+              .eq('marketplace_name', marketplace);
+            return result.error === null;
+          } catch (err) {
+            console.error('Resume sync strategy failed:', err);
+            return false;
+          }
         }
       },
 
@@ -134,27 +149,32 @@ export class RecoveryManager {
         name: 'reset_pagination',
         description: 'Reset pagination data and restart sync',
         execute: async () => {
-          await Promise.all([
-            supabase
-              .from('marketplace_sync_status')
-              .update({
-                sync_status: 'pending',
-                current_page: 1,
-                last_page_info: null,
-                updated_at: new Date().toISOString()
-              } as any)
-              .eq('user_id', userId)
-              .eq('marketplace_name', marketplace),
-            supabase
-              .from('shopify_sync_status')
-              .update({
-                sync_status: 'idle',
-                last_page_info: null,
-                updated_at: new Date().toISOString()
-              } as any)
-              .eq('user_id', userId)
-          ]);
-          return true;
+          try {
+            const results = await Promise.all([
+              supabase
+                .from('marketplace_sync_status')
+                .update({
+                  sync_status: 'pending',
+                  current_page: 1,
+                  last_page_info: null,
+                  updated_at: currentTime
+                })
+                .eq('user_id', userId)
+                .eq('marketplace_name', marketplace),
+              supabase
+                .from('shopify_sync_status')
+                .update({
+                  sync_status: 'idle',
+                  last_page_info: null,
+                  updated_at: currentTime
+                })
+                .eq('user_id', userId)
+            ]);
+            return results.every(result => result.error === null);
+          } catch (err) {
+            console.error('Reset pagination strategy failed:', err);
+            return false;
+          }
         }
       }
     ];
@@ -167,8 +187,8 @@ export class RecoveryManager {
     context: ErrorContext
   ): Promise<RecoveryResult> {
     // Log the failure
-    await errorHandler.handleError(error, context);
-
+    console.error('Sync failure detected:', error.message);
+    
     // Create recovery strategies
     const strategies = this.createSyncRecoveryStrategies(userId, marketplace, context);
 
