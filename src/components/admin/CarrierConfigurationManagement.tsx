@@ -62,7 +62,7 @@ export function CarrierConfigurationManagement() {
       const { data, error } = await supabase
         .from('carrier_configurations')
         .select('*')
-        .filter('api_credentials', 'cs', '{"system_carrier": true}');
+        .filter('api_credentials', 'cs', JSON.stringify({system_carrier: true}));
 
       if (error) {
         console.error('Error loading carrier configurations:', error);
