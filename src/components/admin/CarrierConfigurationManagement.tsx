@@ -61,8 +61,7 @@ export function CarrierConfigurationManagement() {
     try {
      const { data, error } = await supabase
       .from('carrier_configurations')
-      .select('*');
-      
+      .select('*');      
       if (error) {
         console.error('Error loading carrier configurations:', error);
         return;
