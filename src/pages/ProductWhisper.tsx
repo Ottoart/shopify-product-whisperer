@@ -13,7 +13,7 @@ import {
   FileText,
   Sparkles
 } from 'lucide-react';
-import { ProductWhisperList } from '@/components/productwhisper/ProductWhisperList';
+import { EnhancedProductWhisperList } from '@/components/productwhisper/ui/EnhancedProductWhisperList';
 import { ProductWhisperHeader } from '@/components/productwhisper/ProductWhisperHeader';
 import { useProductWhisper } from '@/hooks/useProductWhisper';
 import { ProductWhisperComparison } from '@/components/productwhisper/ai/ProductWhisperComparison';
@@ -212,8 +212,8 @@ export default function ProductWhisper() {
         </div>
       </div>
 
-      {/* Product List */}
-      <ProductWhisperList 
+      {/* Enhanced Product List */}
+      <EnhancedProductWhisperList 
         products={products}
         filters={filters}
         filterOptions={filterOptions}
@@ -222,6 +222,7 @@ export default function ProductWhisper() {
         onClearFilters={clearFilters}
         onProductsUpdated={refetch}
         onAIOptimized={handleAIOptimized}
+        isLoading={isLoading}
       />
 
       {/* AI Comparison Dialog */}
