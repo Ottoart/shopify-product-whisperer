@@ -67,8 +67,8 @@ export function CarrierConfigurationManagement() {
         return;
       }
       // Update form states with saved configurations
-      if (data) {
-        data.forEach((config: any) => {
+      if (carrier_configurations) {
+        carrier_configurations.forEach((config: any) => {
           if (config.carrier_name === 'canada_post' && config.api_credentials) {
             setCanadaPostConfig({
               api_key: config.api_credentials.api_key || '',
@@ -81,7 +81,7 @@ export function CarrierConfigurationManagement() {
           }
           // Add UPS config loading when implemented
         });
-        setCarrierConfigs(data);
+        setCarrierConfigs(carrier_configurations);
       }
     } catch (error) {
       console.error('Error in loadCarrierConfigurations:', error);
@@ -174,8 +174,18 @@ export function CarrierConfigurationManagement() {
     
     try {
       const functionName = carrierName === 'canada_post' ? 'test-canada-post-auth' : 'test-ups-auth';
+      // Get current session for auth header
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('No authentication session found');
+      }
+
       const { data, error } = await supabase.functions.invoke(functionName, {
-        body: {}
+        body: {},
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
       });
 
       if (error) throw error;
