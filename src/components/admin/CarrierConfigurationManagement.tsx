@@ -59,11 +59,10 @@ export function CarrierConfigurationManagement() {
 
   const loadCarrierConfigurations = async () => {
     try {
-      const { data, error } = await supabase
-        .from('carrier_configurations')
-        .select('*')
-        .filter('api_credentials', 'cs', JSON.stringify({system_carrier: true}));
-
+     const { data, error } = await supabase
+      .from('carrier_configurations')
+      .select('*');
+      
       if (error) {
         console.error('Error loading carrier configurations:', error);
         return;
