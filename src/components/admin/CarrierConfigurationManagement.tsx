@@ -178,21 +178,34 @@ export function CarrierConfigurationManagement() {
     
     try {
       const functionName = carrierName === 'canada_post' ? 'test-canada-post-auth' : 'test-ups-auth';
+      
+      // Use admin authentication - the edge function expects proper auth headers
+      if (!isAuthenticated || !isAdmin) {
+        throw new Error('Admin authentication required');
+      }
+
       const { data, error } = await supabase.functions.invoke(functionName, {
         body: {}
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Function error:', error);
+        throw error;
+      }
 
+      // Use correct response properties based on edge function
       toast({
-        title: data.valid ? "✅ System Carrier Active" : "❌ System Carrier Issue",
-        description: data.message || "System carrier test completed",
-        variant: data.valid ? "default" : "destructive"
+        title: data.success ? "✅ System Carrier Active" : "❌ System Carrier Issue",
+        description: data.success 
+          ? `Connection successful! Account: ${data.accountNumber || 'N/A'}` 
+          : `Connection failed: ${data.error || data.details || 'Unknown error'}`,
+        variant: data.success ? "default" : "destructive"
       });
     } catch (error) {
+      console.error('Test carrier error:', error);
       toast({
         title: "❌ Test Failed",
-        description: "Failed to test system carrier",
+        description: error instanceof Error ? error.message : "Failed to test system carrier",
         variant: "destructive"
       });
     } finally {
