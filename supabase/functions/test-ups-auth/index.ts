@@ -33,6 +33,7 @@ serve(async (req) => {
       }
     });
 
+    console.log("I am chekcing the userr------------")
     // Get user from auth header
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     console.log("I am getting user----------------",user)
