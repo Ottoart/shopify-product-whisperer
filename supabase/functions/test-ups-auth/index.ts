@@ -33,7 +33,6 @@ serve(async (req) => {
       }
     });
 
-    console.log("supabase----------------",supabase)
     // Get user from auth header
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
@@ -45,6 +44,9 @@ serve(async (req) => {
         }
       );
     }
+
+    console.log("supabase----------------",user)
+    
 
     // Import and use the UPS auth helper to ensure we have a valid token
     const { ensureValidUPSToken } = await import('../_shared/ups-auth.ts');
