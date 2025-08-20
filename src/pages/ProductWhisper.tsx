@@ -18,6 +18,8 @@ import { ProductWhisperHeader } from '@/components/productwhisper/ProductWhisper
 import { useProductWhisper } from '@/hooks/useProductWhisper';
 
 export default function ProductWhisper() {
+  console.log('🚀 ProductWhisper component loaded');
+  
   const {
     products,
     stats,
@@ -28,6 +30,13 @@ export default function ProductWhisper() {
     clearFilters,
     refetch
   } = useProductWhisper();
+
+  console.log('📊 ProductWhisper data:', { 
+    productsCount: products?.length, 
+    stats, 
+    isLoading,
+    filters 
+  });
 
   const [showFilters, setShowFilters] = useState(false);
 

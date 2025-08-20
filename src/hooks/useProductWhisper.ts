@@ -5,6 +5,8 @@ import { ProductWhisperItem, ProductWhisperFilters, ProductWhisperStats } from '
 import { useToast } from '@/hooks/use-toast';
 
 export const useProductWhisper = () => {
+  console.log('🔧 useProductWhisper hook called');
+  
   const { toast } = useToast();
   const [filters, setFilters] = useState<ProductWhisperFilters>({
     search: '',
@@ -23,9 +25,18 @@ export const useProductWhisper = () => {
   } = useQuery({
     queryKey: ['productwhisper-products'],
     queryFn: async (): Promise<ProductWhisperItem[]> => {
+      console.log('📡 Starting product fetch...');
+      
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+      console.log('👤 Auth user:', { hasUser: !!user, userId: user?.id });
+      
+      if (!user) {
+        console.error('❌ No authenticated user found');
+        throw new Error('Not authenticated');
+      }
 
+      console.log('🔍 Querying products for user:', user.id);
+      
       const { data, error } = await supabase
         .from('products')
         .select(`
@@ -59,7 +70,12 @@ export const useProductWhisper = () => {
         .eq('user_id', user.id)
         .order('updated_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Database error:', error);
+        throw error;
+      }
+      
+      console.log('✅ Products fetched successfully:', data?.length || 0, 'products');
       return data || [];
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
