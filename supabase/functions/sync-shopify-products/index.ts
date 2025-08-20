@@ -460,9 +460,18 @@ serve(async (req) => {
       batchNumber: startPage,
       productsSynced: products.length,
       totalSynced: totalSynced || 0,
+      totalProductsInShopify: totalProductsInStore || currentSyncStatus?.total_products_found || 0,
       hasMorePages: Boolean(nextPageInfo),
       nextPageInfo: nextPageInfo,
-      message: `Synced batch ${startPage}: ${products.length} products. Total: ${totalSynced || 0}`
+      message: `Synced batch ${startPage}: ${products.length} products. Total: ${totalSynced || 0}`,
+      debug: {
+        originalAllProducts: allProducts.length,
+        filteredProducts: products.length,
+        skippedCount,
+        shouldSyncActiveOnly,
+        nextPageInfo,
+        totalProductsFound: currentSyncStatus?.total_products_found || totalProductsInStore
+      }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

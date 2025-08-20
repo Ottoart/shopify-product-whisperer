@@ -183,8 +183,12 @@ export const useShopifyProductSync = () => {
       let totalSynced = 0;
       let productsSyncedThisSession = 0;
 
-      // Continuous sync until no more pages
-      while (hasMorePages && page <= 200) { // Increased limit to handle larger stores
+      let totalProductsInShopify = 0;
+      let pagesWithoutProducts = 0;
+      const maxPagesWithoutProducts = 10; // Allow more empty pages before stopping
+      
+      // Continuous sync until no more pages - removed hard page limit
+      while (hasMorePages) {
         const result = await syncBatchMutation.mutateAsync({ 
           batchSize: 250, 
           startPage: page,
@@ -195,26 +199,65 @@ export const useShopifyProductSync = () => {
         productsSyncedThisSession += result.productsSynced;
         hasMorePages = result.hasMorePages;
         
-        // Dynamic progress calculation based on products synced
-        const estimatedTotal = Math.max(totalSynced * 1.2, 1000); // Estimate total
-        const progressPercent = Math.min((totalSynced / estimatedTotal) * 90, 90);
-        setSyncProgress({ 
-          current: Math.round(progressPercent), 
-          total: 100,
-          message: `Synced ${totalSynced} products...`
-        });
+        // Track Shopify's reported total count
+        if (result.totalProductsInShopify && result.totalProductsInShopify > totalProductsInShopify) {
+          totalProductsInShopify = result.totalProductsInShopify;
+        }
+        
+        // Improved progress calculation using Shopify's actual count
+        if (totalProductsInShopify > 0) {
+          const progressPercent = Math.min((totalSynced / totalProductsInShopify) * 95, 95);
+          setSyncProgress({ 
+            current: Math.round(progressPercent), 
+            total: 100,
+            message: `Synced ${totalSynced} of ${totalProductsInShopify} products...`
+          });
+        } else {
+          // Fallback to estimated progress
+          const estimatedTotal = Math.max(totalSynced * 1.2, 1000);
+          const progressPercent = Math.min((totalSynced / estimatedTotal) * 90, 90);
+          setSyncProgress({ 
+            current: Math.round(progressPercent), 
+            total: 100,
+            message: `Synced ${totalSynced} products...`
+          });
+        }
         
         page++;
         
-        // Adaptive delay based on page number to avoid rate limiting
-        const delay = Math.min(page * 100, 2000); // Increase delay as we sync more
-        await new Promise(resolve => setTimeout(resolve, delay));
+        // Adaptive delay with exponential backoff for rate limiting
+        const baseDelay = Math.min(page * 50, 1000);
+        const jitter = Math.random() * 200; // Add randomness to avoid thundering herd
+        await new Promise(resolve => setTimeout(resolve, baseDelay + jitter));
         
-        // Break if we're not getting any new products for several pages
-        if (result.productsSynced === 0 && page > 5) {
-          console.log('No new products found, ending sync');
+        // Improved early termination logic
+        if (result.productsSynced === 0) {
+          pagesWithoutProducts++;
+          console.log(`Page ${page} had no products. Empty pages count: ${pagesWithoutProducts}`);
+          
+          if (pagesWithoutProducts >= maxPagesWithoutProducts) {
+            console.log(`Stopping sync after ${maxPagesWithoutProducts} consecutive empty pages`);
+            break;
+          }
+        } else {
+          pagesWithoutProducts = 0; // Reset counter when we find products
+        }
+        
+        // Safety check: if we've synced more than Shopify reports, something is wrong
+        if (totalProductsInShopify > 0 && totalSynced >= totalProductsInShopify) {
+          console.log(`Sync completed: synced ${totalSynced} out of ${totalProductsInShopify} products`);
           break;
         }
+      }
+      
+      // Post-sync validation
+      if (totalProductsInShopify > 0 && totalSynced < totalProductsInShopify * 0.95) {
+        console.warn(`Sync may be incomplete: synced ${totalSynced} out of ${totalProductsInShopify} products`);
+        toast({
+          title: "Sync May Be Incomplete",
+          description: `Synced ${totalSynced} out of ${totalProductsInShopify} products. Some products may have been skipped.`,
+          variant: "destructive",
+        });
       }
 
       // Final progress update
