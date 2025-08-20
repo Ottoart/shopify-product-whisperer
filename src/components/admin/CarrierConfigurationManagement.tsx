@@ -59,7 +59,7 @@ export function CarrierConfigurationManagement() {
 
   const loadCarrierConfigurations = async () => {
     try {
-     const { data, error } = await supabase
+      let { data: carrier_configurations, error } = await supabase
       .from('carrier_configurations')
       .select('*');      
       if (error) {
