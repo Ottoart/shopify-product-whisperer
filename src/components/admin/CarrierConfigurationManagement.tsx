@@ -173,14 +173,19 @@ export function CarrierConfigurationManagement() {
     setTestingCarrier(carrierName);
     
     try {
+      console.log('🔍 Testing system carrier:', carrierName);
       const functionName = carrierName === 'canada_post' ? 'test-canada-post-auth' : 'test-ups-auth';
+      console.log('🔍 Function name:', functionName);
+      
       // Get current session for auth header
       const { data: { session } } = await supabase.auth.getSession();
+      console.log('🔍 Session check:', { hasSession: !!session, hasAccessToken: !!session?.access_token });
       
       if (!session) {
         throw new Error('No authentication session found');
       }
 
+      console.log('🔍 Invoking function with auth header...');
       const { data, error } = await supabase.functions.invoke(functionName, {
         body: {},
         headers: {
@@ -188,7 +193,12 @@ export function CarrierConfigurationManagement() {
         }
       });
 
-      if (error) throw error;
+      console.log('🔍 Function response:', { data, error, hasData: !!data });
+
+      if (error) {
+        console.error('🔍 Function error:', error);
+        throw error;
+      }
 
       toast({
         title: data.success ? "✅ System Carrier Active" : "❌ System Carrier Issue",
@@ -198,9 +208,10 @@ export function CarrierConfigurationManagement() {
         variant: data.success ? "default" : "destructive"
       });
     } catch (error) {
+      console.error('🔍 Catch block error:', error);
       toast({
         title: "❌ Test Failed",
-        description: "Failed to test system carrier",
+        description: error instanceof Error ? error.message : "Failed to test system carrier",
         variant: "destructive"
       });
     } finally {
