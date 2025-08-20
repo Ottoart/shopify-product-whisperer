@@ -102,13 +102,13 @@ export const ProductList = ({
   // Filter products based on search and selected filters
   const filteredProducts = storeFilteredProducts.filter(product => {
     const matchesSearch = product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.vendor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (product.vendor?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                         (product.type?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
                          product.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.tags.toLowerCase().includes(searchTerm.toLowerCase());
+                         (product.tags?.toLowerCase() || '').includes(searchTerm.toLowerCase());
     
-    const matchesType = selectedTypes.size === 0 || selectedTypes.has(product.type);
-    const matchesVendor = selectedVendors.size === 0 || selectedVendors.has(product.vendor);
+    const matchesType = selectedTypes.size === 0 || selectedTypes.has(product.type || '');
+    const matchesVendor = selectedVendors.size === 0 || selectedVendors.has(product.vendor || '');
     const matchesCategory = selectedCategories.size === 0 || selectedCategories.has(product.category || '');
     const matchesTag = selectedTags.size === 0 || product.tags?.split(',').some(tag => selectedTags.has(tag.trim()));
     const matchesListingStatus = selectedListingStatus.size === 0 || selectedListingStatus.has(product.listingStatus || '');

@@ -2,9 +2,9 @@ export interface Product {
   id: string;
   title: string;
   handle: string;
-  vendor: string;
-  type: string;
-  tags: string;
+  vendor: string | null;
+  type: string | null;
+  tags: string | null;
   category?: string;
   published: boolean;
   option1Name: string;
