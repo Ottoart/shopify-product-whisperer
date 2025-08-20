@@ -352,18 +352,30 @@ export default function Products() {
         product.tags?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         product.category?.toLowerCase().includes(searchTerm.toLowerCase());
       
-      // Enhanced store matching with debugging
+      // Enhanced store matching with debugging and flexible matching
       let matchesStore = false;
       if (storeParam) {
-        // When viewing a specific store (?store=...), filter by store_name
-        matchesStore = product.store_name?.toLowerCase() === storeParam.toLowerCase();
+        // When viewing a specific store (?store=...), filter by store_name with flexible matching
+        const productStoreName = product.store_name?.toLowerCase() || '';
+        const productVendor = product.vendor?.toLowerCase() || '';
+        const storeParamLower = storeParam.toLowerCase();
+        
+        // Try multiple matching strategies
+        matchesStore = 
+          productStoreName === storeParamLower ||
+          productVendor === storeParamLower ||
+          productStoreName.includes(storeParamLower) ||
+          productVendor.includes(storeParamLower);
         
         // Debug specific product matches
-        if (product.store_name?.toLowerCase() === storeParam.toLowerCase()) {
+        if (matchesStore) {
           console.log('✅ Product matches store filter:', { 
             title: product.title, 
-            store_name: product.store_name, 
-            storeParam 
+            store_name: product.store_name,
+            vendor: product.vendor,
+            storeParam,
+            matchType: productStoreName === storeParamLower ? 'exact_store' : 
+                      productVendor === storeParamLower ? 'exact_vendor' : 'partial'
           });
         }
       } else {

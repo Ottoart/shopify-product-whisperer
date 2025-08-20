@@ -285,9 +285,9 @@ export const useShopifyProductSync = () => {
           pagesWithoutProducts = 0; // Reset counter when we find products
         }
         
-        // Safety check with max pages from advanced settings
-        if (page >= advancedSettings.max_pages) {
-          console.log(`Reached maximum pages limit (${advancedSettings.max_pages}), stopping sync`);
+        // Only use max pages as a safety net for very large stores, not a hard limit
+        if (page >= Math.max(advancedSettings.max_pages, 50)) {
+          console.log(`Reached safety limit (${Math.max(advancedSettings.max_pages, 50)} pages), stopping sync to prevent infinite loops`);
           break;
         }
         

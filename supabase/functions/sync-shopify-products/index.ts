@@ -160,7 +160,7 @@ serve(async (req) => {
           .upsert({
             user_id: user.id,
             marketplace: 'shopify',
-            sync_status: 'in_progress',
+            sync_status: 'syncing',
             last_sync_at: new Date().toISOString(),
             products_synced: 0,
             error_message: null,
@@ -446,7 +446,10 @@ serve(async (req) => {
       marketplaceUpdateData.total_products_found = currentSyncStatus.total_products_found;
     }
 
-    // Update marketplace sync status
+    // Update marketplace sync status with correct status values
+    const finalStatus = nextPageInfo ? 'syncing' : 'success';
+    marketplaceUpdateData.sync_status = finalStatus;
+    
     await supabase
       .from('marketplace_sync_status')
       .upsert(marketplaceUpdateData, {
