@@ -191,9 +191,11 @@ export function CarrierConfigurationManagement() {
       if (error) throw error;
 
       toast({
-        title: data.valid ? "✅ System Carrier Active" : "❌ System Carrier Issue",
-        description: data.message || "System carrier test completed",
-        variant: data.valid ? "default" : "destructive"
+        title: data.success ? "✅ System Carrier Active" : "❌ System Carrier Issue",
+        description: data.success 
+          ? `UPS connection successful! Account: ${data.accountNumber}` 
+          : `Connection failed: ${data.error || data.details || 'Unknown error'}`,
+        variant: data.success ? "default" : "destructive"
       });
     } catch (error) {
       toast({
