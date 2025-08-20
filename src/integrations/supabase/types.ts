@@ -4300,6 +4300,7 @@ export type Database = {
       }
       sync_settings: {
         Row: {
+          advanced_settings: Json | null
           auto_sync_enabled: boolean
           created_at: string
           id: string
@@ -4311,6 +4312,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          advanced_settings?: Json | null
           auto_sync_enabled?: boolean
           created_at?: string
           id?: string
@@ -4322,6 +4324,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          advanced_settings?: Json | null
           auto_sync_enabled?: boolean
           created_at?: string
           id?: string

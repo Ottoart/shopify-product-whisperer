@@ -57,7 +57,7 @@ export function SyncSettingsAdvanced() {
     try {
       const { data, error } = await supabase
         .from('sync_settings')
-        .select('*')
+        .select('advanced_settings')
         .eq('user_id', session?.user?.id)
         .eq('platform', 'shopify')
         .maybeSingle();
@@ -66,8 +66,8 @@ export function SyncSettingsAdvanced() {
         throw error;
       }
 
-      if (data?.advanced_settings) {
-        setSettings({ ...defaultSettings, ...data.advanced_settings });
+      if (data?.advanced_settings && typeof data.advanced_settings === 'object') {
+        setSettings({ ...defaultSettings, ...(data.advanced_settings as Partial<SyncSettings>) });
       }
     } catch (error: any) {
       toast({
@@ -90,7 +90,7 @@ export function SyncSettingsAdvanced() {
         .upsert({
           user_id: session.user.id,
           platform: 'shopify',
-          advanced_settings: settings
+          advanced_settings: settings as any // Cast to any to handle JSONB type
         }, {
           onConflict: 'user_id,platform'
         });

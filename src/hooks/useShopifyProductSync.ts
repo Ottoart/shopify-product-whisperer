@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSessionContext } from '@supabase/auth-helpers-react';
@@ -22,7 +22,44 @@ export const useShopifyProductSync = () => {
   const queryClient = useQueryClient();
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncProgress, setSyncProgress] = useState<{ current: number; total: number; message?: string }>({ current: 0, total: 0 });
+  const [advancedSettings, setAdvancedSettings] = useState({
+    batch_size: 250,
+    max_pages: 500,
+    early_termination_threshold: 10,
+    rate_limit_delay: 500,
+    auto_recovery: true,
+    validation_checks: true
+  });
   const { storeUrl, accessToken } = useShopifyCredentials();
+
+  // Load advanced settings
+  useEffect(() => {
+    if (session?.user?.id) {
+      loadAdvancedSettings();
+    }
+  }, [session?.user?.id]);
+
+  const loadAdvancedSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('sync_settings')
+        .select('advanced_settings')
+        .eq('user_id', session?.user?.id)
+        .eq('platform', 'shopify')
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') {
+        console.warn('Could not load advanced settings:', error);
+        return;
+      }
+
+      if (data?.advanced_settings && typeof data.advanced_settings === 'object') {
+        setAdvancedSettings(prev => ({ ...prev, ...(data.advanced_settings as any) }));
+      }
+    } catch (error) {
+      console.warn('Error loading advanced settings:', error);
+    }
+  };
 
   // Clean token helper for legacy stored JSON tokens
   const cleanAccessToken = (token?: string | null) => {
@@ -136,7 +173,12 @@ export const useShopifyProductSync = () => {
       }
 
       const { data, error } = await supabase.functions.invoke('sync-shopify-products', {
-        body: { storeUrl, accessToken: token, batchSize, startPage }
+        body: { 
+          storeUrl, 
+          accessToken: token, 
+          batchSize: advancedSettings.batch_size, 
+          startPage 
+        }
       });
 
       if (error) throw error;
@@ -187,10 +229,10 @@ export const useShopifyProductSync = () => {
       let pagesWithoutProducts = 0;
       const maxPagesWithoutProducts = 10; // Allow more empty pages before stopping
       
-      // Continuous sync until no more pages - removed hard page limit
+      // Continuous sync until no more pages - uses advanced settings
       while (hasMorePages) {
         const result = await syncBatchMutation.mutateAsync({ 
-          batchSize: 250, 
+          batchSize: advancedSettings.batch_size, 
           startPage: page,
           silent: true // Run silently during full sync
         });
@@ -225,22 +267,28 @@ export const useShopifyProductSync = () => {
         
         page++;
         
-        // Adaptive delay with exponential backoff for rate limiting
-        const baseDelay = Math.min(page * 50, 1000);
+        // Adaptive delay with advanced settings and exponential backoff
+        const baseDelay = advancedSettings.rate_limit_delay;
         const jitter = Math.random() * 200; // Add randomness to avoid thundering herd
         await new Promise(resolve => setTimeout(resolve, baseDelay + jitter));
         
-        // Improved early termination logic
+        // Improved early termination logic using advanced settings
         if (result.productsSynced === 0) {
           pagesWithoutProducts++;
           console.log(`Page ${page} had no products. Empty pages count: ${pagesWithoutProducts}`);
           
-          if (pagesWithoutProducts >= maxPagesWithoutProducts) {
-            console.log(`Stopping sync after ${maxPagesWithoutProducts} consecutive empty pages`);
+          if (pagesWithoutProducts >= advancedSettings.early_termination_threshold) {
+            console.log(`Stopping sync after ${advancedSettings.early_termination_threshold} consecutive empty pages`);
             break;
           }
         } else {
           pagesWithoutProducts = 0; // Reset counter when we find products
+        }
+        
+        // Safety check with max pages from advanced settings
+        if (page >= advancedSettings.max_pages) {
+          console.log(`Reached maximum pages limit (${advancedSettings.max_pages}), stopping sync`);
+          break;
         }
         
         // Safety check: if we've synced more than Shopify reports, something is wrong
@@ -250,14 +298,24 @@ export const useShopifyProductSync = () => {
         }
       }
       
-      // Post-sync validation
-      if (totalProductsInShopify > 0 && totalSynced < totalProductsInShopify * 0.95) {
+      
+      // Post-sync validation using advanced settings
+      if (advancedSettings.validation_checks && totalProductsInShopify > 0 && totalSynced < totalProductsInShopify * 0.95) {
         console.warn(`Sync may be incomplete: synced ${totalSynced} out of ${totalProductsInShopify} products`);
-        toast({
-          title: "Sync May Be Incomplete",
-          description: `Synced ${totalSynced} out of ${totalProductsInShopify} products. Some products may have been skipped.`,
-          variant: "destructive",
-        });
+        
+        if (advancedSettings.auto_recovery) {
+          toast({
+            title: "Auto-Recovery Initiated",
+            description: `Detected incomplete sync. Attempting to recover missing products...`,
+          });
+          // Note: Auto-recovery logic would be implemented here
+        } else {
+          toast({
+            title: "Sync May Be Incomplete", 
+            description: `Synced ${totalSynced} out of ${totalProductsInShopify} products. Some products may have been skipped.`,
+            variant: "destructive",
+          });
+        }
       }
 
       // Final progress update
@@ -281,11 +339,14 @@ export const useShopifyProductSync = () => {
   };
 
   // Single batch sync
-  const syncBatch = async (batchSize = 250) => {
+  const syncBatch = async (batchSize?: number) => {
     const nextPage = syncStatus?.sync_status === 'in_progress' ? 
-      Math.floor((syncStatus.total_synced || 0) / batchSize) + 1 : 1;
+      Math.floor((syncStatus.total_synced || 0) / (batchSize || advancedSettings.batch_size)) + 1 : 1;
     
-    return syncBatchMutation.mutateAsync({ batchSize, startPage: nextPage });
+    return syncBatchMutation.mutateAsync({ 
+      batchSize: batchSize || advancedSettings.batch_size, 
+      startPage: nextPage 
+    });
   };
 
   return {

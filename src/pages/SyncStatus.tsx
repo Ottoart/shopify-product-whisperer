@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useShopifyProductSync } from '@/hooks/useShopifyProductSync';
 import { useShopifyCredentials } from '@/hooks/useShopifyCredentials';
+import { SyncSettingsAdvanced } from '@/components/SyncSettingsAdvanced';
 
 const SyncStatus = () => {
   const {
@@ -125,6 +126,8 @@ const SyncStatus = () => {
                 <RefreshCw className="h-4 w-4" />
                 Sync Next Batch
               </Button>
+              
+              <SyncSettingsAdvanced />
             </div>
 
             {!isCompleted && localProductsCount === 0 && (
