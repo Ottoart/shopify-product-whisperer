@@ -200,7 +200,12 @@ export default function Products() {
         }, {} as Record<string, number>)
       });
       
+      // Set products and ensure loading is false BEFORE any filtering occurs
       setProducts(allProducts || []);
+      
+      // Force a small delay to ensure state updates propagate
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
     } catch (error) {
       console.error('❌ Error fetching products:', error);
       toast({
@@ -210,7 +215,7 @@ export default function Products() {
       });
     } finally {
       setLoading(false);
-      console.log('✅ fetchProducts completed');
+      console.log('✅ fetchProducts completed, loading set to false');
     }
   }, [session?.user?.id, toast]);
 
@@ -321,7 +326,7 @@ export default function Products() {
     fetchProducts();
   };
 
-  // Memoized filtering with proper dependencies and enhanced debugging
+  // Memoized filtering with bulletproof loading coordination and simplified store matching
   const filteredProducts = useMemo(() => {
     console.log('🎯 Computing filteredProducts with dependencies:', {
       productsLength: products.length,
@@ -330,21 +335,47 @@ export default function Products() {
       selectedStore,
       selectedStatus,
       loading,
+      initialLoad,
       hasProducts: products.length > 0
     });
 
-    // Don't filter if still loading or no products
-    if (loading || products.length === 0) {
-      console.log('⏳ Skipping filtering - still loading or no products');
+    // CRITICAL: Wait for complete loading cycle before filtering
+    if (loading || initialLoad || products.length === 0) {
+      console.log('⏳ Skipping filtering - loading state:', { loading, initialLoad, productsLength: products.length });
       return [];
     }
 
-    const filtered = products.filter(product => {
-      // Validate product has required fields for debugging
-      if (!product.store_name && !product.vendor) {
-        console.warn('⚠️ Product missing store_name and vendor:', { title: product.title, id: product.id });
-      }
+    // Simple, bulletproof store filtering - remove complex matching that might fail
+    let productsToFilter = products;
+    
+    if (storeParam) {
+      // Use exact case-insensitive matching only
+      const storeParamLower = storeParam.toLowerCase();
+      productsToFilter = products.filter(product => {
+        const productStoreName = (product.store_name || '').toLowerCase();
+        const matches = productStoreName === storeParamLower;
+        
+        if (matches) {
+          console.log('✅ Product matches store filter:', { 
+            title: product.title, 
+            store_name: product.store_name,
+            storeParam
+          });
+        }
+        
+        return matches;
+      });
+      
+      console.log('🏪 Store filtering complete:', {
+        storeParam,
+        originalCount: products.length,
+        filteredCount: productsToFilter.length,
+        sampleMatches: productsToFilter.slice(0, 3).map(p => p.store_name)
+      });
+    }
 
+    // Apply search and status filters
+    const finalFiltered = productsToFilter.filter(product => {
       const matchesSearch = searchTerm === '' || 
         product.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         product.vendor?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -352,54 +383,22 @@ export default function Products() {
         product.tags?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         product.category?.toLowerCase().includes(searchTerm.toLowerCase());
       
-      // Enhanced store matching with debugging and flexible matching
-      let matchesStore = false;
-      if (storeParam) {
-        // When viewing a specific store (?store=...), filter by store_name with flexible matching
-        const productStoreName = product.store_name?.toLowerCase() || '';
-        const productVendor = product.vendor?.toLowerCase() || '';
-        const storeParamLower = storeParam.toLowerCase();
-        
-        // Try multiple matching strategies
-        matchesStore = 
-          productStoreName === storeParamLower ||
-          productVendor === storeParamLower ||
-          productStoreName.includes(storeParamLower) ||
-          productVendor.includes(storeParamLower);
-        
-        // Debug specific product matches
-        if (matchesStore) {
-          console.log('✅ Product matches store filter:', { 
-            title: product.title, 
-            store_name: product.store_name,
-            vendor: product.vendor,
-            storeParam,
-            matchType: productStoreName === storeParamLower ? 'exact_store' : 
-                      productVendor === storeParamLower ? 'exact_vendor' : 'partial'
-          });
-        }
-      } else {
-        matchesStore = selectedStore === "all" || product.vendor === selectedStore;
-      }
-      
       const matchesStatus = selectedStatus === "all" || product.status === selectedStatus;
       
-      return matchesSearch && matchesStore && matchesStatus;
+      return matchesSearch && matchesStatus;
     });
 
-    console.log('🔍 Filtering Results:', {
+    console.log('🔍 Final Filtering Results:', {
       storeParam,
       totalProducts: products.length,
-      filteredCount: filtered.length,
-      matchingStoreNames: products
-        .filter(p => p.store_name?.toLowerCase() === storeParam?.toLowerCase())
-        .slice(0, 5)
-        .map(p => ({ title: p.title, store_name: p.store_name })),
-      allUniqueStoreNames: [...new Set(products.map(p => p.store_name).filter(Boolean))]
+      afterStoreFilter: productsToFilter.length,
+      finalFilteredCount: finalFiltered.length,
+      searchTerm,
+      selectedStatus
     });
 
-    return filtered;
-  }, [products, storeParam, searchTerm, selectedStore, selectedStatus, loading]);
+    return finalFiltered;
+  }, [products, storeParam, searchTerm, selectedStore, selectedStatus, loading, initialLoad]);
 
   // Log filtered products changes
   useEffect(() => {
@@ -458,7 +457,7 @@ export default function Products() {
             {products.length > 0 && (
               <span className="block mt-1 text-sm font-medium">
                 {storeParam 
-                  ? `Showing ${filteredProducts.length} products from ${currentStore?.store_name || storeParam}`
+                  ? `Showing ${filteredProducts.length} products from ${currentStore?.store_name || storeParam} (Total in DB: ${products.filter(p => (p.store_name || '').toLowerCase() === storeParam.toLowerCase()).length})`
                   : `Showing ${filteredProducts.length} of ${products.length} products`
                 }
                 {!storeParam && stores.map(store => {
