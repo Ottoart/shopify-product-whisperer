@@ -408,7 +408,7 @@ export function CarrierConfigurationManagement() {
                         <span className="font-medium">{carrier.label}</span>
                       </div>
                      <Badge variant="outline" className="text-xs">
-                        {carrierConfigs.find(c => c.carrier_name === carrier.label) ? 'Configured' : 'Not Configured'}
+                        {carrierConfigs.find(c => c.carrier_name === carrier.value) ? 'Configured' : 'Not Configured'}
                       </Badge>
                     </div>
                     <p className="text-xs text-muted-foreground mb-3">{carrier.description}</p>
