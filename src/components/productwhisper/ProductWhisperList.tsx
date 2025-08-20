@@ -148,7 +148,7 @@ export const ProductWhisperList = ({
             key={product.id}
             product={product}
             isSelected={selectedProducts.has(product.id)}
-            onSelect={(selected) => handleSelectProduct(product.id, selected)}
+            onSelectionChange={(selected) => handleSelectProduct(product.id, selected)}
             onProductUpdated={onProductsUpdated}
             onAIOptimized={onAIOptimized}
           />
