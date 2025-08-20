@@ -5,13 +5,11 @@ import { Truck, Package, RotateCcw, Settings, Zap, Webhook } from "lucide-react"
 import { OrderManagement } from "@/components/shipping/OrderManagement";
 import { EnhancedShippingConfiguration } from "@/components/shipping/EnhancedShippingConfiguration";
 import { ShippingRules } from "@/components/shipping/ShippingRules";
-import { ReturnsManagement } from "@/components/shipping/ReturnsManagement";
 import { BatchActionQueue } from "@/components/shipping/BatchActionQueue";
 
 import { ShopifyConnectionTest } from "@/components/shipping/ShopifyConnectionTest";
 import { WebhookTester } from "@/components/shipping/WebhookTester";
 import { CarrierCredentialValidator } from "@/components/shipping/CarrierCredentialValidator";
-import { ComprehensiveReturnsManagement } from "@/components/shipping/ComprehensiveReturnsManagement";
 import { AIShippingRecommendations } from "@/components/shipping/AIShippingRecommendations";
 import { useShopifyCredentials } from "@/hooks/useShopifyCredentials";
 
@@ -32,7 +30,7 @@ export default function Shipping() {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="flex w-full overflow-x-auto gap-1 p-1 md:grid md:grid-cols-4 lg:grid-cols-6 h-auto">
+        <TabsList className="flex w-full overflow-x-auto gap-1 p-1 md:grid md:grid-cols-4 lg:grid-cols-5 h-auto">
           <TabsTrigger value="orders" className="flex items-center gap-2 flex-shrink-0">
             <Package className="h-4 w-4" />
             <span className="hidden sm:inline">Orders</span>
@@ -44,10 +42,6 @@ export default function Shipping() {
           <TabsTrigger value="rules" className="flex items-center gap-2 flex-shrink-0">
             <Settings className="h-4 w-4" />
             <span className="hidden sm:inline">Rules</span>
-          </TabsTrigger>
-          <TabsTrigger value="returns" className="flex items-center gap-2 flex-shrink-0">
-            <RotateCcw className="h-4 w-4" />
-            <span className="hidden sm:inline">Returns</span>
           </TabsTrigger>
           <TabsTrigger value="batch" className="flex items-center gap-2 flex-shrink-0">
             <Package className="h-4 w-4" />
@@ -70,10 +64,6 @@ export default function Shipping() {
 
         <TabsContent value="rules">
           <ShippingRules />
-        </TabsContent>
-
-        <TabsContent value="returns">
-          <ComprehensiveReturnsManagement />
         </TabsContent>
 
         <TabsContent value="batch">

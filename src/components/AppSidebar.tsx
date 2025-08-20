@@ -115,7 +115,7 @@ const repricingItems = [
 const shippingItems = [
   { title: "Order Management", url: "/shipping", icon: Package, description: "Manage orders and shipping" },
   { title: "Tracking Center", url: "/tracking-center", icon: MapPin, description: "Track shipment status" },
-  { title: "Returns Portal", url: "/shipping/returns", icon: RotateCcw, description: "Handle returns and refunds" },
+  { title: "Returns Portal", url: "/returns-portal", icon: RotateCcw, description: "Handle returns and refunds" },
   { title: "Rate Calculator", url: "/shipping/rates", icon: Calculator, description: "Calculate shipping costs" },
 ];
 
