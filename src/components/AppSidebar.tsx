@@ -100,6 +100,7 @@ const fulfillmentItems = [
 
 const toolItems = [
   { title: "Products", url: "/products", icon: Package, description: "Manage your product catalog" },
+  { title: "ProductWhisper", url: "/product-whisper", icon: Zap, description: "AI-powered product management" },
   { title: "Product Activity", url: "/activity", icon: Activity, description: "Track product changes" },
   { title: "Bulk Editor", url: "/bulk-editor", icon: FileText, description: "Edit multiple products" },
 ];
