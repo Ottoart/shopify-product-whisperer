@@ -1,21 +1,28 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { ProductWhisperItem } from '@/types/productwhisper';
+import { ProductWhisperEditor } from './ProductWhisperEditor';
+import { useAIOptimizationWithLearning } from '@/hooks/useAIOptimizationWithLearning';
+import { useProductDrafts } from '@/hooks/useProductDrafts';
 import { 
-  Eye, 
-  EyeOff, 
+  MoreHorizontal, 
   Edit, 
-  Zap, 
-  Package, 
+  Sparkles, 
+  Eye, 
+  EyeOff,
+  ExternalLink, 
+  Calendar, 
+  FileText,
+  Package,
   DollarSign,
   Tag,
-  Calendar,
-  MoreHorizontal,
-  Sparkles,
+  Zap,
   BarChart3,
-  Copy,
-  ExternalLink
+  Copy
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -25,16 +32,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ProductWhisperItem } from '@/types/productwhisper';
 import { formatDistanceToNow } from 'date-fns';
-import { ProductWhisperEditor } from './ProductWhisperEditor';
-import { useAIOptimizationWithLearning } from '@/hooks/useAIOptimizationWithLearning';
+import { useToast } from '@/hooks/use-toast';
 import { AIConnectionIndicator } from '@/components/AIConnectionIndicator';
 
 interface ProductWhisperCardProps {
   product: ProductWhisperItem;
   isSelected: boolean;
-  onSelect: (selected: boolean) => void;
+  onSelectionChange: (selected: boolean) => void;
   onProductUpdated: () => void;
   onAIOptimized?: (productId: string, optimizedData: any) => void;
 }
@@ -42,7 +47,7 @@ interface ProductWhisperCardProps {
 export const ProductWhisperCard = ({ 
   product, 
   isSelected, 
-  onSelect,
+  onSelectionChange,
   onProductUpdated,
   onAIOptimized
 }: ProductWhisperCardProps) => {
@@ -50,6 +55,8 @@ export const ProductWhisperCard = ({
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   
   const { optimizeWithLearning, isOptimizing } = useAIOptimizationWithLearning();
+  const { drafts } = useProductDrafts(product.handle);
+  const { toast } = useToast();
 
   const handleImageError = () => {
     setImageError(true);
@@ -99,11 +106,9 @@ export const ProductWhisperCard = ({
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={isSelected}
-              onChange={(e) => onSelect(e.target.checked)}
-              className="rounded border-border"
+              onCheckedChange={onSelectionChange}
             />
             <div className="flex items-center gap-2">
               {product.published ? (

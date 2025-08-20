@@ -1,15 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useSessionContext } from '@supabase/auth-helpers-react';
 import { ProductWhisperItem } from '@/types/productwhisper';
 import { useEditTracking } from '@/hooks/useEditTracking';
+import { useProductDrafts } from '@/hooks/useProductDrafts';
+import { Save, Clock, FileText } from 'lucide-react';
+import { ProductWhisperDrafts } from './ProductWhisperDrafts';
 
 interface ProductWhisperEditorProps {
   product: ProductWhisperItem;
@@ -28,14 +32,66 @@ export const ProductWhisperEditor = ({
   const { session } = useSessionContext();
   const [isSaving, setIsSaving] = useState(false);
   const [editedProduct, setEditedProduct] = useState<ProductWhisperItem>(product);
+  const [lastAutoSave, setLastAutoSave] = useState<Date | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const { trackProductUpdate } = useEditTracking({ 
     onProductUpdate: () => onProductUpdated()
   });
 
+  const { saveDraft } = useProductDrafts(product.handle);
+
   useEffect(() => {
     setEditedProduct(product);
+    setHasUnsavedChanges(false);
   }, [product]);
+
+  // Auto-save functionality
+  const autoSave = useCallback(async () => {
+    if (!hasUnsavedChanges || !session?.user?.id) return;
+
+    try {
+      const draftData = {
+        title: editedProduct.title,
+        description: editedProduct.body_html || '',
+        tags: editedProduct.tags || '',
+        type: editedProduct.type || '',
+        category: editedProduct.category || ''
+      };
+
+      // Create auto-save draft
+      saveDraft(`Auto-save ${new Date().toLocaleTimeString()}`, draftData);
+      setLastAutoSave(new Date());
+      setHasUnsavedChanges(false);
+    } catch (error) {
+      console.error('Auto-save failed:', error);
+    }
+  }, [editedProduct, hasUnsavedChanges, session, saveDraft]);
+
+  // Auto-save every 30 seconds
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    const interval = setInterval(autoSave, 30000);
+    return () => clearInterval(interval);
+  }, [isOpen, autoSave]);
+
+  // Track changes
+  useEffect(() => {
+    const hasChanges = JSON.stringify(editedProduct) !== JSON.stringify(product);
+    setHasUnsavedChanges(hasChanges);
+  }, [editedProduct, product]);
+
+  const handleApplyDraft = useCallback((draftData: any) => {
+    setEditedProduct(prev => ({
+      ...prev,
+      title: draftData.title,
+      body_html: draftData.description,
+      tags: draftData.tags,
+      type: draftData.type,
+      category: draftData.category
+    }));
+  }, []);
 
   const handleSave = async () => {
     if (!session?.user?.id) return;
@@ -117,7 +173,31 @@ export const ProductWhisperEditor = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Edit Product</DialogTitle>
+          <DialogTitle className="flex items-center justify-between">
+            <span>Edit Product</span>
+            <div className="flex items-center gap-2">
+              {hasUnsavedChanges && (
+                <Badge variant="secondary" className="text-xs">
+                  <Clock className="h-3 w-3 mr-1" />
+                  Unsaved changes
+                </Badge>
+              )}
+              {lastAutoSave && (
+                <Badge variant="outline" className="text-xs">
+                  Auto-saved {lastAutoSave.toLocaleTimeString()}
+                </Badge>
+              )}
+              <ProductWhisperDrafts 
+                productHandle={product.handle}
+                onApplyDraft={handleApplyDraft}
+              >
+                <Button variant="outline" size="sm">
+                  <FileText className="h-4 w-4 mr-1" />
+                  Drafts
+                </Button>
+              </ProductWhisperDrafts>
+            </div>
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
