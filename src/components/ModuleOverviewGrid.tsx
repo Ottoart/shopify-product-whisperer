@@ -233,7 +233,7 @@ export function ModuleOverviewGrid({ targetUserId, subscription }: ModuleOvervie
         quickActions={moduleConfigs[3].enabled ? [
           { label: "Manage Products", path: "/products" },
           { label: "Bulk Editor", path: "/bulk-editor" },
-          { label: "Marketplace Sync", path: "/marketplace-gateway" }
+          { label: "Marketplace Sync", path: "/settings" }
         ] : []}
         recentActivity={overview.productManagement.recentActivity}
         healthScore={overview.productManagement.syncHealthScore}

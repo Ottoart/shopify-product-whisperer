@@ -80,7 +80,7 @@ const useAutoRetract = () => {
 
 const mainItems = [
   { title: "Module Hub", url: "/", icon: Home, description: "Central module selection" },
-  { title: "Marketplace Gateway", url: "/marketplace-gateway", icon: Globe, description: "Central connection hub" },
+  
   { title: "Shipping Module", url: "/shipping-landing", icon: Truck, description: "Multi-carrier shipping solution" },
   { title: "Repricing Module", url: "/repricing-landing", icon: DollarSign, description: "Smart repricing automation" },
   { title: "Fulfillment Module", url: "/fulfillment-landing", icon: Warehouse, description: "3PL fulfillment services" },

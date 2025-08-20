@@ -13,7 +13,7 @@ import MainLayout from "@/components/MainLayout";
 import Index from "./pages/Index";
 import MainDashboard from "./pages/MainDashboard";
 import PrepFoxDashboard from "./pages/PrepFoxDashboard";
-import MarketplaceGateway from "./pages/MarketplaceGateway";
+
 import Shipping from "./pages/Shipping";
 import ShippingOverview from "./pages/ShippingOverview";
 import Carriers from "./pages/Carriers";
@@ -151,7 +151,7 @@ const AuthenticatedApp = () => {
             <Routes>
               <Route path="/app" element={<Index />} />
               <Route path="/dashboard" element={<PrepFoxDashboard />} />
-              <Route path="/marketplace-gateway" element={<MarketplaceGateway />} />
+              
               <Route path="/send-inventory" element={<SendInventory />} />
               <Route path="/receiving" element={<ReceivingDashboard />} />
               <Route path="/inventory-management" element={<InventoryDashboard />} />
