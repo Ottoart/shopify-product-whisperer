@@ -340,8 +340,8 @@ export default function Products() {
     });
 
     // CRITICAL: Wait for complete loading cycle before filtering
-    if (loading || initialLoad || products.length === 0) {
-      console.log('⏳ Skipping filtering - loading state:', { loading, initialLoad, productsLength: products.length });
+    if (loading || products.length === 0) {
+      console.log('⏳ Skipping filtering - loading state:', { loading, productsLength: products.length });
       return [];
     }
 
@@ -409,7 +409,7 @@ export default function Products() {
   }, [filteredProducts]);
 
   // Show consistent loading for both users
-  if (initialLoad) {
+  if (loading) {
     return (
       <div className="p-6">
         <div className="space-y-6">
