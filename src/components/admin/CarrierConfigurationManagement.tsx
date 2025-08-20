@@ -59,16 +59,20 @@ export function CarrierConfigurationManagement() {
 
   const loadCarrierConfigurations = async () => {
     try {
-      let { data: carrier_configurations, error } = await supabase
-      .from('carrier_configurations')
-      .select('*');      
+      const { data, error } = await supabase
+        .from('carrier_configurations')
+        .select('*')
+        .eq('settings->>system_carrier', 'true');
+
+        
       if (error) {
         console.error('Error loading carrier configurations:', error);
         return;
       }
+
       // Update form states with saved configurations
-      if (carrier_configurations) {
-        carrier_configurations.forEach((config: any) => {
+      if (data) {
+        data.forEach((config: any) => {
           if (config.carrier_name === 'canada_post' && config.api_credentials) {
             setCanadaPostConfig({
               api_key: config.api_credentials.api_key || '',
@@ -81,7 +85,7 @@ export function CarrierConfigurationManagement() {
           }
           // Add UPS config loading when implemented
         });
-        setCarrierConfigs(carrier_configurations);
+        setCarrierConfigs(data);
       }
     } catch (error) {
       console.error('Error in loadCarrierConfigurations:', error);
@@ -173,45 +177,22 @@ export function CarrierConfigurationManagement() {
     setTestingCarrier(carrierName);
     
     try {
-      console.log('🔍 Testing system carrier:', carrierName);
       const functionName = carrierName === 'canada_post' ? 'test-canada-post-auth' : 'test-ups-auth';
-      console.log('🔍 Function name:', functionName);
-      
-      // Get current session for auth header
-      const { data: { session } } = await supabase.auth.getSession();
-      console.log('🔍 Session check:', { hasSession: !!session, hasAccessToken: !!session?.access_token });
-      
-      if (!session) {
-        throw new Error('No authentication session found');
-      }
-
-      console.log('🔍 Invoking function with auth header...');
       const { data, error } = await supabase.functions.invoke(functionName, {
-        body: {},
-        headers: {
-          Authorization: `Bearer ${session.access_token}`
-        }
+        body: {}
       });
 
-      console.log('🔍 Function response:', { data, error, hasData: !!data });
-
-      if (error) {
-        console.error('🔍 Function error:', error);
-        throw error;
-      }
+      if (error) throw error;
 
       toast({
-        title: data.success ? "✅ System Carrier Active" : "❌ System Carrier Issue",
-        description: data.success 
-          ? `UPS connection successful! Account: ${data.accountNumber}` 
-          : `Connection failed: ${data.error || data.details || 'Unknown error'}`,
-        variant: data.success ? "default" : "destructive"
+        title: data.valid ? "✅ System Carrier Active" : "❌ System Carrier Issue",
+        description: data.message || "System carrier test completed",
+        variant: data.valid ? "default" : "destructive"
       });
     } catch (error) {
-      console.error('🔍 Catch block error:', error);
       toast({
         title: "❌ Test Failed",
-        description: error instanceof Error ? error.message : "Failed to test system carrier",
+        description: "Failed to test system carrier",
         variant: "destructive"
       });
     } finally {
