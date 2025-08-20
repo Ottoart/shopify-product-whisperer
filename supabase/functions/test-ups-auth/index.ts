@@ -46,9 +46,7 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
-    }
-
-    
+    }   
 
     // Import and use the UPS auth helper to ensure we have a valid token
     const { ensureValidUPSToken } = await import('../_shared/ups-auth.ts');
