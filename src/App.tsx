@@ -33,6 +33,7 @@ import NotFound from "./pages/NotFound";
 import Logs from "./pages/Logs";
 
 import { CustomerTrackingPage as CustomerTracking } from "./pages/CustomerTracking";
+import TrackingCenter from "./pages/TrackingCenter";
 import SendInventory from "./pages/SendInventory";
 import ReceivingDashboard from "./pages/ReceivingDashboard";
 import InventoryDashboard from "./pages/InventoryDashboard";
@@ -159,6 +160,7 @@ const AuthenticatedApp = () => {
               <Route path="/packing" element={<PackingDashboard />} />
               <Route path="/shipping-overview" element={<ShippingOverview />} />
               <Route path="/shipping" element={<Shipping />} />
+              <Route path="/tracking-center" element={<TrackingCenter />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/activity" element={<Activity />} />
               <Route path="/bulk-editor" element={<BulkEditor />} />
