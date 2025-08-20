@@ -11,33 +11,45 @@ import {
   DollarSign,
   Tag,
   Calendar,
-  MoreHorizontal
+  MoreHorizontal,
+  Sparkles,
+  BarChart3,
+  Copy,
+  ExternalLink
 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ProductWhisperItem } from '@/types/productwhisper';
 import { formatDistanceToNow } from 'date-fns';
 import { ProductWhisperEditor } from './ProductWhisperEditor';
+import { useAIOptimizationWithLearning } from '@/hooks/useAIOptimizationWithLearning';
+import { AIConnectionIndicator } from '@/components/AIConnectionIndicator';
 
 interface ProductWhisperCardProps {
   product: ProductWhisperItem;
   isSelected: boolean;
   onSelect: (selected: boolean) => void;
   onProductUpdated: () => void;
+  onAIOptimized?: (productId: string, optimizedData: any) => void;
 }
 
 export const ProductWhisperCard = ({ 
   product, 
   isSelected, 
   onSelect,
-  onProductUpdated 
+  onProductUpdated,
+  onAIOptimized
 }: ProductWhisperCardProps) => {
   const [imageError, setImageError] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  
+  const { optimizeWithLearning, isOptimizing } = useAIOptimizationWithLearning();
 
   const handleImageError = () => {
     setImageError(true);
@@ -54,6 +66,32 @@ export const ProductWhisperCard = ({
     // Strip HTML tags and truncate
     const text = html.replace(/<[^>]*>/g, '');
     return text.length > 120 ? text.substring(0, 120) + '...' : text;
+  };
+
+  const handleAIOptimize = async () => {
+    try {
+      const optimizedData = await optimizeWithLearning({
+        productHandle: product.handle,
+        productData: {
+          title: product.title,
+          type: product.type,
+          description: product.body_html,
+          tags: product.tags,
+          vendor: product.vendor,
+          variant_price: product.variant_price,
+          variant_compare_at_price: product.variant_compare_at_price,
+          variant_sku: product.variant_sku,
+          variant_barcode: product.variant_barcode,
+          variant_grams: product.variant_grams
+        }
+      });
+      
+      if (onAIOptimized) {
+        onAIOptimized(product.id, optimizedData);
+      }
+    } catch (error) {
+      console.error('AI optimization failed:', error);
+    }
   };
 
   return (
@@ -76,6 +114,7 @@ export const ProductWhisperCard = ({
               <Badge variant={product.published ? "default" : "secondary"}>
                 {product.published ? "Published" : "Draft"}
               </Badge>
+              <AIConnectionIndicator isOptimizing={isOptimizing} />
             </div>
           </div>
           
@@ -86,17 +125,27 @@ export const ProductWhisperCard = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
               <DropdownMenuItem onClick={() => setIsEditorOpen(true)}>
                 <Edit className="h-4 w-4 mr-2" />
                 Edit Product
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleAIOptimize} disabled={isOptimizing}>
+                <Sparkles className="h-4 w-4 mr-2" />
+                {isOptimizing ? 'Optimizing...' : 'AI Optimize'}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem>
-                <Zap className="h-4 w-4 mr-2" />
-                AI Optimize
+                <BarChart3 className="h-4 w-4 mr-2" />
+                View Analytics
               </DropdownMenuItem>
               <DropdownMenuItem>
-                <Package className="h-4 w-4 mr-2" />
+                <Copy className="h-4 w-4 mr-2" />
                 Duplicate
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <ExternalLink className="h-4 w-4 mr-2" />
+                View Product
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -196,9 +245,20 @@ export const ProductWhisperCard = ({
           <Button 
             size="sm" 
             className="flex-1 text-xs bg-gradient-primary hover:scale-105 transition-transform"
+            onClick={handleAIOptimize}
+            disabled={isOptimizing}
           >
-            <Zap className="h-3 w-3 mr-1" />
-            AI Optimize
+            {isOptimizing ? (
+              <>
+                <Zap className="h-3 w-3 mr-1 animate-spin" />
+                Optimizing...
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-3 w-3 mr-1" />
+                AI Optimize
+              </>
+            )}
           </Button>
         </div>
 

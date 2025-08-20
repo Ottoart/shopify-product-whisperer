@@ -16,6 +16,8 @@ import {
 import { ProductWhisperList } from '@/components/productwhisper/ProductWhisperList';
 import { ProductWhisperHeader } from '@/components/productwhisper/ProductWhisperHeader';
 import { useProductWhisper } from '@/hooks/useProductWhisper';
+import { ProductWhisperComparison } from '@/components/productwhisper/ai/ProductWhisperComparison';
+import { AIPatternDashboard } from '@/components/productwhisper/ai/AIPatternDashboard';
 
 export default function ProductWhisper() {
   console.log('🚀 ProductWhisper component loaded');
@@ -39,6 +41,34 @@ export default function ProductWhisper() {
   });
 
   const [showFilters, setShowFilters] = useState(false);
+  const [comparisonData, setComparisonData] = useState<{
+    isOpen: boolean;
+    originalProduct?: any;
+    optimizedData?: any;
+  }>({ isOpen: false });
+  const [isPatternDashboardOpen, setIsPatternDashboardOpen] = useState(false);
+
+  const handleAIOptimized = (productId: string, optimizedData: any) => {
+    const originalProduct = products.find(p => p.id === productId);
+    if (originalProduct) {
+      setComparisonData({
+        isOpen: true,
+        originalProduct,
+        optimizedData
+      });
+    }
+  };
+
+  const handleApplyOptimization = async (changes: any) => {
+    // In a real app, this would update the product in the database
+    console.log('Applying optimization changes:', changes);
+    
+    // Close comparison dialog
+    setComparisonData({ isOpen: false });
+    
+    // Refresh products to show updates
+    refetch();
+  };
 
   if (isLoading) {
     return (
@@ -77,7 +107,10 @@ export default function ProductWhisper() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <ProductWhisperHeader stats={stats} />
+        <ProductWhisperHeader 
+          stats={stats} 
+          onOpenPatternDashboard={() => setIsPatternDashboardOpen(true)}
+        />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -188,6 +221,24 @@ export default function ProductWhisper() {
         onFiltersChange={updateFilters}
         onClearFilters={clearFilters}
         onProductsUpdated={refetch}
+        onAIOptimized={handleAIOptimized}
+      />
+
+      {/* AI Comparison Dialog */}
+      {comparisonData.isOpen && comparisonData.originalProduct && comparisonData.optimizedData && (
+        <ProductWhisperComparison
+          isOpen={comparisonData.isOpen}
+          onClose={() => setComparisonData({ isOpen: false })}
+          originalProduct={comparisonData.originalProduct}
+          optimizedData={comparisonData.optimizedData}
+          onApplyChanges={handleApplyOptimization}
+        />
+      )}
+
+      {/* AI Pattern Dashboard */}
+      <AIPatternDashboard
+        isOpen={isPatternDashboardOpen}
+        onClose={() => setIsPatternDashboardOpen(false)}
       />
     </div>
   );

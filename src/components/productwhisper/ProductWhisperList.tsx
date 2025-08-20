@@ -20,6 +20,7 @@ interface ProductWhisperListProps {
   onFiltersChange: (filters: Partial<Filters>) => void;
   onClearFilters: () => void;
   onProductsUpdated: () => void;
+  onAIOptimized?: (productId: string, optimizedData: any) => void;
 }
 
 const PRODUCTS_PER_PAGE = 50;
@@ -31,7 +32,8 @@ export const ProductWhisperList = ({
   showFilters,
   onFiltersChange,
   onClearFilters,
-  onProductsUpdated
+  onProductsUpdated,
+  onAIOptimized
 }: ProductWhisperListProps) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
@@ -148,6 +150,7 @@ export const ProductWhisperList = ({
             isSelected={selectedProducts.has(product.id)}
             onSelect={(selected) => handleSelectProduct(product.id, selected)}
             onProductUpdated={onProductsUpdated}
+            onAIOptimized={onAIOptimized}
           />
         ))}
       </div>
