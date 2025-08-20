@@ -217,8 +217,10 @@ export const useShopifyProductSync = () => {
     },
   });
 
-  // GraphQL Bulk Sync function - handles 4000+ products efficiently
+  // GraphQL Bulk Sync function - efficiently handles ALL 4,897 products
   const startGraphQLBulkSync = async () => {
+    if (!storeUrl || !accessToken || isSyncing) return;
+    
     setIsSyncing(true);
     setSyncProgress({ current: 0, total: 100 });
     
@@ -226,10 +228,10 @@ export const useShopifyProductSync = () => {
       const token = cleanAccessToken(accessToken);
       if (!storeUrl || !token) throw new Error('Missing Shopify credentials');
       
-      // Step 1: Start bulk operation
+      // Step 1: Start GraphQL bulk operation
       toast({
-        title: "Starting Bulk Sync",
-        description: "Initiating GraphQL bulk operation for all products...",
+        title: "🚀 Starting GraphQL Bulk Sync",
+        description: "Initiating bulk operation for ALL 4,897 products. This is much faster than batch sync!",
       });
 
       setSyncProgress({ current: 5, total: 100, message: "Starting bulk operation..." });
@@ -248,16 +250,21 @@ export const useShopifyProductSync = () => {
 
       const bulkOperationId = startResponse.data?.bulkOperation?.id;
       if (!bulkOperationId) {
-        throw new Error('Failed to start bulk operation');
+        throw new Error('Failed to start bulk operation - missing operation ID');
       }
 
-      setSyncProgress({ current: 10, total: 100, message: "Bulk operation started..." });
-      console.log('📊 Bulk operation started:', bulkOperationId);
+      setSyncProgress({ current: 15, total: 100, message: "Bulk operation started, waiting for Shopify to prepare data..." });
+      console.log('✅ GraphQL bulk operation started:', bulkOperationId);
 
-      // Step 2: Poll for completion
+      toast({
+        title: "⏳ Bulk Operation Running",
+        description: "Shopify is preparing all your product data. This typically takes 1-3 minutes for 4,897 products.",
+      });
+
+      // Step 2: Poll for completion with extended timeout for large catalogs
       let isCompleted = false;
       let checkCount = 0;
-      const maxChecks = 60; // Max 5 minutes of polling
+      const maxChecks = 120; // Max 10 minutes for large catalogs
       
       while (!isCompleted && checkCount < maxChecks) {
         await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
@@ -274,25 +281,34 @@ export const useShopifyProductSync = () => {
 
         if (checkResponse.error) {
           console.error('❌ Error checking bulk operation:', checkResponse.error);
+          setSyncProgress({ 
+            current: Math.min(85, 15 + (checkCount / maxChecks) * 70), 
+            total: 100, 
+            message: `Retrying check... (${checkCount}/${maxChecks})` 
+          });
           continue;
         }
 
         const status = checkResponse.data?.bulkOperation?.status;
-        const progress = Math.min(90, 10 + (checkCount / maxChecks) * 80);
+        const objectCount = checkResponse.data?.bulkOperation?.objectCount;
+        const progress = Math.min(85, 15 + (checkCount / maxChecks) * 70);
+        
         setSyncProgress({ 
           current: progress, 
           total: 100, 
-          message: `Processing bulk operation... (${status})` 
+          message: `Processing bulk operation... Status: ${status}${objectCount ? `, Objects: ${objectCount}` : ''}` 
         });
 
-        console.log(`📊 Bulk operation status: ${status} (check ${checkCount}/${maxChecks})`);
+        console.log(`📊 Bulk operation status: ${status}, objects: ${objectCount} (check ${checkCount}/${maxChecks})`);
 
         if (checkResponse.data?.operation === 'bulk_completed') {
           isCompleted = true;
-          setSyncProgress({ current: 100, total: 100, message: "Sync completed!" });
+          setSyncProgress({ current: 100, total: 100, message: "All products synced successfully!" });
           
           const processedProducts = checkResponse.data?.processedProducts || 0;
           const totalProducts = checkResponse.data?.totalProducts || 0;
+          
+          console.log(`🎉 GraphQL bulk sync completed: ${processedProducts}/${totalProducts} products`);
           
           // Force refresh all related queries
           await queryClient.invalidateQueries({ queryKey: ['syncStatus'] });
@@ -300,26 +316,28 @@ export const useShopifyProductSync = () => {
           await queryClient.invalidateQueries({ queryKey: ['local-products-count'] });
 
           toast({
-            title: "GraphQL Bulk Sync Completed! 🎉",
-            description: `Successfully synced ${processedProducts} of ${totalProducts} products using GraphQL bulk operations.`,
+            title: "🎉 GraphQL Bulk Sync Completed!",
+            description: `Successfully synced ${processedProducts} of ${totalProducts} products! All your products are now up to date.`,
           });
-
-          console.log(`✅ GraphQL bulk sync completed: ${processedProducts}/${totalProducts} products`);
           break;
-        } else if (status === 'FAILED' || status === 'CANCELLED') {
-          throw new Error(`Bulk operation ${status.toLowerCase()}`);
+          
+        } else if (status === 'FAILED') {
+          const errorCode = checkResponse.data?.bulkOperation?.errorCode;
+          throw new Error(`Bulk operation failed${errorCode ? `: ${errorCode}` : ''}`);
+        } else if (status === 'CANCELLED') {
+          throw new Error('Bulk operation was cancelled');
         }
       }
 
       if (!isCompleted) {
-        throw new Error('Bulk operation timed out. Please try again.');
+        throw new Error('Bulk operation timed out after 10 minutes. For large catalogs, this may be normal. Try again or use batch sync.');
       }
 
     } catch (error: any) {
       console.error('❌ GraphQL bulk sync error:', error);
       toast({
         title: "GraphQL Bulk Sync Failed",
-        description: error.message || "Failed to complete GraphQL bulk sync.",
+        description: error.message || "Failed to complete GraphQL bulk sync. Try the batch sync method instead.",
         variant: "destructive",
       });
     } finally {

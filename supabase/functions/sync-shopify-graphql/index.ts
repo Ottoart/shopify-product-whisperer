@@ -114,8 +114,8 @@ serve(async (req) => {
         mutation {
           bulkOperationRunQuery(
             query: """
-              query {
-                products(first: 250, sortKey: UPDATED_AT, reverse: true) {
+                query {
+                  products(sortKey: UPDATED_AT, reverse: true) {
                   edges {
                     node {
                       id

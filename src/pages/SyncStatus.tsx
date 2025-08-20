@@ -108,14 +108,15 @@ const SyncStatus = () => {
               <Button 
                 onClick={startGraphQLBulkSync}
                 disabled={isSyncing}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+                size="lg"
               >
                 {isSyncing ? (
                   <RefreshCw className="h-4 w-4 animate-spin" />
                 ) : (
                   <Database className="h-4 w-4" />
                 )}
-                {isSyncing ? 'Syncing...' : 'GraphQL Bulk Sync (4000+ Products)'}
+                {isSyncing ? 'Syncing All Products...' : '🚀 GraphQL Bulk Sync (ALL 4,897)'}
               </Button>
               
               <Button 
@@ -125,7 +126,7 @@ const SyncStatus = () => {
                 className="flex items-center gap-2"
               >
                 <Database className="h-4 w-4" />
-                Legacy REST Sync
+                Legacy REST Sync (Slow)
               </Button>
               
               <Button 
@@ -135,7 +136,7 @@ const SyncStatus = () => {
                 className="flex items-center gap-2"
               >
                 <RefreshCw className="h-4 w-4" />
-                Sync Next Batch
+                Sync Single Batch (250)
               </Button>
               
               <SyncSettingsAdvanced />
