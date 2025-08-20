@@ -394,7 +394,7 @@ serve(async (req) => {
         last_sync_at: new Date().toISOString(),
         last_page_info: nextPageInfo,
         total_synced: totalSynced || 0, // Use actual count
-        sync_status: nextPageInfo ? 'in_progress' : 'completed'
+        sync_status: nextPageInfo ? 'in_progress' : 'pending'
       }, {
         onConflict: 'user_id'
       });
@@ -455,6 +455,21 @@ serve(async (req) => {
       .upsert(marketplaceUpdateData, {
         onConflict: 'user_id,marketplace'
       });
+
+    // Also update shopify_sync_status to completed when sync is done
+    if (!nextPageInfo) {
+      await supabase
+        .from('shopify_sync_status')
+        .upsert({
+          user_id: user.id,
+          last_sync_at: new Date().toISOString(),
+          last_page_info: null,
+          total_synced: totalSynced || 0,
+          sync_status: 'pending'
+        }, {
+          onConflict: 'user_id'
+        });
+    }
 
     console.log(`Batch ${startPage} completed. Total synced: ${totalSynced}`);
 
