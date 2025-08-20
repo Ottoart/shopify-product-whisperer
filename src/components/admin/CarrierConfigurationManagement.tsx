@@ -66,9 +66,7 @@ export function CarrierConfigurationManagement() {
         console.error('Error loading carrier configurations:', error);
         return;
       }
-
       // Update form states with saved configurations
-      console.log("credentialssssssssss-------",data)
       if (data) {
         data.forEach((config: any) => {
           if (config.carrier_name === 'canada_post' && config.api_credentials) {
