@@ -2,6 +2,184 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3';
 
+// Enhanced error handling and recovery utilities
+interface ErrorContext {
+  correlationId: string;
+  operation: string;
+  component: string;
+  metadata?: Record<string, any>;
+  userId?: string;
+  timestamp: string;
+}
+
+interface RetryConfig {
+  maxAttempts: number;
+  baseDelay: number;
+  maxDelay: number;
+  backoffMultiplier: number;
+  retryableErrors?: string[];
+}
+
+class EdgeFunctionError extends Error {
+  public readonly correlationId: string;
+  public readonly context: ErrorContext;
+  public readonly originalError?: Error;
+  public readonly isRetryable: boolean;
+
+  constructor(
+    message: string,
+    context: Partial<ErrorContext>,
+    originalError?: Error,
+    isRetryable: boolean = false
+  ) {
+    super(message);
+    this.name = 'EdgeFunctionError';
+    this.correlationId = context.correlationId || crypto.randomUUID();
+    this.context = {
+      correlationId: this.correlationId,
+      operation: context.operation || 'unknown',
+      component: context.component || 'edge-function',
+      metadata: context.metadata || {},
+      userId: context.userId,
+      timestamp: new Date().toISOString(),
+    };
+    this.originalError = originalError;
+    this.isRetryable = isRetryable;
+  }
+}
+
+async function withRetry<T>(
+  operation: () => Promise<T>,
+  config: RetryConfig,
+  context: ErrorContext
+): Promise<T> {
+  let lastError: Error;
+  let attempt = 0;
+
+  while (attempt < config.maxAttempts) {
+    try {
+      const result = await operation();
+      
+      if (attempt > 0) {
+        console.log(`Operation succeeded after ${attempt} retries`, {
+          correlationId: context.correlationId,
+          operation: context.operation,
+          attempts: attempt + 1
+        });
+      }
+      
+      return result;
+    } catch (error) {
+      lastError = error as Error;
+      attempt++;
+
+      const isRetryable = isRetryableError(error as Error, config.retryableErrors);
+      
+      if (attempt >= config.maxAttempts || !isRetryable) {
+        throw new EdgeFunctionError(
+          `Operation failed after ${attempt} attempts: ${lastError.message}`,
+          context,
+          lastError,
+          false
+        );
+      }
+
+      const delay = Math.min(
+        config.baseDelay * Math.pow(config.backoffMultiplier, attempt - 1),
+        config.maxDelay
+      );
+
+      console.log(`Attempt ${attempt} failed, retrying in ${delay}ms`, {
+        correlationId: context.correlationId,
+        operation: context.operation,
+        error: lastError.message,
+        nextDelay: delay
+      });
+
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+
+  throw lastError!;
+}
+
+function isRetryableError(error: Error, retryableErrors?: string[]): boolean {
+  const defaultRetryableErrors = [
+    'fetch failed',
+    'network error',
+    'timeout',
+    'connection refused',
+    'rate limit',
+    'service unavailable',
+    'internal server error'
+  ];
+
+  const errorsToCheck = retryableErrors || defaultRetryableErrors;
+  const errorMessage = error.message.toLowerCase();
+  
+  return errorsToCheck.some(retryableError => 
+    errorMessage.includes(retryableError.toLowerCase())
+  );
+}
+
+async function executeWithTransaction<T>(
+  supabase: any,
+  operations: Array<() => Promise<any>>,
+  context: ErrorContext
+): Promise<T[]> {
+  const results: T[] = [];
+  const rollbackOperations: Array<() => Promise<void>> = [];
+
+  console.log(`Starting transaction with ${operations.length} operations`, {
+    correlationId: context.correlationId,
+    operationCount: operations.length
+  });
+
+  try {
+    for (let i = 0; i < operations.length; i++) {
+      const operation = operations[i];
+      console.log(`Executing operation ${i + 1}/${operations.length}`, {
+        correlationId: context.correlationId
+      });
+
+      const result = await operation();
+      results.push(result);
+    }
+
+    console.log('Transaction completed successfully', {
+      correlationId: context.correlationId,
+      operationsExecuted: operations.length
+    });
+
+    return results;
+
+  } catch (error) {
+    console.error('Transaction failed, initiating rollback', {
+      correlationId: context.correlationId,
+      error: error instanceof Error ? error.message : String(error)
+    });
+
+    // Execute rollback operations in reverse order
+    for (const rollbackOp of rollbackOperations.reverse()) {
+      try {
+        await rollbackOp();
+      } catch (rollbackError) {
+        console.error('Rollback operation failed', {
+          correlationId: context.correlationId,
+          rollbackError: rollbackError instanceof Error ? rollbackError.message : String(rollbackError)
+        });
+      }
+    }
+
+    throw new EdgeFunctionError(
+      `Transaction failed: ${error instanceof Error ? error.message : String(error)}`,
+      context,
+      error instanceof Error ? error : new Error(String(error)),
+      false
+    );
+  }
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
