@@ -38,13 +38,14 @@ export async function validateAdminAuth(authHeader: string) {
       
       // Properly decode the JWT payload dynamically
       const payload = JSON.parse(atob(payloadB64));
+    const authHeader = req.headers.get('Authorization');
 
     const supabase1 = createClient(supabaseUrl, supabaseAnonKey, {
       global: {
         headers: { Authorization: authHeader }
       }
     });
-      
+      const { data: { adminuser }, error: authError } = await supabase1.auth.getUser();
       console.log('🔓 Decoded admin JWT payload:', { 
         sub: payload.sub, 
         email: payload.email,
@@ -52,7 +53,7 @@ export async function validateAdminAuth(authHeader: string) {
         aud: payload.aud,
         exp: payload.exp,
         user_metadata: !!payload.user_metadata,
-        supabase1:supabase1
+        supabase1:adminuser
       });
       
       // Check if token is expired
