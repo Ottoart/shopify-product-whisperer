@@ -12,21 +12,20 @@ export async function validateAdminAuth(authHeader: string) {
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-  // Get user from Supabase auth instead of manual JWT decoding
-  console.log('🔍 Authenticating user with Supabase auth');
+  // Extract JWT token from Authorization header
+  console.log('🔍 Validating JWT token with Supabase auth');
   
-  // Create Supabase client with the auth header
-  const supabaseWithAuth = createClient(supabaseUrl, supabaseAnonKey, {
-    global: {
-      headers: { Authorization: authHeader }
-    }
-  });
+  const token = authHeader.replace('Bearer ', '');
+  if (!token) {
+    console.error('❌ No token found in authorization header');
+    return { error: 'Invalid authorization header', status: 401 };
+  }
 
   let user = null;
   
   try {
-    // Get authenticated user from Supabase
-    const { data: { user: authUser }, error: authError } = await supabaseWithAuth.auth.getUser();
+    // Use service role client to validate the JWT token
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(token);
 
     if (authError) {
       console.error('❌ Supabase auth error:', authError.message);
@@ -37,7 +36,8 @@ export async function validateAdminAuth(authHeader: string) {
       console.error('❌ No authenticated user found');
       return { error: 'No authenticated user', status: 401 };
     }
-  console.log("authUser-----------",authUser)
+
+    console.log("authUser-----------", authUser);
     user = {
       id: authUser.id,
       email: authUser.email,
