@@ -1,239 +1,108 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useSessionContext } from '@supabase/auth-helpers-react';
 import { useToast } from '@/hooks/use-toast';
-import { Product, UpdatedProduct } from '@/types/product';
+
+// Mock interface for backward compatibility
+export interface Product {
+  id: string;
+  title: string;
+  handle: string;
+  vendor: string;
+  type: string;
+  tags: string;
+  category: string;
+  published: boolean;
+  option1Name: string;
+  option1Value: string;
+  variantSku: string;
+  variantGrams: number;
+  variantInventoryTracker: string;
+  variantInventoryQty: number;
+  variantInventoryPolicy: string;
+  variantFulfillmentService: string;
+  variantPrice: number;
+  variantCompareAtPrice: number;
+  variantRequiresShipping: boolean;
+  variantTaxable: boolean;
+  variantBarcode: string;
+  imagePosition: number;
+  imageSrc: string;
+  bodyHtml: string;
+  seoTitle: string;
+  seoDescription: string;
+  googleShoppingCondition: string;
+  googleShoppingGender: string;
+  googleShoppingAgeGroup: string;
+  updatedAt?: string;
+  shopifySyncStatus?: string;
+  shopifySyncedAt?: string;
+}
+
+export interface UpdatedProduct {
+  title: string;
+  type: string;
+  category: string;
+  description: string;
+  tags: string;
+  vendor: string;
+  seoTitle: string;
+  seoDescription: string;
+  published: boolean;
+  variantPrice: number;
+  variantCompareAtPrice: number;
+  variantSku: string;
+  variantBarcode: string;
+  variantGrams: number;
+  variantInventoryQty: number;
+  variantInventoryPolicy: string;
+  variantRequiresShipping: boolean;
+  variantTaxable: boolean;
+  googleShoppingCondition: string;
+  googleShoppingGender: string;
+  googleShoppingAgeGroup: string;
+}
 
 export const useProducts = () => {
-  const { session } = useSessionContext();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+  
+  // Mock data - ProductWhisper system removed
+  const products: Product[] = [];
+  const isLoading = false;
 
-  const { data: products = [], isLoading } = useQuery({
-    queryKey: ['products'],
-    queryFn: async () => {
-      if (!session?.user?.id) return [];
-      
-      console.log('Fetching ALL products for user:', session.user.id);
-      
-      let allProducts: any[] = [];
-      let hasMore = true;
-      let page = 0;
-      const pageSize = 1000;
-      
-      while (hasMore) {
-        const { data, error } = await supabase
-          .from('products')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .order('created_at', { ascending: false })
-          .range(page * pageSize, (page + 1) * pageSize - 1);
-        
-        if (error) {
-          console.error('Error fetching products:', error);
-          throw error;
-        }
-        
-        if (data && data.length > 0) {
-          allProducts = [...allProducts, ...data];
-          console.log(`Fetched page ${page + 1}: ${data.length} products. Total so far: ${allProducts.length}`);
-          
-          // If we got less than pageSize, we've reached the end
-          hasMore = data.length === pageSize;
-          page++;
-        } else {
-          hasMore = false;
-        }
-      }
-      
-      console.log('Total products fetched:', allProducts.length);
-      
-      const mappedProducts = allProducts.map(item => ({
-        id: item.handle,
-        title: item.title,
-        handle: item.handle,
-        vendor: item.vendor || '',
-        type: item.type || '',
-        tags: item.tags || '',
-        category: item.category || '',
-        published: item.published || false,
-        option1Name: item.option1_name || '',
-        option1Value: item.option1_value || '',
-        variantSku: item.variant_sku || '',
-        variantGrams: item.variant_grams || 0,
-        variantInventoryTracker: item.variant_inventory_tracker || '',
-        variantInventoryQty: item.variant_inventory_qty || 0,
-        variantInventoryPolicy: item.variant_inventory_policy || '',
-        variantFulfillmentService: item.variant_fulfillment_service || '',
-        variantPrice: item.variant_price || 0,
-        variantCompareAtPrice: item.variant_compare_at_price || 0,
-        variantRequiresShipping: item.variant_requires_shipping || true,
-        variantTaxable: item.variant_taxable || true,
-        variantBarcode: item.variant_barcode || '',
-        imagePosition: item.image_position || 0,
-        imageSrc: item.image_src || '',
-        bodyHtml: item.body_html || '',
-        seoTitle: item.seo_title || '',
-        seoDescription: item.seo_description || '',
-        googleShoppingCondition: item.google_shopping_condition || '',
-        googleShoppingGender: item.google_shopping_gender || '',
-        googleShoppingAgeGroup: item.google_shopping_age_group || '',
-        updatedAt: item.updated_at,
-        shopifySyncStatus: item.shopify_sync_status,
-        shopifySyncedAt: item.shopify_synced_at
-      }));
-      
-      console.log('Mapped products:', mappedProducts.length);
-      
-      return mappedProducts;
-    },
-    enabled: Boolean(session?.user?.id),
-  });
+  const saveProducts = (products: Product[]) => {
+    console.log('Products system removed - mock save called');
+    toast({
+      title: "Products System Removed",
+      description: "The ProductWhisper system has been removed from this application.",
+      variant: "destructive",
+    });
+  };
 
-  const saveProductsMutation = useMutation({
-    mutationFn: async (products: Product[]) => {
-      if (!session?.user?.id) throw new Error('Not authenticated');
+  const updateProduct = ({ handle, updatedData }: { handle: string; updatedData: UpdatedProduct }) => {
+    console.log('Products system removed - mock update called');
+    toast({
+      title: "Products System Removed", 
+      description: "The ProductWhisper system has been removed from this application.",
+      variant: "destructive",
+    });
+  };
 
-      const productsToInsert = products.map(product => ({
-        user_id: session.user.id,
-        handle: product.handle,
-        title: product.title,
-        vendor: product.vendor,
-        type: product.type,
-        tags: product.tags,
-        category: product.category,
-        published: product.published,
-        option1_name: product.option1Name,
-        option1_value: product.option1Value,
-        variant_sku: product.variantSku,
-        variant_grams: product.variantGrams,
-        variant_inventory_tracker: product.variantInventoryTracker,
-        variant_inventory_qty: product.variantInventoryQty,
-        variant_inventory_policy: product.variantInventoryPolicy,
-        variant_fulfillment_service: product.variantFulfillmentService,
-        variant_price: product.variantPrice,
-        variant_compare_at_price: product.variantCompareAtPrice,
-        variant_requires_shipping: product.variantRequiresShipping,
-        variant_taxable: product.variantTaxable,
-        variant_barcode: product.variantBarcode,
-        image_position: product.imagePosition,
-        image_src: product.imageSrc,
-        body_html: product.bodyHtml,
-        seo_title: product.seoTitle,
-        seo_description: product.seoDescription,
-        google_shopping_condition: product.googleShoppingCondition,
-        google_shopping_gender: product.googleShoppingGender,
-        google_shopping_age_group: product.googleShoppingAgeGroup,
-      }));
-
-      const { error } = await supabase
-        .from('products')
-        .upsert(productsToInsert, { 
-          onConflict: 'handle,user_id',
-          ignoreDuplicates: false 
-        });
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      toast({
-        title: "Products Saved",
-        description: "Your products have been saved successfully.",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Save Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const updateProductMutation = useMutation({
-    mutationFn: async ({ handle, updatedData }: { handle: string; updatedData: UpdatedProduct }) => {
-      if (!session?.user?.id) throw new Error('Not authenticated');
-
-      const { error } = await supabase
-        .from('products')
-        .update({
-          title: updatedData.title,
-          type: updatedData.type,
-          category: updatedData.category,
-          body_html: updatedData.description,
-          tags: updatedData.tags,
-          vendor: updatedData.vendor,
-          seo_title: updatedData.seoTitle,
-          seo_description: updatedData.seoDescription,
-          published: updatedData.published,
-          variant_price: updatedData.variantPrice,
-          variant_compare_at_price: updatedData.variantCompareAtPrice,
-          variant_sku: updatedData.variantSku,
-          variant_barcode: updatedData.variantBarcode,
-          variant_grams: updatedData.variantGrams,
-          variant_inventory_qty: updatedData.variantInventoryQty,
-          variant_inventory_policy: updatedData.variantInventoryPolicy,
-          variant_requires_shipping: updatedData.variantRequiresShipping,
-          variant_taxable: updatedData.variantTaxable,
-          google_shopping_condition: updatedData.googleShoppingCondition,
-          google_shopping_gender: updatedData.googleShoppingGender,
-          google_shopping_age_group: updatedData.googleShoppingAgeGroup,
-        })
-        .eq('handle', handle)
-        .eq('user_id', session.user.id);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Update Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const deleteProductsMutation = useMutation({
-    mutationFn: async (productHandles: string[]) => {
-      if (!session?.user?.id) throw new Error('Not authenticated');
-
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .in('handle', productHandles)
-        .eq('user_id', session.user.id);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      toast({
-        title: "Products Deleted",
-        description: "Selected products have been removed.",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Delete Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+  const deleteProducts = (productHandles: string[]) => {
+    console.log('Products system removed - mock delete called');
+    toast({
+      title: "Products System Removed",
+      description: "The ProductWhisper system has been removed from this application.", 
+      variant: "destructive",
+    });
+  };
 
   return {
     products,
     isLoading,
-    saveProducts: saveProductsMutation.mutate,
-    updateProduct: updateProductMutation.mutate,
-    deleteProducts: deleteProductsMutation.mutate,
-    isSaving: saveProductsMutation.isPending,
-    isUpdating: updateProductMutation.isPending,
-    isDeleting: deleteProductsMutation.isPending,
+    saveProducts,
+    updateProduct,
+    deleteProducts,
+    isSaving: false,
+    isUpdating: false,
+    isDeleting: false,
   };
 };

@@ -105,10 +105,7 @@ export const useOrders = () => {
       });
 
       // Remove ProductWhisper integration - table deleted
-      // const { data: allProducts } = await supabase
-      //   .from('products')
-      //   .select('handle, variant_sku, image_src, title, type, tags')
-      //   .not('image_src', 'is', null);
+      const allProducts: any[] = [];
 
       console.log('📚 Available products for matching:', allProducts?.length);
 

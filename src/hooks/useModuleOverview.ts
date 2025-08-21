@@ -54,6 +54,8 @@ export interface ModuleOverviewData {
     totalItemsInStock: number;
     recentOrdersFulfilled: number;
     openReceivingTasks: number;
+    avgFulfillmentTimeMinutes: number;
+    lowStockAlertsCount: number;
     recentActivity: any[];
   };
   productManagement: {
@@ -61,6 +63,10 @@ export interface ModuleOverviewData {
     totalActiveProducts: number;
     recentOptimizations: number;
     avgOptimizationScore: number;
+    totalProductsManaged: number;
+    pendingDraftsCount: number;
+    marketplacesConnected: number;
+    syncHealthScore: number;
     recentActivity: any[];
   };
 }
@@ -299,10 +305,9 @@ export function useModuleOverview(userId?: string) {
         totalItemsInStock,
         recentOrdersFulfilled: 0,
         openReceivingTasks: 0,
-        recentActivity: [],
-        // Add missing properties
         avgFulfillmentTimeMinutes: 30,
-        lowStockAlertsCount: 0
+        lowStockAlertsCount: 0,
+        recentActivity: []
       };
     } catch (error) {
       console.error('Error fetching fulfillment overview:', error);
@@ -311,6 +316,8 @@ export function useModuleOverview(userId?: string) {
         totalItemsInStock: 0,
         recentOrdersFulfilled: 0,
         openReceivingTasks: 0,
+        avgFulfillmentTimeMinutes: 0,
+        lowStockAlertsCount: 0,
         recentActivity: []
       };
     }
@@ -323,12 +330,11 @@ export function useModuleOverview(userId?: string) {
       totalActiveProducts: 0,
       recentOptimizations: 0,
       avgOptimizationScore: 0,
-      recentActivity: [],
-      // Add missing properties
       totalProductsManaged: 0,
       pendingDraftsCount: 0,
       marketplacesConnected: 0,
-      syncHealthScore: 100
+      syncHealthScore: 100,
+      recentActivity: []
     };
 
     return mockData;

@@ -23,10 +23,7 @@ const Activity = () => {
           </div>
         </div>
 
-        <ProductActivity 
-          onProductsUpdated={handleProductsUpdated} 
-          storeUrl={storeUrl} 
-        />
+        <ProductActivity />
       </div>
     </div>
   );

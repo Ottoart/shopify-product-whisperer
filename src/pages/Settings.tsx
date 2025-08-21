@@ -1,14 +1,35 @@
 import { Settings as SettingsIcon, Store, Key, Database, Bell, Printer, FileText, Brain } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { StoreConfig } from '@/components/StoreConfig';
 import { PrintingSettings } from '@/components/shipping/PrintingSettings';
-import { PatternManagement } from '@/components/patterns/PatternManagement';
-import { PatternAnalyzer } from '@/components/patterns/PatternAnalyzer';
-import { AIPromptVisualizer } from '@/components/AIPromptVisualizer';
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import Logs from '@/pages/Logs';
+
+// Mock components for removed ProductWhisper system
+const StoreConfig = () => (
+  <div className="text-center py-8">
+    <p className="text-muted-foreground">ProductWhisper system has been removed from this application.</p>
+  </div>
+);
+
+const PatternManagement = () => (
+  <div className="text-center py-8">
+    <p className="text-muted-foreground">ProductWhisper system has been removed from this application.</p>
+  </div>
+);
+
+const PatternAnalyzer = ({ onAnalysisComplete }: { onAnalysisComplete: () => void }) => (
+  <div className="text-center py-8">
+    <p className="text-muted-foreground">ProductWhisper system has been removed from this application.</p>
+  </div>
+);
+
+const AIPromptVisualizer = () => (
+  <div className="text-center py-8">
+    <p className="text-muted-foreground">ProductWhisper system has been removed from this application.</p>
+  </div>
+);
 
 const Settings = () => {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -80,7 +101,6 @@ const Settings = () => {
               </CardContent>
             </Card>
           </TabsContent>
-
 
           <TabsContent value="printing" className="space-y-6">
             <Card>
