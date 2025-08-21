@@ -91,26 +91,69 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Update carrier configuration with the access token
-    const { error: updateError } = await supabase
+    // Check if any UPS carrier configuration exists that needs tokens
+    const { data: existingConfigs, error: fetchError } = await supabase
       .from('carrier_configurations')
-      .update({
-        api_credentials: {
-          client_id: clientId,
-          client_secret: clientSecret,
-          access_token: tokenData.access_token,
-          refresh_token: tokenData.refresh_token || null,
-          token_expires_at: tokenData.expires_in ? 
-            new Date(Date.now() + (tokenData.expires_in * 1000)).toISOString() : null
-        },
-        updated_at: new Date().toISOString()
-      })
+      .select('id, user_id, api_credentials')
       .eq('carrier_name', 'UPS');
 
-    if (updateError) {
-      console.error('Failed to update carrier configuration:', updateError);
+    if (fetchError) {
+      console.error('Failed to fetch UPS configurations:', fetchError);
       return new Response(
-        '<html><body><h1>Database Error</h1><p>Failed to save UPS credentials</p></body></html>',
+        '<html><body><h1>Database Error</h1><p>Failed to fetch UPS configurations</p></body></html>',
+        { 
+          status: 500,
+          headers: { 'Content-Type': 'text/html' }
+        }
+      );
+    }
+
+    // Find configurations that need tokens (either no access_token or expired)
+    const configsNeedingTokens = existingConfigs?.filter(config => 
+      !config.api_credentials?.access_token || 
+      (config.api_credentials?.token_expires_at && 
+       new Date(config.api_credentials.token_expires_at) <= new Date())
+    ) || [];
+
+    if (configsNeedingTokens.length === 0) {
+      console.log('No UPS configurations found that need tokens');
+      return new Response(
+        '<html><body><h1>No Configuration Found</h1><p>No UPS configuration found that needs authorization. Please set up UPS credentials first.</p></body></html>',
+        { 
+          status: 400,
+          headers: { 'Content-Type': 'text/html' }
+        }
+      );
+    }
+
+    // Update all configurations that need tokens
+    const updatePromises = configsNeedingTokens.map(config => {
+      const updatedCredentials = {
+        ...config.api_credentials,
+        client_id: clientId,
+        client_secret: clientSecret,
+        access_token: tokenData.access_token,
+        refresh_token: tokenData.refresh_token || null,
+        token_expires_at: tokenData.expires_in ? 
+          new Date(Date.now() + (tokenData.expires_in * 1000)).toISOString() : null
+      };
+
+      return supabase
+        .from('carrier_configurations')
+        .update({
+          api_credentials: updatedCredentials,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', config.id);
+    });
+
+    const results = await Promise.all(updatePromises);
+    const hasErrors = results.some(result => result.error);
+
+    if (hasErrors) {
+      console.error('Failed to update some UPS configurations:', results.filter(r => r.error));
+      return new Response(
+        '<html><body><h1>Partial Update Error</h1><p>Some UPS configurations could not be updated</p></body></html>',
         { 
           status: 500,
           headers: { 'Content-Type': 'text/html' }
