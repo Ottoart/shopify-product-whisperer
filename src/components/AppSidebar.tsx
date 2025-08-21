@@ -100,7 +100,6 @@ const fulfillmentItems = [
 
 const toolItems = [
   { title: "Products", url: "/products", icon: Package, description: "Manage your product catalog" },
-  { title: "ProductWhisper", url: "/product-whisper", icon: Zap, description: "AI-powered product management" },
   { title: "Product Activity", url: "/activity", icon: Activity, description: "Track product changes" },
   { title: "Bulk Editor", url: "/bulk-editor", icon: FileText, description: "Edit multiple products" },
 ];
@@ -138,21 +137,7 @@ export function AppSidebar() {
   const { autoRetract, setAutoRetract } = useAutoRetract();
 
   useEffect(() => {
-    const fetchStores = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('store_configurations')
-          .select('id, store_name, platform')
-          .eq('is_active', true)
-          .order('store_name');
-        
-        if (error) throw error;
-        setStores(data || []);
-      } catch (error) {
-        console.error('Error fetching stores:', error);
-      }
-    };
-
+    // Skip store fetching since ProductWhisper is removed
     const fetchOrderCounts = async () => {
       try {
         const { data, error } = await supabase
@@ -180,7 +165,6 @@ export function AppSidebar() {
       }
     };
 
-    fetchStores();
     fetchOrderCounts();
   }, []);
 
