@@ -1,3 +1,4 @@
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 export async function validateAdminAuth(authHeader: string) {
@@ -34,12 +35,8 @@ export async function validateAdminAuth(authHeader: string) {
         payloadB64 += '=';
       }
       
-     // const payload = JSON.parse(atob(payloadB64));
-      let payload = {}
-      payload.email = "admin@prepfox.com"
-      payload.sub = "c6a235f6-ac10-4afa-8909-c0cf441817da"
-      payload.aud = "authenticated"
-      payload.iss = "supabase"
+      // Properly decode the JWT payload dynamically
+      const payload = JSON.parse(atob(payloadB64));
       
       console.log('🔓 Decoded admin JWT payload:', { 
         sub: payload.sub, 
