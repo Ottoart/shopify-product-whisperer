@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
         JSON.stringify({ success: false, error: "Admin user not found or inactive" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 }
       );
-    }
+    } 
 
     console.log("adminUser------------",adminUser)
     // 🔑 Compare password (plaintext now, replace with bcrypt later)
