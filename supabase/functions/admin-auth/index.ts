@@ -131,37 +131,14 @@ serve(async (req) => {
       // Continue without valid token
     }
 
-    // Generate a proper JWT token using Supabase admin
-    let jwtToken = null;
-    if (supabaseUser) {
-      try {
-        // Generate an access token for the admin user
-        const { data: tokenData, error: tokenError } = await supabaseAdmin.auth.admin.generateAccessToken(supabaseUser.id);
-        
-        if (tokenData && !tokenError) {
-          jwtToken = tokenData;
-          console.log('✅ Generated valid JWT token for admin');
-        } else {
-          console.error('Error generating access token:', tokenError);
-        }
-      } catch (error) {
-        console.error("Error generating JWT token:", error);
-        // Fallback: create a simple session token
-        try {
-          const { data: signInData, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
-            email: email,
-            password: `admin-${adminUser.user_id}` // Use a predictable password for admin
-          });
-          
-          if (signInData?.session?.access_token && !signInError) {
-            jwtToken = signInData.session.access_token;
-            console.log('✅ Generated JWT token via sign in');
-          }
-        } catch (fallbackError) {
-          console.error("Fallback token generation failed:", fallbackError);
-        }
-      }
-    }
+    // Create a simple session token (admin sessions don't need real JWT for this use case)
+    const jwtToken = crypto.randomUUID() + '.' + btoa(JSON.stringify({
+      sub: adminUser.user_id,
+      email: email,
+      role: adminUser.role,
+      iat: Math.floor(Date.now() / 1000),
+      exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60 // 24 hours
+    }));
 
     // Create admin session
     const adminSession = {
