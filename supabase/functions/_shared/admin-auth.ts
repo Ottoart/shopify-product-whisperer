@@ -1,4 +1,3 @@
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 export async function validateAdminAuth(authHeader: string) {
@@ -8,56 +7,59 @@ export async function validateAdminAuth(authHeader: string) {
 
   // Initialize Supabase client
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-  const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-  // Extract JWT token from Authorization header
-  console.log('🔍 Validating JWT token with Supabase auth');
-  
-  const token = authHeader.replace('Bearer ', '');
-  if (!token) {
-    console.error('❌ No token found in authorization header');
-    return { error: 'Invalid authorization header', status: 401 };
-  }
-
+  // Get user from JWT - handle both standard Supabase JWT and admin JWT
+  const jwt = authHeader.replace('Bearer ', '');
   let user = null;
   
+  console.log('🔍 Processing JWT token (first 20 chars):', jwt.substring(0, 20));
+  
   try {
-    // Use service role client to validate the JWT token
-    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(token);
-
-    if (authError) {
-      console.error('❌ Supabase auth error:', authError.message);
-      return { error: 'Authentication failed', status: 401 };
+    // Handle admin session JWT - decode JWT payload
+    const parts = jwt.split('.');
+    if (parts.length === 3) {
+      // Decode the payload (second part)
+      // Add padding if needed for proper base64 decoding
+      let payloadB64 = parts[1];
+      while (payloadB64.length % 4) {
+        payloadB64 += '=';
+      }
+      
+      const payload = JSON.parse(atob(payloadB64));
+      console.log('🔓 Decoded admin JWT payload:', { 
+        sub: payload.sub, 
+        email: payload.email,
+        iss:"supabase",
+        aud: payload.aud,
+        exp: payload.exp
+      });
+      
+      // Check if token is expired
+      if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+        console.error('❌ Admin JWT token expired');
+        return { error: 'Token expired', status: 401 };
+      }
+      
+      if (payload.sub && payload.email) {
+        user = {
+          id: payload.sub,
+          email: payload.email,
+          user_metadata: payload.user_metadata || {}
+        };
+        console.log('✅ Using admin session JWT for user:', user.email);
+      }
+    } else {
+      console.error('❌ Invalid JWT format - expected 3 parts separated by dots');
+      return { error: 'Invalid token format', status: 401 };
     }
-
-    if (!authUser) {
-      console.error('❌ No authenticated user found');
-      return { error: 'No authenticated user', status: 401 };
-    }
-
-    console.log("authUser-----------", authUser);
-    user = {
-      id: authUser.id,
-      email: authUser.email,
-      user_metadata: authUser.user_metadata || {}
-    };
-
-    console.log('✅ Authenticated user from Supabase:', { 
-      id: user.id,
-      email: user.email,
-      hasMetadata: !!user.user_metadata
-    });
-
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error('❌ Authentication error:', errorMessage);
-    return { error: `Authentication failed: ${errorMessage}`, status: 401 };
+    console.error('❌ Authentication error:', error);
+    return { error: 'Authentication failed', status: 401 };
   }
   
   if (!user) {
-    console.error('❌ No valid user extracted from JWT');
     return { error: 'Invalid authentication', status: 401 };
   }
 
@@ -70,8 +72,7 @@ export async function validateAdminAuth(authHeader: string) {
     .single();
 
   if (adminError || !adminUser || !['master_admin', 'admin'].includes(adminUser.role)) {
-    const errorMessage = adminError ? adminError.message || String(adminError) : 'Invalid admin role';
-    console.error('Admin authorization error:', errorMessage);
+    console.error('Admin authorization error:', adminError);
     return { error: 'Admin access required', status: 403 };
   }
 
