@@ -41,6 +41,7 @@ Deno.serve(async (req) => {
       );
     }
 
+    console.log("adminUser------------",adminUser)
     // 🔑 Compare password (plaintext now, replace with bcrypt later)
     if (adminUser.password !== password) {
       return new Response(
