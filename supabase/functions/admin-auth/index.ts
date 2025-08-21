@@ -16,198 +16,79 @@ serve(async (req) => {
 
     if (!email || !password) {
       return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Email and password are required"
-        }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 400,
-        }
+        JSON.stringify({ success: false, error: "Email and password are required" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
       );
     }
 
-    // Create Supabase client with service role key
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
+      { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    console.log("Admin auth attempt for:", email);
+    console.log("🔐 Login attempt:", email);
 
-    // Check if user exists and has admin role - get all active admin users first
+    // Step 1: Authenticate user with Supabase Auth
+    const { data: authData, error: authError } = await supabaseAdmin.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (authError || !authData?.user) {
+      console.error("❌ Supabase auth failed:", authError);
+      return new Response(
+        JSON.stringify({ success: false, error: "Invalid email or password" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 }
+      );
+    }
+
+    const userId = authData.user.id;
+
+    // Step 2: Check if user exists in admin_users table
     const { data: adminUsers, error: adminCheckError } = await supabaseAdmin
-      .from('admin_users')
-      .select('*')
-      .eq('is_active', true);
+      .from("admin_users")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("is_active", true)
+      .limit(1);
 
     if (adminCheckError || !adminUsers || adminUsers.length === 0) {
-      console.error("Error checking admin users:", adminCheckError);
+      console.error("❌ Not an active admin:", email);
       return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Invalid admin credentials"
-        }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 401,
-        }
+        JSON.stringify({ success: false, error: "Unauthorized admin access" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 403 }
       );
     }
 
-    // For demo purposes, use fixed admin credentials
-    const validCredentials = [
-      { email: "admin@prepfox.com", password: "Prepfox00@" },
-      { email: "ottman1@gmail.com", password: "Prepfox00@" }
-    ];
+    const adminUser = adminUsers[0];
 
-    const isValidCredential = validCredentials.some(
-      cred => cred.email === email && cred.password === password
-    );
-
-    if (!isValidCredential) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Invalid admin credentials"
-        }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 401,
-        }
-      );
-    }
-
-    // Find the admin user that matches the email (simplified for demo)
-    const adminUser = adminUsers.find(user => {
-      // For demo, match against the valid credentials
-      const validCred = validCredentials.find(cred => cred.email === email);
-      return validCred;
-    }) || adminUsers[0]; // Use first admin if no specific match
-
-    // Create a proper JWT-style token compatible with edge functions
-    const header = {
-      alg: "HS256",
-      typ: "JWT"
-    };
-    
-    // Create a proper JWT payload with all required claims
-    const jwtPayload = {
-      iss: "supabase",
-      ref: "rtaomiqsnctigleqjojt",
-      aud: "authenticated", 
-      exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60, // 24 hours
-      iat: Math.floor(Date.now() / 1000),
-      sub: adminUser.user_id, // User ID - REQUIRED
-      email: email, // Email - REQUIRED
-      phone: "",
-      app_metadata: {
-        provider: "admin",
-        providers: ["admin"]
-      },
-      user_metadata: {
-        role: adminUser.role,
-        is_admin: true,
-        display_name: "Admin"
-      },
-      role: "authenticated",
-      aal: "aal1",
-      amr: [{ method: "password", timestamp: Math.floor(Date.now() / 1000) }],
-      session_id: crypto.randomUUID()
-    };
-    
-    console.log('🎫 Creating JWT for admin user:', {
-      userId: adminUser.user_id,
-      email: email,
-      role: adminUser.role
-    });
-    
-    // Create JWT with proper base64 encoding
-    const headerB64 = btoa(JSON.stringify(header)).replace(/=/g, '');
-    const payloadB64 = btoa(JSON.stringify(jwtPayload)).replace(/=/g, '');
-    const signature = btoa(`admin-sig-${adminUser.user_id}-${Date.now()}`).replace(/=/g, '');
-    
-    const jwtToken = `${headerB64}.${payloadB64}.${signature}`;
-    
-    console.log('🔍 JWT created with payload verification:', {
-      sub: jwtPayload.sub,
-      email: jwtPayload.email,
-      hasUserMetadata: !!jwtPayload.user_metadata,
-      tokenLength: jwtToken.length,
-      payloadBase64: payloadB64.substring(0, 50) + '...'
-    });
-
-    // Try to get or create a Supabase user for this admin to generate a real session
-    try {
-      const { data: existingUser, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(adminUser.user_id);
-      
-      if (getUserError && getUserError.message?.includes('User not found')) {
-        // Create a new Supabase user for this admin
-        const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-          id: adminUser.user_id,
-          email: email,
-          email_confirmed_at: new Date().toISOString(),
-          user_metadata: {
-            role: adminUser.role,
-            display_name: "Admin",
-            is_admin: true
-          }
-        });
-        
-        if (createError) {
-          console.error("Error creating Supabase user:", createError);
-        } else {
-          console.log("Created Supabase user for admin:", email);
-        }
-      }
-    } catch (error) {
-      console.error("Error setting up Supabase user:", error);
-    }
-
-    // Create simple admin session
+    // Step 3: Build session response
     const adminSession = {
       user: {
-        id: adminUser.user_id,
-        email: email,
-        role: adminUser.role,
-        permissions: adminUser.permissions,
-        display_name: "Admin"
+        id: userId,
+        email,
+        role: adminUser.role ?? "admin",
+        permissions: adminUser.permissions ?? [],
+        display_name: adminUser.display_name ?? "Admin",
       },
-      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
-      session_id: crypto.randomUUID(),
-      jwt_token: jwtToken
+      access_token: authData.session?.access_token,
+      refresh_token: authData.session?.refresh_token,
+      expires_at: authData.session?.expires_at,
     };
 
-    console.log("Admin login successful for:", email);
+    console.log("✅ Admin login successful:", email);
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        session: adminSession
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      }
+      JSON.stringify({ success: true, session: adminSession }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
 
   } catch (error) {
-    console.error("Error in admin auth:", error);
+    console.error("🔥 Error in admin login:", error);
     return new Response(
-      JSON.stringify({
-        success: false,
-        error: "Authentication failed"
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      }
+      JSON.stringify({ success: false, error: "Authentication failed" }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
     );
   }
 });
