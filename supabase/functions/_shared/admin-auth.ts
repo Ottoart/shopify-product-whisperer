@@ -37,7 +37,7 @@ export async function validateAdminAuth(authHeader: string) {
       console.error('❌ No authenticated user found');
       return { error: 'No authenticated user', status: 401 };
     }
-
+  console.log("authUser-----------",authUser)
     user = {
       id: authUser.id,
       email: authUser.email,
