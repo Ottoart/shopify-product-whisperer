@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
 import { StoreProvider } from "@/contexts/StoreContext";
+import MainLayout from "@/components/MainLayout";
 import Index from "./pages/Index";
 import MainDashboard from "./pages/MainDashboard";
 import PrepFoxDashboard from "./pages/PrepFoxDashboard";
@@ -50,6 +51,8 @@ import RepricingFeatures from "./pages/RepricingFeatures";
 import RepricingPricing from "./pages/RepricingPricing";
 import AdminDashboard from "./pages/AdminDashboard";
 import Products from "./pages/Products";
+import Store from "./pages/Store";
+import StoreCategory from "./pages/StoreCategory";
 import FulfillmentLanding from "./pages/FulfillmentLanding";
 import FulfillmentFeatures from "./pages/FulfillmentFeatures";
 import FulfillmentPricing from "./pages/FulfillmentPricing";
@@ -65,6 +68,8 @@ import B2BFulfillment from "./pages/fulfillment/B2BFulfillment";
 import OmniChannelFulfillment from "./pages/fulfillment/OmniChannelFulfillment";
 import InternationalFreight from "./pages/fulfillment/InternationalFreight";
 import SubscriptionFulfillment from "./pages/fulfillment/SubscriptionFulfillment";
+import AdminPlans from "./pages/admin/AdminPlans";
+import AdminSubscriptions from "./pages/admin/AdminSubscriptions";
 
 // Phase 2A - Software & Technology Products
 import PrepSoftware from "./pages/fulfillment/PrepSoftware";
@@ -144,6 +149,8 @@ const AuthenticatedApp = () => {
               <Route path="/settings" element={<Settings />} />
               <Route path="/carriers" element={<Carriers />} />
               <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/plans" element={<AdminPlans />} />
+              <Route path="/admin/subscriptions" element={<AdminSubscriptions />} />
               <Route path="/sync-status" element={<SyncStatus />} />
               <Route path="/logs" element={<Logs />} />
               
@@ -160,7 +167,7 @@ const AuthenticatedApp = () => {
 // Public routes (marketing site)
 const PublicApp = () => {
   return (
-    <main className="min-h-screen">
+    <MainLayout>
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/shipping-landing" element={<ShippingLanding />} />
@@ -223,11 +230,13 @@ const PublicApp = () => {
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/customer-tracking" element={<CustomerTracking />} />
+        <Route path="/store" element={<Store />} />
+        <Route path="/store/:categorySlug" element={<StoreCategory />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/about" element={<AboutUs />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </main>
+    </MainLayout>
   );
 };
 

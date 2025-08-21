@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useSessionContext } from '@supabase/auth-helpers-react';
 import { Product } from '@/types/product';
+import { useShopifyCredentials } from '@/hooks/useShopifyCredentials';
 
 interface ProductEditorProps {
   product: Product;
@@ -33,6 +34,7 @@ export const ProductEditor = ({ product, isOpen, onClose, onProductUpdated }: Pr
   const [isSaving, setIsSaving] = useState(false);
   const { session } = useSessionContext();
   const { toast } = useToast();
+  const { storeId } = useShopifyCredentials();
 
   // Debug authentication
   console.log('ProductEditor - Session:', session?.user?.id ? 'authenticated' : 'not authenticated');
@@ -153,6 +155,7 @@ export const ProductEditor = ({ product, isOpen, onClose, onProductUpdated }: Pr
         const { data: syncData, error: syncError } = await supabase.functions.invoke('shopify-products', {
           body: { 
             action: 'update',
+            storeId,
             products: [{
               handle: product.handle,
               title: editedProduct.title,

@@ -16,10 +16,11 @@ import { CarrierCredentialValidator } from "@/components/shipping/CarrierCredent
 import { EnhancedTrackingDashboard } from "@/components/shipping/EnhancedTrackingDashboard";
 import { ComprehensiveReturnsManagement } from "@/components/shipping/ComprehensiveReturnsManagement";
 import { AIShippingRecommendations } from "@/components/shipping/AIShippingRecommendations";
-
+import { useShopifyCredentials } from "@/hooks/useShopifyCredentials";
 
 export default function Shipping() {
   const [activeTab, setActiveTab] = useState("orders");
+  const { store } = useShopifyCredentials();
 
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
@@ -90,10 +91,14 @@ export default function Shipping() {
             <StoreConfig />
             <div className="mt-6">
               <h3 className="text-lg font-semibold mb-4">Connection Diagnostics</h3>
-              <ShopifyConnectionTest 
-                storeId="04964ded-c61e-40db-bf5c-fea9ff794681" 
-                storeName="Prohair" 
-              />
+              {store ? (
+                <ShopifyConnectionTest 
+                  storeId={store.id}
+                  storeName={store.store_name}
+                />
+              ) : (
+                <p className="text-sm text-muted-foreground">No active Shopify store selected.</p>
+              )}
             </div>
           </div>
         </TabsContent>

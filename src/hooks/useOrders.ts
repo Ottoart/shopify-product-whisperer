@@ -98,57 +98,56 @@ export const useOrders = () => {
         )
       );
 
-      // Fetch product images by handle and SKU
-      let productImages: Record<string, string> = {};
-      let skuImages: Record<string, string> = {};
+      // Enhanced image lookup for eBay products
+      console.log('🔍 Phase 3: Enhanced image lookup started', {
+        productHandles: productHandles.slice(0, 5),
+        productSkus: productSkus.slice(0, 5)
+      });
+
+      // Fetch ALL product images for comprehensive matching
+      const { data: allProducts } = await supabase
+        .from('products')
+        .select('handle, variant_sku, image_src, title, type, tags')
+        .not('image_src', 'is', null);
+
+      console.log('📚 Available products for matching:', allProducts?.length);
+
+      // Create comprehensive lookup maps
+      const productImages: Record<string, string> = {};
+      const skuImages: Record<string, string> = {};
+      const titleKeywordMap: Record<string, string> = {};
       
-      // First try to fetch by handles
-      if (productHandles.length > 0) {
-        const { data: productsData } = await supabase
-          .from('products')
-          .select('handle, image_src')
-          .in('handle', productHandles);
+      (allProducts || []).forEach(product => {
+        if (!product.image_src) return;
         
-        productImages = (productsData || []).reduce((acc, product) => {
-          if (product.handle && product.image_src) {
-            acc[product.handle] = product.image_src;
+        // Handle-based lookup
+        if (product.handle) {
+          productImages[product.handle] = product.image_src;
+        }
+        
+        // SKU-based lookup
+        if (product.variant_sku) {
+          skuImages[product.variant_sku] = product.image_src;
+        }
+        
+        // Title keyword mapping for eBay products
+        if (product.title) {
+          const keywords = product.title.toLowerCase()
+            .split(/[\s\-_]+/)
+            .filter(word => word.length > 3)
+            .slice(0, 3)
+            .join(' ');
+          if (keywords) {
+            titleKeywordMap[keywords] = product.image_src;
           }
-          return acc;
-        }, {} as Record<string, string>);
-      }
+        }
+      });
 
-      // Then try to fetch by SKUs as variant_sku
-      if (productSkus.length > 0) {
-        const { data: skuProductsData } = await supabase
-          .from('products')
-          .select('variant_sku, image_src')
-          .in('variant_sku', productSkus);
-        
-        skuImages = (skuProductsData || []).reduce((acc, product) => {
-          if (product.variant_sku && product.image_src) {
-            acc[product.variant_sku] = product.image_src;
-          }
-          return acc;
-        }, {} as Record<string, string>);
-      }
-
-      // For eBay products, also try to match by handle as variant_sku
-      if (productHandles.length > 0) {
-        const { data: handleAsSkuData } = await supabase
-          .from('products')
-          .select('variant_sku, image_src')
-          .in('variant_sku', productHandles);
-        
-        const handleSkuImages = (handleAsSkuData || []).reduce((acc, product) => {
-          if (product.variant_sku && product.image_src) {
-            acc[product.variant_sku] = product.image_src;
-          }
-          return acc;
-        }, {} as Record<string, string>);
-        
-        // Merge with existing skuImages
-        skuImages = { ...skuImages, ...handleSkuImages };
-      }
+      console.log('🗺️ Lookup maps created:', {
+        handleImages: Object.keys(productImages).length,
+        skuImages: Object.keys(skuImages).length,
+        titleKeywords: Object.keys(titleKeywordMap).length
+      });
 
       const formattedOrders: Order[] = (ordersData || []).map(order => ({
         id: order.id,
@@ -192,27 +191,104 @@ export const useOrders = () => {
         shippedDate: order.shipped_date,
         deliveredDate: order.delivered_date,
         items: order.order_items.map((item: any) => {
-          // Try multiple approaches to get the image
+          // Enhanced Phase 3 image lookup logic
           let imageSrc = undefined;
+          let matchMethod = 'none';
           
-          // 1. Try handle lookup
+          console.log(`🔍 Phase 3 Enhanced Image Lookup for:`, {
+            order: order.order_number,
+            platform: order.store_platform,
+            title: item.product_title,
+            handle: item.product_handle,
+            sku: item.sku
+          });
+          
+          // 1. Direct handle lookup
           if (item.product_handle && productImages[item.product_handle]) {
             imageSrc = productImages[item.product_handle];
+            matchMethod = 'direct_handle';
           }
-          // 2. Try SKU lookup  
+          // 2. Direct SKU lookup  
           else if (item.sku && skuImages[item.sku]) {
             imageSrc = skuImages[item.sku];
+            matchMethod = 'direct_sku';
           }
-          // 3. Try handle as SKU lookup (for eBay products)
+          // 3. Handle as SKU lookup (for cross-platform products)
           else if (item.product_handle && skuImages[item.product_handle]) {
             imageSrc = skuImages[item.product_handle];
+            matchMethod = 'handle_as_sku';
           }
+          // 4. For eBay products, try without EB- prefix
+          else if (item.sku && item.sku.startsWith('EB-')) {
+            const cleanSku = item.sku.replace('EB-', '');
+            if (skuImages[cleanSku]) {
+              imageSrc = skuImages[cleanSku];
+              matchMethod = 'clean_sku';
+            }
+          }
+          // 5. Enhanced title-based matching for eBay products
+          else if (order.store_platform === 'ebay' && item.product_title) {
+            const titleLower = item.product_title.toLowerCase();
+            
+            // Extract key brand/product keywords
+            const brandKeywords = ['matrix', 'biolage', 'redken', 'loreal', 'schwarzkopf'];
+            const productKeywords = ['shampoo', 'conditioner', 'treatment', 'cream', 'spray'];
+            
+            let foundBrand = brandKeywords.find(brand => titleLower.includes(brand));
+            let foundProduct = productKeywords.find(prod => titleLower.includes(prod));
+            
+            if (foundBrand && foundProduct) {
+              const searchPattern = `${foundBrand} ${foundProduct}`;
+              const matchingImage = titleKeywordMap[searchPattern];
+              if (matchingImage) {
+                imageSrc = matchingImage;
+                matchMethod = 'title_keywords';
+              }
+            }
+            
+            // Fallback: try first 3 meaningful words
+            if (!imageSrc) {
+              const meaningfulWords = titleLower
+                .replace(/[^\w\s]/g, ' ')
+                .split(/\s+/)
+                .filter(word => word.length > 3 && !['hair', 'care', 'pack'].includes(word))
+                .slice(0, 3)
+                .join(' ');
+              
+              const fallbackImage = titleKeywordMap[meaningfulWords];
+              if (fallbackImage) {
+                imageSrc = fallbackImage;
+                matchMethod = 'title_fallback';
+              }
+            }
+          }
+          
+          // 6. Ultimate fallback for unmatched items
+          if (!imageSrc && order.store_platform === 'ebay') {
+            // Use a default placeholder or first available image from same brand
+            const titleLower = item.product_title?.toLowerCase() || '';
+            const possibleBrand = ['matrix', 'biolage', 'redken'].find(brand => titleLower.includes(brand));
+            
+            if (possibleBrand) {
+              const brandImage = Object.values(skuImages).find(img => img.toLowerCase().includes(possibleBrand));
+              if (brandImage) {
+                imageSrc = brandImage;
+                matchMethod = 'brand_fallback';
+              }
+            }
+          }
+          
+          console.log(`${imageSrc ? '✅' : '❌'} Image result:`, {
+            found: !!imageSrc,
+            method: matchMethod,
+            image: imageSrc ? imageSrc.substring(imageSrc.lastIndexOf('/') + 1) : 'none'
+          });
           
           return {
             id: item.id,
             productHandle: item.product_handle,
             productTitle: item.product_title,
-            variantTitle: item.variant_title,
+            variantTitle: item.variant_title === '[object Object]' ? null : item.variant_title,
             sku: item.sku,
             quantity: item.quantity,
             price: item.price,

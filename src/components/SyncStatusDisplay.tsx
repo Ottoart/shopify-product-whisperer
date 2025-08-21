@@ -134,6 +134,7 @@ export const SyncStatusDisplay = () => {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {syncStatuses.map((status) => {
+        // Match store by platform (ebay, shopify) and map to the actual store name 
         const store = stores.find(s => s.platform === status.marketplace);
         const storeName = store?.store_name || status.marketplace.charAt(0).toUpperCase() + status.marketplace.slice(1);
         

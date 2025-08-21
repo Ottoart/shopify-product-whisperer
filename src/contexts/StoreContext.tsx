@@ -75,6 +75,33 @@ export const StoreProvider = ({ children }: StoreProviderProps) => {
     fetchStores();
   }, [session?.user?.id]);
 
+  // Realtime updates and focus refresh to avoid stale store lists
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    const channel = supabase
+      .channel('store-config-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'store_configurations' },
+        (payload) => {
+          const userId = (payload.new as any)?.user_id || (payload.old as any)?.user_id;
+          if (userId === session.user.id) {
+            fetchStores();
+          }
+        }
+      )
+      .subscribe();
+
+    const onFocus = () => fetchStores();
+    window.addEventListener('focus', onFocus);
+
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      supabase.removeChannel(channel);
+    };
+  }, [session?.user?.id]);
+
   return (
     <StoreContext.Provider value={{ stores, loading, refreshStores, getStore }}>
       {children}

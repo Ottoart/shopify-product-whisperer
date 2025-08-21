@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSessionContext } from '@supabase/auth-helpers-react';
 import { useToast } from '@/hooks/use-toast';
+import { useShopifyCredentials } from '@/hooks/useShopifyCredentials';
 
 interface ShopifyAnalytics {
   duplicates: Array<{
@@ -53,12 +54,8 @@ export const useShopifyAnalytics = () => {
   const queryClient = useQueryClient();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Get stored Shopify credentials
-  const getShopifyCredentials = () => {
-    const storeUrl = localStorage.getItem('shopify_domain');
-    const accessToken = localStorage.getItem('shopify_access_token');
-    return { storeUrl, accessToken };
-  };
+  // Active Shopify credentials from DB
+  const { storeUrl, accessToken } = useShopifyCredentials();
 
   // Fetch analytics data from database
   const { data: analyticsData, isLoading, error } = useQuery({
@@ -84,7 +81,6 @@ export const useShopifyAnalytics = () => {
   // Fetch fresh data from Shopify
   const refreshAnalyticsMutation = useMutation({
     mutationFn: async () => {
-      const { storeUrl, accessToken } = getShopifyCredentials();
       
       if (!storeUrl || !accessToken) {
         throw new Error('Shopify credentials not found. Please configure your store settings first.');
@@ -117,7 +113,6 @@ export const useShopifyAnalytics = () => {
 
   // Auto-refresh every hour
   useEffect(() => {
-    const { storeUrl, accessToken } = getShopifyCredentials();
     
     if (!storeUrl || !accessToken || !session?.user?.id) return;
 
@@ -159,10 +154,7 @@ export const useShopifyAnalytics = () => {
   const analytics: ShopifyAnalytics | null = (analyticsData?.analytics_data as unknown) as ShopifyAnalytics || null;
 
   // Check if credentials are available
-  const hasCredentials = () => {
-    const { storeUrl, accessToken } = getShopifyCredentials();
-    return Boolean(storeUrl && accessToken);
-  };
+  const hasCredentials = Boolean(storeUrl && accessToken);
 
   return {
     analytics,
@@ -170,7 +162,7 @@ export const useShopifyAnalytics = () => {
     error,
     refreshNow,
     isRefreshing: isRefreshing || refreshAnalyticsMutation.isPending,
-    hasCredentials: hasCredentials(),
+    hasCredentials,
     lastUpdated: analyticsData?.last_updated,
   };
 };

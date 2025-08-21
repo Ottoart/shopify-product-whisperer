@@ -27,6 +27,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ProductComparison } from '@/components/ProductComparison';
 import { BulkWarningDialog } from '@/components/BulkWarningDialog';
+import { useShopifyCredentials } from '@/hooks/useShopifyCredentials';
 
 interface QueueItem {
   productId: string;
@@ -122,6 +123,7 @@ REQUIREMENTS:
   const [showComparison, setShowComparison] = useState(false);
   const [showBulkWarning, setShowBulkWarning] = useState(false);
   const { toast } = useToast();
+  const { storeId } = useShopifyCredentials();
 
   // Helper function to provide user-friendly error messages and solutions
   const getUserFriendlyError = (error: any) => {
@@ -462,17 +464,18 @@ REQUIREMENTS:
 
         try {
           const { data: exportData, error: exportError } = await supabase.functions.invoke('shopify-products', {
-            body: { 
-              action: 'update',
-              products: [{
-                handle: product.handle,
-                title: data.optimizedData.title,
-                description: data.optimizedData.description,
-                type: data.optimizedData.type || product.type,
-                tags: data.optimizedData.tags,
-                category: data.optimizedData.category
-              }]
-            }
+          body: { 
+            action: 'update',
+            storeId,
+            products: [{
+              handle: product.handle,
+              title: data.optimizedData.title,
+              description: data.optimizedData.description,
+              type: data.optimizedData.type || product.type,
+              tags: data.optimizedData.tags,
+              category: data.optimizedData.category
+            }]
+          }
           });
 
           if (exportError) {

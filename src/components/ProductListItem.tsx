@@ -10,6 +10,8 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useSessionContext } from '@supabase/auth-helpers-react';
 import { Product } from '@/types/product';
+import { useShopifyCredentials } from '@/hooks/useShopifyCredentials';
+import { getPublicProductUrl, getShopifyAdminProductUrl } from '@/utils/shopify';
 
 interface ProductListItemProps {
   product: Product;
@@ -31,7 +33,6 @@ export const ProductListItem = ({
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [storeConfig, setStoreConfig] = useState<{domain: string} | null>(null);
   const [editedProduct, setEditedProduct] = useState({
     title: product.title,
     vendor: product.vendor,
@@ -48,6 +49,7 @@ export const ProductListItem = ({
   
   const { session } = useSessionContext();
   const { toast } = useToast();
+  const { storeUrl: activeStoreUrl, storeId } = useShopifyCredentials();
 
   // Helper function to provide user-friendly error messages and solutions
   const getUserFriendlyError = (error: any) => {
@@ -93,45 +95,15 @@ export const ProductListItem = ({
     };
   };
 
-  useEffect(() => {
-    const fetchStoreConfig = async () => {
-      if (!session?.user?.id) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from('store_configurations')
-          .select('domain')
-          .eq('user_id', session.user.id)
-          .eq('is_active', true)
-          .limit(1);
-          
-        if (error) throw error;
-        if (data && data.length > 0) {
-          setStoreConfig(data[0]);
-        }
-      } catch (error) {
-        console.error('Error fetching store config:', error);
-      }
-    };
-
-    fetchStoreConfig();
-  }, [session?.user?.id]);
 
   const getProductUrl = (handle: string) => {
-    if (storeUrl && storeUrl.trim()) {
-      const cleanUrl = storeUrl.replace(/\/+$/, '');
-      return `${cleanUrl}/products/${handle}`;
-    }
-    return null;
+    const base = (activeStoreUrl || storeUrl || '').trim();
+    return base ? getPublicProductUrl(base, handle) : null;
   };
 
   const getShopifyAdminUrl = (handle: string) => {
-    if (!storeConfig?.domain) {
-      return null;
-    }
-    
-    const storeName = storeConfig.domain.replace('.myshopify.com', '');
-    return `https://admin.shopify.com/store/${storeName}/products/${handle}`;
+    const base = (activeStoreUrl || storeUrl || '').trim();
+    return base ? getShopifyAdminProductUrl(base, handle) : null;
   };
 
   const handleSave = async () => {
@@ -249,6 +221,7 @@ export const ProductListItem = ({
       const { data: syncData, error: syncError } = await supabase.functions.invoke('shopify-products', {
         body: { 
           action: 'update',
+          storeId,
           products: [{
             handle: product.handle,
             title: editedProduct.title,

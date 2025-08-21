@@ -37,21 +37,108 @@ export default function AuthPage() {
     company: ''
   });
 
+  const [resetForm, setResetForm] = useState({
+    password: '',
+    confirmPassword: ''
+  });
+
+  const [resetMode, setResetMode] = useState(false);
+
   useEffect(() => {
-    // Handle URL hash parameters for email confirmation
-    const handleHashParams = () => {
+    // Check for reset mode from URL params
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('mode') === 'reset') {
+      setResetMode(true);
+    }
+
+    // Handle URL hash parameters and URL parameters for email confirmation and password reset
+    const handleAuthParams = () => {
+      // Check URL hash first
       const hash = window.location.hash.substring(1);
-      const params = new URLSearchParams(hash);
+      const hashParams = new URLSearchParams(hash);
       
-      if (params.get('type') === 'signup' && params.get('access_token')) {
+      // Check URL search parameters as backup
+      const searchParams = new URLSearchParams(window.location.search);
+      
+      // Email confirmation handling
+      if (hashParams.get('type') === 'signup' && hashParams.get('access_token')) {
         // Clear the hash from URL
         window.history.replaceState(null, '', window.location.pathname);
         
         // Show success message
+        toast({
+          title: 'Email confirmed!',
+          description: 'Your email has been confirmed successfully. Welcome to PrepFox!',
+        });
+      }
+      
+      // Password reset handling - check both hash and search params
+      const resetType = hashParams.get('type') || searchParams.get('type');
+      const accessToken = hashParams.get('access_token') || searchParams.get('access_token');
+      const email = hashParams.get('email') || searchParams.get('email');
+      
+      if (resetType === 'recovery' && accessToken) {
+        console.log('Recovery flow - token_hash:', accessToken, 'email:', email);
+        
+        if (!email) {
+          console.error('Missing email parameter in reset URL');
           toast({
-            title: 'Email confirmed!',
-            description: 'Your email has been confirmed successfully. Welcome to PrepFox!',
+            title: 'Invalid reset link',
+            description: 'This password reset link is missing required information. Please request a new one.',
+            variant: 'destructive',
           });
+          return;
+        }
+        
+        // Use verifyOtp for recovery token verification with email
+        supabase.auth.verifyOtp({
+          token_hash: accessToken,
+          type: 'recovery',
+          email: email
+        }).then(({ error, data }) => {
+          console.log('VerifyOtp result:', { 
+            error: error?.message, 
+            session: !!data.session, 
+            user: !!data.user,
+            sessionDetails: data.session ? {
+              access_token: !!data.session.access_token,
+              refresh_token: !!data.session.refresh_token,
+              user_id: data.session.user?.id
+            } : null
+          });
+          
+          if (!error && data.session) {
+            // Explicitly set the session and user state immediately
+            setSession(data.session);
+            setUser(data.session.user);
+            console.log('Session successfully established for password reset:', {
+              sessionId: data.session.access_token?.substring(0, 10) + '...',
+              userId: data.session.user?.id
+            });
+            
+            setResetMode(true);
+            // Clear the URL for security after session is established
+            window.history.replaceState(null, '', '/auth?mode=reset');
+            toast({
+              title: 'Password reset ready',
+              description: 'You can now set your new password.',
+            });
+          } else {
+            console.error('Recovery verification error:', error);
+            toast({
+              title: 'Invalid reset link',
+              description: error?.message || 'This password reset link is invalid or expired. Please request a new one.',
+              variant: 'destructive',
+            });
+          }
+        }).catch((error) => {
+          console.error('Recovery verification failed:', error);
+          toast({
+            title: 'Authentication error',
+            description: 'Failed to verify reset token. Please try again.',
+            variant: 'destructive',
+          });
+        });
       }
     };
 
@@ -80,8 +167,8 @@ export default function AuthPage() {
       }
     });
 
-    // Handle hash parameters on page load
-    handleHashParams();
+    // Handle auth parameters on page load
+    handleAuthParams();
 
     return () => subscription.unsubscribe();
   }, [navigate, toast]);
@@ -207,6 +294,81 @@ export default function AuthPage() {
     }
   };
 
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (resetForm.password !== resetForm.confirmPassword) {
+      toast({
+        title: 'Passwords do not match',
+        description: 'Please make sure both passwords are identical.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (resetForm.password.length < 6) {
+      toast({
+        title: 'Password too short',
+        description: 'Password must be at least 6 characters long.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Validate session before attempting password update
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      
+      console.log('Session validation before password update:', {
+        hasSession: !!currentSession,
+        hasAccessToken: !!currentSession?.access_token,
+        userId: currentSession?.user?.id,
+        localSessionExists: !!session,
+        localUserExists: !!user
+      });
+      
+      if (!currentSession || !currentSession.access_token) {
+        console.error('No valid session found for password update');
+        toast({
+          title: 'Session expired',
+          description: 'Your session has expired. Please request a new password reset link.',
+          variant: 'destructive',
+        });
+        setResetMode(false);
+        window.history.replaceState(null, '', '/auth');
+        return;
+      }
+
+      const { error } = await supabase.auth.updateUser({
+        password: resetForm.password
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Password updated successfully',
+        description: 'Your password has been changed. You can now sign in with your new password.',
+      });
+
+      // Clear reset mode and redirect to login
+      setResetMode(false);
+      window.history.replaceState(null, '', '/auth');
+      setActiveTab('login');
+      setResetForm({ password: '', confirmPassword: '' });
+      
+    } catch (error: any) {
+      toast({
+        title: 'Password reset failed',
+        description: error.message || 'Failed to update password. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
       <div className="w-full max-w-md space-y-6">
@@ -221,13 +383,91 @@ export default function AuthPage() {
 
         <Card className="border-border/50 backdrop-blur-sm bg-background/80">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center">Customer Access</CardTitle>
+            <CardTitle className="text-2xl text-center">
+              {resetMode ? 'Reset Your Password' : 'Customer Access'}
+            </CardTitle>
             <CardDescription className="text-center">
-              Sign in to your account or create a new one
+              {resetMode 
+                ? 'Enter your new password below' 
+                : 'Sign in to your account or create a new one'
+              }
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            {resetMode ? (
+              <form onSubmit={handlePasswordReset} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="new-password">New Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="new-password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Enter new password"
+                      className="pl-10 pr-10"
+                      value={resetForm.password}
+                      onChange={(e) => setResetForm(prev => ({ ...prev, password: e.target.value }))}
+                      required
+                      minLength={6}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-1 top-1 h-8 w-8 p-0"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password">Confirm New Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="confirm-password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Confirm new password"
+                      className="pl-10"
+                      value={resetForm.confirmPassword}
+                      onChange={(e) => setResetForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                      required
+                      minLength={6}
+                    />
+                  </div>
+                </div>
+
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Updating Password...
+                    </>
+                  ) : (
+                    'Update Password'
+                  )}
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="link"
+                  className="w-full text-sm"
+                  onClick={() => {
+                    setResetMode(false);
+                    window.history.replaceState(null, '', '/auth');
+                  }}
+                >
+                  Back to Sign In
+                </Button>
+              </form>
+            ) : (
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="login">Sign In</TabsTrigger>
                 <TabsTrigger value="signup">Sign Up</TabsTrigger>
@@ -468,6 +708,7 @@ export default function AuthPage() {
                 </form>
               </TabsContent>
             </Tabs>
+            )}
           </CardContent>
         </Card>
 

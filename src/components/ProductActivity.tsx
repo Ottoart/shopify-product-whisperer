@@ -11,6 +11,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSessionContext } from '@supabase/auth-helpers-react';
 import { useToast } from '@/hooks/use-toast';
 import { Product } from '@/types/product';
+import { getPublicProductUrl, getShopifyAdminProductUrl } from '@/utils/shopify';
+import { useShopifyCredentials } from '@/hooks/useShopifyCredentials';
 
 interface ProductActivityProps {
   onProductsUpdated: () => void;
@@ -25,10 +27,10 @@ export const ProductActivity = ({ onProductsUpdated, storeUrl }: ProductActivity
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [storeConfig, setStoreConfig] = useState<{domain: string} | null>(null);
   const { session } = useSessionContext();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useTabPersistence('product-activity', 'recent');
+  const { storeId } = useShopifyCredentials();
 
   const fetchActivityData = async () => {
     if (!session?.user?.id) return;
@@ -104,20 +106,11 @@ export const ProductActivity = ({ onProductsUpdated, storeUrl }: ProductActivity
   });
 
   const getProductUrl = (handle: string) => {
-    if (storeUrl && storeUrl.trim()) {
-      const cleanUrl = storeUrl.replace(/\/+$/, '');
-      return `${cleanUrl}/products/${handle}`;
-    }
-    return null;
+    return storeUrl ? getPublicProductUrl(storeUrl, handle) : null;
   };
 
   const getShopifyAdminUrl = (handle: string) => {
-    if (!storeConfig?.domain) {
-      return null;
-    }
-    
-    const storeName = storeConfig.domain.replace('.myshopify.com', '');
-    return `https://admin.shopify.com/store/${storeName}/products/${handle}`;
+    return storeUrl ? getShopifyAdminProductUrl(storeUrl, handle) : null;
   };
 
   const formatTimeAgo = (dateString: string) => {
@@ -196,6 +189,7 @@ export const ProductActivity = ({ onProductsUpdated, storeUrl }: ProductActivity
       const { data, error } = await supabase.functions.invoke('shopify-products', {
         body: { 
           action: 'update',
+          storeId,
           products: productsToUpload.map(p => ({
             handle: p.handle,
             title: p.title,
@@ -309,29 +303,6 @@ export const ProductActivity = ({ onProductsUpdated, storeUrl }: ProductActivity
     }
   };
 
-  useEffect(() => {
-    const fetchStoreConfig = async () => {
-      if (!session?.user?.id) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from('store_configurations')
-          .select('domain')
-          .eq('user_id', session.user.id)
-          .eq('is_active', true)
-          .limit(1);
-          
-        if (error) throw error;
-        if (data && data.length > 0) {
-          setStoreConfig(data[0]);
-        }
-      } catch (error) {
-        console.error('Error fetching store config:', error);
-      }
-    };
-
-    fetchStoreConfig();
-  }, [session?.user?.id]);
 
   useEffect(() => {
     fetchActivityData();

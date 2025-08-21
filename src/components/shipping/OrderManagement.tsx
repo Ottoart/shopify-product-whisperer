@@ -51,6 +51,7 @@ import { ShippedProductsView } from './ShippedProductsView';
 import { LabelPurchaseDialog } from './LabelPurchaseDialog';
 import { TableColumnResizer } from './TableColumnResizer';
 
+
 export function OrderManagement() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -164,6 +165,19 @@ export function OrderManagement() {
       const isAwaitingShipment = ['awaiting', 'awaiting_payment', 'pending', 'processing', 'ready_to_ship'].includes(order.status);
       // Only from active stores
       const isFromActiveStore = storeConfigs.some(store => store.store_name === order.storeName && store.is_active);
+      
+      // Debug logging for eBay orders
+      if (order.storePlatform === 'ebay') {
+        console.log(`eBay Order ${order.orderNumber}: status=${order.status}, isAwaitingShipment=${isAwaitingShipment}, isFromActiveStore=${isFromActiveStore}, store=${order.storeName}, orderDate=${order.orderDate}`);
+        
+        // Log store config match details
+        const matchingStore = storeConfigs.find(store => store.store_name === order.storeName);
+        if (matchingStore) {
+          console.log(`  Matching store found: ${matchingStore.store_name}, active: ${matchingStore.is_active}, platform: ${matchingStore.platform}`);
+        } else {
+          console.log(`  No matching store found for: ${order.storeName}. Available stores:`, storeConfigs.map(s => s.store_name));
+        }
+      }
       
       return isAwaitingShipment && isFromActiveStore;
     });
@@ -561,6 +575,7 @@ export function OrderManagement() {
             </div>
           </div>
         </div>
+
 
       {/* Content Area */}
       <div className="flex-1 overflow-auto">

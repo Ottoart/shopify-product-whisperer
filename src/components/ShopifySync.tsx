@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Download, Upload, Loader, CheckCircle, XCircle, Store, Zap, Tags } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useShopifyCredentials } from '@/hooks/useShopifyCredentials';
 
 interface ShopifySyncProps {
   onProductsUpdated: () => void;
@@ -25,6 +26,7 @@ export const ShopifySync = ({ onProductsUpdated }: ShopifySyncProps) => {
   const [showItemSelection, setShowItemSelection] = useState(false);
   const [activeFilterType, setActiveFilterType] = useState<'brands' | 'product_types' | 'collections'>('brands');
   const { toast } = useToast();
+  const { storeId } = useShopifyCredentials();
 
   const fetchAvailableItems = async (filterType: 'brands' | 'product_types' | 'collections') => {
     setIsFetchingItems(true);
@@ -32,7 +34,7 @@ export const ShopifySync = ({ onProductsUpdated }: ShopifySyncProps) => {
     
     try {
       const { data, error } = await supabase.functions.invoke('shopify-products', {
-        body: { action: 'fetch-filters', filterType }
+        body: { action: 'fetch-filters', filterType, storeId }
       });
 
       if (error) {
@@ -83,7 +85,7 @@ export const ShopifySync = ({ onProductsUpdated }: ShopifySyncProps) => {
       for (const item of itemList) {
         setImportProgress({ current: 0, total: itemList.length, item, percentage: 0 });
         
-        const body: any = { action: 'fetch' };
+        const body: any = { action: 'fetch', storeId };
         
         if (activeFilterType === 'brands') {
           body.brand = item;
@@ -135,6 +137,7 @@ export const ShopifySync = ({ onProductsUpdated }: ShopifySyncProps) => {
       const { data, error } = await supabase.functions.invoke('shopify-products', {
         body: { 
           action: 'update',
+          storeId,
           products: products.map(p => ({
             handle: p.handle,
             title: p.title,

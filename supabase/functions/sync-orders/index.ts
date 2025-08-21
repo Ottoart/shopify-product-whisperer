@@ -804,7 +804,12 @@ async function syncEbayOrders(storeConfig: any, user: any, supabase: any, syncRe
   }
 
   // eBay Sell Fulfillment API endpoint for orders with full shipping details for sellers
-  const apiUrl = `https://api.ebay.com/sell/fulfillment/v1/order?filter=orderfulfillmentstatus:{NOT_STARTED|IN_PROGRESS}&limit=50`;
+  // Add date filter to get only recent orders (last 7 days)
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const dateFilter = sevenDaysAgo.toISOString().split('T')[0]; // Use YYYY-MM-DD format
+  const encodedDateFilter = encodeURIComponent(`creationdate:[${dateFilter}..]`);
+  const apiUrl = `https://api.ebay.com/sell/fulfillment/v1/order?filter=${encodedDateFilter}&limit=50`;
   
   console.log(`Fetching orders from eBay API: ${apiUrl}`);
   
@@ -998,7 +1003,10 @@ async function syncEbayOrders(storeConfig: any, user: any, supabase: any, syncRe
         order_number: ebayOrder.orderId,
         product_handle: item.sku || item.lineItemId,
         product_title: item.title || 'eBay Item',
-        variant_title: item.variationAspects ? Object.values(item.variationAspects).join(', ') : null,
+        variant_title: item.variationAspects ? 
+          Object.entries(item.variationAspects)
+            .map(([key, value]) => `${key}: ${value}`)
+            .join(', ') : null,
         sku: item.sku || null,
         quantity: parseInt(item.quantity) || 1,
         price: itemPrice,
