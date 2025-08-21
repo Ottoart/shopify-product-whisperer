@@ -47,7 +47,7 @@ export async function validateAdminAuth(authHeader: string) {
       const { data: { usersdff }, error: authError } = await supabase1.auth.getUser();
 
       console.log('🔓 Decoded admin JWT payload:', { 
-        sub: payload.sub, 
+        sub: payload.sub,  
         email: payload.email,
         iss: payload.iss,
         aud: payload.aud,
