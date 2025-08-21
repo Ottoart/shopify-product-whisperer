@@ -135,27 +135,31 @@ serve(async (req) => {
     let jwtToken = null;
     if (supabaseUser) {
       try {
-        const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.generateLink({
-          type: 'magiclink',
-          email: email,
-          options: {
-            redirectTo: 'https://prepfox.ca/admin'
-          }
-        });
+        // Generate an access token for the admin user
+        const { data: tokenData, error: tokenError } = await supabaseAdmin.auth.admin.generateAccessToken(supabaseUser.id);
         
-        if (sessionData && !sessionError) {
-          // Extract token from the magic link URL or create session directly
-          const { data: tokenData, error: tokenError } = await supabaseAdmin.auth.admin.createSession({
-            user_id: supabaseUser.id
-          });
-          
-          if (tokenData && !tokenError) {
-            jwtToken = tokenData.access_token;
-            console.log('✅ Generated valid JWT token for admin');
-          }
+        if (tokenData && !tokenError) {
+          jwtToken = tokenData;
+          console.log('✅ Generated valid JWT token for admin');
+        } else {
+          console.error('Error generating access token:', tokenError);
         }
       } catch (error) {
         console.error("Error generating JWT token:", error);
+        // Fallback: create a simple session token
+        try {
+          const { data: signInData, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
+            email: email,
+            password: `admin-${adminUser.user_id}` // Use a predictable password for admin
+          });
+          
+          if (signInData?.session?.access_token && !signInError) {
+            jwtToken = signInData.session.access_token;
+            console.log('✅ Generated JWT token via sign in');
+          }
+        } catch (fallbackError) {
+          console.error("Fallback token generation failed:", fallbackError);
+        }
       }
     }
 
