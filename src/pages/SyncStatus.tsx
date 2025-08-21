@@ -3,8 +3,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useShopifyProductSync } from '@/hooks/useShopifyProductSync';
-import { useShopifyCredentials } from '@/hooks/useShopifyCredentials';
-import { SyncSettingsAdvanced } from '@/components/SyncSettingsAdvanced';
 
 const SyncStatus = () => {
   const {
@@ -12,13 +10,11 @@ const SyncStatus = () => {
     localProductsCount,
     isSyncing,
     startFullSync,
-    startGraphQLBulkSync,
     syncBatch,
     isCompleted,
     isInProgress,
     lastSyncAt
   } = useShopifyProductSync();
-  const { store } = useShopifyCredentials();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -44,9 +40,6 @@ const SyncStatus = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground">Sync Status</h1>
           <p className="text-muted-foreground">Monitor Shopify synchronization operations</p>
-          {store?.store_name && (
-            <p className="text-sm text-muted-foreground">Active store: {store.store_name}</p>
-          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -80,7 +73,7 @@ const SyncStatus = () => {
               <CheckCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{syncStatus?.products_synced || 0}</div>
+              <div className="text-2xl font-bold">{syncStatus?.total_synced || 0}</div>
               <p className="text-xs text-muted-foreground">Products processed</p>
             </CardContent>
           </Card>
@@ -104,29 +97,18 @@ const SyncStatus = () => {
               </div>
             )}
             
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-2">
               <Button 
-                onClick={startGraphQLBulkSync}
+                onClick={startFullSync}
                 disabled={isSyncing}
-                className="flex items-center gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
-                size="lg"
+                className="flex items-center gap-2"
               >
                 {isSyncing ? (
                   <RefreshCw className="h-4 w-4 animate-spin" />
                 ) : (
                   <Database className="h-4 w-4" />
                 )}
-                {isSyncing ? 'Syncing All Products...' : '🚀 GraphQL Bulk Sync (ALL 4,897)'}
-              </Button>
-              
-              <Button 
-                variant="outline"
-                onClick={startFullSync}
-                disabled={isSyncing}
-                className="flex items-center gap-2"
-              >
-                <Database className="h-4 w-4" />
-                Legacy REST Sync (Slow)
+                {isSyncing ? 'Syncing...' : 'Full Sync'}
               </Button>
               
               <Button 
@@ -136,10 +118,8 @@ const SyncStatus = () => {
                 className="flex items-center gap-2"
               >
                 <RefreshCw className="h-4 w-4" />
-                Sync Single Batch (250)
+                Sync Next Batch
               </Button>
-              
-              <SyncSettingsAdvanced />
             </div>
 
             {!isCompleted && localProductsCount === 0 && (
@@ -174,7 +154,7 @@ const SyncStatus = () => {
               
               <div className="flex justify-between">
                 <span className="text-sm font-medium">Products Synced:</span>
-                <span className="text-sm">{syncStatus?.products_synced || 0}</span>
+                <span className="text-sm">{syncStatus?.total_synced || 0}</span>
               </div>
               
               <div className="flex justify-between">

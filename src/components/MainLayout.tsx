@@ -233,7 +233,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
     },
     {
       title: "Multi-Channel Sync",
-      href: "/product-management/features/multi-channel-sync",
+      href: "/product-management/features/sync",
       description: "Synchronize products across all sales channels",
       icon: Globe,
     },
@@ -254,7 +254,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
     },
     {
       title: "Amazon FBA",
-      href: "/product-management/solutions/amazon-fba",
+      href: "/product-management/solutions/fba",
       description: "Specialized tools for Amazon FBA sellers",
       icon: Warehouse,
     },
@@ -639,18 +639,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
               </NavigationMenuItem>
 
               <NavigationMenuItem>
-                <Link
-                  to="/store"
-                  className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20 px-4 py-2 text-sm font-semibold text-primary transition-all duration-200 hover:from-primary/20 hover:to-secondary/20 hover:border-primary/40 hover:scale-105 focus:bg-accent focus:text-accent-foreground focus:outline-none"
-                >
-                  <Store className="mr-2 h-4 w-4" />
-                  Store
-                </Link>
-              </NavigationMenuItem>
-
-              <NavigationMenuItem>
                 <NavigationMenuTrigger className="text-foreground bg-transparent hover:bg-accent/50">
-                  Resources
+                  Company
                 </NavigationMenuTrigger>
                 <NavigationMenuContent>
                   <div className="w-[400px] p-6 bg-popover border shadow-xl rounded-lg">
@@ -674,27 +664,37 @@ export default function MainLayout({ children }: MainLayoutProps) {
                         <Shield className="h-3 w-3" />
                         Privacy Policy
                       </Link>
-                      <div className="border-t mt-3 pt-3">
-                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                          RESOURCES
-                        </h4>
-                        <Link to="#documentation" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
-                          <BookOpen className="h-3 w-3" />
-                          Documentation
-                        </Link>
-                        <Link to="#support" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
-                          <HelpCircle className="h-3 w-3" />
-                          Support Center
-                        </Link>
-                        <Link to="#blog" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
-                          <Globe className="h-3 w-3" />
-                          Blog
-                        </Link>
-                        <Link to="#api" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
-                          <Zap className="h-3 w-3" />
-                          API Reference
-                        </Link>
-                      </div>
+                    </div>
+                  </div>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
+
+              <NavigationMenuItem>
+                <NavigationMenuTrigger className="text-foreground bg-transparent hover:bg-accent/50">
+                  Resources
+                </NavigationMenuTrigger>
+                <NavigationMenuContent>
+                  <div className="w-[400px] p-6 bg-popover border shadow-xl rounded-lg">
+                    <div className="space-y-1">
+                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 pb-2 border-b border-border/50">
+                        RESOURCES
+                      </h4>
+                      <Link to="#documentation" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
+                        <BookOpen className="h-3 w-3" />
+                        Documentation
+                      </Link>
+                      <Link to="#support" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
+                        <HelpCircle className="h-3 w-3" />
+                        Support Center
+                      </Link>
+                      <Link to="#blog" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
+                        <Globe className="h-3 w-3" />
+                        Blog
+                      </Link>
+                      <Link to="#api" className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200">
+                        <Zap className="h-3 w-3" />
+                        API Reference
+                      </Link>
                     </div>
                   </div>
                 </NavigationMenuContent>
@@ -836,58 +836,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
                       </div>
                     </AccordionContent>
                   </AccordionItem>
-                  
-                  <AccordionItem value="resources">
-                    <AccordionTrigger className="text-left">Resources</AccordionTrigger>
-                    <AccordionContent>
-                      <div className="space-y-2 pl-4">
-                        <div className="text-sm font-medium text-muted-foreground mb-2">Company</div>
-                        <Link to="/about-us" className="flex items-center space-x-2 p-2 rounded-lg hover:bg-accent/50 transition-colors">
-                          <Users className="h-4 w-4 text-primary" />
-                          <span className="text-sm">About Us</span>
-                        </Link>
-                        <Link to="#careers" className="flex items-center space-x-2 p-2 rounded-lg hover:bg-accent/50 transition-colors">
-                          <Target className="h-4 w-4 text-primary" />
-                          <span className="text-sm">Careers</span>
-                        </Link>
-                        <Link to="#contact" className="flex items-center space-x-2 p-2 rounded-lg hover:bg-accent/50 transition-colors">
-                          <Phone className="h-4 w-4 text-primary" />
-                          <span className="text-sm">Contact Us</span>
-                        </Link>
-                        <Link to="/privacy-policy" className="flex items-center space-x-2 p-2 rounded-lg hover:bg-accent/50 transition-colors">
-                          <Shield className="h-4 w-4 text-primary" />
-                          <span className="text-sm">Privacy Policy</span>
-                        </Link>
-                        <div className="text-sm font-medium text-muted-foreground mb-2 mt-4">Resources</div>
-                        <Link to="#documentation" className="flex items-center space-x-2 p-2 rounded-lg hover:bg-accent/50 transition-colors">
-                          <BookOpen className="h-4 w-4 text-primary" />
-                          <span className="text-sm">Documentation</span>
-                        </Link>
-                        <Link to="#support" className="flex items-center space-x-2 p-2 rounded-lg hover:bg-accent/50 transition-colors">
-                          <HelpCircle className="h-4 w-4 text-primary" />
-                          <span className="text-sm">Support Center</span>
-                        </Link>
-                        <Link to="#blog" className="flex items-center space-x-2 p-2 rounded-lg hover:bg-accent/50 transition-colors">
-                          <Globe className="h-4 w-4 text-primary" />
-                          <span className="text-sm">Blog</span>
-                        </Link>
-                        <Link to="#api" className="flex items-center space-x-2 p-2 rounded-lg hover:bg-accent/50 transition-colors">
-                          <Zap className="h-4 w-4 text-primary" />
-                          <span className="text-sm">API Reference</span>
-                        </Link>
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
                 </Accordion>
                 
                 <div className="space-y-2">
-                  <Link 
-                    to="/store" 
-                    className="flex items-center space-x-2 p-3 rounded-lg bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20 hover:from-primary/20 hover:to-secondary/20 transition-all duration-200"
-                  >
-                    <Store className="h-5 w-5 text-primary" />
-                    <span className="font-semibold text-primary">Store</span>
-                  </Link>
                   <Link to="/features" className="block p-2 rounded-lg hover:bg-accent/50 transition-colors text-foreground">
                     Features
                   </Link>

@@ -210,68 +210,7 @@ export function StoreCredentialsForm({ marketplace, onBack, onSuccess }: StoreCr
         return;
       }
 
-      if (marketplace.platform === 'shopify') {
-        // Normalize domain and token
-        const rawDomain = (formData.shop_domain || '').trim().toLowerCase();
-        const normalizedDomain = rawDomain
-          .replace(/^https?:\/\//, '')
-          .replace(/\/.*/, '');
-        const token = (formData.access_token || '').trim();
-
-        if (!normalizedDomain || !token) {
-          throw new Error('Shopify domain and access token are required.');
-        }
-
-        // Try to find an existing configuration for this user/platform/domain
-        const { data: existing, error: findError } = await supabase
-          .from('marketplace_configurations')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('platform', 'shopify')
-          .eq('store_url', normalizedDomain)
-          .maybeSingle();
-
-        if (findError && findError.code !== 'PGRST116') {
-          throw findError;
-        }
-
-        let saved;
-        if (existing?.id) {
-          const { data: updated, error: updateError } = await supabase
-            .from('marketplace_configurations')
-            .update({
-              store_name: formData.store_name,
-              access_token: token,
-              is_active: true,
-            })
-            .eq('id', existing.id)
-            .select()
-            .single();
-          if (updateError) throw updateError;
-          saved = updated;
-        } else {
-          const { data: inserted, error: insertError } = await supabase
-            .from('marketplace_configurations')
-            .insert({
-              user_id: user.id,
-              store_name: formData.store_name,
-              platform: 'shopify',
-              store_url: normalizedDomain,
-              access_token: token,
-              is_active: true,
-              external_user_id: user.id,
-            })
-            .select()
-            .single();
-          if (insertError) throw insertError;
-          saved = inserted;
-        }
-
-        onSuccess({ store: saved, marketplace, credentials: { shop_domain: normalizedDomain } });
-        return;
-      }
-
-      // Default behavior for other marketplaces: keep existing logic
+      // Generate a unique domain to avoid conflicts  
       const timestamp = Date.now();
       const uniqueDomain = `${formData.shop_domain || formData.seller_id || formData.client_id || marketplace.name.toLowerCase()}_${timestamp}`;
       
@@ -285,12 +224,8 @@ export function StoreCredentialsForm({ marketplace, onBack, onSuccess }: StoreCr
       };
 
       const { data, error } = await supabase
-        .from('marketplace_configurations')
-        .insert({
-          ...storeData,
-          store_url: storeData.domain,
-          external_user_id: user.id,
-        })
+        .from('store_configurations')
+        .insert(storeData)
         .select()
         .single();
 

@@ -1,5 +1,4 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,12 +12,7 @@ interface ConnectionSuccessProps {
 }
 
 export function ConnectionSuccess({ marketplace, connectionData, onFinish }: ConnectionSuccessProps) {
-  const navigate = useNavigate();
-
-  const handleCardClick = (route: string) => {
-    onFinish(); // Close the dialog first
-    navigate(route);
-  };
+  // Removed auto-close - popup stays until user clicks a button
 
   return (
     <div className="space-y-6 text-center">
@@ -75,7 +69,7 @@ export function ConnectionSuccess({ marketplace, connectionData, onFinish }: Con
       <div className="space-y-4">
         <h3 className="text-lg font-semibold">What's Next?</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => handleCardClick('/products')}>
+          <Card className="hover:shadow-md transition-shadow cursor-pointer">
             <CardContent className="p-4 text-center">
               <Package className="w-8 h-8 text-blue-600 mx-auto mb-2" />
               <h4 className="font-medium">Sync Products</h4>
@@ -83,7 +77,7 @@ export function ConnectionSuccess({ marketplace, connectionData, onFinish }: Con
             </CardContent>
           </Card>
           
-          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => handleCardClick('/bulk-editor')}>
+          <Card className="hover:shadow-md transition-shadow cursor-pointer">
             <CardContent className="p-4 text-center">
               <Zap className="w-8 h-8 text-yellow-600 mx-auto mb-2" />
               <h4 className="font-medium">Optimize Listings</h4>
@@ -91,7 +85,7 @@ export function ConnectionSuccess({ marketplace, connectionData, onFinish }: Con
             </CardContent>
           </Card>
           
-          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => handleCardClick('/analytics')}>
+          <Card className="hover:shadow-md transition-shadow cursor-pointer">
             <CardContent className="p-4 text-center">
               <BarChart3 className="w-8 h-8 text-green-600 mx-auto mb-2" />
               <h4 className="font-medium">Track Performance</h4>

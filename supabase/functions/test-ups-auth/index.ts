@@ -27,17 +27,14 @@ serve(async (req) => {
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    console.log("supabaseUrl----------",supabaseUrl)
-    console.log("supabaseAnonKey----------",supabaseAnonKey)
-    console.log("authHeader----------",authHeader)
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: {
         headers: { Authorization: authHeader }
       }
     });
+
     // Get user from auth header
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
     if (authError || !user) {
       return new Response(
         JSON.stringify({ error: 'Invalid authentication' }),
@@ -46,7 +43,7 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
-    }   
+    }
 
     // Import and use the UPS auth helper to ensure we have a valid token
     const { ensureValidUPSToken } = await import('../_shared/ups-auth.ts');

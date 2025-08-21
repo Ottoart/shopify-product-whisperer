@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { TestEmailButton } from "@/components/TestEmailButton";
+import MainLayout from "@/components/MainLayout";
 
 const LandingPage = () => {
 
@@ -95,7 +96,8 @@ const LandingPage = () => {
   ];
 
   return (
-    <>
+    <MainLayout>
+
       {/* Hero Section */}
       <section className="py-20 px-4 bg-gradient-to-br from-background via-secondary/20 to-accent/10">
         <div className="container mx-auto text-center">
@@ -319,7 +321,7 @@ const LandingPage = () => {
           </div>
         </div>
       </footer>
-    </>
+    </MainLayout>
   );
 };
 

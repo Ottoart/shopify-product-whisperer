@@ -26,7 +26,7 @@ const featuresMenuItems = [
   {
     title: "Multi-Channel Sync",
     description: "Synchronize products across all sales channels",
-    href: "/product-management/features/multi-channel-sync"
+    href: "/product-management/features/sync"
   },
   {
     title: "Analytics",
@@ -44,7 +44,7 @@ const solutionsMenuItems = [
   {
     title: "Amazon FBA",
     description: "Specialized tools for Amazon FBA sellers",
-    href: "/product-management/solutions/amazon-fba"
+    href: "/product-management/solutions/fba"
   },
   {
     title: "Marketplace Sellers",

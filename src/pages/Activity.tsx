@@ -1,9 +1,9 @@
+import { useState } from 'react';
 import { Activity as ActivityIcon } from 'lucide-react';
 import { ProductActivity } from '@/components/ProductActivity';
-import { useShopifyCredentials } from '@/hooks/useShopifyCredentials';
 
 const Activity = () => {
-  const { storeUrl } = useShopifyCredentials();
+  const [storeUrl] = useState(() => localStorage.getItem('shopify_domain') || '');
 
   const handleProductsUpdated = () => {
     // This will trigger a refetch of products
@@ -23,7 +23,10 @@ const Activity = () => {
           </div>
         </div>
 
-        <ProductActivity />
+        <ProductActivity 
+          onProductsUpdated={handleProductsUpdated} 
+          storeUrl={storeUrl} 
+        />
       </div>
     </div>
   );

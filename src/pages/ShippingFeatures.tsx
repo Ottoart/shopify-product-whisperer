@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import MainLayout from "@/components/MainLayout";
 import { 
   Truck, 
   Package, 
@@ -176,7 +177,8 @@ const ShippingFeatures = () => {
   ];
 
   return (
-    <>
+    <MainLayout>
+
       {/* Hero Section */}
       <section className="py-20 px-4 bg-gradient-to-br from-background via-secondary/20 to-accent/10">
         <div className="container mx-auto text-center">
@@ -369,7 +371,7 @@ const ShippingFeatures = () => {
           </div>
         </div>
       </footer>
-    </>
+    </MainLayout>
   );
 };
 

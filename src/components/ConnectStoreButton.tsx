@@ -29,7 +29,6 @@ interface ConnectStoreButtonProps {
   showInstructions?: boolean;
   className?: string;
   showIcon?: boolean;
-  redirectToSettings?: boolean;
 }
 
 const SUPPORTED_PLATFORMS = [
@@ -61,8 +60,7 @@ export function ConnectStoreButton({
   size = "default",
   showInstructions = true,
   className = "",
-  showIcon = true,
-  redirectToSettings = false
+  showIcon = true
 }: ConnectStoreButtonProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -70,23 +68,6 @@ export function ConnectStoreButton({
     setIsDialogOpen(false);
     onStoreConnected?.();
   };
-
-  const handleClick = () => {
-    if (redirectToSettings) {
-      window.location.href = '/settings?tab=store';
-    } else {
-      setIsDialogOpen(true);
-    }
-  };
-
-  if (redirectToSettings) {
-    return (
-      <Button variant={variant} size={size} className={`gap-2 ${className}`} onClick={handleClick}>
-        {showIcon && <Plus className="h-4 w-4" />}
-        Manage Stores
-      </Button>
-    );
-  }
 
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrendingUp, DollarSign, Target, ShoppingCart, Download, Search } from "lucide-react";
+import { PatternStatsOverview } from "@/components/patterns/PatternStatsOverview";
+import { usePatternLearning } from "@/hooks/usePatternLearning";
 
 // Mock data for charts
 const salesData = [
@@ -34,6 +36,26 @@ const reports = [
 export default function Analytics() {
   const [activeTab, setActiveTab] = useState("gross-sales");
   const [searchTerm, setSearchTerm] = useState("");
+  const { patterns } = usePatternLearning();
+
+  // Calculate pattern stats
+  const stats = patterns && patterns.length > 0 ? {
+    totalPatterns: patterns.length,
+    approvedPatterns: patterns.filter(p => p.is_approved === true).length,
+    avgConfidence: patterns.reduce((sum, p) => sum + p.confidence_score, 0) / patterns.length,
+    mostFrequentType: Object.entries(
+      patterns.reduce((acc: Record<string, number>, p) => {
+        acc[p.pattern_type] = (acc[p.pattern_type] || 0) + 1;
+        return acc;
+      }, {})
+    ).sort(([,a], [,b]) => b - a)[0]?.[0] || '',
+    recentActivity: patterns.filter(p => {
+      const created = new Date(p.created_at);
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      return created > weekAgo;
+    }).length
+  } : null;
 
   const kpis = {
     totalSales: 74700,
@@ -67,6 +89,9 @@ export default function Analytics() {
           </Select>
         </div>
       </div>
+
+      {/* AI Learning Pattern Stats */}
+      <PatternStatsOverview stats={stats} />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">

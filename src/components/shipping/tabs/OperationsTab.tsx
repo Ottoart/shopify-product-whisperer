@@ -6,6 +6,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MockDataBadge, LiveDataBadge } from "@/components/ui/mock-data-badge";
 import { OrderManagement } from '../OrderManagement';
+import { ShippingLabelManager } from '../ShippingLabelManager';
 import { ShippingLabelsManager } from '../LabelManagement';
 import { 
   BarChart, 
@@ -40,6 +41,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format, subDays, parseISO, differenceInDays } from 'date-fns';
+import { AIRecommendations } from "../components/AIRecommendations";
+import { UpsApiDocs } from "../UpsApiDocs";
 import { CarrierRateComparison } from "../CarrierRateComparison";
 import { UpsProductionModeSwitch } from "../UpsProductionModeSwitch";
 
@@ -299,7 +302,7 @@ export function OperationsTab({ storeFilter, dateRange, dateRangeLabel }: Operat
 
   return (
     <Tabs defaultValue="dashboard" className="space-y-6">
-      <TabsList className="grid w-full grid-cols-4">
+      <TabsList className="grid w-full grid-cols-5">
         <TabsTrigger value="dashboard" className="flex items-center gap-2">
           <BarChartIcon className="h-4 w-4" />
           Dashboard
@@ -311,6 +314,10 @@ export function OperationsTab({ storeFilter, dateRange, dateRangeLabel }: Operat
         <TabsTrigger value="shipping" className="flex items-center gap-2">
           <Truck className="h-4 w-4" />
           Rate Comparison
+        </TabsTrigger>
+        <TabsTrigger value="ups-config" className="flex items-center gap-2">
+          <Settings className="h-4 w-4" />
+          UPS Config
         </TabsTrigger>
         <TabsTrigger value="labels" className="flex items-center gap-2">
           <FileText className="h-4 w-4" />
@@ -353,16 +360,50 @@ export function OperationsTab({ storeFilter, dateRange, dateRangeLabel }: Operat
         </LiveDataBadge>
         <LiveDataBadge>
           <MetricCard
-            icon={DollarSign}
-            value={`$${avgCostPerLabel.toFixed(2)}`}
-            label="Avg Cost per Label"
+            icon={Package}
+            value={`${weekendShippingRatio.toFixed(1)}%`}
+            label="Weekend Shipping"
             color="text-purple-600"
-            tooltip="Average shipping cost per label"
+            tooltip="Percentage of orders shipped on weekends"
             trend={null}
           />
         </LiveDataBadge>
       </div>
 
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-card p-4 rounded-lg border">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">Quick Actions</h3>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Button variant="outline" size="sm" className="h-auto p-3 text-left">
+              <div>
+                <div className="font-medium">Bulk Print</div>
+                <div className="text-sm text-muted-foreground">Print multiple labels</div>
+              </div>
+            </Button>
+            <Button variant="outline" size="sm" className="h-auto p-3 text-left">
+              <div>
+                <div className="font-medium">Batch Ship</div>
+                <div className="text-sm text-muted-foreground">Process multiple orders</div>
+              </div>
+            </Button>
+            <Button variant="outline" size="sm" className="h-auto p-3 text-left">
+              <div>
+                <div className="font-medium">Import Orders</div>
+                <div className="text-sm text-muted-foreground">Upload CSV file</div>
+              </div>
+            </Button>
+            <Button variant="outline" size="sm" className="h-auto p-3 text-left">
+              <div>
+                <div className="font-medium">Export Data</div>
+                <div className="text-sm text-muted-foreground">Download reports</div>
+              </div>
+            </Button>
+          </div>
+        </div>
+      </div>
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -437,6 +478,41 @@ export function OperationsTab({ storeFilter, dateRange, dateRangeLabel }: Operat
         </MockDataBadge>
       </div>
 
+      {/* User Productivity Analysis */}
+      <MockDataBadge>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Shipments by Fulfillment User</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              {userProductivity.map((user) => (
+                <Card key={user.user} className="text-center">
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-center mb-4">
+                      <Users className="h-6 w-6 text-primary" />
+                    </div>
+                    <div className="text-2xl font-bold text-primary mb-1">
+                      {user.processed}
+                    </div>
+                    <div className="text-sm text-muted-foreground mb-2">
+                      {user.user}
+                    </div>
+                    <Badge variant="outline" className="text-xs">
+                      {user.avgTime}m avg
+                    </Badge>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </MockDataBadge>
+
+      <AIRecommendations orders={orders} carriers={carrierPerformance.map(c => c.carrier)} />
+
+      {/* UPS API Documentation Integration */}
+      <UpsApiDocs />
       </TabsContent>
 
       <TabsContent value="orders">
@@ -447,8 +523,15 @@ export function OperationsTab({ storeFilter, dateRange, dateRangeLabel }: Operat
         <CarrierRateComparison />
       </TabsContent>
 
+      <TabsContent value="ups-config">
+        <UpsProductionModeSwitch />
+      </TabsContent>
+
       <TabsContent value="labels">
-        <ShippingLabelsManager />
+        <div className="space-y-6">
+          <ShippingLabelsManager />
+          <ShippingLabelManager />
+        </div>
       </TabsContent>
     </Tabs>
   );

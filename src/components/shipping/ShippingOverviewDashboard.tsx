@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { OverviewTab } from "./tabs/OverviewTab";
 import { OperationsTab } from "./tabs/OperationsTab";
 import { ReportsTab } from "./tabs/ReportsTab";
-
+import { AddressSyncDashboard } from "./AddressSyncDashboard";
 import { CalendarDays } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -36,6 +36,8 @@ export function ShippingOverviewDashboard() {
 
   return (
     <div className="space-y-6">
+      {/* UPS Address Update */}
+      <AddressSyncDashboard />
       
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

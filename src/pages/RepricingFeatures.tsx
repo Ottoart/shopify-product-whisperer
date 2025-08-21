@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import MainLayout from "@/components/MainLayout";
 import {
   Bot,
   LineChart,
@@ -81,7 +82,7 @@ const features = [
 
 export default function RepricingFeatures() {
   return (
-    <>
+    <MainLayout>
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-24">
         <div className="text-center space-y-6 max-w-3xl mx-auto">
@@ -145,6 +146,6 @@ export default function RepricingFeatures() {
           </div>
         </div>
       </section>
-    </>
+    </MainLayout>
   );
 }

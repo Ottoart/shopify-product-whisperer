@@ -1,133 +1,246 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
+import { AdvancedUserManagement } from "./AdvancedUserManagement";
+import { AdvancedRoleManagement } from "./AdvancedRoleManagement";
+import { SessionManagement } from "./SessionManagement";
+import { EnhancedCompanyDashboard } from "./EnhancedCompanyDashboard";
+import { BillingOperationsHub } from "./BillingOperationsHub";
+import { CustomerSupportIntegration } from "./CustomerSupportIntegration";
+import { AdminCommunicationCenter } from "./AdminCommunicationCenter";
+import { OperationalMonitoring } from "./OperationalMonitoring";
+import { AdvancedAnalyticsDashboard } from "./AdvancedAnalyticsDashboard";
+import { CustomReportBuilder } from "./CustomReportBuilder";
+import { DataExportImport } from "./DataExportImport";
+import { PerformanceTrending } from "./PerformanceTrending";
+import { EnhancedAuditLogging } from "./EnhancedAuditLogging";
+import { DataProtectionPrivacy } from "./DataProtectionPrivacy";
+import { SecurityMonitoring } from "./SecurityMonitoring";
+import { BackupRecoveryManagement } from "./BackupRecoveryManagement";
+import { PermissionManagement } from "./PermissionManagement";
+import { RolePermissionsOverview } from "./RolePermissionsOverview";
+import { SystemLogs } from "./SystemLogs";
 import { 
   Users, 
-  Settings, 
-  BarChart3, 
+  Building, 
+  DollarSign, 
+  Activity, 
   Shield, 
-  Database,
-  Mail,
-  DollarSign,
-  Activity,
+  Settings, 
+  TrendingUp,
   Server,
   AlertTriangle,
   CheckCircle,
-  TrendingUp,
-  Building,
-  UserCog,
-  Clock,
-  HelpCircle,
-  MessageSquare,
-  Monitor,
-  Truck,
+  BarChart3,
   FileText,
-  Download,
-  Search,
+  Database,
+  TrendingDown,
   Lock,
+  Eye,
+  Archive,
   HardDrive,
-  Eye
-} from 'lucide-react';
-
-// Import new admin components
-import { UserSelector } from './UserSelector';
-import { AdminSubscriptionCard } from './AdminSubscriptionCard';
-import { AdminActionButtons } from './AdminActionButtons';
-import { useAdminUsers, useUpdateSubscription, useSubscriptionAction, type AdminUser } from '@/hooks/useAdminUsers';
-import { useSubscription } from '@/hooks/useSubscription';
-import { ModuleOverviewGrid } from '@/components/ModuleOverviewGrid';
-import { AdminAnalytics } from './AdminAnalytics';
-import { SubscriptionBadge } from '../subscription/SubscriptionBadge';
-
-// Import existing admin components
-import { AdvancedUserManagement } from "./AdvancedUserManagement";
-import { AdminUserManagement } from "./AdminUserManagement";
-import { AdminCommunicationCenter } from "./AdminCommunicationCenter";
-import { BillingOperationsHub } from "./BillingOperationsHub";
-import { OperationalMonitoring } from "./OperationalMonitoring";
-import { EnhancedCompanyDashboard } from "./EnhancedCompanyDashboard";
+  Truck
+} from "lucide-react";
+import { MockDataBadge, LiveDataBadge } from "@/components/ui/mock-data-badge";
 import { CarrierConfigurationManagement } from "./CarrierConfigurationManagement";
 
-// Navigation configuration
-const primaryNavItems = [
-  { id: 'overview', label: 'Overview', icon: Activity },
-  { id: 'users', label: 'Users', icon: Users },
-  { id: 'roles', label: 'Roles', icon: UserCog },
-  { id: 'sessions', label: 'Sessions', icon: Clock },
-  { id: 'companies', label: 'Companies', icon: Building },
-  { id: 'billing', label: 'Billing', icon: DollarSign },
-  { id: 'support', label: 'Support', icon: HelpCircle },
-  { id: 'communication', label: 'Communication', icon: MessageSquare },
-  { id: 'monitoring', label: 'Monitoring', icon: Monitor },
-  { id: 'carriers', label: 'Carriers', icon: Truck },
-  { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-  { id: 'reports', label: 'Reports', icon: FileText },
-];
+interface AdminUser {
+  id: string;
+  user_id: string;
+  role: string;
+  permissions: any;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
 
-const secondaryNavItems = [
-  { id: 'export', label: 'Data Export', icon: Download },
-  { id: 'trending', label: 'Trending', icon: TrendingUp },
-  { id: 'audit', label: 'Audit Logs', icon: Eye },
-  { id: 'protection', label: 'Data Protection', icon: Shield },
-  { id: 'security', label: 'Security', icon: Lock },
-  { id: 'backup', label: 'Backup', icon: HardDrive },
-];
+interface Company {
+  id: string;
+  name: string;
+  domain?: string;
+  subscription_plan?: string;
+  subscription_status?: string;
+  billing_email?: string;
+}
 
-// Placeholder components for missing sections
-const PlaceholderComponent = ({ title, description }: { title: string; description: string }) => (
-  <Card>
-    <CardHeader>
-      <CardTitle>{title}</CardTitle>
-      <CardDescription>{description}</CardDescription>
-    </CardHeader>
-    <CardContent>
-      <p className="text-muted-foreground">This section is coming soon...</p>
-    </CardContent>
-  </Card>
-);
+interface SystemHealth {
+  status: 'healthy' | 'warning' | 'critical';
+  uptime: string;
+  activeConnections: number;
+  lastBackup: string;
+}
 
 export const EnhancedAdminDashboard = () => {
-  const [activeSection, setActiveSection] = useState('overview');
-  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
-
-  // Admin data hooks
-  const { data: users, isLoading: isLoadingUsers } = useAdminUsers();
-  const { data: userSubscription } = useSubscription(selectedUser?.id);
-  const updateSubscription = useUpdateSubscription();
-  const subscriptionAction = useSubscriptionAction();
-
-  const handleSubscriptionUpdate = async (data: any) => {
-    updateSubscription.mutate(data);
-  };
-
-  const handleSubscriptionAction = async (data: any) => {
-    subscriptionAction.mutate(data);
-  };
-
-  const isUpdating = updateSubscription.isPending;
-  const isProcessing = subscriptionAction.isPending;
-
-  // Actual stats from database data
-  const totalUsers = users?.length || 0;
-  const activeSubscriptions = users?.filter(u => u.subscription?.status === 'active').length || 0;
-  const usersWithProfiles = users?.filter(u => u.display_name).length || 0;
-  
-  const stats = {
-    totalUsers: totalUsers,
-    adminUsers: 1, // We know there's at least one master admin
-    activeSubscriptions: activeSubscriptions,
-    storeConfigurations: 2, // From database showing 2 stores
-    inventorySubmissions: 6, // From database showing 6 submissions
-    systemHealth: 98.9 // Overall system health percentage
-  };
-
-  const systemHealth = {
-    status: 'healthy' as 'healthy' | 'warning' | 'critical',
+  const [loading, setLoading] = useState(true);
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [systemHealth, setSystemHealth] = useState<SystemHealth>({
+    status: 'healthy',
     uptime: '99.9%',
     activeConnections: 127,
     lastBackup: '2 hours ago'
+  });
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalCompanies: 0,
+    activeSubscriptions: 0,
+    totalRevenue: 0,
+    systemAlerts: 2,
+    pendingActions: 5
+  });
+  const { toast } = useToast();
+  const { isAuthenticated, isAdmin, isLoading: authLoading } = useAdminAuth();
+
+  useEffect(() => {
+    console.log('Dashboard useEffect triggered:', {
+      isAuthenticated,
+      isAdmin,
+      authLoading
+    });
+    
+    if (isAuthenticated && isAdmin && !authLoading) {
+      console.log('✅ All conditions met, loading dashboard data');
+      loadDashboardData();
+    } else if (!authLoading) {
+      console.log('❌ Conditions not met, setting loading to false');
+      setLoading(false);
+    }
+  }, [isAuthenticated, isAdmin, authLoading]);
+
+
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      console.log('=== LOADING DASHBOARD DATA ===');
+
+      // Get admin session from localStorage to pass to admin endpoints
+      const adminSessionString = localStorage.getItem('admin_session');
+      if (!adminSessionString) {
+        console.error('No admin session found');
+        toast({
+          title: "Session Error",
+          description: "No admin session found",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const adminSession = JSON.parse(adminSessionString);
+      console.log('Admin session loaded:', adminSession);
+
+      console.log('Calling admin-data function for admin_users...');
+      // Load admin users using admin endpoint
+      const adminUsersResponse = await supabase.functions.invoke('admin-data', {
+        body: { 
+          data_type: 'admin_users',
+          session_token: adminSession.session_id 
+        }
+      });
+
+      console.log('Admin users response:', adminUsersResponse);
+
+      if (adminUsersResponse.error) {
+        console.error('Function invoke error:', adminUsersResponse.error);
+        toast({
+          title: "Function Error",
+          description: adminUsersResponse.error.message,
+          variant: "destructive"
+        });
+      } else if (!adminUsersResponse.data?.success) {
+        console.error('Function returned error:', adminUsersResponse.data?.error);
+        toast({
+          title: "Data Error", 
+          description: adminUsersResponse.data?.error || 'Unknown error',
+          variant: "destructive"
+        });
+      } else {
+        console.log('Admin users loaded successfully:', adminUsersResponse.data.data);
+        setAdminUsers(adminUsersResponse.data.data || []);
+      }
+
+      console.log('Calling admin-data function for companies...');
+      // Load companies using admin endpoint
+      const companiesResponse = await supabase.functions.invoke('admin-data', {
+        body: { 
+          data_type: 'companies',
+          session_token: adminSession.session_id 
+        }
+      });
+
+      console.log('Companies response:', companiesResponse);
+
+      if (companiesResponse.error) {
+        console.error('Companies function invoke error:', companiesResponse.error);
+        toast({
+          title: "Function Error",
+          description: companiesResponse.error.message,
+          variant: "destructive"
+        });
+      } else if (!companiesResponse.data?.success) {
+        console.error('Companies function returned error:', companiesResponse.data?.error);
+        toast({
+          title: "Data Error",
+          description: companiesResponse.data?.error || 'Unknown error', 
+          variant: "destructive"
+        });
+      } else {
+        console.log('Companies loaded successfully:', companiesResponse.data.data);
+        setCompanies(companiesResponse.data.data || []);
+      }
+
+      console.log('Calling admin-data function for user_stats...');
+      // Load user statistics using admin endpoint
+      const statsResponse = await supabase.functions.invoke('admin-data', {
+        body: {
+          data_type: 'user_stats',
+          session_token: adminSession?.session_id || 'test-token'
+        }
+      });
+
+      console.log('Stats response:', statsResponse);
+
+      if (statsResponse.error) {
+        console.error('Stats function invoke error:', statsResponse.error);
+        toast({
+          title: "Function Error",
+          description: statsResponse.error.message,
+          variant: "destructive"
+        });
+      } else if (!statsResponse.data?.success) {
+        console.error('Stats function returned error:', statsResponse.data?.error);
+        toast({
+          title: "Data Error",
+          description: statsResponse.data?.error || 'Unknown error',
+          variant: "destructive"
+        });
+      } else {
+        console.log('Stats loaded successfully:', statsResponse.data.data);
+        const statsData = statsResponse.data.data || {};
+        setStats(prev => ({
+          ...prev,
+          totalUsers: statsData.totalUsers || 0,
+          totalCompanies: statsData.totalCompanies || 0,
+          activeSubscriptions: statsData.activeSubscriptions || 0,
+        }));
+      }
+
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load dashboard data: " + error.message,
+        variant: "destructive"
+      });
+    } finally {
+      console.log('Loading complete, setting loading to false');
+      setLoading(false);
+    }
   };
 
   const getSystemHealthIcon = () => {
@@ -143,7 +256,7 @@ export const EnhancedAdminDashboard = () => {
     }
   };
 
-  if (isLoadingUsers) {
+  if (loading) {
     return (
       <div className="container mx-auto p-6">
         <div className="flex items-center justify-center h-64">
@@ -155,6 +268,9 @@ export const EnhancedAdminDashboard = () => {
       </div>
     );
   }
+
+  // This component should only be rendered when admin is authenticated
+  // The parent AdminDashboard component handles the authentication flow
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -176,346 +292,308 @@ export const EnhancedAdminDashboard = () => {
 
       {/* Enhanced Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        <Card className="gradient-border">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalUsers}</div>
-            <p className="text-xs text-muted-foreground">
-              <TrendingUp className="h-3 w-3 inline mr-1" />
-              +12% from last month
-            </p>
-          </CardContent>
-        </Card>
+        <LiveDataBadge>
+          <Card className="gradient-border">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalUsers}</div>
+              <MockDataBadge>
+                <p className="text-xs text-muted-foreground">
+                  <TrendingUp className="h-3 w-3 inline mr-1" />
+                  +12% from last month
+                </p>
+              </MockDataBadge>
+            </CardContent>
+          </Card>
+        </LiveDataBadge>
 
-        <Card className="gradient-border">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Admin Users</CardTitle>
-            <Shield className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.adminUsers}</div>
-            <p className="text-xs text-muted-foreground">
-              System administrators
-            </p>
-          </CardContent>
-        </Card>
+        <LiveDataBadge>
+          <Card className="gradient-border">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Companies</CardTitle>
+              <Building className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalCompanies}</div>
+              <MockDataBadge>
+                <p className="text-xs text-muted-foreground">
+                  <TrendingUp className="h-3 w-3 inline mr-1" />
+                  +5% from last month
+                </p>
+              </MockDataBadge>
+            </CardContent>
+          </Card>
+        </LiveDataBadge>
 
-        <Card className="gradient-border">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Subscriptions</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.activeSubscriptions}</div>
-            <p className="text-xs text-muted-foreground">
-              <TrendingUp className="h-3 w-3 inline mr-1" />
-              +8% from last month
-            </p>
-          </CardContent>
-        </Card>
+        <LiveDataBadge>
+          <Card className="gradient-border">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Active Subscriptions</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.activeSubscriptions}</div>
+              <MockDataBadge>
+                <p className="text-xs text-muted-foreground">
+                  <TrendingUp className="h-3 w-3 inline mr-1" />
+                  +8% from last month
+                </p>
+              </MockDataBadge>
+            </CardContent>
+          </Card>
+        </LiveDataBadge>
 
-        <Card className="gradient-border">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Store Configurations</CardTitle>
-            <Building className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.storeConfigurations}</div>
-            <p className="text-xs text-muted-foreground">
-              <TrendingUp className="h-3 w-3 inline mr-1" />
-              Connected stores
-            </p>
-          </CardContent>
-        </Card>
+        <MockDataBadge>
+          <Card className="gradient-border">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Revenue</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">${stats.totalRevenue.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground">
+                <TrendingUp className="h-3 w-3 inline mr-1" />
+                +15% from last month
+              </p>
+            </CardContent>
+          </Card>
+        </MockDataBadge>
 
-        <Card className="gradient-border">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Inventory Submissions</CardTitle>
-            <Database className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.inventorySubmissions}</div>
-            <p className="text-xs text-muted-foreground">
-              <TrendingUp className="h-3 w-3 inline mr-1" />
-              Fulfillment submissions
-            </p>
-          </CardContent>
-        </Card>
+        <MockDataBadge>
+          <Card className="gradient-border">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">System Alerts</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orange-600">{stats.systemAlerts}</div>
+              <p className="text-xs text-muted-foreground">2 warning, 0 critical</p>
+            </CardContent>
+          </Card>
+        </MockDataBadge>
 
-        <Card className="gradient-border">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">System Health</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.systemHealth}%</div>
-            <p className="text-xs text-muted-foreground">
-              <TrendingUp className="h-3 w-3 inline mr-1" />
-              Overall system status
-            </p>
-          </CardContent>
-        </Card>
+        <MockDataBadge>
+          <Card className="gradient-border">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Pending Actions</CardTitle>
+              <Settings className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.pendingActions}</div>
+              <p className="text-xs text-muted-foreground">Requires attention</p>
+            </CardContent>
+          </Card>
+        </MockDataBadge>
       </div>
 
       {/* System Health Overview */}
-      <Card className="gradient-border">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Server className="h-5 w-5" />
-            <span>System Health Overview</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{systemHealth.uptime}</div>
-              <p className="text-sm text-muted-foreground">Uptime</p>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold">{systemHealth.activeConnections}</div>
-              <p className="text-sm text-muted-foreground">Active Connections</p>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold capitalize text-green-600">{systemHealth.status}</div>
-              <p className="text-sm text-muted-foreground">Status</p>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold">{systemHealth.lastBackup}</div>
-              <p className="text-sm text-muted-foreground">Last Backup</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Comprehensive Admin Navigation */}
-      <div className="space-y-6">
-        {/* Primary Navigation */}
+      <MockDataBadge>
         <Card className="gradient-border">
-          <CardContent className="p-6">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-12 gap-2">
-              {primaryNavItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Button
-                    key={item.id}
-                    variant={activeSection === item.id ? "default" : "ghost"}
-                    onClick={() => setActiveSection(item.id)}
-                    className={cn(
-                      "flex flex-col items-center gap-2 h-auto py-3 px-2",
-                      activeSection === item.id && "bg-primary text-primary-foreground"
-                    )}
-                  >
-                    <Icon className="h-4 w-4" />
-                    <span className="text-xs font-medium">{item.label}</span>
-                  </Button>
-                );
-              })}
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Server className="h-5 w-5" />
+              <span>System Health Overview</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">{systemHealth.uptime}</div>
+                <p className="text-sm text-muted-foreground">Uptime</p>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold">{systemHealth.activeConnections}</div>
+                <p className="text-sm text-muted-foreground">Active Connections</p>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold capitalize text-green-600">{systemHealth.status}</div>
+                <p className="text-sm text-muted-foreground">Status</p>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold">{systemHealth.lastBackup}</div>
+                <p className="text-sm text-muted-foreground">Last Backup</p>
+              </div>
             </div>
           </CardContent>
         </Card>
+      </MockDataBadge>
 
-        {/* Secondary Navigation */}
-        <Card className="gradient-border">
-          <CardContent className="p-4">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
-              {secondaryNavItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Button
-                    key={item.id}
-                    variant={activeSection === item.id ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setActiveSection(item.id)}
-                    className={cn(
-                      "flex items-center gap-2 justify-start",
-                      activeSection === item.id && "bg-primary text-primary-foreground"
-                    )}
-                  >
-                    <Icon className="h-3 w-3" />
-                    <span className="text-xs">{item.label}</span>
-                  </Button>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+      {/* Admin Tabs */}
+      <Tabs defaultValue="admin-users" className="space-y-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+          <TabsList className="grid w-full grid-cols-4 bg-muted/50">
+            <TabsTrigger value="admin-users" className="data-[state=active]:bg-background">
+              <Users className="h-4 w-4 mr-2" />
+              Users
+            </TabsTrigger>
+            <TabsTrigger value="roles" className="data-[state=active]:bg-background">
+              <Shield className="h-4 w-4 mr-2" />
+              Roles
+            </TabsTrigger>
+            <TabsTrigger value="sessions" className="data-[state=active]:bg-background">
+              <Activity className="h-4 w-4 mr-2" />
+              Sessions
+            </TabsTrigger>
+            <TabsTrigger value="companies" className="data-[state=active]:bg-background">
+              <Building className="h-4 w-4 mr-2" />
+              Companies
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsList className="grid w-full grid-cols-4 bg-muted/50">
+            <TabsTrigger value="billing" className="data-[state=active]:bg-background">
+              <DollarSign className="h-4 w-4 mr-2" />
+              Billing
+            </TabsTrigger>
+            <TabsTrigger value="support" className="data-[state=active]:bg-background">
+              <Settings className="h-4 w-4 mr-2" />
+              Support
+            </TabsTrigger>
+            <TabsTrigger value="communication" className="data-[state=active]:bg-background">
+              <Activity className="h-4 w-4 mr-2" />
+              Communication
+            </TabsTrigger>
+            <TabsTrigger value="monitoring" className="data-[state=active]:bg-background">
+              <Server className="h-4 w-4 mr-2" />
+              Monitoring
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Dynamic Content Area */}
-        <div className="min-h-[600px]">
-          {activeSection === 'overview' && (
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Activity className="h-5 w-5" />
-                    Admin Overview
-                  </CardTitle>
-                  <CardDescription>
-                    Quick overview of system health and key metrics
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold">{stats.totalUsers}</div>
-                      <p className="text-sm text-muted-foreground">Total Users</p>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold">{stats.activeSubscriptions}</div>
-                      <p className="text-sm text-muted-foreground">Active Subscriptions</p>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-green-600">{systemHealth.uptime}</div>
-                      <p className="text-sm text-muted-foreground">System Uptime</p>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold">{systemHealth.activeConnections}</div>
-                      <p className="text-sm text-muted-foreground">Active Connections</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-          {activeSection === 'users' && <AdvancedUserManagement />}
-          
-          {activeSection === 'roles' && <AdminUserManagement />}
-          
-          {activeSection === 'sessions' && (
-            <PlaceholderComponent 
-              title="Session Management" 
-              description="Monitor and manage user sessions across the platform" 
-            />
-          )}
-          
-          {activeSection === 'companies' && <EnhancedCompanyDashboard />}
-          
-          {activeSection === 'billing' && <BillingOperationsHub />}
-          
-          {activeSection === 'support' && (
-            <PlaceholderComponent 
-              title="Support Tickets" 
-              description="Manage customer support tickets and inquiries" 
-            />
-          )}
-          
-          {activeSection === 'communication' && <AdminCommunicationCenter />}
-          
-          {activeSection === 'monitoring' && <OperationalMonitoring />}
-          
-          {activeSection === 'carriers' && <CarrierConfigurationManagement />}
-          
-          {activeSection === 'analytics' && <AdminAnalytics />}
-          
-          {activeSection === 'reports' && (
-            <PlaceholderComponent 
-              title="Reports & Analytics" 
-              description="Generate and view detailed system reports" 
-            />
-          )}
-
-          {/* Subscription Management (merged into billing) */}
-          {activeSection === 'subscriptions' && (
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <DollarSign className="h-5 w-5" />
-                    Subscription Management
-                  </CardTitle>
-                  <CardDescription>
-                    Manage user subscriptions, plans, and entitlements
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {users && (
-                    <UserSelector
-                      users={users}
-                      selectedUser={selectedUser}
-                      onUserSelect={setSelectedUser}
-                      isLoading={isLoadingUsers}
-                    />
-                  )}
-
-                  {selectedUser && userSubscription && (
-                    <div className="grid lg:grid-cols-2 gap-6">
-                      <AdminSubscriptionCard
-                        user={selectedUser}
-                        subscription={userSubscription}
-                        onUpdate={handleSubscriptionUpdate}
-                        isUpdating={isUpdating}
-                      />
-                      
-                      <div className="space-y-4">
-                        <AdminActionButtons
-                          userId={selectedUser.id}
-                          subscription={userSubscription}
-                          onAction={handleSubscriptionAction}
-                          isProcessing={isProcessing}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedUser && userSubscription && (
-                    <div className="mt-6">
-                      <h3 className="text-lg font-medium mb-4">User Module Overview</h3>
-                      <ModuleOverviewGrid targetUserId={selectedUser.id} />
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-          {/* Secondary Navigation Items */}
-          {activeSection === 'export' && (
-            <PlaceholderComponent 
-              title="Data Export" 
-              description="Export system data in various formats" 
-            />
-          )}
-          
-          {activeSection === 'trending' && (
-            <PlaceholderComponent 
-              title="Trending Analytics" 
-              description="View trending data and insights across the platform" 
-            />
-          )}
-          
-          {activeSection === 'audit' && (
-            <PlaceholderComponent 
-              title="Audit Logs" 
-              description="View system audit logs and user activity" 
-            />
-          )}
-          
-          {activeSection === 'protection' && (
-            <PlaceholderComponent 
-              title="Data Protection" 
-              description="Manage data privacy and protection settings" 
-            />
-          )}
-          
-          {activeSection === 'security' && (
-            <PlaceholderComponent 
-              title="Security Settings" 
-              description="Configure system security and access controls" 
-            />
-          )}
-          
-          {activeSection === 'backup' && (
-            <PlaceholderComponent 
-              title="Backup Management" 
-              description="Manage system backups and data recovery" 
-            />
-          )}
+          <TabsList className="grid w-full grid-cols-3 bg-muted/50">
+            <TabsTrigger value="carriers" className="data-[state=active]:bg-background">
+              <Truck className="h-4 w-4 mr-2" />
+              Carriers
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="data-[state=active]:bg-background">
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Analytics
+            </TabsTrigger>
+            <TabsTrigger value="reports" className="data-[state=active]:bg-background">
+              <FileText className="h-4 w-4 mr-2" />
+              Reports
+            </TabsTrigger>
+          </TabsList>
         </div>
-      </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+          <TabsList className="grid w-full grid-cols-2 bg-muted/50">
+            <TabsTrigger value="analytics" className="data-[state=active]:bg-background">
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Analytics
+            </TabsTrigger>
+            <TabsTrigger value="reports" className="data-[state=active]:bg-background">
+              <FileText className="h-4 w-4 mr-2" />
+              Reports
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsList className="grid w-full grid-cols-2 bg-muted/50">
+            <TabsTrigger value="data-export" className="data-[state=active]:bg-background">
+              <Database className="h-4 w-4 mr-2" />
+              Data Export
+            </TabsTrigger>
+            <TabsTrigger value="trending" className="data-[state=active]:bg-background">
+              <TrendingDown className="h-4 w-4 mr-2" />
+              Trending
+            </TabsTrigger>
+          </TabsList>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+          <TabsList className="grid w-full grid-cols-2 bg-muted/50">
+            <TabsTrigger value="audit-logs" className="data-[state=active]:bg-background">
+              <Eye className="h-4 w-4 mr-2" />
+              Audit Logs
+            </TabsTrigger>
+            <TabsTrigger value="data-protection" className="data-[state=active]:bg-background">
+              <Lock className="h-4 w-4 mr-2" />
+              Data Protection
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsList className="grid w-full grid-cols-2 bg-muted/50">
+            <TabsTrigger value="security" className="data-[state=active]:bg-background">
+              <Shield className="h-4 w-4 mr-2" />
+              Security
+            </TabsTrigger>
+            <TabsTrigger value="backup-recovery" className="data-[state=active]:bg-background">
+              <HardDrive className="h-4 w-4 mr-2" />
+              Backup
+            </TabsTrigger>
+          </TabsList>
+        </div>
+
+        <TabsContent value="admin-users" className="space-y-4">
+          <AdvancedUserManagement />
+        </TabsContent>
+
+        <TabsContent value="roles" className="space-y-4">
+          <AdvancedRoleManagement />
+        </TabsContent>
+
+        <TabsContent value="sessions" className="space-y-4">
+          <SessionManagement />
+        </TabsContent>
+
+        <TabsContent value="companies" className="space-y-4">
+          <EnhancedCompanyDashboard />
+        </TabsContent>
+
+        <TabsContent value="billing" className="space-y-4">
+          <BillingOperationsHub />
+        </TabsContent>
+
+        <TabsContent value="support" className="space-y-4">
+          <CustomerSupportIntegration />
+        </TabsContent>
+
+        <TabsContent value="communication" className="space-y-4">
+          <AdminCommunicationCenter />
+        </TabsContent>
+
+        <TabsContent value="monitoring" className="space-y-4">
+          <OperationalMonitoring />
+        </TabsContent>
+
+        <TabsContent value="analytics" className="space-y-4">
+          <AdvancedAnalyticsDashboard />
+        </TabsContent>
+
+        <TabsContent value="reports" className="space-y-4">
+          <CustomReportBuilder />
+        </TabsContent>
+
+        <TabsContent value="data-export" className="space-y-4">
+          <DataExportImport />
+        </TabsContent>
+
+        <TabsContent value="trending" className="space-y-4">
+          <PerformanceTrending />
+        </TabsContent>
+
+        <TabsContent value="audit-logs" className="space-y-4">
+          <EnhancedAuditLogging />
+        </TabsContent>
+
+        <TabsContent value="data-protection" className="space-y-4">
+          <DataProtectionPrivacy />
+        </TabsContent>
+
+        <TabsContent value="security" className="space-y-4">
+          <SecurityMonitoring />
+        </TabsContent>
+
+        <TabsContent value="backup-recovery" className="space-y-4">
+          <BackupRecoveryManagement />
+        </TabsContent>
+
+        <TabsContent value="carriers" className="space-y-4">
+          <CarrierConfigurationManagement />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

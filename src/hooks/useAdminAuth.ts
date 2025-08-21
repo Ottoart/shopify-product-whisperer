@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { clearAllAdminAuth } from '@/utils/adminAuth';
 
 interface AdminSession {
   user: {
@@ -12,7 +11,6 @@ interface AdminSession {
   };
   expires_at: string;
   session_id: string;
-  jwt_token?: string;
 }
 
 const ADMIN_SESSION_KEY = 'admin_session';
@@ -81,47 +79,27 @@ export function useAdminAuth() {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    setIsLoading(true);
     try {
-      console.log('🔐 Starting admin sign-in for:', email);
-      
-      // Clear any existing session first to ensure fresh token
-      clearAllAdminAuth();
-      
+      setIsLoading(true);
       const { data, error } = await supabase.functions.invoke('admin-auth', {
         body: { email, password }
       });
 
-      if (error) {
-        console.error('❌ Admin auth function error:', error);
-        throw error;
-      }
-
-      if (!data.success) {
-        console.error('❌ Admin auth failed:', data.error);
-        throw new Error(data.error || 'Authentication failed');
-      }
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error);
 
       const session = data.session;
-      console.log('✅ Admin auth successful:', { 
-        userId: session.user.id, 
-        email: session.user.email,
-        hasJwtToken: !!session.jwt_token,
-        jwtTokenPreview: session.jwt_token?.substring(0, 50) + '...'
-      });
-
+      
       if (!validateSession(session)) {
-        throw new Error('Invalid session received');
+        throw new Error('Invalid session received from server');
       }
-
+      
       setAdminSession(session);
       localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(session));
       
       return { success: true };
     } catch (error) {
-      console.error('❌ Admin sign-in error:', error);
-      setAdminSession(null);
-      localStorage.removeItem(ADMIN_SESSION_KEY);
+      console.error('Admin sign in error:', error);
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Authentication failed' 
@@ -132,8 +110,8 @@ export function useAdminAuth() {
   };
 
   const signOut = async () => {
-    clearAllAdminAuth();
     setAdminSession(null);
+    localStorage.removeItem(ADMIN_SESSION_KEY);
   };
 
   // Simple authentication checks

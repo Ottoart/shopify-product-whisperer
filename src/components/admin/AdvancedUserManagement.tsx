@@ -112,7 +112,7 @@ export const AdvancedUserManagement = () => {
       // Load all users using admin endpoint with timeout
       const apiCall = supabase.functions.invoke('admin-data', {
         body: { 
-          action: 'get_users'
+          data_type: 'all_users'
         }
       });
 

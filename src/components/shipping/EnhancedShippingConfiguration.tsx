@@ -446,7 +446,7 @@ export function EnhancedShippingConfiguration({
         .select('*')
         .eq('is_active', true);
 
-      if (carriersError) {
+      if (carriersError || !carriers || carriers.length === 0) {
         toast({
           title: "No Active Carriers",
           description: "Please activate a carrier in your shipping settings first",
@@ -512,7 +512,7 @@ export function EnhancedShippingConfiguration({
 
       if (error) throw error;
 
-      if (data?.rates) {
+      if (data?.rates && data.rates.length > 0) {
         // Add confirmation options to each rate
         const ratesWithConfirmation = data.rates.map((rate: ShippingRate) => ({
           ...rate,
@@ -522,15 +522,11 @@ export function EnhancedShippingConfiguration({
             { type: 'adult_signature', label: 'Adult Signature Required', fee: 3.75 }
           ]
         }));
-        toast({
-          title: "Yesss", 
-          description: "tous va bien",
-          variant: "destructive"
-        });
+
         setShippingRates(ratesWithConfirmation);
         toast({
           title: "Rates Found",
-          description: `Found ${data} shipping options`
+          description: `Found ${data.rates.length} shipping options`
         });
       } else {
         setShippingRates([]);

@@ -4,10 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Zap, Store, Settings, Activity, CheckCircle } from "lucide-react";
 import { ShopifySync } from "@/components/ShopifySync";
 import { EbaySync } from "@/components/EbaySync";
-import { useShopifyCredentials } from "@/hooks/useShopifyCredentials";
 
 export default function ShopifyIntegration() {
-  const { store } = useShopifyCredentials();
   const handleProductsUpdated = () => {
     // This will trigger a refetch of products
     window.location.reload();
@@ -114,15 +112,15 @@ export default function ShopifyIntegration() {
           <div className="grid gap-4 md:grid-cols-3">
             <div>
               <h4 className="font-medium text-sm text-muted-foreground">Store Name</h4>
-              <p className="font-medium">{store?.store_name || '—'}</p>
+              <p className="font-medium">Your Store Name</p>
             </div>
             <div>
               <h4 className="font-medium text-sm text-muted-foreground">Domain</h4>
-              <p className="font-medium">{store?.domain || '—'}</p>
+              <p className="font-medium">your-store.myshopify.com</p>
             </div>
             <div>
               <h4 className="font-medium text-sm text-muted-foreground">Plan</h4>
-              <p className="font-medium">{store?.platform === 'shopify' ? 'Shopify' : (store?.platform || '—')}</p>
+              <p className="font-medium">Shopify Plus</p>
             </div>
           </div>
         </CardContent>

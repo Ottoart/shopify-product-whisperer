@@ -3,17 +3,16 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { SessionContextProvider, useSession } from "@supabase/auth-helpers-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
 import { StoreProvider } from "@/contexts/StoreContext";
-import MainLayout from "@/components/MainLayout";
 import Index from "./pages/Index";
 import MainDashboard from "./pages/MainDashboard";
 import PrepFoxDashboard from "./pages/PrepFoxDashboard";
-
+import MarketplaceGateway from "./pages/MarketplaceGateway";
 import Shipping from "./pages/Shipping";
 import ShippingOverview from "./pages/ShippingOverview";
 import Carriers from "./pages/Carriers";
@@ -33,9 +32,6 @@ import NotFound from "./pages/NotFound";
 import Logs from "./pages/Logs";
 
 import { CustomerTrackingPage as CustomerTracking } from "./pages/CustomerTracking";
-import TrackingCenter from "./pages/TrackingCenter";
-import ReturnsPortal from "./pages/ReturnsPortal";
-import RateCalculator from "./pages/RateCalculator";
 import SendInventory from "./pages/SendInventory";
 import ReceivingDashboard from "./pages/ReceivingDashboard";
 import InventoryDashboard from "./pages/InventoryDashboard";
@@ -54,9 +50,6 @@ import RepricingFeatures from "./pages/RepricingFeatures";
 import RepricingPricing from "./pages/RepricingPricing";
 import AdminDashboard from "./pages/AdminDashboard";
 import Products from "./pages/Products";
-import ProductSyncDashboard from "./pages/ProductSyncDashboard";
-import Store from "./pages/Store";
-import StoreCategory from "./pages/StoreCategory";
 import FulfillmentLanding from "./pages/FulfillmentLanding";
 import FulfillmentFeatures from "./pages/FulfillmentFeatures";
 import FulfillmentPricing from "./pages/FulfillmentPricing";
@@ -72,8 +65,6 @@ import B2BFulfillment from "./pages/fulfillment/B2BFulfillment";
 import OmniChannelFulfillment from "./pages/fulfillment/OmniChannelFulfillment";
 import InternationalFreight from "./pages/fulfillment/InternationalFreight";
 import SubscriptionFulfillment from "./pages/fulfillment/SubscriptionFulfillment";
-import AdminPlans from "./pages/admin/AdminPlans";
-import AdminSubscriptions from "./pages/admin/AdminSubscriptions";
 
 // Phase 2A - Software & Technology Products
 import PrepSoftware from "./pages/fulfillment/PrepSoftware";
@@ -116,27 +107,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 // App layout for authenticated users
 const AuthenticatedApp = () => {
-  const location = useLocation();
-  const isAdminRoute = location.pathname.startsWith('/admin');
-  
-  if (isAdminRoute) {
-    // Admin layout without the regular sidebar
-    return (
-      <div className="min-h-screen flex w-full">
-        <div className="flex-1 flex flex-col">
-          <main className="flex-1 overflow-auto">
-            <Routes>
-              <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/admin/plans" element={<AdminPlans />} />
-              <Route path="/admin/subscriptions" element={<AdminSubscriptions />} />
-            </Routes>
-          </main>
-        </div>
-      </div>
-    );
-  }
-
-  // Regular user layout with sidebar
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
@@ -154,7 +124,7 @@ const AuthenticatedApp = () => {
             <Routes>
               <Route path="/app" element={<Index />} />
               <Route path="/dashboard" element={<PrepFoxDashboard />} />
-              
+              <Route path="/marketplace-gateway" element={<MarketplaceGateway />} />
               <Route path="/send-inventory" element={<SendInventory />} />
               <Route path="/receiving" element={<ReceivingDashboard />} />
               <Route path="/inventory-management" element={<InventoryDashboard />} />
@@ -162,9 +132,6 @@ const AuthenticatedApp = () => {
               <Route path="/packing" element={<PackingDashboard />} />
               <Route path="/shipping-overview" element={<ShippingOverview />} />
               <Route path="/shipping" element={<Shipping />} />
-              <Route path="/tracking-center" element={<TrackingCenter />} />
-              <Route path="/returns-portal" element={<ReturnsPortal />} />
-              <Route path="/rate-calculator" element={<RateCalculator />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/activity" element={<Activity />} />
               <Route path="/bulk-editor" element={<BulkEditor />} />
@@ -174,13 +141,14 @@ const AuthenticatedApp = () => {
               <Route path="/strategies" element={<Strategies />} />
               <Route path="/inventory" element={<Inventory />} />
               <Route path="/products" element={<Products />} />
-              <Route path="/product-sync" element={<ProductSyncDashboard />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/carriers" element={<Carriers />} />
+              <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/sync-status" element={<SyncStatus />} />
               <Route path="/logs" element={<Logs />} />
               
-              <Route path="*" element={<NotFound />} />
+              <Route path="/customer-portal" element={<CustomerPortal />} />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </main>
         </div>
@@ -192,7 +160,7 @@ const AuthenticatedApp = () => {
 // Public routes (marketing site)
 const PublicApp = () => {
   return (
-    <MainLayout>
+    <main className="min-h-screen">
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/shipping-landing" element={<ShippingLanding />} />
@@ -255,13 +223,11 @@ const PublicApp = () => {
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/customer-tracking" element={<CustomerTracking />} />
-        <Route path="/store" element={<Store />} />
-        <Route path="/store/:categorySlug" element={<StoreCategory />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/about" element={<AboutUs />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </MainLayout>
+    </main>
   );
 };
 

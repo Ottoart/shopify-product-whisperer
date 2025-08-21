@@ -48,67 +48,48 @@ serve(async (req) => {
       );
     }
 
-    // Check if UPS carrier configuration exists
+    // Update UPS carrier configuration with real credentials
     const { data: existingConfig, error: fetchError } = await supabase
       .from('carrier_configurations')
       .select('api_credentials')
       .eq('user_id', user.id)
       .eq('carrier_name', 'UPS')
-      .maybeSingle();
+      .single();
 
     if (fetchError) {
       console.error('Failed to fetch UPS configuration:', fetchError);
       return new Response(
-        JSON.stringify({ error: 'Failed to fetch UPS configuration' }),
+        JSON.stringify({ error: 'UPS configuration not found' }),
         { 
-          status: 500, 
+          status: 404, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
     }
 
-    // Prepare credentials - merge with existing if available
+    // Merge with existing credentials to preserve account info
     const updatedCredentials = {
+      ...existingConfig.api_credentials,
       client_id: clientId,
       client_secret: clientSecret,
-      access_token: existingConfig?.api_credentials?.access_token || null,
-      refresh_token: existingConfig?.api_credentials?.refresh_token || null,
-      token_expires_at: existingConfig?.api_credentials?.token_expires_at || null,
-      account_number: existingConfig?.api_credentials?.account_number || null,
-      ...existingConfig?.api_credentials // Preserve any other existing fields
+      access_token: existingConfig.api_credentials?.access_token || null,
+      refresh_token: existingConfig.api_credentials?.refresh_token || null,
+      token_expires_at: existingConfig.api_credentials?.token_expires_at || null
     };
 
-    let result;
-    if (existingConfig) {
-      // Update existing configuration
-      result = await supabase
-        .from('carrier_configurations')
-        .update({
-          api_credentials: updatedCredentials,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id)
-        .eq('carrier_name', 'UPS');
-      
-      console.log('Updated existing UPS configuration');
-    } else {
-      // Create new configuration
-      result = await supabase
-        .from('carrier_configurations')
-        .insert({
-          user_id: user.id,
-          carrier_name: 'UPS',
-          api_credentials: updatedCredentials,
-          is_active: true
-        });
-      
-      console.log('Created new UPS configuration');
-    }
+    const { error: updateError } = await supabase
+      .from('carrier_configurations')
+      .update({
+        api_credentials: updatedCredentials,
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', user.id)
+      .eq('carrier_name', 'UPS');
 
-    if (result.error) {
-      console.error('Failed to save UPS configuration:', result.error);
+    if (updateError) {
+      console.error('Failed to update UPS configuration:', updateError);
       return new Response(
-        JSON.stringify({ error: 'Failed to save UPS configuration' }),
+        JSON.stringify({ error: 'Failed to update UPS configuration' }),
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 

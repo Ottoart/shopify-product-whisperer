@@ -8,7 +8,6 @@ import { Truck, Settings, CheckCircle, AlertCircle, Eye } from "lucide-react";
 import { MockDataBadge, LiveDataBadge } from "@/components/ui/mock-data-badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useShippingServices } from "@/hooks/useShippingServices";
 
 interface PrepFoxCarrier {
   id: string;
@@ -31,67 +30,62 @@ interface PrepFoxService {
   isUserEnabled: boolean;
 }
 
+// System carriers that can be configured
+const SYSTEM_CARRIERS = [
+  { name: 'ups', label: 'UPS', description: 'United Parcel Service - PrepFox managed account' },
+  { name: 'canada_post', label: 'Canada Post', description: 'Canada Post Corporation - PrepFox managed account' },
+  { name: 'fedex', label: 'FedEx', description: 'FedEx Corporation - PrepFox managed account' },
+  { name: 'usps', label: 'USPS', description: 'United States Postal Service - PrepFox managed account' },
+  { name: 'dhl', label: 'DHL', description: 'DHL Express - PrepFox managed account' },
+  { name: 'purolator', label: 'Purolator', description: 'Purolator Inc. - PrepFox managed account' }
+];
+
 export function UserCarrierManagement() {
   const [carriers, setCarriers] = useState<PrepFoxCarrier[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedCarrier, setExpandedCarrier] = useState<string | null>(null);
   const { toast } = useToast();
-  const { carriers: carrierConfigs, services, fetchServices } = useShippingServices();
 
   useEffect(() => {
-    loadUserCarriers();
-  }, [carrierConfigs, services]);
+    loadSystemCarriers();
+  }, []);
 
-  const loadUserCarriers = async () => {
+  const loadSystemCarriers = async () => {
     try {
-      if (!carrierConfigs) return;
+      // Check which carriers are configured by admin
+      const { data: configs, error } = await supabase
+        .from('carrier_configurations')
+        .select('*')
+        .eq('is_active', true);
 
-      const carrierMap = new Map([
-        ['ups', { label: 'UPS', description: 'United Parcel Service - Your configured account' }],
-        ['canada_post', { label: 'Canada Post', description: 'Canada Post Corporation - Your configured account' }],
-        ['fedex', { label: 'FedEx', description: 'FedEx Corporation - Your configured account' }],
-        ['usps', { label: 'USPS', description: 'United States Postal Service - Your configured account' }],
-        ['dhl', { label: 'DHL', description: 'DHL Express - Your configured account' }],
-        ['purolator', { label: 'Purolator', description: 'Purolator Inc. - Your configured account' }]
-      ]);
+      if (error) {
+        console.error('Error loading carrier configs:', error);
+      }
 
-      const userCarriers: PrepFoxCarrier[] = carrierConfigs.map(config => {
-        const carrierInfo = carrierMap.get(config.carrier_name) || {
-          label: config.carrier_name.toUpperCase(),
-          description: `${config.carrier_name} - Your configured account`
-        };
+      console.log('Loaded carrier configs:', configs);
 
-        // Get services for this carrier
-        const carrierServices = services
-          .filter(service => service.carrier_configuration_id === config.id)
-          .map(service => ({
-            id: service.id,
-            code: service.service_code,
-            name: service.service_name,
-            description: `${service.service_type} service`,
-            estimatedDays: service.estimated_days || 'Unknown',
-            isEnabled: service.is_available,
-            isUserEnabled: service.is_available // Default to available
-          }));
+      const systemCarriers: PrepFoxCarrier[] = SYSTEM_CARRIERS.map(carrier => {
+        const config = configs?.find(c => c.carrier_name === carrier.name);
+        const isConfigured = !!config && config.is_active;
         
         return {
-          id: config.id,
-          name: config.carrier_name,
-          label: carrierInfo.label,
-          description: carrierInfo.description,
-          isActive: config.is_active,
-          isSystemEnabled: true, // User configs are always system enabled
-          status: config.is_active ? 'active' : 'inactive',
-          services: carrierServices
+          id: `${carrier.name}-prepfox`,
+          name: carrier.name,
+          label: carrier.label,
+          description: carrier.description,
+          isActive: false,
+          isSystemEnabled: isConfigured,
+          status: isConfigured ? 'active' : 'inactive',
+          services: []
         };
       });
 
-      setCarriers(userCarriers);
+      setCarriers(systemCarriers);
     } catch (error) {
-      console.error('Failed to load user carriers:', error);
+      console.error('Failed to load system carriers:', error);
       toast({
         title: "❌ Failed to Load Carriers",
-        description: "Could not load your carrier configurations",
+        description: "Could not load system carrier configurations",
         variant: "destructive"
       });
     } finally {
@@ -102,100 +96,48 @@ export function UserCarrierManagement() {
   const handleToggleCarrier = async (carrierId: string, enabled: boolean) => {
     setLoading(true);
     
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error('Not authenticated');
-      }
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    setCarriers(prev => 
+      prev.map(carrier => 
+        carrier.id === carrierId 
+          ? { ...carrier, isActive: enabled }
+          : carrier
+      )
+    );
 
-      const { data, error } = await supabase.functions.invoke('activate-carrier', {
-        body: {
-          user_id: user.id,
-          carrier_id: carrierId
-        }
-      });
+    toast({
+      title: enabled ? "✅ Carrier Activated" : "❌ Carrier Deactivated",
+      description: `${carriers.find(c => c.id === carrierId)?.label} has been ${enabled ? 'activated' : 'deactivated'}`,
+    });
 
-      if (error) {
-        console.error('Error toggling carrier:', error);
-        throw new Error(error.message || 'Failed to update carrier status');
-      }
-
-      // Update local state
-      setCarriers(prev => 
-        prev.map(carrier => 
-          carrier.id === carrierId 
-            ? { ...carrier, isActive: enabled }
-            : carrier
-        )
-      );
-
-      // Refresh services after activation
-      if (enabled) {
-        await fetchServices(true);
-      }
-
-      toast({
-        title: enabled ? "✅ Carrier Activated" : "❌ Carrier Deactivated",
-        description: `${carriers.find(c => c.id === carrierId)?.label} has been ${enabled ? 'activated' : 'deactivated'}`,
-      });
-
-    } catch (error) {
-      console.error('Failed to toggle carrier:', error);
-      toast({
-        title: "❌ Carrier Update Failed",
-        description: error instanceof Error ? error.message : "Failed to update carrier status",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
+    setLoading(false);
   };
 
   const handleToggleService = async (carrierId: string, serviceId: string, enabled: boolean) => {
-    try {
-      // Update service availability in database
-      const { error } = await supabase
-        .from('shipping_services')
-        .update({ is_available: enabled })
-        .eq('id', serviceId);
+    setCarriers(prev => 
+      prev.map(carrier => 
+        carrier.id === carrierId 
+          ? {
+              ...carrier,
+              services: carrier.services.map(service =>
+                service.id === serviceId
+                  ? { ...service, isUserEnabled: enabled }
+                  : service
+              )
+            }
+          : carrier
+      )
+    );
 
-      if (error) {
-        console.error('Error updating service:', error);
-        throw new Error('Failed to update service');
-      }
+    const carrier = carriers.find(c => c.id === carrierId);
+    const service = carrier?.services.find(s => s.id === serviceId);
 
-      // Update local state
-      setCarriers(prev => 
-        prev.map(carrier => 
-          carrier.id === carrierId 
-            ? {
-                ...carrier,
-                services: carrier.services.map(service =>
-                  service.id === serviceId
-                    ? { ...service, isUserEnabled: enabled, isEnabled: enabled }
-                    : service
-                )
-              }
-            : carrier
-        )
-      );
-
-      const carrier = carriers.find(c => c.id === carrierId);
-      const service = carrier?.services.find(s => s.id === serviceId);
-
-      toast({
-        title: enabled ? "✅ Service Enabled" : "❌ Service Disabled", 
-        description: `${service?.name} ${enabled ? 'enabled' : 'disabled'} for ${carrier?.label}`,
-      });
-
-    } catch (error) {
-      console.error('Failed to toggle service:', error);
-      toast({
-        title: "❌ Service Update Failed",
-        description: error instanceof Error ? error.message : "Failed to update service status",
-        variant: "destructive"
-      });
-    }
+    toast({
+      title: enabled ? "✅ Service Enabled" : "❌ Service Disabled", 
+      description: `${service?.name} ${enabled ? 'enabled' : 'disabled'} for ${carrier?.label}`,
+    });
   };
 
   const getStatusIcon = (status: 'active' | 'inactive' | 'error') => {

@@ -1,120 +1,169 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { validateAdminAuth } from "../_shared/admin-auth.ts";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-const logStep = (step: string, details?: any) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  console.log(`[ADMIN-DATA] ${step}${detailsStr}`);
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    logStep("Function started");
+    const { data_type, session_token } = await req.json();
 
-    // Initialize Supabase client with service role key for admin operations
-    const supabaseClient = createClient(
+    console.log("Admin data request received:", { data_type, hasToken: !!session_token });
+
+    if (!session_token) {
+      console.log("No session token provided");
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Session token is required"
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 401,
+        }
+      );
+    }
+
+    // Create Supabase client with service role key for admin operations
+    const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      { auth: { persistSession: false } }
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
     );
 
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header provided");
-    logStep("Authorization header found");
+    console.log("Admin data request for:", data_type);
 
-    // Use the shared admin auth validation
-    const authResult = await validateAdminAuth(authHeader);
-    if (authResult.error) {
-      throw new Error(`Authentication error: ${authResult.error}`);
+    let result = { success: false, data: null, error: null };
+
+    switch (data_type) {
+      case 'admin_users':
+        const { data: adminUsers, error: adminError } = await supabaseAdmin
+          .from('admin_users')
+          .select('*');
+        
+        result = { 
+          success: !adminError, 
+          data: adminUsers || [], 
+          error: adminError?.message 
+        };
+        break;
+
+      case 'companies':
+        const { data: companies, error: companiesError } = await supabaseAdmin
+          .from('companies')
+          .select('*');
+        
+        result = { 
+          success: !companiesError, 
+          data: companies || [], 
+          error: companiesError?.message 
+        };
+        break;
+
+      case 'all_users':
+        // Get all users with comprehensive data
+        const { data: allUsers, error: usersError } = await supabaseAdmin
+          .from('profiles')
+          .select(`
+            *,
+            admin_users (
+              id,
+              role,
+              is_active,
+              created_at
+            )
+          `);
+        
+        result = { 
+          success: !usersError, 
+          data: allUsers || [], 
+          error: usersError?.message 
+        };
+        break;
+
+      case 'user_stats':
+        // Get comprehensive user statistics using count
+        const { count: userCount, error: userCountError } = await supabaseAdmin
+          .from('profiles')
+          .select('*', { count: 'exact', head: true });
+
+        const { count: adminCount, error: adminCountError } = await supabaseAdmin
+          .from('admin_users')
+          .select('*', { count: 'exact', head: true })
+          .eq('is_active', true);
+
+        const { count: companyCount, error: companyCountError } = await supabaseAdmin
+          .from('companies')
+          .select('*', { count: 'exact', head: true });
+
+        const { count: activeCompanies, error: activeCompaniesError } = await supabaseAdmin
+          .from('companies')
+          .select('*', { count: 'exact', head: true })
+          .eq('subscription_status', 'active');
+
+        console.log("Count results:", { userCount, adminCount, companyCount, activeCompanies });
+
+        if (userCountError || adminCountError || companyCountError || activeCompaniesError) {
+          console.error("Count errors:", { userCountError, adminCountError, companyCountError, activeCompaniesError });
+          result = { 
+            success: false, 
+            data: null, 
+            error: "Error fetching statistics" 
+          };
+        } else {
+          result = { 
+            success: true, 
+            data: {
+              totalUsers: userCount || 0,
+              totalAdmins: adminCount || 0,
+              totalCompanies: companyCount || 0,
+              activeSubscriptions: activeCompanies || 0
+            }, 
+            error: null 
+          };
+        }
+        break;
+
+      default:
+        result = { 
+          success: false, 
+          data: null, 
+          error: "Invalid data type requested" 
+        };
     }
-    
-    const user = authResult.user;
-    const adminRole = authResult.adminRole;
-    logStep("Admin authenticated", { userId: user.id, email: user.email, role: adminRole });
 
-     const requestBody = await req.json();
-    const { action, userId } = requestBody;
-    
-    logStep("Processing action", { action, userId });
+    console.log("Admin data result:", { data_type, success: result.success });
 
-    if (action === 'get_users') {
-      // Get all users with their subscription data using the database function
-      const { data: result, error } = await supabaseClient.rpc('admin_data', {
-        action_type: 'get_users'
-      });
-
-      if (error) {
-        logStep("Database error", { error: error.message || error });
-        throw new Error(`Database error: ${error.message || String(error)}`);
-      }
-
-      logStep("Users fetched successfully", { count: result?.users?.length || 0 });
-      
-      return new Response(JSON.stringify({
-        success: true,
-        users: result?.users || []
-      }), {
+    return new Response(
+      JSON.stringify(result),
+      {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-
-    } else if (action === 'get_user_subscription') {
-      if (!userId) {
-        throw new Error('userId is required for get_user_subscription action');
+        status: result.success ? 200 : 400,
       }
-      
-      const { data: result, error } = await supabaseClient.rpc('admin_data', {
-        action_type: 'get_user_subscription',
-        user_data: { userId }
-      });
-
-      if (error) {
-        logStep("Database error", { error: error.message || error });
-        throw new Error(`Database error: ${error.message || String(error)}`);
-      }
-
-      logStep("User subscription fetched successfully", { userId });
-      
-      return new Response(JSON.stringify({
-        success: true,
-        ...result
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-
-    } else {
-      throw new Error(`Invalid action: ${action}`);
-    }
+    );
 
   } catch (error) {
-    let errorMessage = 'Unknown error occurred';
-    
-    if (error instanceof Error) {
-      errorMessage = error.message;
-    } else if (typeof error === 'string') {
-      errorMessage = error;
-    } else if (error && typeof error === 'object') {
-      errorMessage = error.message || JSON.stringify(error);
-    }
-    
-    logStep("ERROR", { message: errorMessage, errorType: typeof error });
-    
-    return new Response(JSON.stringify({
-      success: false,
-      error: errorMessage
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    console.error("Error in admin data function:", error);
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: "Internal server error"
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      }
+    );
   }
 });

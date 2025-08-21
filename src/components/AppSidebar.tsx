@@ -80,8 +80,8 @@ const useAutoRetract = () => {
 
 const mainItems = [
   { title: "Module Hub", url: "/", icon: Home, description: "Central module selection" },
-  
-  
+  { title: "Marketplace Gateway", url: "/marketplace-gateway", icon: Globe, description: "Central connection hub" },
+  { title: "Shipping Module", url: "/shipping-landing", icon: Truck, description: "Multi-carrier shipping solution" },
   { title: "Repricing Module", url: "/repricing-landing", icon: DollarSign, description: "Smart repricing automation" },
   { title: "Fulfillment Module", url: "/fulfillment-landing", icon: Warehouse, description: "3PL fulfillment services" },
   { title: "Product Management Module", url: "/product-management-landing", icon: Package, description: "AI product optimization" }
@@ -112,9 +112,9 @@ const repricingItems = [
 
 const shippingItems = [
   { title: "Order Management", url: "/shipping", icon: Package, description: "Manage orders and shipping" },
-  { title: "Tracking Center", url: "/tracking-center", icon: MapPin, description: "Track shipment status" },
-  { title: "Returns Portal", url: "/returns-portal", icon: RotateCcw, description: "Handle returns and refunds" },
-  { title: "Rate Calculator", url: "/rate-calculator", icon: Calculator, description: "Calculate shipping costs" },
+  { title: "Tracking Center", url: "/shipping/tracking", icon: MapPin, description: "Track shipment status" },
+  { title: "Returns Portal", url: "/shipping/returns", icon: RotateCcw, description: "Handle returns and refunds" },
+  { title: "Rate Calculator", url: "/shipping/rates", icon: Calculator, description: "Calculate shipping costs" },
 ];
 
 const settingsItems = [
@@ -136,7 +136,21 @@ export function AppSidebar() {
   const { autoRetract, setAutoRetract } = useAutoRetract();
 
   useEffect(() => {
-    // Skip store fetching since ProductWhisper is removed
+    const fetchStores = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('store_configurations')
+          .select('id, store_name, platform')
+          .eq('is_active', true)
+          .order('store_name');
+        
+        if (error) throw error;
+        setStores(data || []);
+      } catch (error) {
+        console.error('Error fetching stores:', error);
+      }
+    };
+
     const fetchOrderCounts = async () => {
       try {
         const { data, error } = await supabase
@@ -164,6 +178,7 @@ export function AppSidebar() {
       }
     };
 
+    fetchStores();
     fetchOrderCounts();
   }, []);
 
@@ -352,9 +367,8 @@ export function AppSidebar() {
                     <SidebarMenuButton asChild>
                       {'permission' in item && item.permission ? (
                         <PermissionGate 
-                          module={item.permission as any}
-                          showUpgrade={false}
-                          fallback={menuContent}
+                          permission={item.permission as any} 
+                          resourceType={item.resourceType || ""}
                         >
                           {menuContent}
                         </PermissionGate>
@@ -508,9 +522,8 @@ export function AppSidebar() {
                     <SidebarMenuButton asChild>
                       {'permission' in item && item.permission ? (
                         <PermissionGate 
-                          module={item.permission as any}
-                          showUpgrade={false}
-                          fallback={menuContent}
+                          permission={item.permission as any} 
+                          resourceType={item.resourceType || ""}
                         >
                           {menuContent}
                         </PermissionGate>

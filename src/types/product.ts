@@ -2,9 +2,9 @@ export interface Product {
   id: string;
   title: string;
   handle: string;
-  vendor: string | null;
-  type: string | null;
-  tags: string | null;
+  vendor: string;
+  type: string;
+  tags: string;
   category?: string;
   published: boolean;
   option1Name: string;
@@ -32,8 +32,6 @@ export interface Product {
   shopifySyncStatus?: string;
   shopifySyncedAt?: string;
   listingStatus?: string;
-  store_name?: string;
-  store_id?: string;
 }
 
 export interface UpdatedProduct {

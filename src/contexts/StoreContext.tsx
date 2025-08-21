@@ -47,19 +47,14 @@ export const StoreProvider = ({ children }: StoreProviderProps) => {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('marketplace_configurations')
-        .select('id, store_name, platform, store_url, is_active, access_token')
+        .from('store_configurations')
+        .select('*')
         .eq('user_id', session.user.id)
         .eq('is_active', true)
         .order('store_name');
 
       if (error) throw error;
-      // Map store_url to domain for compatibility
-      const mappedData = (data || []).map(store => ({
-        ...store,
-        domain: store.store_url
-      }));
-      setStores(mappedData);
+      setStores(data || []);
     } catch (error) {
       console.error('Error fetching stores:', error);
       setStores([]);
@@ -78,33 +73,6 @@ export const StoreProvider = ({ children }: StoreProviderProps) => {
 
   useEffect(() => {
     fetchStores();
-  }, [session?.user?.id]);
-
-  // Realtime updates and focus refresh to avoid stale store lists
-  useEffect(() => {
-    if (!session?.user?.id) return;
-
-    const channel = supabase
-      .channel('store-config-realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'marketplace_configurations' },
-        (payload) => {
-          const userId = (payload.new as any)?.user_id || (payload.old as any)?.user_id;
-          if (userId === session.user.id) {
-            fetchStores();
-          }
-        }
-      )
-      .subscribe();
-
-    const onFocus = () => fetchStores();
-    window.addEventListener('focus', onFocus);
-
-    return () => {
-      window.removeEventListener('focus', onFocus);
-      supabase.removeChannel(channel);
-    };
   }, [session?.user?.id]);
 
   return (

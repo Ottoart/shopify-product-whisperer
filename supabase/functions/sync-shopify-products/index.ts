@@ -92,144 +92,7 @@ serve(async (req) => {
     }
     const baseUrl = `https://${shopifyDomain}/admin/api/2023-10`;
 
-    // Fetch store configuration
-    const { data: storeConfig, error: storeError } = await supabase
-      .from('store_configurations')
-      .select('id, store_name, domain')
-      .eq('user_id', user.id)
-      .eq('domain', shopifyDomain)
-      .eq('platform', 'shopify')
-      .eq('is_active', true)
-      .maybeSingle();
-
-    if (storeError || !storeConfig) {
-      console.error('Store configuration error:', storeError);
-      throw new Error(`Store configuration not found for domain: ${shopifyDomain}`);
-    }
-
     console.log(`Starting batch sync for user ${user.id}, page ${startPage}, batch size ${batchSize}`);
-
-    // Handle edge cases and state management
-    try {
-      // Check for stuck sync states (in_progress for more than 30 minutes)
-      const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
-      const { data: stuckSyncs } = await supabase
-        .from('marketplace_sync_status')
-        .select('id, sync_status, last_sync_at')
-        .eq('user_id', user.id)
-        .eq('marketplace', 'shopify')
-        .eq('sync_status', 'in_progress')
-        .lt('last_sync_at', thirtyMinutesAgo);
-
-      if (stuckSyncs && stuckSyncs.length > 0) {
-        console.log(`Found ${stuckSyncs.length} stuck sync(s), resetting to 'failed' status`);
-        await supabase
-          .from('marketplace_sync_status')
-          .update({
-            sync_status: 'failed',
-            error_message: 'Sync was stuck in progress for more than 30 minutes and was automatically reset'
-          })
-          .eq('user_id', user.id)
-          .eq('marketplace', 'shopify')
-          .eq('sync_status', 'in_progress');
-      }
-
-      // Concurrent sync prevention (only for first page)
-      if (startPage === 1) {
-        const { data: currentSync } = await supabase
-          .from('marketplace_sync_status')
-          .select('sync_status, last_sync_at')
-          .eq('user_id', user.id)
-          .eq('marketplace', 'shopify')
-          .maybeSingle();
-
-        if (currentSync?.sync_status === 'in_progress') {
-          const lastSyncTime = new Date(currentSync.last_sync_at || 0);
-          const timeDiff = Date.now() - lastSyncTime.getTime();
-          
-          // If sync started less than 5 minutes ago, prevent concurrent sync
-          if (timeDiff < 5 * 60 * 1000) {
-            throw new Error('A sync is already in progress for this store. Please wait for it to complete.');
-          }
-        }
-
-        // Reset sync status for new sync
-        console.log('Initializing new sync session');
-        await supabase
-          .from('marketplace_sync_status')
-          .upsert({
-            user_id: user.id,
-            marketplace: 'shopify',
-            sync_status: 'syncing',
-            last_sync_at: new Date().toISOString(),
-            products_synced: 0,
-            error_message: null,
-            sync_settings: {
-              active_only: shouldSyncActiveOnly,
-              sync_timestamp: new Date().toISOString(),
-              batch_size: batchSize
-            }
-          }, {
-            onConflict: 'user_id,marketplace'
-          });
-      }
-
-      // Resume scenario handling - check if this is a continuation
-      const { data: resumeSync } = await supabase
-        .from('marketplace_sync_status')
-        .select('sync_status, products_synced, total_products_found')
-        .eq('user_id', user.id)
-        .eq('marketplace', 'shopify')
-        .maybeSingle();
-
-      if (resumeSync?.sync_status === 'in_progress' && startPage > 1) {
-        console.log(`Resuming sync at page ${startPage}, previously synced: ${resumeSync.products_synced} products`);
-      }
-
-    } catch (stateError) {
-      console.error('Error in state management:', stateError);
-      if (startPage === 1) {
-        // Only throw for first page state errors to prevent sync from starting
-        throw stateError;
-      }
-      // For continuation pages, log but continue
-      console.log('Continuing with sync despite state management error');
-    }
-
-    // Get total product count from Shopify on first batch only
-    let totalProductsInStore = null;
-    if (startPage === 1) {
-      try {
-        console.log('Fetching total product count from Shopify...');
-        let countUrl = `${baseUrl}/products/count.json`;
-        
-        // Apply the same filters to count API as products API
-        if (shouldSyncActiveOnly) {
-          countUrl += `?status=active`;
-        }
-        
-        const countResponse = await fetch(countUrl, {
-          headers: {
-            'X-Shopify-Access-Token': cleanAccessToken,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'User-Agent': 'Supabase-Edge-Function/1.0'
-          },
-        });
-
-        if (countResponse.ok) {
-          const countData = await countResponse.json();
-          totalProductsInStore = countData.count || 0;
-          console.log(`Total products in Shopify store: ${totalProductsInStore}`);
-        } else {
-          console.warn(`Failed to fetch product count: ${countResponse.status} ${countResponse.statusText}`);
-          // Continue without total count - will fall back to batch-based counting
-        }
-      } catch (countError) {
-        console.warn('Error fetching product count:', countError);
-        // Continue without total count - will fall back to batch-based counting
-      }
-    }
 
     // Fetch products for this batch with cursor-based pagination
     let url = `${baseUrl}/products.json?limit=${batchSize}&fields=id,title,handle,vendor,product_type,tags,published_at,created_at,updated_at,status,variants,images,body_html,seo_title,seo_description`;
@@ -327,10 +190,6 @@ serve(async (req) => {
         created_at: product.created_at || new Date().toISOString(),
         updated_at: product.updated_at || new Date().toISOString(),
         
-        // Store identification
-        store_name: storeConfig.store_name,
-        store_id: storeConfig.id,
-        
         // Variant data (first variant only for simplicity)
         variant_sku: variant.sku || null,
         variant_price: variant.price ? parseFloat(variant.price) : null,
@@ -394,82 +253,31 @@ serve(async (req) => {
         last_sync_at: new Date().toISOString(),
         last_page_info: nextPageInfo,
         total_synced: totalSynced || 0, // Use actual count
-        sync_status: nextPageInfo ? 'in_progress' : 'pending'
+        sync_status: nextPageInfo ? 'in_progress' : 'completed'
       }, {
         onConflict: 'user_id'
       });
 
-    // Get current sync status to accumulate products_synced across batches
-    const { data: currentSyncStatus } = await supabase
-      .from('marketplace_sync_status')
-      .select('products_synced, total_products_found')
-      .eq('user_id', user.id)
-      .eq('marketplace', 'shopify')
-      .maybeSingle();
-
-    // Calculate accumulated products_synced with safety checks
-    const currentProductsSynced = currentSyncStatus?.products_synced || 0;
-    const batchProductCount = products.length;
-    
-    // Use the actual database count for accuracy
-    const actualDbCount = totalSynced || 0;
-    
-    // Choose the most accurate count (prefer database count over accumulation)
-    const totalProductsSynced = Math.max(actualDbCount, currentProductsSynced + batchProductCount);
-
-    console.log(`Batch ${startPage}: Current synced: ${currentProductsSynced}, This batch: ${batchProductCount}, DB total: ${actualDbCount}, Final count: ${totalProductsSynced}`);
-
-    // Prepare marketplace sync status update
-    const marketplaceUpdateData: any = {
-      user_id: user.id,
-      marketplace: 'shopify',
-      sync_status: nextPageInfo ? 'in_progress' : 'completed',
-      last_sync_at: new Date().toISOString(),
-      products_synced: totalProductsSynced, // Accumulate across batches
-      active_products_synced: shouldSyncActiveOnly ? totalProductsSynced : undefined,
-      inactive_products_skipped: shouldSyncActiveOnly ? skippedCount : undefined,
-      sync_settings: {
-        active_only: shouldSyncActiveOnly,
-        sync_timestamp: new Date().toISOString(),
-        batch_number: startPage
-      },
-      error_message: null
-    };
-
-    // Set total_products_found properly
-    if (startPage === 1 && totalProductsInStore !== null) {
-      // First batch: set the actual count from Shopify API
-      marketplaceUpdateData.total_products_found = totalProductsInStore;
-      console.log(`Setting total_products_found to ${totalProductsInStore} for first batch`);
-    } else if (currentSyncStatus?.total_products_found) {
-      // Subsequent batches: preserve the existing total_products_found
-      marketplaceUpdateData.total_products_found = currentSyncStatus.total_products_found;
-    }
-
-    // Update marketplace sync status with correct status values
-    const finalStatus = nextPageInfo ? 'syncing' : 'success';
-    marketplaceUpdateData.sync_status = finalStatus;
-    
+    // Also update marketplace sync status
     await supabase
       .from('marketplace_sync_status')
-      .upsert(marketplaceUpdateData, {
+      .upsert({
+        user_id: user.id,
+        marketplace: 'shopify',
+        sync_status: nextPageInfo ? 'in_progress' : 'completed',
+        last_sync_at: new Date().toISOString(),
+        products_synced: products.length,
+        total_products_found: allProducts.length,
+        active_products_synced: shouldSyncActiveOnly ? products.length : undefined,
+        inactive_products_skipped: shouldSyncActiveOnly ? skippedCount : undefined,
+        sync_settings: {
+          active_only: shouldSyncActiveOnly,
+          sync_timestamp: new Date().toISOString()
+        },
+        error_message: null
+      }, {
         onConflict: 'user_id,marketplace'
       });
-
-    // Also update shopify_sync_status to completed when sync is done
-    if (!nextPageInfo) {
-      await supabase
-        .from('shopify_sync_status')
-        .upsert({
-          user_id: user.id,
-          last_sync_at: new Date().toISOString(),
-          last_page_info: null,
-          total_synced: totalSynced || 0,
-          sync_status: 'pending'
-        }, {
-          onConflict: 'user_id'
-        });
-    }
 
     console.log(`Batch ${startPage} completed. Total synced: ${totalSynced}`);
 
@@ -478,66 +286,18 @@ serve(async (req) => {
       batchNumber: startPage,
       productsSynced: products.length,
       totalSynced: totalSynced || 0,
-      totalProductsInShopify: totalProductsInStore || currentSyncStatus?.total_products_found || 0,
       hasMorePages: Boolean(nextPageInfo),
       nextPageInfo: nextPageInfo,
-      message: `Synced batch ${startPage}: ${products.length} products. Total: ${totalSynced || 0}`,
-      debug: {
-        originalAllProducts: allProducts.length,
-        filteredProducts: products.length,
-        skippedCount,
-        shouldSyncActiveOnly,
-        nextPageInfo,
-        totalProductsFound: currentSyncStatus?.total_products_found || totalProductsInStore
-      }
+      message: `Synced batch ${startPage}: ${products.length} products. Total: ${totalSynced || 0}`
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
     console.error('Error in sync-shopify-products:', error);
-    
-    // Enhanced error handling - update sync status on failure
-    try {
-      const supabase = createClient(
-        Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-      );
-      
-      const authHeader = req.headers.get('Authorization');
-      if (authHeader) {
-        const token = authHeader.replace('Bearer ', '');
-        const { data: { user } } = await supabase.auth.getUser(token);
-        
-        if (user) {
-          // Update marketplace sync status to failed
-          await supabase
-            .from('marketplace_sync_status')
-            .upsert({
-              user_id: user.id,
-              marketplace: 'shopify',
-              sync_status: 'failed',
-              last_sync_at: new Date().toISOString(),
-              error_message: error.message || 'Unknown error occurred during sync',
-              sync_settings: {
-                error_occurred_at: new Date().toISOString(),
-                error_type: error.name || 'SyncError'
-              }
-            }, {
-              onConflict: 'user_id,marketplace'
-            });
-          
-          console.log('Updated sync status to failed due to error');
-        }
-      }
-    } catch (statusUpdateError) {
-      console.error('Failed to update sync status on error:', statusUpdateError);
-    }
-    
     return new Response(JSON.stringify({
       error: error.message,
-      success: false,
-      timestamp: new Date().toISOString()
+      success: false
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
