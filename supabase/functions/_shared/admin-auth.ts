@@ -37,15 +37,14 @@ export async function validateAdminAuth(authHeader: string) {
       }
       
       // Properly decode the JWT payload dynamically
-      const payload = JSON.parse(atob(payloadB64));
-    const authHeader = req.headers.get('Authorization');
+    const payload = JSON.parse(atob(payloadB64));
 
     const supabase1 = createClient(supabaseUrl, supabaseAnonKey, {
       global: {
         headers: { Authorization: authHeader }
       }
     });
-          const { data: { usersdff }, error: authError } = await supabase1.auth.getUser();
+      const { data: { usersdff }, error: authError } = await supabase1.auth.getUser();
 
       console.log('🔓 Decoded admin JWT payload:', { 
         sub: payload.sub, 
