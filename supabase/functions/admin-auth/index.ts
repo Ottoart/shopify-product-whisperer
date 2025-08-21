@@ -91,60 +91,16 @@ serve(async (req) => {
       return validCred;
     }) || adminUsers[0]; // Use first admin if no specific match
 
-    // Create a proper JWT-style token compatible with edge functions
-    const header = {
-      alg: "HS256",
-      typ: "JWT"
-    };
-    
-    // Create a proper JWT payload with all required claims
-    const jwtPayload = {
-      iss: "supabase",
-      ref: "rtaomiqsnctigleqjojt",
-      aud: "authenticated", 
-      exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60, // 24 hours
-      iat: Math.floor(Date.now() / 1000),
-      sub: adminUser.user_id, // User ID - REQUIRED
-      email: email, // Email - REQUIRED
-      phone: "",
-      app_metadata: {
-        provider: "admin",
-        providers: ["admin"]
-      },
-      user_metadata: {
-        role: adminUser.role,
-        is_admin: true,
-        display_name: "Admin"
-      },
-      role: "authenticated",
-      aal: "aal1",
-      amr: [{ method: "password", timestamp: Math.floor(Date.now() / 1000) }],
-      session_id: crypto.randomUUID()
-    };
-    
-    console.log('🎫 Creating JWT for admin user:', {
+    console.log('🎫 Creating session for admin user:', {
       userId: adminUser.user_id,
       email: email,
       role: adminUser.role
     });
-    
-    // Create JWT with proper base64 encoding
-    const headerB64 = btoa(JSON.stringify(header)).replace(/=/g, '');
-    const payloadB64 = btoa(JSON.stringify(jwtPayload)).replace(/=/g, '');
-    const signature = btoa(`admin-sig-${adminUser.user_id}-${Date.now()}`).replace(/=/g, '');
-    
-    const jwtToken = `${headerB64}.${payloadB64}.${signature}`;
-    
-    console.log('🔍 JWT created with payload verification:', {
-      sub: jwtPayload.sub,
-      email: jwtPayload.email,
-      hasUserMetadata: !!jwtPayload.user_metadata,
-      tokenLength: jwtToken.length,
-      payloadBase64: payloadB64.substring(0, 50) + '...'
-    });
 
-    // Try to get or create a Supabase user for this admin to generate a real session
+    // Get or create a Supabase user for this admin
+    let supabaseUser = null;
     try {
+      // Try to get existing user
       const { data: existingUser, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(adminUser.user_id);
       
       if (getUserError && getUserError.message?.includes('User not found')) {
@@ -162,15 +118,48 @@ serve(async (req) => {
         
         if (createError) {
           console.error("Error creating Supabase user:", createError);
-        } else {
-          console.log("Created Supabase user for admin:", email);
+          throw createError;
         }
+        supabaseUser = newUser.user;
+        console.log("Created Supabase user for admin:", email);
+      } else if (existingUser) {
+        supabaseUser = existingUser;
+        console.log("Found existing Supabase user for admin:", email);
       }
     } catch (error) {
       console.error("Error setting up Supabase user:", error);
+      // Continue without valid token
     }
 
-    // Create simple admin session
+    // Generate a proper JWT token using Supabase admin
+    let jwtToken = null;
+    if (supabaseUser) {
+      try {
+        const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.generateLink({
+          type: 'magiclink',
+          email: email,
+          options: {
+            redirectTo: 'https://prepfox.ca/admin'
+          }
+        });
+        
+        if (sessionData && !sessionError) {
+          // Extract token from the magic link URL or create session directly
+          const { data: tokenData, error: tokenError } = await supabaseAdmin.auth.admin.createSession({
+            user_id: supabaseUser.id
+          });
+          
+          if (tokenData && !tokenError) {
+            jwtToken = tokenData.access_token;
+            console.log('✅ Generated valid JWT token for admin');
+          }
+        }
+      } catch (error) {
+        console.error("Error generating JWT token:", error);
+      }
+    }
+
+    // Create admin session
     const adminSession = {
       user: {
         id: adminUser.user_id,
