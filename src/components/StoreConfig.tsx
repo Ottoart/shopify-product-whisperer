@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useSessionContext } from '@supabase/auth-helpers-react';
 import { Store, Plus, Trash2, Eye, EyeOff, Edit, Save, X, Settings } from "lucide-react";
 import { StoreConnectionFlow } from "./store-connection/StoreConnectionFlow";
 import { StoreSettings } from "./StoreSettings";
@@ -33,6 +34,7 @@ interface MarketplaceConfiguration {
 
 export function StoreConfig() {
   const { toast } = useToast();
+  const { session, isLoading: sessionLoading } = useSessionContext();
   const [stores, setStores] = useState<StoreConfiguration[]>([]);
   const [marketplaces, setMarketplaces] = useState<MarketplaceConfiguration[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,8 +45,10 @@ export function StoreConfig() {
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchStores();
-  }, []);
+    if (session) {
+      fetchStores();
+    }
+  }, [session]);
 
   // If a store is selected, show the store settings (MOVED AFTER ALL HOOKS)
   if (selectedStoreId) {
@@ -218,12 +222,22 @@ export function StoreConfig() {
     }
   };
 
-  if (loading) {
+  if (sessionLoading || loading) {
     return (
       <Card>
         <CardContent className="p-12 text-center">
           <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
           <p>Loading store configurations...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!session) {
+    return (
+      <Card>
+        <CardContent className="p-12 text-center">
+          <p>Please log in to manage your store configurations.</p>
         </CardContent>
       </Card>
     );
