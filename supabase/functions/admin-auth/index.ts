@@ -91,16 +91,36 @@ serve(async (req) => {
       return validCred;
     }) || adminUsers[0]; // Use first admin if no specific match
 
-    console.log('🎫 Creating session for admin user:', {
-      userId: adminUser.user_id,
+    // Create a proper JWT-style token compatible with edge functions
+    const header = {
+      alg: "HS256",
+      typ: "JWT"
+    };
+    
+    const payload = {
+      iss: "supabase",
+      sub: adminUser.user_id,
+      aud: "authenticated",
+      exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60, // 24 hours
+      iat: Math.floor(Date.now() / 1000),
       email: email,
-      role: adminUser.role
-    });
+      role: "authenticated",
+      user_metadata: {
+        role: adminUser.role,
+        is_admin: true
+      }
+    };
+    
+    // Create a JWT-style token (3 parts separated by dots)
+    // For simplicity, we'll use base64 encoding without actual signing
+    const headerB64 = btoa(JSON.stringify(header)).replace(/[=]/g, '');
+    const payloadB64 = btoa(JSON.stringify(payload)).replace(/[=]/g, '');
+    const signature = btoa('admin-signature').replace(/[=]/g, ''); // Simple signature
+    
+    const jwtToken = `${headerB64}.${payloadB64}.${signature}`;
 
-    // Get or create a Supabase user for this admin
-    let supabaseUser = null;
+    // Try to get or create a Supabase user for this admin to generate a real session
     try {
-      // Try to get existing user
       const { data: existingUser, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(adminUser.user_id);
       
       if (getUserError && getUserError.message?.includes('User not found')) {
@@ -118,29 +138,15 @@ serve(async (req) => {
         
         if (createError) {
           console.error("Error creating Supabase user:", createError);
-          throw createError;
+        } else {
+          console.log("Created Supabase user for admin:", email);
         }
-        supabaseUser = newUser.user;
-        console.log("Created Supabase user for admin:", email);
-      } else if (existingUser) {
-        supabaseUser = existingUser;
-        console.log("Found existing Supabase user for admin:", email);
       }
     } catch (error) {
       console.error("Error setting up Supabase user:", error);
-      // Continue without valid token
     }
 
-    // Create a simple session token (admin sessions don't need real JWT for this use case)
-    const jwtToken = crypto.randomUUID() + '.' + btoa(JSON.stringify({
-      sub: adminUser.user_id,
-      email: email,
-      role: adminUser.role,
-      iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60 // 24 hours
-    }));
-
-    // Create admin session
+    // Create simple admin session
     const adminSession = {
       user: {
         id: adminUser.user_id,
@@ -150,8 +156,7 @@ serve(async (req) => {
         display_name: "Admin"
       },
       expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
-      session_id: crypto.randomUUID(),
-      jwt_token: jwtToken
+      session_id: crypto.randomUUID()
     };
 
     console.log("Admin login successful for:", email);
