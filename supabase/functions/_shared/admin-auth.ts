@@ -45,7 +45,8 @@ export async function validateAdminAuth(authHeader: string) {
         headers: { Authorization: authHeader }
       }
     });
-      const { data: { adminuser }, error: authError } = await supabase1.auth.getUser();
+          const { data: { usersdff }, error: authError } = await supabase1.auth.getUser();
+
       console.log('🔓 Decoded admin JWT payload:', { 
         sub: payload.sub, 
         email: payload.email,
@@ -53,7 +54,7 @@ export async function validateAdminAuth(authHeader: string) {
         aud: payload.aud,
         exp: payload.exp,
         user_metadata: !!payload.user_metadata,
-        supabase1:adminuser
+        usersdff:usersdff
       });
       
       // Check if token is expired
