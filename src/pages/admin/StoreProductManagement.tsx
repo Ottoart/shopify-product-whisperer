@@ -88,13 +88,8 @@ export default function StoreProductManagement() {
 
   const fetchProducts = async () => {
     try {
-      const { data, error } = await supabase
-        .from('store_products')
-        .select('*')
-        .order('updated_at', { ascending: false });
-
-      if (error) throw error;
-      setProducts(data || []);
+      // Mock empty products since ProductWhisper tables were removed
+      setProducts([]);
     } catch (error) {
       console.error('Error fetching products:', error);
       toast({
@@ -168,19 +163,11 @@ export default function StoreProductManagement() {
 
   const handleBulkStatusUpdate = async (status: string) => {
     try {
-      const { error } = await supabase
-        .from('store_products')
-        .update({ status, updated_at: new Date().toISOString() })
-        .in('id', selectedProducts);
-
-      if (error) throw error;
-
-      await fetchProducts();
-      setSelectedProducts([]);
-      
+      // Mock update since ProductWhisper tables were removed
       toast({
-        title: "Bulk Update Complete",
-        description: `Updated ${selectedProducts.length} products to ${status}`,
+        title: "ProductWhisper System Removed",
+        description: "Product management functionality has been removed from this application.",
+        variant: "destructive",
       });
     } catch (error: any) {
       console.error('Error updating products:', error);
@@ -194,60 +181,11 @@ export default function StoreProductManagement() {
 
   const handleBulkEdit = async () => {
     try {
-      const updates: Partial<StoreProduct> = { updated_at: new Date().toISOString() };
-      
-      if (bulkEditData.price_adjustment && bulkEditData.price_adjustment_type) {
-        // We'll calculate price adjustments on the frontend for now
-        const adjustmentType = bulkEditData.price_adjustment_type;
-        const adjustmentValue = bulkEditData.price_adjustment;
-        
-        if (adjustmentType === 'percentage') {
-          // For percentage, we'll need to update each product individually
-          for (const productId of selectedProducts) {
-            const product = products.find(p => p.id === productId);
-            if (product) {
-              const newPrice = product.price * (1 + adjustmentValue / 100);
-              await supabase
-                .from('store_products')
-                .update({ price: newPrice, updated_at: new Date().toISOString() })
-                .eq('id', productId);
-            }
-          }
-        } else {
-          // For fixed amount, we can use SQL
-          updates.price = adjustmentValue;
-        }
-      }
-      
-      if (bulkEditData.markup_percentage) {
-        updates.markup_percentage = bulkEditData.markup_percentage;
-      }
-      
-      if (bulkEditData.category) {
-        updates.category = bulkEditData.category;
-      }
-      
-      if (bulkEditData.status) {
-        updates.status = bulkEditData.status;
-      }
-
-      if (Object.keys(updates).length > 1) { // More than just updated_at
-        const { error } = await supabase
-          .from('store_products')
-          .update(updates)
-          .in('id', selectedProducts);
-
-        if (error) throw error;
-      }
-
-      await fetchProducts();
-      setSelectedProducts([]);
-      setShowBulkEdit(false);
-      setBulkEditData({});
-      
+      // Mock update since ProductWhisper tables were removed
       toast({
-        title: "Bulk Edit Complete",
-        description: `Updated ${selectedProducts.length} products`,
+        title: "ProductWhisper System Removed",
+        description: "Product management functionality has been removed from this application.",
+        variant: "destructive",
       });
     } catch (error: any) {
       console.error('Error bulk editing products:', error);
@@ -1003,14 +941,11 @@ export default function StoreProductManagement() {
       <ProductImportExportDialog
         open={showImportDialog}
         onOpenChange={setShowImportDialog}
-        mode="import"
-        onImportComplete={fetchProducts}
       />
       
       <ProductImportExportDialog
         open={showExportDialog}
         onOpenChange={setShowExportDialog}
-        mode="export"
       />
     </div>
   );

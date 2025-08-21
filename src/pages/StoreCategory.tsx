@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@supabase/auth-helpers-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-import { ShoppingCart, Search, Package, Star, ArrowLeft } from "lucide-react";
+import { ShoppingCart, Search, Package, Star, ArrowLeft, AlertTriangle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Link } from "react-router-dom";
 
@@ -56,15 +55,13 @@ export default function StoreCategory() {
 
   const fetchCategory = async () => {
     try {
-      const { data, error } = await supabase
-        .from('store_categories')
-        .select('*')
-        .eq('slug', categorySlug)
-        .eq('is_active', true)
-        .single();
-
-      if (error) throw error;
-      setCategory(data);
+      // Mock category data since ProductWhisper tables were removed
+      setCategory({
+        id: '1',
+        name: 'ProductWhisper System Removed',
+        slug: categorySlug || 'removed',
+        description: 'The ProductWhisper system and its store functionality have been removed from this application.'
+      });
     } catch (error) {
       console.error('Error fetching category:', error);
     }
@@ -72,17 +69,8 @@ export default function StoreCategory() {
 
   const fetchProducts = async () => {
     try {
-      const { data, error } = await supabase
-        .from('store_products')
-        .select('*')
-        .eq('status', 'active')
-        .eq('visibility', 'public')
-        .or(`category.eq.${categorySlug},subcategory.eq.${categorySlug}`)
-        .order('featured', { ascending: false })
-        .order('name');
-
-      if (error) throw error;
-      setProducts(data || []);
+      // Mock empty products since ProductWhisper tables were removed
+      setProducts([]);
     } catch (error) {
       console.error('Error fetching products:', error);
       toast({
@@ -105,10 +93,10 @@ export default function StoreCategory() {
       return;
     }
 
-    // TODO: Implement cart functionality
     toast({
-      title: "Added to Cart",
-      description: `${product.name} has been added to your cart.`,
+      title: "ProductWhisper System Removed",
+      description: "Store functionality has been removed from this application.",
+      variant: "destructive",
     });
   };
 
@@ -184,7 +172,7 @@ export default function StoreCategory() {
           </Button>
         </div>
         <div className="flex items-center gap-3 mb-4">
-          <Package className="h-8 w-8 text-primary" />
+          <AlertTriangle className="h-8 w-8 text-orange-500" />
           <h1 className="text-3xl font-bold text-foreground">{category?.name}</h1>
         </div>
         {category?.description && (
@@ -194,127 +182,18 @@ export default function StoreCategory() {
         )}
       </div>
 
-      {/* Filters */}
-      <div className="bg-card border rounded-lg p-6 mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="Search products..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+      {/* System Removed Notice */}
+      <Card className="mb-8">
+        <CardContent className="pt-6">
+          <div className="text-center">
+            <AlertTriangle className="h-12 w-12 text-orange-500 mx-auto mb-4" />
+            <h3 className="text-lg font-medium mb-2">ProductWhisper System Removed</h3>
+            <p className="text-muted-foreground">
+              The ProductWhisper system and its store functionality have been removed from this application.
+            </p>
           </div>
-
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger>
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="name">Name (A-Z)</SelectItem>
-              <SelectItem value="price-low">Price (Low to High)</SelectItem>
-              <SelectItem value="price-high">Price (High to Low)</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {/* Results */}
-      <div className="mb-6">
-        <p className="text-muted-foreground">
-          Showing {sortedProducts.length} products in {category?.name}
-        </p>
-      </div>
-
-      {/* Products Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {sortedProducts.map((product) => (
-          <Card key={product.id} className="group hover:shadow-lg transition-shadow duration-300">
-            <div className="relative">
-              {product.image_url ? (
-                <img
-                  src={product.image_url}
-                  alt={product.name}
-                  className="w-full h-48 object-cover rounded-t-lg"
-                  onError={(e) => {
-                    e.currentTarget.src = '/placeholder.svg';
-                  }}
-                />
-              ) : (
-                <div className="w-full h-48 bg-muted rounded-t-lg flex items-center justify-center">
-                  <Package className="h-12 w-12 text-muted-foreground" />
-                </div>
-              )}
-              
-              {product.featured && (
-                <Badge className="absolute top-2 left-2 bg-primary">
-                  <Star className="h-3 w-3 mr-1" />
-                  Featured
-                </Badge>
-              )}
-              
-              {!product.in_stock && (
-                <Badge variant="destructive" className="absolute top-2 right-2">
-                  Out of Stock
-                </Badge>
-              )}
-            </div>
-
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg line-clamp-2 group-hover:text-primary transition-colors">
-                {product.name}
-              </CardTitle>
-              <CardDescription className="line-clamp-2">
-                {product.description}
-              </CardDescription>
-            </CardHeader>
-
-            <CardContent className="pb-4">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-2xl font-bold text-primary">
-                  ${product.price.toFixed(2)} {product.currency}
-                </span>
-                {product.compare_at_price && product.compare_at_price > product.price && (
-                  <span className="text-sm text-muted-foreground line-through">
-                    ${product.compare_at_price.toFixed(2)}
-                  </span>
-                )}
-              </div>
-              
-              <div className="flex flex-wrap gap-1">
-                {product.tags.slice(0, 3).map((tag) => (
-                  <Badge key={tag} variant="secondary" className="text-xs">
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            </CardContent>
-
-            <CardFooter>
-              <Button
-                onClick={() => handleAddToCart(product)}
-                disabled={!product.in_stock}
-                className="w-full"
-                variant={product.in_stock ? "default" : "secondary"}
-              >
-                <ShoppingCart className="h-4 w-4 mr-2" />
-                {product.in_stock ? "Add to Cart" : "Out of Stock"}
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
-      </div>
-
-      {sortedProducts.length === 0 && (
-        <div className="text-center py-12">
-          <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-medium mb-2">No products found</h3>
-          <p className="text-muted-foreground">
-            Try adjusting your search terms
-          </p>
-        </div>
-      )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -73,6 +73,9 @@ export function useShopifyProductSync() {
     localProductsCount: 0,
     localProducts: [],
     productsLoading: false,
+    isCompleted: false,
+    isInProgress: false,
+    lastSyncAt: null,
     advancedSettings: {
       batch_size: 250,
       max_pages: 500,
