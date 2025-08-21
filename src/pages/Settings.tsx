@@ -6,12 +6,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import Logs from '@/pages/Logs';
 
-// Mock component for removed ProductWhisper system
-const StoreConfig = () => (
-  <div className="text-center py-8">
-    <p className="text-muted-foreground">ProductWhisper system has been removed from this application.</p>
-  </div>
-);
+import { StoreManagementSettings } from '@/components/settings/StoreManagementSettings';
 
 const Settings = () => {
   const [searchParams] = useSearchParams();
@@ -52,7 +47,7 @@ const Settings = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <StoreConfig />
+                <StoreManagementSettings />
               </CardContent>
             </Card>
           </TabsContent>
