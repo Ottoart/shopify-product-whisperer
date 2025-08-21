@@ -54,6 +54,7 @@ import RepricingFeatures from "./pages/RepricingFeatures";
 import RepricingPricing from "./pages/RepricingPricing";
 import AdminDashboard from "./pages/AdminDashboard";
 import Products from "./pages/Products";
+import ProductSyncDashboard from "./pages/ProductSyncDashboard";
 import Store from "./pages/Store";
 import StoreCategory from "./pages/StoreCategory";
 import FulfillmentLanding from "./pages/FulfillmentLanding";
@@ -173,6 +174,7 @@ const AuthenticatedApp = () => {
               <Route path="/strategies" element={<Strategies />} />
               <Route path="/inventory" element={<Inventory />} />
               <Route path="/products" element={<Products />} />
+              <Route path="/product-sync" element={<ProductSyncDashboard />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/carriers" element={<Carriers />} />
               <Route path="/sync-status" element={<SyncStatus />} />

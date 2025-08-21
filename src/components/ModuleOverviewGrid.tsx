@@ -129,7 +129,7 @@ export function ModuleOverviewGrid({ targetUserId, subscription }: ModuleOvervie
       'Product Management',
       'Optimize and manage your product catalog',
       <ShoppingCart className="h-6 w-6" />,
-      '/products'
+      '/product-sync'
     )
   ];
 
@@ -231,9 +231,9 @@ export function ModuleOverviewGrid({ targetUserId, subscription }: ModuleOvervie
           ]
         }}
         quickActions={moduleConfigs[3].enabled ? [
-          { label: "Manage Products", path: "/products" },
+          { label: "Product Sync Hub", path: "/product-sync" },
           { label: "Bulk Editor", path: "/bulk-editor" },
-          { label: "Marketplace Sync", path: "/settings" }
+          { label: "Optimization Center", path: "/product-sync?tab=optimization" }
         ] : []}
         recentActivity={overview.productManagement.recentActivity}
         healthScore={overview.productManagement.syncHealthScore}

@@ -3229,6 +3229,51 @@ export type Database = {
         }
         Relationships: []
       }
+      store_connections: {
+        Row: {
+          api_credentials: Json
+          connection_status: string
+          created_at: string
+          error_message: string | null
+          id: string
+          last_sync_at: string | null
+          platform: string
+          store_name: string
+          store_url: string | null
+          sync_status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          api_credentials?: Json
+          connection_status?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          last_sync_at?: string | null
+          platform: string
+          store_name: string
+          store_url?: string | null
+          sync_status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          api_credentials?: Json
+          connection_status?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          last_sync_at?: string | null
+          platform?: string
+          store_name?: string
+          store_url?: string | null
+          sync_status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       store_shipping_configs: {
         Row: {
           auto_select_cheapest: boolean | null
@@ -3720,6 +3765,98 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      synced_products: {
+        Row: {
+          barcode: string | null
+          compare_at_price: number | null
+          created_at: string
+          description: string | null
+          external_id: string
+          handle: string | null
+          id: string
+          images: Json | null
+          inventory_quantity: number | null
+          last_optimized_at: string | null
+          optimization_score: number | null
+          price: number | null
+          product_type: string | null
+          seo_description: string | null
+          seo_title: string | null
+          sku: string | null
+          status: string
+          store_connection_id: string
+          sync_status: string
+          tags: string[] | null
+          title: string
+          updated_at: string
+          user_id: string
+          variants: Json | null
+          vendor: string | null
+        }
+        Insert: {
+          barcode?: string | null
+          compare_at_price?: number | null
+          created_at?: string
+          description?: string | null
+          external_id: string
+          handle?: string | null
+          id?: string
+          images?: Json | null
+          inventory_quantity?: number | null
+          last_optimized_at?: string | null
+          optimization_score?: number | null
+          price?: number | null
+          product_type?: string | null
+          seo_description?: string | null
+          seo_title?: string | null
+          sku?: string | null
+          status?: string
+          store_connection_id: string
+          sync_status?: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          user_id: string
+          variants?: Json | null
+          vendor?: string | null
+        }
+        Update: {
+          barcode?: string | null
+          compare_at_price?: number | null
+          created_at?: string
+          description?: string | null
+          external_id?: string
+          handle?: string | null
+          id?: string
+          images?: Json | null
+          inventory_quantity?: number | null
+          last_optimized_at?: string | null
+          optimization_score?: number | null
+          price?: number | null
+          product_type?: string | null
+          seo_description?: string | null
+          seo_title?: string | null
+          sku?: string | null
+          status?: string
+          store_connection_id?: string
+          sync_status?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          variants?: Json | null
+          vendor?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "synced_products_store_connection_id_fkey"
+            columns: ["store_connection_id"]
+            isOneToOne: false
+            referencedRelation: "store_connections"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       system_logs: {
         Row: {
