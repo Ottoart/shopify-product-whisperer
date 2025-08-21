@@ -109,7 +109,7 @@ serve(async (req) => {
         role: adminUser.role,
         is_admin: true
       }
-    };
+    }; 
     
     // Create a JWT-style token (3 parts separated by dots)
     // For simplicity, we'll use base64 encoding without actual signing
