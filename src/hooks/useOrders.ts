@@ -104,11 +104,11 @@ export const useOrders = () => {
         productSkus: productSkus.slice(0, 5)
       });
 
-      // Fetch ALL product images for comprehensive matching
-      const { data: allProducts } = await supabase
-        .from('products')
-        .select('handle, variant_sku, image_src, title, type, tags')
-        .not('image_src', 'is', null);
+      // Remove ProductWhisper integration - table deleted
+      // const { data: allProducts } = await supabase
+      //   .from('products')
+      //   .select('handle, variant_sku, image_src, title, type, tags')
+      //   .not('image_src', 'is', null);
 
       console.log('📚 Available products for matching:', allProducts?.length);
 

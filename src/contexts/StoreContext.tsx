@@ -47,14 +47,19 @@ export const StoreProvider = ({ children }: StoreProviderProps) => {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('store_configurations')
-        .select('*')
+        .from('marketplace_configurations')
+        .select('id, store_name, platform, store_url, is_active, access_token')
         .eq('user_id', session.user.id)
         .eq('is_active', true)
         .order('store_name');
 
       if (error) throw error;
-      setStores(data || []);
+      // Map store_url to domain for compatibility
+      const mappedData = (data || []).map(store => ({
+        ...store,
+        domain: store.store_url
+      }));
+      setStores(mappedData);
     } catch (error) {
       console.error('Error fetching stores:', error);
       setStores([]);
@@ -83,7 +88,7 @@ export const StoreProvider = ({ children }: StoreProviderProps) => {
       .channel('store-config-realtime')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'store_configurations' },
+        { event: '*', schema: 'public', table: 'marketplace_configurations' },
         (payload) => {
           const userId = (payload.new as any)?.user_id || (payload.old as any)?.user_id;
           if (userId === session.user.id) {

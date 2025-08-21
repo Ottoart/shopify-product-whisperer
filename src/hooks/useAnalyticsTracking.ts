@@ -44,29 +44,29 @@ export const useAnalyticsTracking = (): UseAnalyticsTrackingReturn => {
         return;
       }
 
-      // Special handling for product views
-      if (event.event_type === 'product_view' && event.product_id) {
-        const { error: viewError } = await supabase.from('product_views').insert({
-          user_id: user?.id,
-          product_id: event.product_id,
-          session_id: sessionId,
-          view_type: 'view',
-          viewed_at: new Date().toISOString()
-        });
-        if (viewError) console.warn('Product view tracking failed:', viewError);
-      }
+      // Remove ProductWhisper tracking - tables deleted
+      // if (event.event_type === 'product_view' && event.product_id) {
+      //   const { error: viewError } = await supabase.from('product_views').insert({
+      //     user_id: user?.id,
+      //     product_id: event.product_id,
+      //     session_id: sessionId,
+      //     view_type: 'view',
+      //     viewed_at: new Date().toISOString()
+      //   });
+      //   if (viewError) console.warn('Product view tracking failed:', viewError);
+      // }
 
-      // Special handling for cart adds
-      if (event.event_type === 'cart_add' && event.product_id) {
-        const { error: cartError } = await supabase.from('product_views').insert({
-          user_id: user?.id,
-          product_id: event.product_id,
-          session_id: sessionId,
-          view_type: 'cart_add',
-          viewed_at: new Date().toISOString()
-        });
-        if (cartError) console.warn('Cart add tracking failed:', cartError);
-      }
+      // Remove ProductWhisper tracking - tables deleted
+      // if (event.event_type === 'cart_add' && event.product_id) {
+      //   const { error: cartError } = await supabase.from('product_views').insert({
+      //     user_id: user?.id,
+      //     product_id: event.product_id,
+      //     session_id: sessionId,
+      //     view_type: 'cart_add',
+      //     viewed_at: new Date().toISOString()
+      //   });
+      //   if (cartError) console.warn('Cart add tracking failed:', cartError);
+      // }
 
     } catch (error) {
       console.error('Analytics tracking error:', error);

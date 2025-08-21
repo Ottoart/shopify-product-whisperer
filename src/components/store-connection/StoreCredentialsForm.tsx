@@ -224,11 +224,11 @@ export function StoreCredentialsForm({ marketplace, onBack, onSuccess }: StoreCr
 
         // Try to find an existing configuration for this user/platform/domain
         const { data: existing, error: findError } = await supabase
-          .from('store_configurations')
+          .from('marketplace_configurations')
           .select('id')
           .eq('user_id', user.id)
           .eq('platform', 'shopify')
-          .eq('domain', normalizedDomain)
+          .eq('store_url', normalizedDomain)
           .maybeSingle();
 
         if (findError && findError.code !== 'PGRST116') {
@@ -238,7 +238,7 @@ export function StoreCredentialsForm({ marketplace, onBack, onSuccess }: StoreCr
         let saved;
         if (existing?.id) {
           const { data: updated, error: updateError } = await supabase
-            .from('store_configurations')
+            .from('marketplace_configurations')
             .update({
               store_name: formData.store_name,
               access_token: token,
@@ -251,14 +251,15 @@ export function StoreCredentialsForm({ marketplace, onBack, onSuccess }: StoreCr
           saved = updated;
         } else {
           const { data: inserted, error: insertError } = await supabase
-            .from('store_configurations')
+            .from('marketplace_configurations')
             .insert({
               user_id: user.id,
               store_name: formData.store_name,
               platform: 'shopify',
-              domain: normalizedDomain,
+              store_url: normalizedDomain,
               access_token: token,
               is_active: true,
+              external_user_id: user.id,
             })
             .select()
             .single();
@@ -284,8 +285,12 @@ export function StoreCredentialsForm({ marketplace, onBack, onSuccess }: StoreCr
       };
 
       const { data, error } = await supabase
-        .from('store_configurations')
-        .insert(storeData)
+        .from('marketplace_configurations')
+        .insert({
+          ...storeData,
+          store_url: storeData.domain,
+          external_user_id: user.id,
+        })
         .select()
         .single();
 
