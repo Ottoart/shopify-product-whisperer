@@ -8,6 +8,7 @@ export async function validateAdminAuth(authHeader: string) {
 
   // Initialize Supabase client
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -37,6 +38,13 @@ export async function validateAdminAuth(authHeader: string) {
       
       // Properly decode the JWT payload dynamically
       const payload = JSON.parse(atob(payloadB64));
+    const authHeader = req.headers.get('Authorization');
+
+    const supabase1 = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: { Authorization: authHeader }
+      }
+    });
       
       console.log('🔓 Decoded admin JWT payload:', { 
         sub: payload.sub, 
@@ -44,7 +52,8 @@ export async function validateAdminAuth(authHeader: string) {
         iss: payload.iss,
         aud: payload.aud,
         exp: payload.exp,
-        user_metadata: !!payload.user_metadata
+        user_metadata: !!payload.user_metadata,
+        supabase1:supabase1
       });
       
       // Check if token is expired

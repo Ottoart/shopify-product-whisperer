@@ -48,7 +48,6 @@ serve(async (req) => {
       );
     }
 
-    console.log("user-----------",user)
     // Check if UPS carrier configuration exists
     const { data: existingConfig, error: fetchError } = await supabase
       .from('carrier_configurations')
