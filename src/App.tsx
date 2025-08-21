@@ -180,7 +180,7 @@ const AuthenticatedApp = () => {
               <Route path="/sync-status" element={<SyncStatus />} />
               <Route path="/logs" element={<Logs />} />
               
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
         </div>

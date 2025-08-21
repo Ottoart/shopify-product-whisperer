@@ -93,7 +93,6 @@ const fulfillmentItems = [
   { title: "Inventory Management", url: "/inventory-management", icon: Package, description: "Manage warehouse inventory" },
   { title: "Order Fulfillment", url: "/fulfillment", icon: Target, description: "Pick, pack, and ship orders" },
   { title: "Packing & Shipping", url: "/packing", icon: Package, description: "Pack orders and manage shipments" },
-  { title: "PrepFox Store", url: "/store", icon: Store, description: "Browse and order products from Staples" },
   { title: "Customer Portal", url: "/customer-portal", icon: Users, description: "Customer account management" },
   { title: "Customer Tracking", url: "/customer-tracking", icon: MapPin, description: "Public order tracking" },
 ];
