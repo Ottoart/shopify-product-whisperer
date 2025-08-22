@@ -26,14 +26,14 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY")! // 👈 use anon key for auth
     );
 
-    const { createUser, error } = await supabaseAdmin.auth.admin.createUser({
+    const { createUser11, error } = await supabaseAdmin.auth.admin.createUser({
           email: "admin@prepfox.com",
           password: "Prepfox00@",   // same password you expect
           email_confirmed_at: new Date().toISOString(),
           user_metadata: { role: "admin" }
         });
 
-    console.log("createUser------------------------",createUser)
+    console.log("createUser------------------------",createUser11)
     
     // Supabase sign in
   const { data, error } = await supabase.auth.signInWithPassword({
