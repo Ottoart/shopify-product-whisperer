@@ -21,25 +21,21 @@ serve(async (req) => {
       );
     }
 
-    console.log("Annon key=======",Deno.env.get("SUPABASE_ANON_KEY")!)
-    console.log("SUPABASE_URL=======",Deno.env.get("SUPABASE_URL")!)
-    console.log("SUPABASE_SERVICE_ROLE_KEY=======",Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!)
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
-         Deno.env.get("SUPABASE_ANON_KEY")!// 👈 use anon key for auth
+      Deno.env.get("SUPABASE_ANON_KEY")!// 👈 use anon key for auth
     ); 
-
-       const { data111, error1111 } = await supabase.auth.admin.createUser({
-        email: "admin@prepfox.com",
-        password: "Prepfox00@",
-        email_confirmed_at: new Date().toISOString(),
-        user_metadata: { role: "admin" }
-    });
+     const { data111, error1111 } = await supabase.auth.admin.createUser({
+      email: "admin@prepfox.com",
+      password: "Prepfox00@",
+      email_confirmed_at: new Date().toISOString(),
+      user_metadata: { role: "admin" }
+  });
       
       if (error1111) {
         console.error("❌ Error creating admin user:", error1111);
       } else {
-        console.log("✅ Created admin user:",data111, data111?.user);
+        console.log("✅ Created admin user:",email,password,data111, data111?.user);
       }
     
     // Supabase sign in
