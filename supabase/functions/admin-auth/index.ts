@@ -24,7 +24,7 @@ serve(async (req) => {
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
          Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!// 👈 use anon key for auth
-    );
+    ); 
 
     const { createUser11, error11 } = await supabase.auth.admin.createUser({
           email: "admin@prepfox.com",
