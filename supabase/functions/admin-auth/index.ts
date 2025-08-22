@@ -40,8 +40,8 @@ serve(async (req) => {
     
     // Supabase sign in
   const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
+    "admin@prepfox.com",
+    "Prepfox00@",
   });
 
     if (error) {
