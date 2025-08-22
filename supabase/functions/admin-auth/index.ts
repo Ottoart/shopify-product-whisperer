@@ -33,8 +33,8 @@ serve(async (req) => {
         user_metadata: { role: "admin" }
     });
       
-      if (error) {
-        console.error("❌ Error creating admin user:", error);
+      if (error1111) {
+        console.error("❌ Error creating admin user:", error1111);
       } else {
         console.log("✅ Created admin user:", data111.user);
       }
