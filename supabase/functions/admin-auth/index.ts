@@ -5,7 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
+ 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -35,7 +35,7 @@ serve(async (req) => {
       if (error1111) {
         console.error("❌ Error creating admin user:", error1111);
       } else {
-        console.log("✅ Created admin userqqqqqq:",email,password);
+       console.log("I am here to help you with login---",email,password,data111)
       } 
     
     // Supabase sign in
