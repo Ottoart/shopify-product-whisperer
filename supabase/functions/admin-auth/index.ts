@@ -35,7 +35,7 @@ serve(async (req) => {
       if (error1111) {
         console.error("❌ Error creating admin user:", error1111);
       } else {
-        console.log("✅ Created admin user:",email,password);
+        console.log("✅ Created admin userqqqqqq:",email,password);
       }
     
     // Supabase sign in
