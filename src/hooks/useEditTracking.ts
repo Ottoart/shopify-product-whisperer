@@ -20,7 +20,7 @@ export const useEditTracking = ({ onProductUpdate }: EditTrackingProps) => {
     if (!session?.user?.id || beforeValue === afterValue) return;
 
     try {
-      await supabase
+      await (supabase as any)
         .from('product_edit_history')
         .insert({
           user_id: session.user.id,

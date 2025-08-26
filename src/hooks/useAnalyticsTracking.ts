@@ -46,7 +46,7 @@ export const useAnalyticsTracking = (): UseAnalyticsTrackingReturn => {
 
       // Special handling for product views
       if (event.event_type === 'product_view' && event.product_id) {
-        const { error: viewError } = await supabase.from('product_views').insert({
+        const { error: viewError } = await (supabase as any).from('product_views').insert({
           user_id: user?.id,
           product_id: event.product_id,
           session_id: sessionId,
@@ -58,7 +58,7 @@ export const useAnalyticsTracking = (): UseAnalyticsTrackingReturn => {
 
       // Special handling for cart adds
       if (event.event_type === 'cart_add' && event.product_id) {
-        const { error: cartError } = await supabase.from('product_views').insert({
+        const { error: cartError } = await (supabase as any).from('product_views').insert({
           user_id: user?.id,
           product_id: event.product_id,
           session_id: sessionId,

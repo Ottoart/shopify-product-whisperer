@@ -49,7 +49,7 @@ export const StoreProvider = ({ children }: StoreProviderProps) => {
       
       // Fetch from both store_configurations and marketplace_configurations
       const [storeConfigsResponse, marketplaceConfigsResponse] = await Promise.all([
-        supabase
+        (supabase as any)
           .from('store_configurations')
           .select('*')
           .eq('user_id', session.user.id)
@@ -84,7 +84,7 @@ export const StoreProvider = ({ children }: StoreProviderProps) => {
 
       // Combine both sources, preferring marketplace configs for OAuth-connected stores
       const allStores = [...storeConfigs, ...marketplaceConfigs];
-      setStores(allStores);
+      setStores(allStores as any);
     } catch (error) {
       console.error('Error fetching stores:', error);
       setStores([]);

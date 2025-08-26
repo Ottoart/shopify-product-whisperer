@@ -25,7 +25,7 @@ export const usePatternLearning = () => {
     queryFn: async () => {
       if (!session?.user?.id) return [];
       
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('user_edit_patterns')
         .select('*')
         .eq('user_id', session.user.id)
@@ -64,7 +64,7 @@ export const usePatternLearning = () => {
   // Approve/reject patterns
   const updatePatternMutation = useMutation({
     mutationFn: async ({ patternId, isApproved }: { patternId: string; isApproved: boolean }) => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('user_edit_patterns')
         .update({ is_approved: isApproved })
         .eq('id', patternId);
@@ -110,7 +110,7 @@ export const usePatternLearning = () => {
     queryFn: async () => {
       if (!session?.user?.id) return [];
       
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('product_edit_history')
         .select('*')
         .eq('user_id', session.user.id)
@@ -127,7 +127,7 @@ export const usePatternLearning = () => {
   // Delete edit history entry
   const deleteEditMutation = useMutation({
     mutationFn: async (editId: string) => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('product_edit_history')
         .delete()
         .eq('id', editId);
@@ -154,8 +154,8 @@ export const usePatternLearning = () => {
     deleteEditMutation.mutate(editId);
   };
 
-  const pendingPatterns = patterns?.filter(p => p.is_approved === null) || [];
-  const approvedPatterns = patterns?.filter(p => p.is_approved === true) || [];
+  const pendingPatterns = (patterns as any)?.filter((p: any) => p.is_approved === null) || [];
+  const approvedPatterns = (patterns as any)?.filter((p: any) => p.is_approved === true) || [];
 
   return {
     patterns,

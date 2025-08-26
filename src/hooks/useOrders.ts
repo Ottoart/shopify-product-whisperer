@@ -105,7 +105,7 @@ export const useOrders = () => {
       });
 
       // Fetch ALL product images for comprehensive matching
-      const { data: allProducts } = await supabase
+      const { data: allProducts } = await (supabase as any)
         .from('products')
         .select('handle, variant_sku, image_src, title, type, tags')
         .not('image_src', 'is', null);
@@ -117,7 +117,7 @@ export const useOrders = () => {
       const skuImages: Record<string, string> = {};
       const titleKeywordMap: Record<string, string> = {};
       
-      (allProducts || []).forEach(product => {
+      ((allProducts as any) || []).forEach((product: any) => {
         if (!product.image_src) return;
         
         // Handle-based lookup

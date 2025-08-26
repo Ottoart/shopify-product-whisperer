@@ -28,7 +28,7 @@ export const useChangeHistory = () => {
     if (!session?.user?.id || beforeValue === afterValue) return;
 
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('product_edit_history')
         .insert({
           user_id: session.user.id,
@@ -51,7 +51,7 @@ export const useChangeHistory = () => {
     setIsReverting(true);
     try {
       // Get current product
-      const { data: product, error: fetchError } = await supabase
+      const { data: product, error: fetchError } = await (supabase as any)
         .from('products')
         .select('*')
         .eq('handle', change.product_handle)
@@ -80,7 +80,7 @@ export const useChangeHistory = () => {
       };
 
       // Update the product
-      const { error: updateError } = await supabase
+      const { error: updateError } = await (supabase as any)
         .from('products')
         .update(updateData)
         .eq('handle', change.product_handle)
@@ -120,7 +120,7 @@ export const useChangeHistory = () => {
     if (!session?.user?.id) return [];
 
     try {
-      let query = supabase
+      let query = (supabase as any)
         .from('product_edit_history')
         .select('*')
         .eq('user_id', session.user.id)

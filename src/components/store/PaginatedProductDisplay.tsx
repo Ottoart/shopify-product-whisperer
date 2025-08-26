@@ -118,7 +118,7 @@ export const PaginatedProductDisplay: React.FC<PaginatedProductDisplayProps> = (
   // Fetch products data
   const fetchProductsData = async (offset: number, limit: number) => {
     try {
-      let query = supabase
+      let query = (supabase as any)
         .from('store_products')
         .select('*', { count: 'exact' })
         .eq('status', 'active')

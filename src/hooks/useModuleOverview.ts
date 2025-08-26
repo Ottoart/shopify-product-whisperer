@@ -193,12 +193,12 @@ export const useModuleOverview = (targetUserId?: string) => {
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    const { data: recommendations } = await supabase
+    const { data: recommendations } = await (supabase as any)
       .from('ai_pricing_recommendations')
       .select('status, confidence_score, created_at, applied_at, recommendation_data')
       .eq('user_id', userId);
 
-    const recos = recommendations || [];
+    const recos = (recommendations as any) || [];
 
     const activeListingsCount = recos.filter(r => r.status === 'active').length;
     
@@ -314,7 +314,7 @@ export const useModuleOverview = (targetUserId?: string) => {
     const thirtyDaysAgo = new Date(currentTime.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     const [editHistoryResult, syncStatusResult, marketplacesResult, productsResult] = await Promise.all([
-      supabase
+      (supabase as any)
         .from('product_edit_history')
         .select('edit_type, created_at')
         .eq('user_id', userId)
@@ -330,16 +330,16 @@ export const useModuleOverview = (targetUserId?: string) => {
         .select('platform, is_active')
         .eq('user_id', userId)
         .eq('is_active', true),
-      supabase
+      (supabase as any)
         .from('products')
         .select('id')
         .eq('user_id', userId)
     ]);
 
-    const editHistory = editHistoryResult.data || [];
+    const editHistory = (editHistoryResult.data as any) || [];
     const syncStatus = syncStatusResult.data?.[0];
     const marketplaces = marketplacesResult.data || [];
-    const products = productsResult.data || [];
+    const products = (productsResult.data as any) || [];
 
     const productsOptimizedCount = editHistory.filter(e => 
       new Date(e.created_at) >= thirtyDaysAgo
