@@ -79,7 +79,7 @@ export const EnhancedSearch: React.FC<EnhancedSearchProps> = ({
     setIsLoadingSuggestions(true);
     try {
       // Get product name suggestions
-      const { data: products } = await supabase
+      const { data: products } = await (supabase as any)
         .from('store_products')
         .select('name, brand, category, tags')
         .eq('status', 'active')
@@ -90,25 +90,25 @@ export const EnhancedSearch: React.FC<EnhancedSearchProps> = ({
       if (products) {
         const suggestions = new Set<string>();
         
-        products.forEach(product => {
+        products.forEach((product: any) => {
           // Add product names
-          if (product.name.toLowerCase().includes(query.toLowerCase())) {
+          if (product.name?.toLowerCase().includes(query.toLowerCase())) {
             suggestions.add(product.name);
           }
           
           // Add brands
-          if (product.brand && product.brand.toLowerCase().includes(query.toLowerCase())) {
+          if (product.brand?.toLowerCase().includes(query.toLowerCase())) {
             suggestions.add(product.brand);
           }
           
           // Add categories
-          if (product.category && product.category.toLowerCase().includes(query.toLowerCase())) {
+          if (product.category?.toLowerCase().includes(query.toLowerCase())) {
             suggestions.add(product.category);
           }
           
           // Add relevant tags
           if (product.tags) {
-            product.tags.forEach(tag => {
+            product.tags.forEach((tag: string) => {
               if (tag.toLowerCase().includes(query.toLowerCase())) {
                 suggestions.add(tag);
               }

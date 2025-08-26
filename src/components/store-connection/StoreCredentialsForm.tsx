@@ -228,7 +228,7 @@ export function StoreCredentialsForm({ marketplace, onBack, onSuccess }: StoreCr
         }
 
         // Try to find an existing configuration for this user/platform/domain
-        const { data: existing, error: findError } = await supabase
+        const { data: existing, error: findError } = await (supabase as any)
           .from('store_configurations')
           .select('id')
           .eq('user_id', user.id)
@@ -242,7 +242,7 @@ export function StoreCredentialsForm({ marketplace, onBack, onSuccess }: StoreCr
 
         let saved;
         if (existing?.id) {
-          const { data: updated, error: updateError } = await supabase
+          const { data: updated, error: updateError } = await (supabase as any)
             .from('store_configurations')
             .update({
               store_name: formData.store_name,
@@ -255,7 +255,7 @@ export function StoreCredentialsForm({ marketplace, onBack, onSuccess }: StoreCr
           if (updateError) throw updateError;
           saved = updated;
         } else {
-          const { data: inserted, error: insertError } = await supabase
+          const { data: inserted, error: insertError } = await (supabase as any)
             .from('store_configurations')
             .insert({
               user_id: user.id,
@@ -288,7 +288,7 @@ export function StoreCredentialsForm({ marketplace, onBack, onSuccess }: StoreCr
         is_active: true
       };
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('store_configurations')
         .insert(storeData)
         .select()

@@ -18,7 +18,7 @@ export function ShippingAnalytics() {
 
   const fetchStoreConfigs = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('store_configurations')
         .select('*')
         .eq('is_active', true);

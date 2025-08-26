@@ -55,7 +55,7 @@ export const FeaturedProductsSection: React.FC<FeaturedProductsSectionProps> = (
 
   const fetchFeaturedProducts = async () => {
     try {
-      let query = supabase
+      let query = (supabase as any)
         .from('store_products')
         .select('id, name, price, sale_price, image_url, rating_average, rating_count, view_count, popularity_score, in_stock, featured, created_at')
         .eq('status', 'active')
@@ -76,7 +76,7 @@ export const FeaturedProductsSection: React.FC<FeaturedProductsSectionProps> = (
       const { data, error } = await query.limit(maxItems);
       if (error) throw error;
       
-      setProducts(data || []);
+      setProducts((data as any) || []);
     } catch (error) {
       console.error('Error fetching featured products:', error);
     } finally {

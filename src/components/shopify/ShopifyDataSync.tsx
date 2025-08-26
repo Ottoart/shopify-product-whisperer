@@ -137,7 +137,7 @@ export function ShopifyDataSync() {
               <CardContent className="space-y-4">
                 <div className="flex gap-2">
                   <Button
-                    onClick={() => orderSync.syncOrders()}
+                    onClick={() => orderSync.syncOrders({ limit: 100 })}
                     disabled={orderSync.isSyncing || !orderSync.hasCredentials}
                     size="sm"
                   >
@@ -169,7 +169,7 @@ export function ShopifyDataSync() {
               <CardContent className="space-y-4">
                 <div className="flex gap-2">
                   <Button
-                    onClick={() => customerSync.syncCustomers()}
+                    onClick={() => customerSync.syncCustomers({ limit: 100 })}
                     disabled={customerSync.isSyncing || !customerSync.hasCredentials}
                     size="sm"
                   >
@@ -201,7 +201,7 @@ export function ShopifyDataSync() {
               <CardContent className="space-y-4">
                 <div className="flex gap-2">
                   <Button
-                    onClick={() => inventorySync.syncInventory()}
+                    onClick={() => inventorySync.syncInventory({})}
                     disabled={inventorySync.isSyncing || !inventorySync.hasCredentials}
                     size="sm"
                   >

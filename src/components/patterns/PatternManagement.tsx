@@ -139,11 +139,12 @@ export const PatternManagement = ({ onAnalyzePatterns, isAnalyzing }: PatternMan
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {patterns.map((pattern) => {
-              const { icon: Icon, color } = getPatternIcon(pattern.pattern_type);
-              const metrics = getPatternMetrics(pattern);
+              const typedPattern = pattern as any as EditPattern;
+              const { icon: Icon, color } = getPatternIcon(typedPattern.pattern_type);
+              const metrics = getPatternMetrics(typedPattern);
               
               return (
-                <Card key={pattern.id} className="border-0 shadow-sm hover:shadow-md transition-all duration-200">
+                <Card key={typedPattern.id} className="border-0 shadow-sm hover:shadow-md transition-all duration-200">
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-3">
@@ -152,22 +153,22 @@ export const PatternManagement = ({ onAnalyzePatterns, isAnalyzing }: PatternMan
                         </div>
                         <div>
                           <h4 className="font-semibold capitalize">
-                            {pattern.pattern_type.replace(/_/g, ' ')}
+                            {typedPattern.pattern_type.replace(/_/g, ' ')}
                           </h4>
                           <p className="text-muted-foreground text-sm">
-                            {getDetailedDescription(pattern)}
+                            {getDetailedDescription(typedPattern)}
                           </p>
                         </div>
                       </div>
                       <Badge 
                         variant="outline" 
                         className={`
-                          ${pattern.confidence_score >= 0.8 ? 'border-green-500 text-green-700 bg-green-50' : 
-                            pattern.confidence_score >= 0.6 ? 'border-yellow-500 text-yellow-700 bg-yellow-50' : 
+                          ${typedPattern.confidence_score >= 0.8 ? 'border-green-500 text-green-700 bg-green-50' : 
+                            typedPattern.confidence_score >= 0.6 ? 'border-yellow-500 text-yellow-700 bg-yellow-50' : 
                             'border-red-500 text-red-700 bg-red-50'}
                         `}
                       >
-                        {Math.round(pattern.confidence_score * 100)}%
+                        {Math.round(typedPattern.confidence_score * 100)}%
                       </Badge>
                     </div>
                   </CardHeader>
@@ -177,10 +178,10 @@ export const PatternManagement = ({ onAnalyzePatterns, isAnalyzing }: PatternMan
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Confidence Level</span>
-                        <span className="font-medium">{Math.round(pattern.confidence_score * 100)}%</span>
+                        <span className="font-medium">{Math.round(typedPattern.confidence_score * 100)}%</span>
                       </div>
                       <Progress 
-                        value={pattern.confidence_score * 100} 
+                        value={typedPattern.confidence_score * 100} 
                         className="h-2"
                       />
                     </div>
@@ -197,7 +198,7 @@ export const PatternManagement = ({ onAnalyzePatterns, isAnalyzing }: PatternMan
                     </div>
 
                     {/* Approval Controls */}
-                    {pattern.is_approved === null ? (
+                    {typedPattern.is_approved === null ? (
                       <div className="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
                         <div className="flex items-center gap-2">
                           <Lightbulb className="h-3 w-3 text-blue-500" />
@@ -209,14 +210,14 @@ export const PatternManagement = ({ onAnalyzePatterns, isAnalyzing }: PatternMan
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => rejectPattern(pattern.id)}
+                            onClick={() => rejectPattern(typedPattern.id)}
                             className="text-red-600 border-red-200 hover:bg-red-50 h-6 px-2"
                           >
                             <X className="h-3 w-3" />
                           </Button>
                           <Button
                             size="sm"
-                            onClick={() => approvePattern(pattern.id)}
+                            onClick={() => approvePattern(typedPattern.id)}
                             className="bg-green-600 hover:bg-green-700 text-white h-6 px-2"
                           >
                             <Check className="h-3 w-3" />
@@ -226,17 +227,17 @@ export const PatternManagement = ({ onAnalyzePatterns, isAnalyzing }: PatternMan
                     ) : (
                       <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-900 rounded-lg">
                         <div className="flex items-center gap-2">
-                          <Badge variant={pattern.is_approved ? "default" : "destructive"} className="text-xs">
-                            {pattern.is_approved ? "Active" : "Disabled"}
+                          <Badge variant={typedPattern.is_approved ? "default" : "destructive"} className="text-xs">
+                            {typedPattern.is_approved ? "Active" : "Disabled"}
                           </Badge>
                           <span className="text-xs text-muted-foreground">
-                            {pattern.is_approved ? "AI applies this pattern" : "AI avoids this pattern"}
+                            {typedPattern.is_approved ? "AI applies this pattern" : "AI avoids this pattern"}
                           </span>
                         </div>
                         <Switch
-                          checked={pattern.is_approved}
+                          checked={typedPattern.is_approved}
                           onCheckedChange={(checked) => 
-                            checked ? approvePattern(pattern.id) : rejectPattern(pattern.id)
+                            checked ? approvePattern(typedPattern.id) : rejectPattern(typedPattern.id)
                           }
                         />
                       </div>
