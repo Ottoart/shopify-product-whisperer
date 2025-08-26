@@ -38,6 +38,7 @@ import { QueueManager } from "@/components/QueueManager";
 import { SyncProgressDialog } from "@/components/SyncProgressDialog";
 import { StoreSync } from "@/components/StoreSync";
 import { SyncStatusDisplay } from "@/components/SyncStatusDisplay";
+import { ShopifyDataSync } from "@/components/shopify/ShopifyDataSync";
 import { useStores } from "@/contexts/StoreContext";
 import { useShopifyCredentials } from "@/hooks/useShopifyCredentials";
 
@@ -409,8 +410,8 @@ export default function Products() {
       {/* Sync Status Display */}
       {stores.length > 0 && (
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Sync Status</h2>
-          <SyncStatusDisplay />
+          <h2 className="text-xl font-semibold">Advanced Shopify Data Sync</h2>
+          <ShopifyDataSync />
         </div>
       )}
 

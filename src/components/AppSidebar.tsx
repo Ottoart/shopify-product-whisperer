@@ -140,7 +140,7 @@ export function AppSidebar() {
     const fetchStores = async () => {
       try {
         const { data, error } = await supabase
-          .from('store_configurations')
+          .from('marketplace_configurations')
           .select('id, store_name, platform')
           .eq('is_active', true)
           .order('store_name');
