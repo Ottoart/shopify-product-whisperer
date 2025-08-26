@@ -39,7 +39,7 @@ export const ProductActivity = ({ onProductsUpdated, storeUrl }: ProductActivity
       setIsLoading(true);
 
       // Get recently modified products (last 24 hours)
-      const { data: recentData } = await supabase
+      const { data: recentData } = await (supabase as any)
         .from('products')
         .select('*')
         .eq('user_id', session.user.id)
@@ -48,7 +48,7 @@ export const ProductActivity = ({ onProductsUpdated, storeUrl }: ProductActivity
         .limit(10);
 
       // Get successfully uploaded products
-      const { data: uploadedData } = await supabase
+      const { data: uploadedData } = await (supabase as any)
         .from('products')
         .select('*')
         .eq('user_id', session.user.id)
@@ -209,7 +209,7 @@ export const ProductActivity = ({ onProductsUpdated, storeUrl }: ProductActivity
       }
 
       // Update sync status
-      await supabase
+      await (supabase as any)
         .from('products')
         .update({ 
           shopify_sync_status: 'success',
@@ -275,7 +275,7 @@ export const ProductActivity = ({ onProductsUpdated, storeUrl }: ProductActivity
     try {
       const productHandles = selectedPendingProducts.map(p => p.handle);
       
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('products')
         .delete()
         .in('handle', productHandles)

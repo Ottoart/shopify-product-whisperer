@@ -80,7 +80,7 @@ export const ProductTypeGenerator = ({
       for (const change of suggestedChanges) {
         const {
           error
-        } = await supabase.from('products').update({
+        } = await (supabase as any).from('products').update({
           type: change.suggestedType
         }).eq('handle', change.id);
         if (error) throw error;

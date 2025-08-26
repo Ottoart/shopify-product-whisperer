@@ -46,7 +46,7 @@ export const ProductEditor = ({ product, isOpen, onClose, onProductUpdated }: Pr
 
     try {
       console.log('Tracking manual edit:', { fieldName, beforeValue, afterValue });
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('product_edit_history')
         .insert({
           user_id: session.user.id,
@@ -120,7 +120,7 @@ export const ProductEditor = ({ product, isOpen, onClose, onProductUpdated }: Pr
         variant_inventory_qty: editedProduct.variantInventoryQty
       });
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('products')
         .update({
           title: editedProduct.title,
@@ -169,7 +169,7 @@ export const ProductEditor = ({ product, isOpen, onClose, onProductUpdated }: Pr
         if (syncError) {
           console.error('Shopify sync error:', syncError);
           // Update sync status to failed
-          await supabase
+          await (supabase as any)
             .from('products')
             .update({ 
               shopify_sync_status: 'failed',
@@ -186,7 +186,7 @@ export const ProductEditor = ({ product, isOpen, onClose, onProductUpdated }: Pr
         } else if (syncData?.error) {
           console.error('Shopify API error:', syncData.error);
           // Update sync status to failed
-          await supabase
+          await (supabase as any)
             .from('products')
             .update({ 
               shopify_sync_status: 'failed',
@@ -202,7 +202,7 @@ export const ProductEditor = ({ product, isOpen, onClose, onProductUpdated }: Pr
           });
         } else {
           // Update sync status to success
-          await supabase
+          await (supabase as any)
             .from('products')
             .update({ 
               shopify_sync_status: 'success',
@@ -219,7 +219,7 @@ export const ProductEditor = ({ product, isOpen, onClose, onProductUpdated }: Pr
       } catch (syncError: any) {
         console.error('Shopify sync error:', syncError);
         // Update sync status to failed
-        await supabase
+        await (supabase as any)
           .from('products')
           .update({ 
             shopify_sync_status: 'failed',

@@ -143,7 +143,7 @@ export const BulkEditDialog = ({ selectedProducts, products, onComplete, childre
 
       // Batch update products in database
       for (const update of updates) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('products')
           .update(update)
           .eq('handle', update.handle);

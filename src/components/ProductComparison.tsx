@@ -180,7 +180,7 @@ export function ProductComparison({
         title: editedTitle
       });
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('products')
         .update({
           title: editedTitle,
@@ -353,7 +353,7 @@ export function ProductComparison({
   };
 
   const handleLoadDraft = (draftId: string) => {
-    const draft = drafts?.find(d => d.id === draftId);
+    const draft = (drafts as any)?.find((d: any) => d.id === draftId);
     if (draft && draft.optimized_data && typeof draft.optimized_data === 'object') {
       const data = draft.optimized_data as any;
       
@@ -381,7 +381,7 @@ export function ProductComparison({
       
       toast({
         title: "Draft Loaded",
-        description: `Loaded draft: ${draft.draft_name}`,
+        description: `Loaded draft: ${(draft as any).draft_name}`,
       });
     }
   };
@@ -1059,7 +1059,7 @@ export function ProductComparison({
                         <SelectValue placeholder="Select a draft..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {drafts?.map((draft) => (
+                        {(drafts as any)?.map((draft: any) => (
                           <SelectItem key={draft.id} value={draft.id}>
                             {draft.draft_name} ({new Date(draft.created_at).toLocaleDateString()})
                           </SelectItem>

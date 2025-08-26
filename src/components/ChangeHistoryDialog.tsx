@@ -48,7 +48,7 @@ export const ChangeHistoryDialog = ({ productHandle, children }: ChangeHistoryDi
     
     setLoading(true);
     try {
-      let query = supabase
+      let query = (supabase as any)
         .from('product_edit_history')
         .select('*')
         .eq('user_id', session.user.id)
@@ -77,7 +77,7 @@ export const ChangeHistoryDialog = ({ productHandle, children }: ChangeHistoryDi
   const revertChange = async (change: EditHistory) => {
     try {
       // Get current product data
-      const { data: product, error: fetchError } = await supabase
+      const { data: product, error: fetchError } = await (supabase as any)
         .from('products')
         .select('*')
         .eq('handle', change.product_handle)
@@ -108,7 +108,7 @@ export const ChangeHistoryDialog = ({ productHandle, children }: ChangeHistoryDi
       updateData[dbField] = change.before_value;
 
       // Update the product
-      const { error: updateError } = await supabase
+      const { error: updateError } = await (supabase as any)
         .from('products')
         .update(updateData)
         .eq('handle', change.product_handle)
@@ -117,7 +117,7 @@ export const ChangeHistoryDialog = ({ productHandle, children }: ChangeHistoryDi
       if (updateError) throw updateError;
 
       // Record the reversion in history
-      await supabase
+      await (supabase as any)
         .from('product_edit_history')
         .insert({
           user_id: session?.user?.id,

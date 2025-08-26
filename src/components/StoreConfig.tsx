@@ -97,7 +97,7 @@ export function StoreConfig() {
 
   const handleDelete = async (id: string) => {
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('store_configurations')
         .delete()
         .eq('id', id);
@@ -184,7 +184,7 @@ export function StoreConfig() {
     }
 
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('store_configurations')
         .update({
           store_name: data.store_name,

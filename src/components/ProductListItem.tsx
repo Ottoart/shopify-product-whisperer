@@ -136,9 +136,9 @@ export const ProductListItem = ({
       // Track each edit in the edit history
       for (const edit of changedEdits) {
         try {
-          await supabase
-            .from('product_edit_history')
-            .insert({
+      await (supabase as any)
+        .from('product_edit_history')
+        .insert({
               user_id: session.user.id,
               product_handle: product.handle,
               field_name: edit.field,
@@ -151,7 +151,7 @@ export const ProductListItem = ({
         }
       }
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('products')
         .update({
           title: editedProduct.title,
@@ -243,7 +243,7 @@ export const ProductListItem = ({
       }
 
       // Update sync status
-      await supabase
+      await (supabase as any)
         .from('products')
         .update({ 
           shopify_sync_status: 'synced',
@@ -262,7 +262,7 @@ export const ProductListItem = ({
       console.error('Shopify sync error:', error);
       
       // Update sync status to failed
-      await supabase
+      await (supabase as any)
         .from('products')
         .update({ 
           shopify_sync_status: 'failed',

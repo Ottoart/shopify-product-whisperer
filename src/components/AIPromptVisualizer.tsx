@@ -66,7 +66,7 @@ OPTIMIZATION GUIDELINES:
               Active Learning Patterns
             </h4>
             <div className="space-y-2">
-              {approvedPatterns.slice(0, 3).map((pattern) => (
+              {approvedPatterns.slice(0, 3).map((pattern: any) => (
                 <div key={pattern.id} className="p-3 rounded-lg bg-primary/5 border border-primary/20">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -78,7 +78,7 @@ OPTIMIZATION GUIDELINES:
                       </span>
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {Math.round(pattern.confidence_score * 100)}% confidence
+                      {Math.round((pattern.confidence_score || 0) * 100)}% confidence
                     </div>
                   </div>
                 </div>

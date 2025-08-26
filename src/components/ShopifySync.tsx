@@ -51,7 +51,7 @@ export const ShopifySync = ({ onProductsUpdated }: ShopifySyncProps) => {
       let field = 'vendor';
       if (filterType === 'product_types') field = 'type';
       
-      const { data: existingProducts, error: dbError } = await supabase
+      const { data: existingProducts, error: dbError } = await (supabase as any)
         .from('products')
         .select(field)
         .not(field, 'is', null)

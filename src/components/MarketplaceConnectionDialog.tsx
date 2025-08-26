@@ -176,7 +176,7 @@ export function MarketplaceConnectionDialog({
         is_active: true
       };
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('store_configurations')
         .insert(storeData);
 
