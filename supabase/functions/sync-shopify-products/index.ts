@@ -94,8 +94,8 @@ serve(async (req) => {
 
     console.log(`Starting batch sync for user ${user.id}, page ${startPage}, batch size ${batchSize}`);
 
-    // Fetch products for this batch with cursor-based pagination
-    let url = `${baseUrl}/products.json?limit=${batchSize}&fields=id,title,handle,vendor,product_type,tags,published_at,created_at,updated_at,status,variants,images,body_html,seo_title,seo_description`;
+    // Fetch products for this batch with comprehensive fields
+    let url = `${baseUrl}/products.json?limit=${batchSize}&fields=id,title,handle,vendor,product_type,tags,published_at,created_at,updated_at,status,variants,images,body_html,seo_title,seo_description,options,template_suffix,meta_title,meta_description`;
     
     // Add status filter for active-only sync
     if (shouldSyncActiveOnly) {
@@ -207,9 +207,25 @@ serve(async (req) => {
         image_src: image.src || null,
         image_position: image.position || null,
         
-        // Options
+        // Options (enhanced)
         option1_name: product.options?.[0]?.name || null,
         option1_value: variant.option1 || null,
+        option2_name: product.options?.[1]?.name || null,
+        option2_value: variant.option2 || null,
+        option3_name: product.options?.[2]?.name || null,
+        option3_value: variant.option3 || null,
+        
+        // Enhanced metadata
+        template_suffix: product.template_suffix || null,
+        meta_title: product.meta_title || null,
+        meta_description: product.meta_description || null,
+        
+        // Additional variant data
+        variant_weight: variant.weight || null,
+        variant_weight_unit: variant.weight_unit || null,
+        variant_position: variant.position || null,
+        variant_created_at: variant.created_at || null,
+        variant_updated_at: variant.updated_at || null,
       };
     });
 
