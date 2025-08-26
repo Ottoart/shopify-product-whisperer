@@ -458,7 +458,7 @@ export const ScrapingTestSuite = () => {
       switch (testCase.id) {
         case 'int-1':
           // Test database operations
-          const { data, error } = await supabase
+          const { data, error } = await (supabase as any)
             .from('products')
             .select('id')
             .limit(1);

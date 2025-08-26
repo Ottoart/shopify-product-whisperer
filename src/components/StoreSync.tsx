@@ -101,7 +101,7 @@ export const StoreSync = ({ onSyncComplete }: StoreSyncProps) => {
 
     try {
       // Verify store still exists and is active before syncing
-      const { data: exists, error: verifyError } = await supabase
+      const { data: exists, error: verifyError } = await (supabase as any)
         .from('store_configurations')
         .select('id')
         .eq('id', store.id)

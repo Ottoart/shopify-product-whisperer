@@ -50,7 +50,7 @@ export function ProductDetailsDialog({ isOpen, onClose, productHandle, productTi
     setLoading(true);
     try {
       // First try to find by handle
-      let { data, error } = await supabase
+      let { data, error } = await (supabase as any)
         .from('products')
         .select('*')
         .eq('handle', productHandle)
@@ -60,7 +60,7 @@ export function ProductDetailsDialog({ isOpen, onClose, productHandle, productTi
       
       // If no product found by handle, try to find by title match
       if (!data) {
-        ({ data, error } = await supabase
+        ({ data, error } = await (supabase as any)
           .from('products')
           .select('*')
           .ilike('title', `%${productTitle}%`)
@@ -96,7 +96,7 @@ export function ProductDetailsDialog({ isOpen, onClose, productHandle, productTi
     
     setSaving(true);
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('products')
         .update({
           title: product.title,

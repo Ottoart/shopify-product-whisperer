@@ -46,7 +46,7 @@ export function StoreSettings({ storeId, onBack }: StoreSettingsProps) {
 
   const fetchStore = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('store_configurations')
         .select('*')
         .eq('id', storeId)
@@ -74,7 +74,7 @@ export function StoreSettings({ storeId, onBack }: StoreSettingsProps) {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('store_configurations')
         .update({
           store_name: settings.store_name,

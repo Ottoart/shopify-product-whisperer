@@ -75,7 +75,7 @@ export function UserMenu() {
     if (!user) return;
     
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('store_configurations')
         .select('id, store_name, platform, is_active')
         .eq('user_id', user.id)
@@ -86,7 +86,7 @@ export function UserMenu() {
         return;
       }
       
-      setStores(data || []);
+      setStores((data as any) || []);
     } catch (error) {
       console.error('Error fetching stores:', error);
     }

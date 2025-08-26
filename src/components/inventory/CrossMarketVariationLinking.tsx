@@ -52,7 +52,7 @@ export function CrossMarketVariationLinking() {
       setLoading(true);
       
       // Load products
-      const { data: productsData, error: productsError } = await supabase
+      const { data: productsData, error: productsError } = await (supabase as any)
         .from('products')
         .select('*')
         .eq('user_id', user.id);

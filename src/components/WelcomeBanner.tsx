@@ -42,7 +42,7 @@ export function WelcomeBanner() {
     if (!user) return;
 
     // Check connected stores
-    const { data: stores } = await supabase
+    const { data: stores } = await (supabase as any)
       .from('store_configurations')
       .select('id')
       .eq('user_id', user.id)
@@ -51,7 +51,7 @@ export function WelcomeBanner() {
     setStoreCount(stores?.length || 0);
 
     // Check products
-    const { data: products } = await supabase
+    const { data: products } = await (supabase as any)
       .from('products')
       .select('id')
       .eq('user_id', user.id)

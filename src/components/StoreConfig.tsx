@@ -60,7 +60,7 @@ export function StoreConfig() {
     try {
       // Fetch both store configurations and marketplace configurations
       const [storeResult, marketplaceResult] = await Promise.all([
-        supabase
+        (supabase as any)
           .from('store_configurations')
           .select('*')
           .order('created_at', { ascending: false }),
@@ -73,8 +73,8 @@ export function StoreConfig() {
       if (storeResult.error) throw storeResult.error;
       if (marketplaceResult.error) throw marketplaceResult.error;
 
-      setStores(storeResult.data || []);
-      setMarketplaces(marketplaceResult.data || []);
+      setStores((storeResult.data as any) || []);
+      setMarketplaces((marketplaceResult.data as any) || []);
     } catch (error: any) {
       toast({
         title: "Error fetching stores",

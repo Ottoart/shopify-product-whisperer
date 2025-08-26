@@ -58,8 +58,8 @@ export const ShopifySync = ({ onProductsUpdated }: ShopifySyncProps) => {
         .not(field, 'eq', '');
       
       if (!dbError && existingProducts) {
-        const imported = [...new Set(existingProducts.map(p => p[field]))];
-        setImportedItems(imported);
+        const imported = [...new Set((existingProducts as any).map((p: any) => p[field]))];
+        setImportedItems(imported as string[]);
       }
       
       setShowItemSelection(true);

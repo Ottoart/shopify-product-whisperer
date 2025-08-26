@@ -115,7 +115,7 @@ export function DuplicateDetectionTool() {
       
       // Limit to manageable batch size
       const BATCH_SIZE = 500;
-      const { data: products, error } = await supabase
+      const { data: products, error } = await (supabase as any)
         .from('products')
         .select('id, handle, title, body_html, variant_sku, vendor, type, created_at')
         .eq('user_id', user.id)
@@ -219,7 +219,7 @@ export function DuplicateDetectionTool() {
       const toDelete = products.slice(1);
 
       for (const product of toDelete) {
-        await supabase
+        await (supabase as any)
           .from('products')
           .delete()
           .eq('id', product.id)
@@ -249,7 +249,7 @@ export function DuplicateDetectionTool() {
     if (!user) return;
 
     try {
-      await supabase
+      await (supabase as any)
         .from('products')
         .delete()
         .eq('id', productId)
@@ -299,7 +299,7 @@ export function DuplicateDetectionTool() {
     if (!user) return;
     
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('store_configurations')
         .select('domain, store_name, storefront_domain')
         .eq('user_id', user.id)
