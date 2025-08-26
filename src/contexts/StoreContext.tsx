@@ -46,15 +46,45 @@ export const StoreProvider = ({ children }: StoreProviderProps) => {
 
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('store_configurations')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .eq('is_active', true)
-        .order('store_name');
+      
+      // Fetch from both store_configurations and marketplace_configurations
+      const [storeConfigsResponse, marketplaceConfigsResponse] = await Promise.all([
+        supabase
+          .from('store_configurations')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .eq('is_active', true)
+          .order('store_name'),
+        supabase
+          .from('marketplace_configurations')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .eq('is_active', true)
+          .order('store_name')
+      ]);
 
-      if (error) throw error;
-      setStores(data || []);
+      if (storeConfigsResponse.error) throw storeConfigsResponse.error;
+      if (marketplaceConfigsResponse.error) throw marketplaceConfigsResponse.error;
+
+      // Combine and normalize the data
+      const storeConfigs = (storeConfigsResponse.data || []).map(store => ({
+        ...store,
+        source: 'store_configurations'
+      }));
+      
+      const marketplaceConfigs = (marketplaceConfigsResponse.data || []).map(marketplace => ({
+        id: marketplace.id,
+        store_name: marketplace.store_name,
+        platform: marketplace.platform,
+        domain: marketplace.store_url || marketplace.external_user_id,
+        is_active: marketplace.is_active,
+        access_token: marketplace.access_token,
+        source: 'marketplace_configurations'
+      }));
+
+      // Combine both sources, preferring marketplace configs for OAuth-connected stores
+      const allStores = [...storeConfigs, ...marketplaceConfigs];
+      setStores(allStores);
     } catch (error) {
       console.error('Error fetching stores:', error);
       setStores([]);
@@ -84,6 +114,16 @@ export const StoreProvider = ({ children }: StoreProviderProps) => {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'store_configurations' },
+        (payload) => {
+          const userId = (payload.new as any)?.user_id || (payload.old as any)?.user_id;
+          if (userId === session.user.id) {
+            fetchStores();
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'marketplace_configurations' },
         (payload) => {
           const userId = (payload.new as any)?.user_id || (payload.old as any)?.user_id;
           if (userId === session.user.id) {

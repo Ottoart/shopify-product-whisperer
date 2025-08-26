@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Marketplace } from "./types";
 import { EbayOAuthForm } from "./EbayOAuthForm";
+import { ShopifyOAuthForm } from "./ShopifyOAuthForm";
 
 interface StoreCredentialsFormProps {
   marketplace: Marketplace;
@@ -153,9 +154,13 @@ const getFormConfig = (marketplace: Marketplace): { title: string; description: 
 };
 
 export function StoreCredentialsForm({ marketplace, onBack, onSuccess }: StoreCredentialsFormProps) {
-  // Use eBay OAuth flow for eBay marketplace
+  // Use OAuth flows for supported marketplaces
   if (marketplace.platform === 'ebay') {
     return <EbayOAuthForm marketplace={marketplace} onBack={onBack} onSuccess={onSuccess} />;
+  }
+
+  if (marketplace.platform === 'shopify') {
+    return <ShopifyOAuthForm marketplace={marketplace} onBack={onBack} onSuccess={onSuccess} />;
   }
 
   const config = getFormConfig(marketplace);
