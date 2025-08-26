@@ -240,7 +240,7 @@ export const PaginatedProductDisplay: React.FC<PaginatedProductDisplayProps> = (
     setLoadMode(mode as 'pagination' | 'infinite');
   };
 
-  const currentProducts = loadMode === 'infinite' ? infiniteProducts : products;
+  const currentProducts = loadMode === 'infinite' ? (infiniteProducts as StoreProduct[]) : products;
   const currentLoading = loadMode === 'infinite' ? infiniteLoading : isLoading;
 
   return (

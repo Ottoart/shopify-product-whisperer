@@ -47,7 +47,7 @@ export function useProductRecommendations(
     try {
       // Fetch related products by category
       if (category) {
-        const { data: categoryProducts } = await supabase
+        const { data: categoryProducts } = await (supabase as any)
           .from('store_products')
           .select('*')
           .eq('category', category)
@@ -56,12 +56,12 @@ export function useProductRecommendations(
           .neq('id', productId)
           .limit(8);
 
-        setRelatedProducts(categoryProducts || []);
+        setRelatedProducts((categoryProducts as StoreProduct[]) || []);
       }
 
       // Fetch similar products by brand
       if (brand) {
-        const { data: brandProducts } = await supabase
+        const { data: brandProducts } = await (supabase as any)
           .from('store_products')
           .select('*')
           .eq('brand', brand)
@@ -70,12 +70,12 @@ export function useProductRecommendations(
           .neq('id', productId)
           .limit(6);
 
-        setSimilarProducts(brandProducts || []);
+        setSimilarProducts((brandProducts as StoreProduct[]) || []);
       }
 
       // Simulate "frequently bought together" by finding products with similar tags
       if (tags && tags.length > 0) {
-        const { data: taggedProducts } = await supabase
+        const { data: taggedProducts } = await (supabase as any)
           .from('store_products')
           .select('*')
           .overlaps('tags', tags)
@@ -84,7 +84,7 @@ export function useProductRecommendations(
           .neq('id', productId)
           .limit(4);
 
-        setFrequentlyBoughtTogether(taggedProducts || []);
+        setFrequentlyBoughtTogether((taggedProducts as StoreProduct[]) || []);
       }
     } catch (error) {
       console.error('Error fetching recommendations:', error);

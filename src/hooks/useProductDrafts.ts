@@ -30,7 +30,7 @@ export const useProductDrafts = (productHandle?: string) => {
     queryFn: async () => {
       if (!session?.user?.id || !productHandle) return [];
       
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('product_drafts')
         .select('*')
         .eq('user_id', session.user.id)
@@ -56,7 +56,7 @@ export const useProductDrafts = (productHandle?: string) => {
     }) => {
       if (!session?.user?.id) throw new Error('User not authenticated');
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('product_drafts')
         .insert({
           user_id: session.user.id,
@@ -97,7 +97,7 @@ export const useProductDrafts = (productHandle?: string) => {
       draftName: string; 
       optimizedData: ProductDraft['optimized_data'] 
     }) => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('product_drafts')
         .update({
           draft_name: draftName,
@@ -129,7 +129,7 @@ export const useProductDrafts = (productHandle?: string) => {
   // Delete draft mutation
   const deleteDraftMutation = useMutation({
     mutationFn: async (draftId: string) => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('product_drafts')
         .delete()
         .eq('id', draftId);
