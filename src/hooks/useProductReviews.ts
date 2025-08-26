@@ -58,14 +58,14 @@ export function useProductReviews(productId: string): UseProductReviewsReturn {
   const fetchReviews = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('product_reviews')
         .select('*')
         .eq('product_id', productId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setReviews(data || []);
+      setReviews((data as any) || []);
     } catch (error) {
       console.error('Error fetching reviews:', error);
       toast({
