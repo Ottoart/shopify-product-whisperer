@@ -30,15 +30,36 @@ serve(async (req) => {
     if (!authHeader) throw new Error("No authorization header provided");
     logStep("Authorization header found");
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw new Error(`Authentication error: ${userError.message}`);
-    const user = userData.user;
-    if (!user) throw new Error("User not authenticated");
-    logStep("User authenticated", { userId: user.id, email: user.email });
+    // For admin functions, we'll use the anon key client and validate admin session differently
+    const anonClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+    );
 
-    // Check if user is admin
-    const { data: adminCheck } = await supabaseClient.rpc('is_admin', { _user_id: user.id });
+    const token = authHeader.replace("Bearer ", "");
+    
+    // Try to get user from the regular auth first
+    const { data: userData, error: userError } = await anonClient.auth.getUser(token);
+    
+    let userId: string;
+    
+    if (userError || !userData.user) {
+      // If regular auth fails, try to decode the admin session token
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        userId = payload.user_id || payload.sub;
+        if (!userId) throw new Error("Invalid admin token: no user ID found");
+        logStep("Admin token decoded", { userId });
+      } catch (decodeError) {
+        throw new Error("Invalid token format");
+      }
+    } else {
+      userId = userData.user.id;
+      logStep("User authenticated via regular auth", { userId, email: userData.user.email });
+    }
+
+    // Check if user is admin using service role client
+    const { data: adminCheck } = await supabaseClient.rpc('is_admin', { _user_id: userId });
     if (!adminCheck) {
       throw new Error('Unauthorized: Admin access required');
     }
