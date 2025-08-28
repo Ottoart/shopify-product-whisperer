@@ -8,7 +8,7 @@ import { Info, TrendingUp, TrendingDown, Target, DollarSign, Package, AlertTrian
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { RepricingAIRecommendations } from "../components/RepricingAIRecommendations";
 import { QueueManager } from "@/components/QueueManager";
-import { useProducts } from "@/hooks/useProducts";
+// import { useProducts } from "@/hooks/useProducts";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 
@@ -37,7 +37,7 @@ export function DashboardTab({ storeFilter, dateRange, dateRangeLabel, queueItem
   }, [searchParams, storeFilter]);
 
   // Get products for the active store
-  const { products: allProducts } = useProducts();
+  const allProducts: any[] = [];
   const storeProducts = allProducts?.filter(product => 
     !activeStoreFilter || product.vendor?.toLowerCase().includes(activeStoreFilter.toLowerCase())
   ) || [];

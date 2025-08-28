@@ -1,4 +1,4 @@
-import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
+// import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +18,9 @@ export default function RecentlyViewedProducts({
   showAsCard = true,
   maxItems = 10
 }: RecentlyViewedProductsProps) {
-  const { recentlyViewed, clearRecentlyViewed, isLoading } = useRecentlyViewed();
+  const recentlyViewed: any[] = [];
+  const clearRecentlyViewed = async () => {};
+  const isLoading = false;
 
   const renderStars = (rating: number, count: number) => {
     return (

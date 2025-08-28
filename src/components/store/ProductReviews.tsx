@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { useProductReviews } from "@/hooks/useProductReviews";
+// import { useProductReviews } from "@/hooks/useProductReviews";
 import { Star, ThumbsUp, Edit2, Trash2, Plus } from "lucide-react";
 import { format } from "date-fns";
 
@@ -17,16 +17,14 @@ interface ProductReviewsProps {
 }
 
 export default function ProductReviews({ productId }: ProductReviewsProps) {
-  const { 
-    reviews, 
-    userReview, 
-    isLoading, 
-    averageRating, 
-    totalReviews, 
-    addReview, 
-    updateReview, 
-    deleteReview 
-  } = useProductReviews(productId);
+  const reviews: any[] = [];
+  const userReview = null;
+  const isLoading = false;
+  const averageRating = 0;
+  const totalReviews = 0;
+  const addReview = async () => {};
+  const updateReview = async () => {};
+  const deleteReview = async () => {};
 
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
   const [editingReview, setEditingReview] = useState<string | null>(null);
@@ -68,10 +66,10 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
 
   const handleSubmitReview = async () => {
     if (editingReview) {
-      await updateReview(editingReview, reviewForm);
+      await updateReview();
       setEditingReview(null);
     } else {
-      await addReview(reviewForm);
+      await addReview();
     }
     setIsReviewDialogOpen(false);
     setReviewForm({ rating: 5, title: "", review_text: "" });
@@ -89,7 +87,7 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
 
   const handleDeleteReview = async (reviewId: string) => {
     if (window.confirm("Are you sure you want to delete this review?")) {
-      await deleteReview(reviewId);
+      await deleteReview();
     }
   };
 

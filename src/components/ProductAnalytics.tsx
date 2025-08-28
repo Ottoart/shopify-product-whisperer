@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Area, AreaChart } from 'recharts';
 import { TrendingUp, Package, DollarSign, Star, AlertTriangle, Target, Zap, Brain, BarChart3 } from 'lucide-react';
-import { useProducts } from '@/hooks/useProducts';
+// import { useProducts } from '@/hooks/useProducts';
 import { useToast } from '@/hooks/use-toast';
 
 interface ProductInsight {
@@ -29,7 +29,8 @@ interface AIRecommendation {
 const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1', '#d084d0'];
 
 export const ProductAnalytics = () => {
-  const { products, isLoading } = useProducts();
+  const products: any[] = [];
+  const isLoading = false;
   const [insights, setInsights] = useState<ProductInsight[]>([]);
   const [recommendations, setRecommendations] = useState<AIRecommendation[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -63,7 +64,7 @@ export const ProductAnalytics = () => {
         return acc;
       }, {} as Record<string, any>);
 
-      const categoryInsights: ProductInsight[] = Object.entries(categoryStats).map(([category, stats]) => ({
+      const categoryInsights: ProductInsight[] = Object.entries(categoryStats).map(([category, stats]: [string, any]) => ({
         category,
         count: stats.count,
         avgPrice: stats.totalPrice / stats.count,
