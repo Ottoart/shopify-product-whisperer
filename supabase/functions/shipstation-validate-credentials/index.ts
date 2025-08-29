@@ -11,7 +11,15 @@ serve(async (req) => {
   }
 
   try {
-    const { apiKey = '1c4dd42add2a4963842dee2e1971ff35', apiSecret = '770f40d74b5c4bd5a4d87c7884750a6c' } = await req.json()
+    const body = await req.json()
+    
+    // Get credentials from Supabase secrets or request body (for testing new credentials)
+    const apiKey = body.apiKey || Deno.env.get('SHIPSTATION_API_KEY')
+    const apiSecret = body.apiSecret || Deno.env.get('SHIPSTATION_API_SECRET')
+    
+    if (!apiKey || !apiSecret) {
+      throw new Error('ShipStation API credentials not provided')
+    }
 
     // Create basic auth header
     const credentials = btoa(`${apiKey}:${apiSecret}`)
