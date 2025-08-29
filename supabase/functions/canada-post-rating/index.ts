@@ -286,7 +286,6 @@ function buildCanadaPostSOAPRequest({
   destinationPostalCode,
   destinationCountry,
   dimensions,
-  orderItems = [],
   apiKey,
   apiSecret
 }: {
@@ -296,89 +295,66 @@ function buildCanadaPostSOAPRequest({
   destinationPostalCode?: string;
   destinationCountry: string;
   dimensions?: any;
-  orderItems?: Array<{
-    id: string;
-    sku: string;
-    product_title: string;
-    price: number;
-    quantity: number;
-    weight_lbs?: number;
-    origin_country?: string;
-    commodity_code?: string;
-  }>;
   apiKey: string;
   apiSecret: string;
 }) {
-  // Use dimensions if provided (already converted to CM)
   const dimensionsXml = dimensions ? `
-    <rat:dimensions>
-      <rat:length>${dimensions.length.toFixed(2)}</rat:length>
-      <rat:width>${dimensions.width.toFixed(2)}</rat:width>
-      <rat:height>${dimensions.height.toFixed(2)}</rat:height>
-    </rat:dimensions>` : '';
+    <rat:Dimensions>
+      <rat:Length>${dimensions.length.toFixed(2)}</rat:Length>
+      <rat:Width>${dimensions.width.toFixed(2)}</rat:Width>
+      <rat:Height>${dimensions.height.toFixed(2)}</rat:Height>
+    </rat:Dimensions>` : '';
 
-  // Log order items for debugging
-  if (orderItems.length > 0) {
-    console.log('📋 Canada Post order items:', orderItems.map(item => ({
-      sku: item.sku,
-      title: item.product_title?.substring(0, 50) + '...',
-      price: item.price,
-      quantity: item.quantity,
-      origin: item.origin_country
-    })));
-  }
-
-  // Determine destination type based on country
   let destinationXml = '';
   if (destinationCountry === 'CA' && destinationPostalCode) {
     destinationXml = `
-      <rat:destination>
-        <rat:domestic>
-          <rat:postal-code>${destinationPostalCode}</rat:postal-code>
-        </rat:domestic>
-      </rat:destination>`;
+      <rat:Destination>
+        <rat:Domestic>
+          <rat:PostalCode>${destinationPostalCode}</rat:PostalCode>
+        </rat:Domestic>
+      </rat:Destination>`;
   } else if (destinationCountry === 'US' && destinationPostalCode) {
     destinationXml = `
-      <rat:destination>
-        <rat:united-states>
-          <rat:zip-code>${destinationPostalCode}</rat:zip-code>
-        </rat:united-states>
-      </rat:destination>`;
+      <rat:Destination>
+        <rat:UnitedStates>
+          <rat:ZipCode>${destinationPostalCode}</rat:ZipCode>
+        </rat:UnitedStates>
+      </rat:Destination>`;
   } else {
     destinationXml = `
-      <rat:destination>
-        <rat:international>
-          <rat:country-code>${destinationCountry}</rat:country-code>
-        </rat:international>
-      </rat:destination>`;
+      <rat:Destination>
+        <rat:International>
+          <rat:CountryCode>${destinationCountry}</rat:CountryCode>
+        </rat:International>
+      </rat:Destination>`;
   }
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" 
-                  xmlns:rat="http://www.canadapost.ca/ws/soap/ship/rate/v4">
-  <soapenv:Header>
-    <wsse:Security xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
-      <wsse:UsernameToken>
-        <wsse:Username>${apiKey}</wsse:Username>
-        <wsse:Password>${apiSecret}</wsse:Password>
-      </wsse:UsernameToken>
-    </wsse:Security>
-  </soapenv:Header>
-  <soapenv:Body>
-    <rat:get-rates-request>
-      <rat:locale>EN</rat:locale>
-      <rat:scenario>
-        <rat:customer-number>${customerNumber}</rat:customer-number>
-        <rat:parcel-characteristics>
-          <rat:weight>${weight.toFixed(3)}</rat:weight>${dimensionsXml}
-        </rat:parcel-characteristics>
-        <rat:origin-postal-code>${originPostalCode}</rat:origin-postal-code>
-        ${destinationXml}
-      </rat:scenario>
-    </rat:get-rates-request>
-  </soapenv:Body>
-</soapenv:Envelope>`;
+    <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+                      xmlns:rat="http://www.canadapost.ca/ws/soap/ship/rate/v4"
+                      xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
+      <soapenv:Header>
+        <wsse:Security>
+          <wsse:UsernameToken>
+            <wsse:Username>${apiKey}</wsse:Username>
+            <wsse:Password>${apiSecret}</wsse:Password>
+          </wsse:UsernameToken>
+        </wsse:Security>
+      </soapenv:Header>
+      <soapenv:Body>
+        <rat:GetRatesRequest>
+          <rat:CustomerNumber>${customerNumber}</rat:CustomerNumber>
+          <rat:ParcelCharacteristics>
+            <rat:Weight>${weight.toFixed(3)}</rat:Weight>
+            ${dimensionsXml}
+          </rat:ParcelCharacteristics>
+          <rat:OriginPostalCode>${originPostalCode}</rat:OriginPostalCode>
+          ${destinationXml}
+        </rat:GetRatesRequest>
+      </soapenv:Body>
+    </soapenv:Envelope>`;
 }
+
 
 function parseCanadaPostSOAPResponse(xml: string): CanadaPostRate[] {
   const rates: CanadaPostRate[] = [];
