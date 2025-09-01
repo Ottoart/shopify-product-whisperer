@@ -28,26 +28,26 @@ serve(async (req) => {
     );
 
    // Try login first
-let { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-  email,
-  password,
-});
-
-if (authError) {
-  if (authError.message === "Invalid login credentials") {
-    // User exists but wrong password
-    return new Response(
-      JSON.stringify({ success: false, error: "Invalid email or password" }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 }
-    );
-  }
+    let { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    
+    if (authError) {
+      if (authError.message === "Invalid login credentials") {
+        // User exists but wrong password
+        return new Response(
+          JSON.stringify({ success: false, error: "Invalid email or password" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 }
+        );
+      }
 
   // Otherwise → try signup
-  console.log("Login failed, trying signup...");
-  const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-    email,
-    password,
-  });
+     console.log("Login failed, trying signup...");
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
 
   if (signUpError) {
     return new Response(
