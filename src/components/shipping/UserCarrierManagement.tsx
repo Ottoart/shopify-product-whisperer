@@ -67,7 +67,7 @@ export function UserCarrierManagement() {
       console.log('Loaded carrier configs:', configs);
 
       const systemCarriers: PrepFoxCarrier[] = SYSTEM_CARRIERS.map(carrier => {
-        const config = configs?.find(c => c.carrier_name === carrier.label);
+        const config = configs?.find(c => c.carrier_name === carrier.name);
         const isConfigured = !!config && config.is_active;
         
         return {
@@ -82,7 +82,6 @@ export function UserCarrierManagement() {
         };
       });
 
-      console.log("systemCarriers------",systemCarriers)
       setCarriers(systemCarriers);
     } catch (error) {
       console.error('Failed to load system carriers:', error);
