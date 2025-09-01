@@ -27,29 +27,38 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY") ?? ""
     );
 
-    // Try login first
-    let { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+   // Try login first
+let { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+  email,
+  password,
+});
 
-    // If login fails → try signup
-    if (authError) {
-      console.log("Login failed, trying signup...");
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-      });
+if (authError) {
+  if (authError.message === "Invalid login credentials") {
+    // User exists but wrong password
+    return new Response(
+      JSON.stringify({ success: false, error: "Invalid email or password" }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 }
+    );
+  }
 
-      if (signUpError || !signUpData.session) {
-        return new Response(
-          JSON.stringify({ success: false, error: signUpError?.message || "Signup failed" }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
-        );
-      }
+  // Otherwise → try signup
+  console.log("Login failed, trying signup...");
+  const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+    email,
+    password,
+  });
 
-      authData = signUpData;
-    }
+  if (signUpError) {
+    return new Response(
+      JSON.stringify({ success: false, error: signUpError.message }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+    );
+  }
+
+  authData = signUpData;
+}
+
 
     const user = authData.user;
 
