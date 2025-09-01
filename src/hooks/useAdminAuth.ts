@@ -1,105 +1,132 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import type { User, Session } from '@supabase/supabase-js';
 
-interface AdminSession {
-  user: {
-    id: string;
-    email: string;
-    role: string;
-    permissions: any;
-    display_name: string;
-  };
-  expires_at: string;
-  session_id: string;
+interface AdminUser {
+  id: string;
+  email: string;
+  role: string;
+  permissions: any;
+  display_name?: string;
 }
 
-const ADMIN_SESSION_KEY = 'admin_session';
-
 export function useAdminAuth() {
-  const [adminSession, setAdminSession] = useState<AdminSession | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const validateSession = (session: AdminSession): boolean => {
-    if (!session || !session.user || !session.expires_at) {
-      return false;
-    }
-    return new Date(session.expires_at) > new Date();
+  const cleanupAuthState = () => {
+    // Clear all auth-related keys from localStorage
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+        localStorage.removeItem(key);
+      }
+    });
+    setUser(null);
+    setSession(null);
+    setAdminUser(null);
   };
 
-  const loadSession = () => {
+  const checkAdminStatus = async (currentUser: User) => {
     try {
-      const storedSession = localStorage.getItem(ADMIN_SESSION_KEY);
-      if (storedSession) {
-        const session = JSON.parse(storedSession);
-        if (validateSession(session)) {
-          setAdminSession(session);
-          return true;
-        } else {
-          localStorage.removeItem(ADMIN_SESSION_KEY);
-        }
+      const { data, error } = await supabase
+        .from('admin_users')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .eq('is_active', true)
+        .single();
+
+      if (error || !data) {
+        console.log('User is not an admin:', error?.message);
+        return null;
       }
+
+      return {
+        id: currentUser.id,
+        email: currentUser.email || '',
+        role: data.role,
+        permissions: data.permissions,
+        display_name: currentUser.user_metadata?.display_name || currentUser.email
+      };
     } catch (error) {
-      console.error('Error parsing admin session:', error);
-      localStorage.removeItem(ADMIN_SESSION_KEY);
+      console.error('Error checking admin status:', error);
+      return null;
     }
-    return false;
   };
 
   useEffect(() => {
-    const sessionLoaded = loadSession();
-    setIsLoading(false);
-    
-    if (sessionLoaded) {
-      console.log('✅ Admin session loaded');
-    } else {
-      console.log('❌ No valid admin session found');
-    }
-  }, []);
-
-  // Simple session validation check every 5 minutes
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const currentSession = localStorage.getItem(ADMIN_SESSION_KEY);
-      if (currentSession) {
-        try {
-          const session = JSON.parse(currentSession);
-          if (!validateSession(session)) {
-            console.warn('Admin session expired, clearing...');
-            setAdminSession(null);
-            localStorage.removeItem(ADMIN_SESSION_KEY);
-          }
-        } catch (error) {
-          console.error('Error validating session:', error);
-          localStorage.removeItem(ADMIN_SESSION_KEY);
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          // Check if user is admin
+          const adminData = await checkAdminStatus(session.user);
+          setAdminUser(adminData);
+        } else {
+          setAdminUser(null);
         }
+        
+        setIsLoading(false);
       }
-    }, 300000); // Check every 5 minutes
+    );
 
-    return () => clearInterval(interval);
+    // THEN check for existing session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        const adminData = await checkAdminStatus(session.user);
+        setAdminUser(adminData);
+      }
+      
+      setIsLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const signIn = async (email: string, password: string) => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase.functions.invoke('admin-auth', {
-        body: { email, password }
+      
+      // Clean up any existing auth state
+      cleanupAuthState();
+      
+      // Attempt global sign out first
+      try {
+        await supabase.auth.signOut({ scope: 'global' });
+      } catch (err) {
+        // Continue even if this fails
+      }
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
 
       if (error) throw error;
-      if (!data.success) throw new Error(data.error);
+      if (!data.user) throw new Error('No user returned from sign in');
 
-      const session = data.session;
-      
-      if (!validateSession(session)) {
-        throw new Error('Invalid session received from server');
+      // Check if user is admin
+      const adminData = await checkAdminStatus(data.user);
+      if (!adminData) {
+        await supabase.auth.signOut();
+        throw new Error('Access denied: Admin privileges required');
       }
-      
-      setAdminSession(session);
-      localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(session));
-      
+
+      setUser(data.user);
+      setSession(data.session);
+      setAdminUser(adminData);
+
       return { success: true };
     } catch (error) {
       console.error('Admin sign in error:', error);
+      cleanupAuthState();
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Authentication failed' 
@@ -110,25 +137,33 @@ export function useAdminAuth() {
   };
 
   const signOut = async () => {
-    setAdminSession(null);
-    localStorage.removeItem(ADMIN_SESSION_KEY);
+    try {
+      cleanupAuthState();
+      await supabase.auth.signOut({ scope: 'global' });
+      window.location.href = '/admin';
+    } catch (error) {
+      console.error('Sign out error:', error);
+      // Force clean up even if sign out fails
+      cleanupAuthState();
+      window.location.href = '/admin';
+    }
   };
 
-  // Simple authentication checks
-  const isAuthenticated = !isLoading && adminSession !== null && 
-    (adminSession ? new Date(adminSession.expires_at) > new Date() : false);
+  const isAuthenticated = !isLoading && session !== null && user !== null && adminUser !== null;
 
   const hasRole = (role: string) => {
-    return adminSession?.user.role === role;
+    return adminUser?.role === role;
   };
 
-  const isMasterAdmin = adminSession?.user.role === 'master_admin';
+  const isMasterAdmin = adminUser?.role === 'master_admin';
 
-  const isAdmin = adminSession?.user.role && 
-    ['master_admin', 'admin', 'manager'].includes(adminSession.user.role);
+  const isAdmin = adminUser?.role && 
+    ['master_admin', 'admin', 'manager'].includes(adminUser.role);
 
   return {
-    adminSession,
+    user,
+    session,
+    adminUser,
     isLoading,
     signIn,
     signOut,
