@@ -21,28 +21,39 @@ serve(async (req) => {
       );
     }
 
-    // Create Supabase client (with anon key for auth sign-in)
+    // Supabase client (anon for auth)
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "" // Use anon key here, not service role
+      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
     );
 
-    // Authenticate with Supabase
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+    // Try login first
+    let { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    if (authError || !authData.session) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Invalid credentials" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 }
-      );
+    // If login fails → try signup
+    if (authError) {
+      console.log("Login failed, trying signup...");
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (signUpError || !signUpData.session) {
+        return new Response(
+          JSON.stringify({ success: false, error: signUpError?.message || "Signup failed" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+        );
+      }
+
+      authData = signUpData;
     }
 
     const user = authData.user;
 
-    // Verify that this user is in your admin_users table and active
+    // Verify admin_users
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
@@ -65,13 +76,13 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        session: authData.session, // contains access_token + refresh_token
+        session: authData.session,
         user: { ...user, role: adminUser.role },
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
   } catch (error) {
-    console.error("Error in login:", error);
+    console.error("Error in login/signup:", error);
     return new Response(
       JSON.stringify({ success: false, error: "Authentication failed" }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
