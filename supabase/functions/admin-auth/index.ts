@@ -84,7 +84,6 @@ serve(async (req) => {
       );
     }
 
-    console.log("isValidCredential------",isValidCredential)
     // Find the admin user that matches the email (simplified for demo)
     const adminUser = adminUsers.find(user => {
       // For demo, match against the valid credentials
@@ -111,9 +110,7 @@ serve(async (req) => {
         is_admin: true
       }
     };
-
-
-        console.log("payload------",payload)
+    
     // Create a JWT-style token (3 parts separated by dots)
     // For simplicity, we'll use base64 encoding without actual signing
     const headerB64 = btoa(JSON.stringify(header)).replace(/[=]/g, '');
