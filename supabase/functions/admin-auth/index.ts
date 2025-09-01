@@ -21,7 +21,6 @@ serve(async (req) => {
       );
     }
 
-     console.log("I ----",email,password)
     // Create Supabase client (with anon key for auth sign-in)
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
