@@ -11,7 +11,7 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  try {
+   try {
     const { email, password } = await req.json();
 
     if (!email || !password) {
