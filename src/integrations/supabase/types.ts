@@ -2250,6 +2250,48 @@ export type Database = {
           },
         ]
       }
+      products: {
+        Row: {
+          created_at: string
+          currency: string
+          description: string | null
+          id: string
+          image_url: string | null
+          in_stock: boolean
+          name: string
+          price: number
+          sale_price: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          in_stock?: boolean
+          name: string
+          price: number
+          sale_price?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          in_stock?: boolean
+          name?: string
+          price?: number
+          sale_price?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -3690,6 +3732,42 @@ export type Database = {
         }
         Relationships: []
       }
+      store_configurations: {
+        Row: {
+          access_token: string | null
+          created_at: string
+          domain: string | null
+          id: string
+          is_active: boolean
+          platform: string
+          store_name: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token?: string | null
+          created_at?: string
+          domain?: string | null
+          id?: string
+          is_active?: boolean
+          platform: string
+          store_name?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string | null
+          created_at?: string
+          domain?: string | null
+          id?: string
+          is_active?: boolean
+          platform?: string
+          store_name?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       store_connections: {
         Row: {
           api_credentials: Json
@@ -3730,6 +3808,48 @@ export type Database = {
           store_name?: string
           store_url?: string | null
           sync_status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      store_products: {
+        Row: {
+          created_at: string
+          currency: string
+          description: string | null
+          id: string
+          image_url: string | null
+          in_stock: boolean
+          name: string
+          price: number
+          sale_price: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          in_stock?: boolean
+          name: string
+          price: number
+          sale_price?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          in_stock?: boolean
+          name?: string
+          price?: number
+          sale_price?: number | null
           updated_at?: string
           user_id?: string
         }
