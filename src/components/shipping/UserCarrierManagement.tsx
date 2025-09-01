@@ -82,6 +82,8 @@ export function UserCarrierManagement() {
         };
       });
 
+      console.log("systemCarriers-------",systemCarriers)
+
       setCarriers(systemCarriers);
     } catch (error) {
       console.error('Failed to load system carriers:', error);
