@@ -34,7 +34,7 @@ serve(async (req) => {
     });
     console.log("authData-------",authData)
     if (authError) {
-      console.log("I am error")
+      console.log("I am error",authError)
       if (authError.message === "Invalid login credentials") {
         // User exists but wrong password
         return new Response(
