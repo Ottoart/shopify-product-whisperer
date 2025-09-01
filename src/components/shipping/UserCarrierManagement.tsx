@@ -54,8 +54,7 @@ export function UserCarrierManagement() {
     try {
       // Check which carriers are configured by admin
       const { data: { user } } = await supabase.auth.getUser();
-      console.log("Logged in user:", user?.id);
-      
+       console.log("Logged in user:", user?.id);
       const { data: configs, error } = await supabase
         .from('carrier_configurations')
         .select('*')
