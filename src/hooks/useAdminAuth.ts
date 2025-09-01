@@ -104,23 +104,39 @@ export function useAdminAuth() {
         // Continue even if this fails
       }
 
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      // Call the admin-auth edge function
+      const { data: authResult, error: functionError } = await supabase.functions.invoke('admin-auth', {
+        body: { email, password }
       });
 
-      if (error) throw error;
-      if (!data.user) throw new Error('No user returned from sign in');
-
-      // Check if user is admin
-      const adminData = await checkAdminStatus(data.user);
-      if (!adminData) {
-        await supabase.auth.signOut();
-        throw new Error('Access denied: Admin privileges required');
+      if (functionError) {
+        throw new Error(functionError.message || 'Authentication failed');
       }
 
-      setUser(data.user);
-      setSession(data.session);
+      if (!authResult?.success) {
+        throw new Error(authResult?.error || 'Authentication failed');
+      }
+
+      // Set the session from the edge function response
+      if (authResult.session) {
+        const { error: sessionError } = await supabase.auth.setSession(authResult.session);
+        if (sessionError) {
+          throw new Error('Failed to set session');
+        }
+      }
+
+      // Set user and admin data from the response
+      const user = authResult.user;
+      const adminData = {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        permissions: {},
+        display_name: user.email
+      };
+
+      setUser(user);
+      setSession(authResult.session);
       setAdminUser(adminData);
 
       return { success: true };
