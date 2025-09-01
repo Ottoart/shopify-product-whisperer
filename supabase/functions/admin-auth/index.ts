@@ -16,173 +16,66 @@ serve(async (req) => {
 
     if (!email || !password) {
       return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Email and password are required"
-        }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 400,
-        }
+        JSON.stringify({ success: false, error: "Email and password are required" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
       );
     }
 
-    // Create Supabase client with service role key
+    // Create Supabase client (with anon key for auth sign-in)
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "" // Use anon key here, not service role
+    );
+
+    // Authenticate with Supabase
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (authError || !authData.session) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Invalid credentials" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 }
+      );
+    }
+
+    const user = authData.user;
+
+    console.log("I am checking the user----",email,password,authData)
+    // Verify that this user is in your admin_users table and active
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    console.log("Admin auth attempt for:", email);
+    const { data: adminUser, error: adminError } = await supabaseAdmin
+      .from("admin_users")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("is_active", true)
+      .single();
 
-    // Check if user exists and has admin role - get all active admin users first
-    const { data: adminUsers, error: adminCheckError } = await supabaseAdmin
-      .from('admin_users')
-      .select('*')
-      .eq('is_active', true);
-
-    if (adminCheckError || !adminUsers || adminUsers.length === 0) {
-      console.error("Error checking admin users:", adminCheckError);
+    if (adminError || !adminUser) {
       return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Invalid admin credentials"
-        }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 401,
-        }
+        JSON.stringify({ success: false, error: "Not authorized as admin" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 403 }
       );
     }
-
-    // For demo purposes, use fixed admin credentials
-    const validCredentials = [
-      { email: "admin@prepfox.com", password: "Prepfox00@" },
-      { email: "ottman1@gmail.com", password: "Prepfox00@" }
-    ];
-
-    const isValidCredential = validCredentials.some(
-      cred => cred.email === email && cred.password === password
-    );
-
-    if (!isValidCredential) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Invalid admin credentials"
-        }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 401,
-        }
-      );
-    }
-
-    // Find the admin user that matches the email (simplified for demo)
-    const adminUser = adminUsers.find(user => {
-      // For demo, match against the valid credentials
-      const validCred = validCredentials.find(cred => cred.email === email);
-      return validCred;
-    }) || adminUsers[0]; // Use first admin if no specific match
-
-    // Create a proper JWT-style token compatible with edge functions
-    const header = {
-      alg: "HS256",
-      typ: "JWT"
-    };
-    
-    const payload = {
-      iss: "supabase",
-      sub: adminUser.user_id,
-      aud: "authenticated",
-      exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60, // 24 hours
-      iat: Math.floor(Date.now() / 1000),
-      email: email,
-      role: "authenticated",
-      user_metadata: {
-        role: adminUser.role,
-        is_admin: true
-      }
-    };
-    
-    // Create a JWT-style token (3 parts separated by dots)
-    // For simplicity, we'll use base64 encoding without actual signing
-    const headerB64 = btoa(JSON.stringify(header)).replace(/[=]/g, '');
-    const payloadB64 = btoa(JSON.stringify(payload)).replace(/[=]/g, '');
-    const signature = btoa('admin-signature').replace(/[=]/g, ''); // Simple signature
-    
-    const jwtToken = `${headerB64}.${payloadB64}.${signature}`;
-
-    // Try to get or create a Supabase user for this admin to generate a real session
-    try {
-      const { data: existingUser, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(adminUser.user_id);
-      
-      if (getUserError && getUserError.message?.includes('User not found')) {
-        // Create a new Supabase user for this admin
-        const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-          id: adminUser.user_id,
-          email: email,
-          email_confirmed_at: new Date().toISOString(),
-          user_metadata: {
-            role: adminUser.role,
-            display_name: "Admin",
-            is_admin: true
-          }
-        });
-        
-        if (createError) {
-          console.error("Error creating Supabase user:", createError);
-        } else {
-          console.log("Created Supabase user for admin:", email);
-        }
-      }
-    } catch (error) {
-      console.error("Error setting up Supabase user:", error);
-    }
-
-    // Create simple admin session
-    const adminSession = {
-      user: {
-        id: adminUser.user_id,
-        email: email,
-        role: adminUser.role,
-        permissions: adminUser.permissions,
-        display_name: "Admin"
-      },
-      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
-      session_id: crypto.randomUUID()
-    };
-
-    console.log("Admin login successful for:", email);
 
     return new Response(
       JSON.stringify({
         success: true,
-        session: adminSession
+        session: authData.session, // contains access_token + refresh_token
+        user: { ...user, role: adminUser.role },
       }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
-
   } catch (error) {
-    console.error("Error in admin auth:", error);
+    console.error("Error in login:", error);
     return new Response(
-      JSON.stringify({
-        success: false,
-        error: "Authentication failed"
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      }
+      JSON.stringify({ success: false, error: "Authentication failed" }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
     );
   }
 });
