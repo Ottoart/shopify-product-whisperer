@@ -11,8 +11,8 @@ export function AdminLogin() {
   const { toast } = useToast();
   const { signIn } = useAdminAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("admin@prepfox.com");
+  const [password, setPassword] = useState("Prepfox00@");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,8 +35,10 @@ export function AdminLogin() {
         description: "Logged in successfully.",
       });
       
-      // Redirect to admin dashboard
-      window.location.href = '/admin';
+      // Force a small delay to ensure the state propagates
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
     } catch (error) {
       console.error('Login error:', error);
       toast({
