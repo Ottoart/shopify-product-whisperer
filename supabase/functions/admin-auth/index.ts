@@ -42,7 +42,6 @@ serve(async (req) => {
 
     const user = authData.user;
 
-    console.log("I am checking the user----",email,password,authData)
     // Verify that this user is in your admin_users table and active
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
