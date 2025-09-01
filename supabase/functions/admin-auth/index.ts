@@ -32,8 +32,9 @@ serve(async (req) => {
       email,
       password,
     });
-    
+    console.log("authData-------",authData)
     if (authError) {
+      console.log("I am error")
       if (authError.message === "Invalid login credentials") {
         // User exists but wrong password
         return new Response(
@@ -42,21 +43,7 @@ serve(async (req) => {
         );
       }
 
-  // Otherwise → try signup
-     console.log("Login failed, trying signup...");
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-
-  if (signUpError) {
-    return new Response(
-      JSON.stringify({ success: false, error: signUpError.message }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
-    );
-  }
-
-  authData = signUpData;
+       authData = authData;
 }
 
 
