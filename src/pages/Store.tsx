@@ -95,9 +95,8 @@ export default function Store() {
     try {
       const { data, error } = await supabase
         .from('store_products')
-        .select('*')
+        .select('*, category, supplier, featured, tags, brand, material, color, sku, status, inventory_quantity, cost, markup_percentage')
         .eq('status', 'active')
-        .eq('visibility', 'public')
         .order('featured', { ascending: false })
         .order('name');
 
@@ -145,14 +144,22 @@ export default function Store() {
         .eq('is_active', true)
         .order('sort_order');
 
-      if (error) throw error;
+      if (error) {
+        console.warn('Categories error:', error);
+        setCategories([]);
+        setFilterOptions(prev => ({ ...prev, categories: [] }));
+        return;
+      }
+      
       setCategories(data || []);
       setFilterOptions(prev => ({
         ...prev,
         categories: data?.map(cat => ({ id: cat.id, name: cat.name, slug: cat.slug })) || []
       }));
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      console.warn('Failed to load categories:', error);
+      setCategories([]);
+      setFilterOptions(prev => ({ ...prev, categories: [] }));
     }
   };
 

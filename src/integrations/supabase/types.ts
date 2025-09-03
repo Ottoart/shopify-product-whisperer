@@ -2252,41 +2252,56 @@ export type Database = {
       }
       products: {
         Row: {
+          category: string | null
           created_at: string
           currency: string
           description: string | null
+          featured: boolean | null
+          handle: string | null
           id: string
           image_url: string | null
           in_stock: boolean
           name: string
           price: number
           sale_price: number | null
+          supplier: string | null
+          tags: string[] | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          category?: string | null
           created_at?: string
           currency?: string
           description?: string | null
+          featured?: boolean | null
+          handle?: string | null
           id?: string
           image_url?: string | null
           in_stock?: boolean
           name: string
           price: number
           sale_price?: number | null
+          supplier?: string | null
+          tags?: string[] | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          category?: string | null
           created_at?: string
           currency?: string
           description?: string | null
+          featured?: boolean | null
+          handle?: string | null
           id?: string
           image_url?: string | null
           in_stock?: boolean
           name?: string
           price?: number
           sale_price?: number | null
+          supplier?: string | null
+          tags?: string[] | null
           updated_at?: string
           user_id?: string
         }
@@ -3732,6 +3747,45 @@ export type Database = {
         }
         Relationships: []
       }
+      store_categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          name: string
+          slug: string
+          sort_order: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name: string
+          slug: string
+          sort_order?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name?: string
+          slug?: string
+          sort_order?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       store_configurations: {
         Row: {
           access_token: string | null
@@ -3815,41 +3869,77 @@ export type Database = {
       }
       store_products: {
         Row: {
+          brand: string | null
+          category: string | null
+          color: string | null
+          cost: number | null
           created_at: string
           currency: string
           description: string | null
+          featured: boolean | null
           id: string
           image_url: string | null
           in_stock: boolean
+          inventory_quantity: number | null
+          markup_percentage: number | null
+          material: string | null
           name: string
           price: number
           sale_price: number | null
+          sku: string | null
+          status: string | null
+          supplier: string | null
+          tags: string[] | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          brand?: string | null
+          category?: string | null
+          color?: string | null
+          cost?: number | null
           created_at?: string
           currency?: string
           description?: string | null
+          featured?: boolean | null
           id?: string
           image_url?: string | null
           in_stock?: boolean
+          inventory_quantity?: number | null
+          markup_percentage?: number | null
+          material?: string | null
           name: string
           price: number
           sale_price?: number | null
+          sku?: string | null
+          status?: string | null
+          supplier?: string | null
+          tags?: string[] | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          brand?: string | null
+          category?: string | null
+          color?: string | null
+          cost?: number | null
           created_at?: string
           currency?: string
           description?: string | null
+          featured?: boolean | null
           id?: string
           image_url?: string | null
           in_stock?: boolean
+          inventory_quantity?: number | null
+          markup_percentage?: number | null
+          material?: string | null
           name?: string
           price?: number
           sale_price?: number | null
+          sku?: string | null
+          status?: string | null
+          supplier?: string | null
+          tags?: string[] | null
           updated_at?: string
           user_id?: string
         }

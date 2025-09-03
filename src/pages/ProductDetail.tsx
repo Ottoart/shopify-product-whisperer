@@ -87,20 +87,24 @@ export default function ProductDetailPage() {
   }, [productId]);
 
   useEffect(() => {
-    if (product && productId) {
-      addToRecentlyViewed(productId);
+    if (product) {
+      addToRecentlyViewed({
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        image_url: product.image_url
+      });
     }
-  }, [product, productId, addToRecentlyViewed]);
+  }, [product, addToRecentlyViewed]);
 
   const fetchProduct = async () => {
     try {
       const { data, error } = await supabase
         .from('store_products')
-        .select('*')
+        .select('*, category, supplier, featured, tags, brand, material, color, sku, status, inventory_quantity, cost, markup_percentage')
         .eq('id', productId)
         .eq('status', 'active')
-        .eq('visibility', 'public')
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       setProduct(data);
@@ -122,9 +126,8 @@ export default function ProductDetailPage() {
     try {
       const { data, error } = await supabase
         .from('store_products')
-        .select('*')
+        .select('*, category, supplier, featured, tags, brand, material, color, sku, status, inventory_quantity, cost, markup_percentage')
         .eq('status', 'active')
-        .eq('visibility', 'public')
         .eq('category', product.category)
         .neq('id', productId)
         .limit(4);

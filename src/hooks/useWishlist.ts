@@ -46,27 +46,33 @@ export function useWishlist(): UseWishlistReturn {
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      // First get wishlist items
+      const { data: wishlistData, error: wishlistError } = await supabase
         .from('wishlists')
-        .select(`
-          id,
-          product_id,
-          created_at,
-          product:store_products(
-            id,
-            name,
-            price,
-            sale_price,
-            image_url,
-            in_stock,
-            currency
-          )
-        `)
+        .select('id, product_id, created_at')
         .eq('user_id', session.user.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setWishlistItems(data || []);
+      if (wishlistError) throw wishlistError;
+
+      // Then get product details for each wishlist item
+      const wishlistItems = [];
+      for (const item of wishlistData || []) {
+        const { data: product } = await supabase
+          .from('store_products')
+          .select('id, name, price, sale_price, image_url, in_stock, currency')
+          .eq('id', item.product_id)
+          .maybeSingle();
+
+        if (product) {
+          wishlistItems.push({
+            ...item,
+            product
+          });
+        }
+      }
+
+      setWishlistItems(wishlistItems);
     } catch (error) {
       console.error('Error fetching wishlist items:', error);
       toast({

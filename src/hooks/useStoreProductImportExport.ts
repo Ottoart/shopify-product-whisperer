@@ -71,13 +71,16 @@ export const useStoreProductImportExport = () => {
         total: data.length
       };
 
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error('Authentication required');
+
       for (let i = 0; i < data.length; i++) {
         try {
-          const product = validateAndTransformProduct(data[i], i + 1);
+          const product = validateAndTransformProduct(data[i], i + 1, user.user.id);
           
           const { error } = await supabase
             .from('store_products')
-            .upsert(product, { onConflict: 'name,supplier' });
+            .upsert(product, { onConflict: 'sku' });
 
           if (error) throw error;
           result.success++;
@@ -160,7 +163,7 @@ export const useStoreProductImportExport = () => {
     });
   };
 
-  const validateAndTransformProduct = (data: any, rowNumber: number) => {
+  const validateAndTransformProduct = (data: any, rowNumber: number, userId: string) => {
     if (!data.name || !data.supplier) {
       throw new Error('Name and supplier are required fields');
     }
@@ -171,10 +174,11 @@ export const useStoreProductImportExport = () => {
     }
 
     return {
+      user_id: userId,
       name: data.name.toString().trim(),
       description: data.description?.toString() || '',
       price: price,
-      compare_at_price: data.compare_at_price ? parseFloat(data.compare_at_price) : null,
+      sale_price: data.compare_at_price ? parseFloat(data.compare_at_price) : null,
       currency: data.currency || 'USD',
       image_url: data.image_url || null,
       category: data.category || 'Uncategorized',
@@ -183,6 +187,13 @@ export const useStoreProductImportExport = () => {
       inventory_quantity: data.inventory_quantity ? parseInt(data.inventory_quantity) : 0,
       cost: data.cost ? parseFloat(data.cost) : null,
       markup_percentage: data.markup_percentage ? parseFloat(data.markup_percentage) : null,
+      brand: data.brand || null,
+      material: data.material || null,
+      color: data.color || null,
+      sku: data.sku || `SKU-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      featured: Boolean(data.featured),
+      tags: Array.isArray(data.tags) ? data.tags : (data.tags ? [data.tags] : []),
+      in_stock: (parseInt(data.inventory_quantity) || 0) > 0,
       updated_at: new Date().toISOString()
     };
   };

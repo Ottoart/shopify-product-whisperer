@@ -48,7 +48,7 @@ export default function Analytics() {
         acc[p.pattern_type] = (acc[p.pattern_type] || 0) + 1;
         return acc;
       }, {})
-    ).sort(([,a], [,b]) => b - a)[0]?.[0] || '',
+    ).sort(([,a], [,b]) => (b as number) - (a as number))[0]?.[0] || '',
     recentActivity: patterns.filter(p => {
       const created = new Date(p.created_at);
       const weekAgo = new Date();

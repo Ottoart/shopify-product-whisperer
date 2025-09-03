@@ -49,27 +49,34 @@ export function useShoppingCart(): UseShoppingCartReturn {
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      const cartId = await getOrCreateCartId();
+      
+      // First get cart items
+      const { data: cartItemsData, error: cartError } = await supabase
         .from('cart_items')
-        .select(`
-          id,
-          product_id,
-          quantity,
-          added_at,
-          product:store_products(
-            id,
-            name,
-            price,
-            sale_price,
-            image_url,
-            in_stock,
-            currency
-          )
-        `)
-        .eq('cart_id', await getOrCreateCartId());
+        .select('id, product_id, quantity, added_at')
+        .eq('cart_id', cartId);
 
-      if (error) throw error;
-      setCartItems(data || []);
+      if (cartError) throw cartError;
+
+      // Then get product details for each cart item
+      const cartItems = [];
+      for (const item of cartItemsData || []) {
+        const { data: product } = await supabase
+          .from('store_products')
+          .select('id, name, price, sale_price, image_url, in_stock, currency')
+          .eq('id', item.product_id)
+          .maybeSingle();
+
+        if (product) {
+          cartItems.push({
+            ...item,
+            product
+          });
+        }
+      }
+
+      setCartItems(cartItems);
     } catch (error) {
       console.error('Error fetching cart items:', error);
       toast({
