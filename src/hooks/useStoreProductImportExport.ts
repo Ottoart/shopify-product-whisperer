@@ -76,11 +76,14 @@ export const useStoreProductImportExport = () => {
 
       for (let i = 0; i < data.length; i++) {
         try {
-          const product = validateAndTransformProduct(data[i], i + 1, user.user.id);
+          const product = await validateAndTransformProduct(data[i], i + 1, user.user.id);
           
           const { error } = await supabase
             .from('store_products')
-            .upsert(product, { onConflict: 'sku' });
+            .upsert(product, { 
+              onConflict: 'user_id,sku',
+              ignoreDuplicates: false 
+            });
 
           if (error) throw error;
           result.success++;
@@ -112,17 +115,26 @@ export const useStoreProductImportExport = () => {
     const template = [
       {
         name: "Sample Product 1",
-        description: "A great product for your store",
+        title: "Sample Product 1 - Enhanced",
+        description: "A great product for your store with detailed features",
         price: 29.99,
+        sale_price: 25.99,
         compare_at_price: 39.99,
         currency: "USD",
         image_url: "https://example.com/image.jpg",
         category: "Electronics",
         supplier: "Sample Supplier",
+        brand: "SampleBrand",
+        material: "Premium Plastic",
+        color: "Black",
         status: "active",
         inventory_quantity: 100,
         cost: 15.00,
-        markup_percentage: 100
+        markup_percentage: 100,
+        sku: "SAMPLE-001",
+        handle: "sample-product-1-enhanced",
+        featured: false,
+        tags: "electronics,sample,gadget"
       }
     ];
 
@@ -163,7 +175,20 @@ export const useStoreProductImportExport = () => {
     });
   };
 
-  const validateAndTransformProduct = (data: any, rowNumber: number, userId: string) => {
+  const generateHandle = (title: string, sku: string): string => {
+    // Create URL-safe handle from title or fallback to SKU
+    const baseHandle = (title || sku || 'product')
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/-+/g, '-') // Replace multiple hyphens with single
+      .trim()
+      .slice(0, 50); // Limit length
+    
+    return baseHandle || 'product-handle';
+  };
+
+  const validateAndTransformProduct = async (data: any, rowNumber: number, userId: string) => {
     if (!data.name || !data.supplier) {
       throw new Error('Name and supplier are required fields');
     }
@@ -173,12 +198,38 @@ export const useStoreProductImportExport = () => {
       throw new Error('Invalid price value');
     }
 
+    // Generate SKU if not provided
+    const sku = data.sku || `SKU-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Use title if provided, otherwise use name
+    const title = data.title || data.name;
+    
+    // Generate handle if not provided
+    let handle = data.handle || generateHandle(title, sku);
+    
+    // Validate handle format
+    if (!/^[a-z0-9-]+$/.test(handle)) {
+      handle = generateHandle(title, sku);
+    }
+
+    // Parse tags properly
+    let tags = [];
+    if (data.tags) {
+      if (Array.isArray(data.tags)) {
+        tags = data.tags;
+      } else if (typeof data.tags === 'string') {
+        tags = data.tags.split(',').map(tag => tag.trim()).filter(Boolean);
+      }
+    }
+
     return {
       user_id: userId,
       name: data.name.toString().trim(),
+      title: title.toString().trim(),
+      handle: handle,
       description: data.description?.toString() || '',
       price: price,
-      sale_price: data.compare_at_price ? parseFloat(data.compare_at_price) : null,
+      sale_price: data.sale_price ? parseFloat(data.sale_price) : (data.compare_at_price ? parseFloat(data.compare_at_price) : null),
       currency: data.currency || 'USD',
       image_url: data.image_url || null,
       category: data.category || 'Uncategorized',
@@ -190,9 +241,9 @@ export const useStoreProductImportExport = () => {
       brand: data.brand || null,
       material: data.material || null,
       color: data.color || null,
-      sku: data.sku || `SKU-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      sku: sku,
       featured: Boolean(data.featured),
-      tags: Array.isArray(data.tags) ? data.tags : (data.tags ? [data.tags] : []),
+      tags: tags,
       in_stock: (parseInt(data.inventory_quantity) || 0) > 0,
       updated_at: new Date().toISOString()
     };

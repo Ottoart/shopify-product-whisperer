@@ -16,17 +16,24 @@ import { Link } from "react-router-dom";
 interface StoreProduct {
   id: string;
   name: string;
+  title: string;
+  handle: string;
   description: string;
   price: number;
-  compare_at_price?: number;
+  sale_price?: number;
   currency: string;
   image_url?: string;
   category: string;
-  subcategory?: string;
   supplier: string;
+  brand?: string;
+  material?: string;
+  color?: string;
   in_stock: boolean;
   featured: boolean;
   tags: string[];
+  sku: string;
+  status: string;
+  inventory_quantity: number;
 }
 
 interface StoreCategory {
@@ -76,8 +83,7 @@ export default function StoreCategory() {
         .from('store_products')
         .select('*')
         .eq('status', 'active')
-        .eq('visibility', 'public')
-        .or(`category.eq.${categorySlug},subcategory.eq.${categorySlug}`)
+        .eq('category', categorySlug)
         .order('featured', { ascending: false })
         .order('name');
 
@@ -275,10 +281,15 @@ export default function StoreCategory() {
                 <span className="text-2xl font-bold text-primary">
                   ${product.price.toFixed(2)} {product.currency}
                 </span>
-                {product.compare_at_price && product.compare_at_price > product.price && (
-                  <span className="text-sm text-muted-foreground line-through">
-                    ${product.compare_at_price.toFixed(2)}
-                  </span>
+                {product.sale_price && product.sale_price < product.price && (
+                  <>
+                    <span className="text-sm text-muted-foreground line-through">
+                      ${product.price.toFixed(2)}
+                    </span>
+                    <span className="text-xl font-bold text-primary">
+                      ${product.sale_price.toFixed(2)}
+                    </span>
+                  </>
                 )}
               </div>
               
