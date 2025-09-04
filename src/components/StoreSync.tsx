@@ -140,31 +140,7 @@ export const StoreSync = ({ onSyncComplete }: StoreSyncProps) => {
           title: "Sync completed",
           description: `Successfully synced ${data?.totalSynced || 0} products from ${store.store_name}${filterMsg}`,
         });
-      } else if (store.platform === 'ebay') {
-        const activeOnly = syncSettings['ebay'] ?? true;
-        
-        updateSyncStatus(statusKey, { progress: 30 });
-
-        const { data, error } = await supabase.functions.invoke('sync-ebay-products', {
-          body: { 
-            syncActiveOnly: activeOnly 
-          }
-        });
-
-        if (error) throw error;
-
-        updateSyncStatus(statusKey, { 
-          status: 'success', 
-          progress: 100,
-          productsCount: data?.productsSynced || 0
-        });
-
-        const filterMsg = activeOnly ? ' (active products only)' : ' (all products)';
-        toast({
-          title: "eBay Sync completed",
-          description: `Successfully synced ${data?.productsSynced || 0} products from ${store.store_name}${filterMsg}`,
-        });
-      } else {
+      } else /*here*/ {
         throw new Error(`Platform ${store.platform} not supported for sync`);
       }
     } catch (error) {
