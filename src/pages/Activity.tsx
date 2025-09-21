@@ -1,9 +1,10 @@
 import { Activity as ActivityIcon } from 'lucide-react';
 import { ProductActivity } from '@/components/ProductActivity';
-import { useShopifyCredentials } from '@/hooks/useShopifyCredentials';
+// Shopify integration removed
 
 const Activity = () => {
-  const { storeUrl } = useShopifyCredentials();
+  // Shopify credentials removed
+  const storeUrl = null;
 
   const handleProductsUpdated = () => {
     // This will trigger a refetch of products

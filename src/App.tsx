@@ -20,9 +20,7 @@ import Carriers from "./pages/Carriers";
 import Analytics from "./pages/Analytics";
 import Activity from "./pages/Activity";
 import BulkEditor from "./pages/BulkEditor";
-import ShopifyIntegration from "./pages/ShopifyIntegration";
 import Settings from "./pages/Settings";
-import SyncStatus from "./pages/SyncStatus";
 import Repricing from "./pages/Repricing";
 import Strategies from "./pages/Strategies";
 import Inventory from "./pages/Inventory";
@@ -140,7 +138,6 @@ const AuthenticatedApp = () => {
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/activity" element={<Activity />} />
               <Route path="/bulk-editor" element={<BulkEditor />} />
-              <Route path="/shopify-integration" element={<ShopifyIntegration />} />
               <Route path="/repricing" element={<Repricing />} />
               <Route path="/repricing-dashboard" element={<Repricing />} />
               <Route path="/strategies" element={<Strategies />} />
@@ -151,7 +148,6 @@ const AuthenticatedApp = () => {
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/plans" element={<AdminPlans />} />
               <Route path="/admin/subscriptions" element={<AdminSubscriptions />} />
-              <Route path="/sync-status" element={<SyncStatus />} />
               <Route path="/logs" element={<Logs />} />
               
               <Route path="/customer-portal" element={<CustomerPortal />} />

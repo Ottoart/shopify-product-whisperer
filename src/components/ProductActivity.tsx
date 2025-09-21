@@ -11,8 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSessionContext } from '@supabase/auth-helpers-react';
 import { useToast } from '@/hooks/use-toast';
 import { Product } from '@/types/product';
-import { getPublicProductUrl, getShopifyAdminProductUrl } from '@/utils/shopify';
-import { useShopifyCredentials } from '@/hooks/useShopifyCredentials';
+// Shopify integration removed
 
 interface ProductActivityProps {
   onProductsUpdated: () => void;
@@ -30,7 +29,7 @@ export const ProductActivity = ({ onProductsUpdated, storeUrl }: ProductActivity
   const { session } = useSessionContext();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useTabPersistence('product-activity', 'recent');
-  const { storeId } = useShopifyCredentials();
+  // Shopify credentials removed
 
   const fetchActivityData = async () => {
     if (!session?.user?.id) return;
@@ -47,14 +46,8 @@ export const ProductActivity = ({ onProductsUpdated, storeUrl }: ProductActivity
         .order('updated_at', { ascending: false })
         .limit(10);
 
-      // Get successfully uploaded products
-      const { data: uploadedData } = await (supabase as any)
-        .from('products')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .eq('shopify_sync_status', 'success')
-        .order('shopify_synced_at', { ascending: false })
-        .limit(10);
+      // Get successfully uploaded products - Shopify integration removed
+      const uploadedData = null;
 
       if (recentData) {
         setRecentlyModified(recentData.map(transformProduct));
@@ -106,11 +99,11 @@ export const ProductActivity = ({ onProductsUpdated, storeUrl }: ProductActivity
   });
 
   const getProductUrl = (handle: string) => {
-    return storeUrl ? getPublicProductUrl(storeUrl, handle) : null;
+    return null; // Shopify integration removed
   };
 
   const getShopifyAdminUrl = (handle: string) => {
-    return storeUrl ? getShopifyAdminProductUrl(storeUrl, handle) : null;
+    return null; // Shopify integration removed
   };
 
   const formatTimeAgo = (dateString: string) => {
@@ -183,49 +176,12 @@ export const ProductActivity = ({ onProductsUpdated, storeUrl }: ProductActivity
 
     setIsUploading(true);
     try {
-      const productsToUpload = [...recentlyModified, ...successfullyUploaded]
-        .filter(p => selectedProductIds.includes(p.id));
-
-      const { data, error } = await supabase.functions.invoke('shopify-products', {
-        body: { 
-          action: 'update',
-          storeId,
-          products: productsToUpload.map(p => ({
-            handle: p.handle,
-            title: p.title,
-            description: p.bodyHtml,
-            type: p.type,
-            tags: p.tags
-          }))
-        }
-      });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      if (data?.error) {
-        throw new Error(data.error);
-      }
-
-      // Update sync status
-      await (supabase as any)
-        .from('products')
-        .update({ 
-          shopify_sync_status: 'success',
-          shopify_synced_at: new Date().toISOString()
-        })
-        .in('handle', productsToUpload.map(p => p.handle))
-        .eq('user_id', session.user.id);
-
+      // Shopify integration removed
       toast({
-        title: "Upload Successful",
-        description: `Successfully re-uploaded ${selectedProductIds.length} products to Shopify.`,
+        title: "Feature Unavailable",
+        description: "Shopify integration has been removed. Please reinstall to use this feature.",
+        variant: "destructive",
       });
-
-      setSelectedProducts(new Set());
-      onProductsUpdated();
-      fetchActivityData();
     } catch (error: any) {
       console.error('Re-upload error:', error);
       toast({

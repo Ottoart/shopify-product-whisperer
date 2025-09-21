@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useSessionContext } from '@supabase/auth-helpers-react';
 import { Product } from '@/types/product';
-import { useShopifyCredentials } from '@/hooks/useShopifyCredentials';
+// Shopify integration removed
 
 interface ProductEditorProps {
   product: Product;
@@ -34,7 +34,7 @@ export const ProductEditor = ({ product, isOpen, onClose, onProductUpdated }: Pr
   const [isSaving, setIsSaving] = useState(false);
   const { session } = useSessionContext();
   const { toast } = useToast();
-  const { storeId } = useShopifyCredentials();
+  // Shopify credentials removed
 
   // Debug authentication
   console.log('ProductEditor - Session:', session?.user?.id ? 'authenticated' : 'not authenticated');
@@ -150,90 +150,7 @@ export const ProductEditor = ({ product, isOpen, onClose, onProductUpdated }: Pr
         description: "Your manual edits have been saved and will appear shortly.",
       });
 
-      // Auto-sync to Shopify after manual edit
-      try {
-        const { data: syncData, error: syncError } = await supabase.functions.invoke('shopify-products', {
-          body: { 
-            action: 'update',
-            storeId,
-            products: [{
-              handle: product.handle,
-              title: editedProduct.title,
-              description: editedProduct.bodyHtml,
-              type: editedProduct.type,
-              tags: editedProduct.tags
-            }]
-          }
-        });
-
-        if (syncError) {
-          console.error('Shopify sync error:', syncError);
-          // Update sync status to failed
-          await (supabase as any)
-            .from('products')
-            .update({ 
-              shopify_sync_status: 'failed',
-              shopify_synced_at: new Date().toISOString()
-            })
-            .eq('handle', product.handle)
-            .eq('user_id', session.user.id);
-
-          toast({
-            title: "Shopify Sync Failed",
-            description: "Product saved locally but failed to sync to Shopify. You can export manually later.",
-            variant: "destructive",
-          });
-        } else if (syncData?.error) {
-          console.error('Shopify API error:', syncData.error);
-          // Update sync status to failed
-          await (supabase as any)
-            .from('products')
-            .update({ 
-              shopify_sync_status: 'failed',
-              shopify_synced_at: new Date().toISOString()
-            })
-            .eq('handle', product.handle)
-            .eq('user_id', session.user.id);
-
-          toast({
-            title: "Shopify Sync Failed", 
-            description: syncData.error,
-            variant: "destructive",
-          });
-        } else {
-          // Update sync status to success
-          await (supabase as any)
-            .from('products')
-            .update({ 
-              shopify_sync_status: 'success',
-              shopify_synced_at: new Date().toISOString()
-            })
-            .eq('handle', product.handle)
-            .eq('user_id', session.user.id);
-
-          toast({
-            title: "Synced to Shopify",
-            description: "Product updated in both database and Shopify store.",
-          });
-        }
-      } catch (syncError: any) {
-        console.error('Shopify sync error:', syncError);
-        // Update sync status to failed
-        await (supabase as any)
-          .from('products')
-          .update({ 
-            shopify_sync_status: 'failed',
-            shopify_synced_at: new Date().toISOString()
-          })
-          .eq('handle', product.handle)
-          .eq('user_id', session.user.id);
-
-        toast({
-          title: "Shopify Sync Failed",
-          description: "Product saved locally but failed to sync to Shopify.",
-          variant: "destructive",
-        });
-      }
+      // Shopify integration removed - no auto-sync available
 
       // Force refresh the products list
       setTimeout(() => {

@@ -27,7 +27,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ProductComparison } from '@/components/ProductComparison';
 import { BulkWarningDialog } from '@/components/BulkWarningDialog';
-import { useShopifyCredentials } from '@/hooks/useShopifyCredentials';
+// Shopify integration removed
 
 interface QueueItem {
   productId: string;
@@ -123,7 +123,7 @@ REQUIREMENTS:
   const [showComparison, setShowComparison] = useState(false);
   const [showBulkWarning, setShowBulkWarning] = useState(false);
   const { toast } = useToast();
-  const { storeId } = useShopifyCredentials();
+  // Shopify credentials removed
 
   // Helper function to provide user-friendly error messages and solutions
   const getUserFriendlyError = (error: any) => {
@@ -455,35 +455,19 @@ REQUIREMENTS:
           }
         }
 
-        // Step 4: Export to Shopify
+        // Step 4: Shopify integration removed
         setCurrentProcessing({
           productId: item.productId,
-          step: `Processing ${i + 1}/${pendingItems.length}: Exporting to Shopify...`,
+          step: `Processing ${i + 1}/${pendingItems.length}: Saving to database...`,
           progress: 90
         });
 
         try {
-          const { data: exportData, error: exportError } = await supabase.functions.invoke('shopify-products', {
-          body: { 
-            action: 'update',
-            storeId,
-            products: [{
-              handle: product.handle,
-              title: data.optimizedData.title,
-              description: data.optimizedData.description,
-              type: data.optimizedData.type || product.type,
-              tags: data.optimizedData.tags,
-              category: data.optimizedData.category
-            }]
-          }
-          });
-
-          if (exportError) {
-            console.warn('Shopify export warning:', exportError.message);
-          }
+          // Shopify integration removed - no external sync
+          console.log('Shopify integration removed - product saved locally only');
         } catch (exportError) {
-          console.warn('Shopify export failed:', exportError);
-          // Don't fail the whole process if Shopify export fails
+          console.warn('Database save completed:', exportError);
+          // Don't fail the whole process if export fails
         }
 
         // Step 5: Complete

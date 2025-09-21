@@ -38,9 +38,9 @@ import { QueueManager } from "@/components/QueueManager";
 import { SyncProgressDialog } from "@/components/SyncProgressDialog";
 import { StoreSync } from "@/components/StoreSync";
 import { SyncStatusDisplay } from "@/components/SyncStatusDisplay";
-import { ShopifyDataSync } from "@/components/shopify/ShopifyDataSync";
+// Shopify integration removed
 import { useStores } from "@/contexts/StoreContext";
-import { useShopifyCredentials } from "@/hooks/useShopifyCredentials";
+// Shopify integration removed
 
 interface Product {
   id: string;
@@ -117,7 +117,8 @@ export default function Products() {
   const session = useSession();
   const { toast } = useToast();
   const { stores } = useStores();
-  const { storeUrl } = useShopifyCredentials();
+  // Shopify credentials removed
+  const storeUrl = null;
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
@@ -407,13 +408,7 @@ export default function Products() {
         </Card>
       )}
 
-      {/* Sync Status Display */}
-      {stores.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Advanced Shopify Data Sync</h2>
-          <ShopifyDataSync />
-        </div>
-      )}
+      {/* Shopify Data Sync removed */}
 
 
       {/* Products with Advanced Filtering */}

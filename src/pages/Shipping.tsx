@@ -10,17 +10,12 @@ import { TrackingPage } from "@/components/shipping/TrackingPage";
 import { ReturnsManagement } from "@/components/shipping/ReturnsManagement";
 import { BatchActionQueue } from "@/components/shipping/BatchActionQueue";
 import { StoreConfig } from "@/components/StoreConfig";
-import { ShopifyConnectionTest } from "@/components/shipping/ShopifyConnectionTest";
-import { WebhookTester } from "@/components/shipping/WebhookTester";
-import { CarrierCredentialValidator } from "@/components/shipping/CarrierCredentialValidator";
-import { EnhancedTrackingDashboard } from "@/components/shipping/EnhancedTrackingDashboard";
-import { ComprehensiveReturnsManagement } from "@/components/shipping/ComprehensiveReturnsManagement";
-import { AIShippingRecommendations } from "@/components/shipping/AIShippingRecommendations";
-import { useShopifyCredentials } from "@/hooks/useShopifyCredentials";
+// Shopify integration removed
 
 export default function Shipping() {
   const [activeTab, setActiveTab] = useState("orders");
-  const { store } = useShopifyCredentials();
+  // Shopify credentials removed
+  const store = null;
 
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
@@ -91,14 +86,7 @@ export default function Shipping() {
             <StoreConfig />
             <div className="mt-6">
               <h3 className="text-lg font-semibold mb-4">Connection Diagnostics</h3>
-              {store ? (
-                <ShopifyConnectionTest 
-                  storeId={store.id}
-                  storeName={store.store_name}
-                />
-              ) : (
-                <p className="text-sm text-muted-foreground">No active Shopify store selected.</p>
-              )}
+              <p className="text-sm text-muted-foreground">Shopify integration has been removed.</p>
             </div>
           </div>
         </TabsContent>
@@ -112,11 +100,11 @@ export default function Shipping() {
         </TabsContent>
 
         <TabsContent value="tracking">
-          <EnhancedTrackingDashboard />
+          <TrackingPage />
         </TabsContent>
 
         <TabsContent value="returns">
-          <ComprehensiveReturnsManagement />
+          <ReturnsManagement />
         </TabsContent>
 
         <TabsContent value="batch">
@@ -146,15 +134,21 @@ export default function Shipping() {
         </TabsContent>
 
         <TabsContent value="webhooks">
-          <WebhookTester />
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">Webhook testing has been removed.</p>
+          </div>
         </TabsContent>
 
         <TabsContent value="validation">
-          <CarrierCredentialValidator />
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">Carrier validation has been removed.</p>
+          </div>
         </TabsContent>
 
         <TabsContent value="ai">
-          <AIShippingRecommendations />
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">AI shipping recommendations have been removed.</p>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

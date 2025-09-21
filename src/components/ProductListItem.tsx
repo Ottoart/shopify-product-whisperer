@@ -10,8 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useSessionContext } from '@supabase/auth-helpers-react';
 import { Product } from '@/types/product';
-import { useShopifyCredentials } from '@/hooks/useShopifyCredentials';
-import { getPublicProductUrl, getShopifyAdminProductUrl } from '@/utils/shopify';
+// Shopify integration removed
 
 interface ProductListItemProps {
   product: Product;
@@ -49,7 +48,7 @@ export const ProductListItem = ({
   
   const { session } = useSessionContext();
   const { toast } = useToast();
-  const { storeUrl: activeStoreUrl, storeId } = useShopifyCredentials();
+  // Shopify credentials removed
 
   // Helper function to provide user-friendly error messages and solutions
   const getUserFriendlyError = (error: any) => {
@@ -97,13 +96,11 @@ export const ProductListItem = ({
 
 
   const getProductUrl = (handle: string) => {
-    const base = (activeStoreUrl || storeUrl || '').trim();
-    return base ? getPublicProductUrl(base, handle) : null;
+    return null; // Shopify integration removed
   };
 
   const getShopifyAdminUrl = (handle: string) => {
-    const base = (activeStoreUrl || storeUrl || '').trim();
-    return base ? getShopifyAdminProductUrl(base, handle) : null;
+    return null; // Shopify integration removed
   };
 
   const handleSave = async () => {
@@ -218,58 +215,16 @@ export const ProductListItem = ({
 
     setIsSyncing(true);
     try {
-      const { data: syncData, error: syncError } = await supabase.functions.invoke('shopify-products', {
-        body: { 
-          action: 'update',
-          storeId,
-          products: [{
-            handle: product.handle,
-            title: editedProduct.title,
-            vendor: editedProduct.vendor,
-            type: editedProduct.type,
-            tags: editedProduct.tags,
-            price: editedProduct.variantPrice,
-            compare_at_price: editedProduct.variantCompareAtPrice,
-            sku: editedProduct.variantSku,
-            inventory_quantity: editedProduct.variantInventoryQty
-          }]
-        }
-      });
-
-      if (syncError) throw syncError;
-
-      if (syncData?.error) {
-        throw new Error(syncData.error);
-      }
-
-      // Update sync status
-      await (supabase as any)
-        .from('products')
-        .update({ 
-          shopify_sync_status: 'synced',
-          shopify_synced_at: new Date().toISOString()
-        })
-        .eq('handle', product.handle)
-        .eq('user_id', session.user.id);
-
+      // Shopify integration removed
       toast({
-        title: "Synced to Shopify",
-        description: "Product successfully updated in your Shopify store",
+        title: "Feature Unavailable",
+        description: "Shopify integration has been removed. Please reinstall to use this feature.",
+        variant: "destructive",
       });
-
-      onProductUpdated();
     } catch (error: any) {
       console.error('Shopify sync error:', error);
       
-      // Update sync status to failed
-      await (supabase as any)
-        .from('products')
-        .update({ 
-          shopify_sync_status: 'failed',
-          shopify_synced_at: new Date().toISOString()
-        })
-        .eq('handle', product.handle)
-        .eq('user_id', session.user.id);
+      // Update sync status to failed - Shopify integration removed
 
       toast({
         title: "Sync Failed",
