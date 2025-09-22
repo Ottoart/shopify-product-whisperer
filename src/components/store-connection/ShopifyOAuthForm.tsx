@@ -87,26 +87,43 @@ export function ShopifyOAuthForm({ marketplace, onBack, onSuccess }: ShopifyOAut
       }
 
       // Listen for messages from the popup window
-      const handleMessage = (event: MessageEvent) => {
-        if (event.data?.type === 'SHOPIFY_AUTH_SUCCESS') {
-          console.log('Received success message from popup');
-          // Force check for session storage data
-          setTimeout(() => {
-            const authSuccess = sessionStorage.getItem('shopify_auth_success');
-            if (authSuccess) {
-              handleAuthSuccess();
-            }
-          }, 100);
+      const handleMessage = async (event: MessageEvent) => {
+        if (event.data?.type === 'SHOPIFY_OAUTH_SUCCESS') {
+          console.log('Received OAuth success message from popup');
+          await handleAuthSuccess(event.data.data);
+        } else if (event.data?.type === 'SHOPIFY_OAUTH_ERROR') {
+          console.log('Received OAuth error message from popup');
+          handleAuthError(event.data.error);
         }
       };
 
-      const handleAuthSuccess = () => {
-        const authSuccess = sessionStorage.getItem('shopify_auth_success');
-        if (authSuccess) {
-          const connectionData = JSON.parse(authSuccess);
-          sessionStorage.removeItem('shopify_auth_success');
+      const handleAuthSuccess = async (oauthData: any) => {
+        try {
+          // Store the Shopify connection in the database
+          const { error: storeError } = await supabase
+            .from('store_configurations')
+            .upsert({
+              user_id: user.id,
+              platform: 'shopify',
+              store_name: storeName.trim(),
+              store_url: oauthData.shop_domain,
+              access_token: oauthData.access_token,
+              is_active: true,
+              metadata: {
+                shop_info: oauthData.shop_info,
+                connected_at: new Date().toISOString()
+              }
+            }, {
+              onConflict: 'user_id,platform,store_url'
+            });
+
+          if (storeError) {
+            throw new Error('Failed to save store configuration');
+          }
+
+          // Clean up session storage
           sessionStorage.removeItem('shopify_oauth_state');
-          sessionStorage.removeItem('shopify_store_name');
+          sessionStorage.removeItem('shopify_store_name'); 
           sessionStorage.removeItem('shopify_shop_domain');
           
           // Close popup if still open
@@ -118,55 +135,56 @@ export function ShopifyOAuthForm({ marketplace, onBack, onSuccess }: ShopifyOAut
           
           toast({
             title: "Shopify Store Connected!",
-            description: `Successfully connected ${connectionData.store?.store_name || 'Shopify store'}`,
+            description: `Successfully connected ${storeName}`,
           });
           
-          onSuccess(connectionData);
-          return true;
-        }
-        return false;
-      };
-
-      const handleAuthError = () => {
-        const authError = sessionStorage.getItem('shopify_auth_error');
-        if (authError) {
-          const error = JSON.parse(authError);
-          sessionStorage.removeItem('shopify_auth_error');
-          sessionStorage.removeItem('shopify_oauth_state');
-          sessionStorage.removeItem('shopify_store_name');
-          sessionStorage.removeItem('shopify_shop_domain');
-          
-          // Close popup if still open
-          if (!popup.closed) {
-            popup.close();
-          }
-          
+          onSuccess({
+            store: {
+              store_name: storeName,
+              shop_domain: oauthData.shop_domain,
+              shop_info: oauthData.shop_info
+            }
+          });
+        } catch (error: any) {
+          console.error('Error saving store configuration:', error);
           setIsConnecting(false);
           toast({
-            title: "Shopify Connection Failed",
-            description: error.message || "Failed to connect to Shopify. Please try again.",
+            title: "Connection Error",
+            description: error.message || "Failed to save store configuration",
             variant: "destructive"
           });
-          return true;
         }
-        return false;
+      };
+
+      const handleAuthError = (errorMessage: string) => {
+        // Clean up session storage
+        sessionStorage.removeItem('shopify_oauth_state');
+        sessionStorage.removeItem('shopify_store_name');
+        sessionStorage.removeItem('shopify_shop_domain');
+        
+        // Close popup if still open
+        if (!popup.closed) {
+          popup.close();
+        }
+        
+        setIsConnecting(false);
+        toast({
+          title: "Shopify Connection Failed",
+          description: errorMessage || "Failed to connect to Shopify. Please try again.",
+          variant: "destructive"
+        });
       };
 
       // Add message listener
       window.addEventListener('message', handleMessage);
 
-      // Listen for the popup to close or for a message from the callback
+      // Listen for the popup to close
       const checkClosed = setInterval(() => {
         if (popup.closed) {
           clearInterval(checkClosed);
           window.removeEventListener('message', handleMessage);
           
-          // Check if we already handled success/error
-          if (handleAuthSuccess() || handleAuthError()) {
-            return;
-          }
-          
-          // If no success or error was found, it was cancelled
+          // If popup closed without success/error, it was cancelled
           setIsConnecting(false);
           // Don't show cancelled message as it's confusing for users
         }

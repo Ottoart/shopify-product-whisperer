@@ -10,7 +10,7 @@ import { TrackingPage } from "@/components/shipping/TrackingPage";
 import { ReturnsManagement } from "@/components/shipping/ReturnsManagement";
 import { BatchActionQueue } from "@/components/shipping/BatchActionQueue";
 import { StoreConfig } from "@/components/StoreConfig";
-// Shopify integration removed
+import { ShopifySync } from "@/components/ShopifySync";
 
 export default function Shipping() {
   const [activeTab, setActiveTab] = useState("orders");
@@ -84,10 +84,7 @@ export default function Shipping() {
         <TabsContent value="stores">
           <div className="space-y-6">
             <StoreConfig />
-            <div className="mt-6">
-              <h3 className="text-lg font-semibold mb-4">Connection Diagnostics</h3>
-              <p className="text-sm text-muted-foreground">Shopify integration has been removed.</p>
-            </div>
+            <ShopifySync />
           </div>
         </TabsContent>
 
