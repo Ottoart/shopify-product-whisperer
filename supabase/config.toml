@@ -1,0 +1,45 @@
+project_id = "rtaomiqsnctigleqjojt"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+
+[studio]
+enabled = true
+port = 54323
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://rtaomiqsnctigleqjojt.supabase.co"]
+jwt_expiry = 3600
+
+[functions.subscription-webhook-handler]
+verify_jwt = false
+
+[functions.admin-analytics]
+verify_jwt = true
+
+[functions.admin-data]
+verify_jwt = true
+
+[functions.billing-get-subscription]
+verify_jwt = true
+
+[functions.billing-modify-subscription]
+verify_jwt = true
+
+[functions.billing-create-portal]
+verify_jwt = true
+
+[functions.shopify-oauth-init]
+verify_jwt = true
+
+[functions.shopify-oauth-callback]
+verify_jwt = false
