@@ -2268,6 +2268,7 @@ export type Database = {
           image_url: string | null
           in_stock: boolean
           listing_status: string | null
+          meta_description: string | null
           name: string
           option1_name: string | null
           option1_value: string | null
@@ -2312,6 +2313,7 @@ export type Database = {
           image_url?: string | null
           in_stock?: boolean
           listing_status?: string | null
+          meta_description?: string | null
           name: string
           option1_name?: string | null
           option1_value?: string | null
@@ -2356,6 +2358,7 @@ export type Database = {
           image_url?: string | null
           in_stock?: boolean
           listing_status?: string | null
+          meta_description?: string | null
           name?: string
           option1_name?: string | null
           option1_value?: string | null
