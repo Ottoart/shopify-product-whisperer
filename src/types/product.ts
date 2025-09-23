@@ -1,0 +1,59 @@
+export interface Product {
+  id: string;
+  title: string;
+  handle: string;
+  vendor: string;
+  type: string;
+  tags: string;
+  category?: string;
+  published: boolean;
+  option1Name: string;
+  option1Value: string;
+  variantSku: string;
+  variantGrams: number;
+  variantInventoryTracker: string;
+  variantInventoryQty: number;
+  variantInventoryPolicy: string;
+  variantFulfillmentService: string;
+  variantPrice: number;
+  variantCompareAtPrice: number;
+  variantRequiresShipping: boolean;
+  variantTaxable: boolean;
+  variantBarcode: string;
+  imagePosition: number;
+  imageSrc: string;
+  bodyHtml: string;
+  seoTitle: string;
+  seoDescription: string;
+  googleShoppingCondition: string;
+  googleShoppingGender: string;
+  googleShoppingAgeGroup: string;
+  updatedAt: string;
+  shopifySyncStatus?: string;
+  shopifySyncedAt?: string;
+  listingStatus?: string;
+}
+
+export interface UpdatedProduct {
+  title: string;
+  type: string;
+  description: string;
+  tags: string;
+  category?: string;
+  vendor?: string;
+  seoTitle?: string;
+  seoDescription?: string;
+  published?: boolean;
+  variantPrice?: number;
+  variantCompareAtPrice?: number;
+  variantSku?: string;
+  variantBarcode?: string;
+  variantGrams?: number;
+  variantInventoryQty?: number;
+  variantInventoryPolicy?: string;
+  variantRequiresShipping?: boolean;
+  variantTaxable?: boolean;
+  googleShoppingCondition?: string;
+  googleShoppingGender?: string;
+  googleShoppingAgeGroup?: string;
+}
