@@ -1,0 +1,205 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 123PrepFox Professional Design System */
+
+@layer base {
+  :root {
+    /* 123PrepFox Brand Colors - Light Mode */
+    --background: 220 30% 98%;
+    --foreground: 215 35% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 35% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 35% 15%;
+
+    /* Burnt Orange - Primary/Dominant brand color */
+    --primary: 15 90% 52%;
+    --primary-foreground: 0 0% 98%;
+    --primary-glow: 15 90% 62%;
+
+    /* Warm peach secondary colors */
+    --secondary: 25 80% 92%;
+    --secondary-foreground: 10 70% 28%;
+
+    /* Soft orange muted colors */
+    --muted: 20 50% 94%;
+    --muted-foreground: 15 40% 42%;
+
+    /* Deep coral accent color */
+    --accent: 8 75% 45%;
+    --accent-foreground: 0 0% 98%;
+    --accent-glow: 8 75% 55%;
+
+    /* Status colors */
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 0 0% 98%;
+
+    /* Border and input colors with warm orange undertones */
+    --border: 20 40% 88%;
+    --input: 20 40% 88%;
+    --ring: 15 90% 52%;
+
+    /* Burnt Orange Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(15 90% 52%), hsl(15 90% 62%));
+    --gradient-secondary: linear-gradient(135deg, hsl(25 80% 92%), hsl(20 50% 88%));
+    --gradient-accent: linear-gradient(135deg, hsl(8 75% 45%), hsl(8 75% 55%));
+    --gradient-success: linear-gradient(135deg, hsl(15 90% 52%), hsl(8 75% 45%));
+    
+    /* Elegant shadows with burnt orange */
+    --shadow-elegant: 0 10px 30px -10px hsl(15 90% 52% / 0.3);
+    --shadow-card: 0 4px 20px -2px hsl(15 90% 52% / 0.1);
+    --shadow-glow: 0 0 40px hsl(15 90% 52% / 0.5);
+    --shadow-progress: 0 0 20px hsl(15 90% 52% / 0.4);
+    
+    /* Smooth transitions */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+    --radius: 0.5rem;
+
+    /* Sidebar with Burnt Orange theme */
+    --sidebar-background: 20 60% 96%;
+    --sidebar-foreground: 10 60% 25%;
+    --sidebar-primary: 15 90% 52%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 25 70% 90%;
+    --sidebar-accent-foreground: 10 60% 25%;
+    --sidebar-border: 20 40% 88%;
+    --sidebar-ring: 15 90% 52%;
+  }
+
+  .dark {
+    /* 123PrepFox Dark Mode - Navy theme */
+    --background: 215 45% 8%;
+    --foreground: 210 20% 95%;
+
+    --card: 215 40% 10%;
+    --card-foreground: 210 20% 95%;
+
+    --popover: 215 40% 10%;
+    --popover-foreground: 210 20% 95%;
+
+    --primary: 15 85% 58%;
+    --primary-foreground: 0 0% 98%;
+    --primary-glow: 15 85% 68%;
+
+    --secondary: 20 50% 15%;
+    --secondary-foreground: 25 60% 80%;
+
+    --muted: 18 40% 18%;
+    --muted-foreground: 20 50% 60%;
+
+    --accent: 8 70% 50%;
+    --accent-foreground: 0 0% 98%;
+    --accent-glow: 8 70% 60%;
+
+    --destructive: 0 70% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 25 25% 20%;
+    --input: 25 25% 20%;
+    --ring: 15 85% 58%;
+
+    /* Dark mode gradients - burnt orange */
+    --gradient-primary: linear-gradient(135deg, hsl(15 85% 58%), hsl(15 85% 68%));
+    --gradient-secondary: linear-gradient(135deg, hsl(20 50% 15%), hsl(18 40% 18%));
+    --gradient-accent: linear-gradient(135deg, hsl(8 70% 50%), hsl(8 70% 60%));
+    --gradient-success: linear-gradient(135deg, hsl(15 85% 58%), hsl(8 70% 50%));
+
+    --shadow-elegant: 0 10px 30px -10px hsl(15 85% 58% / 0.5);
+    --shadow-card: 0 4px 20px -2px hsl(20 50% 8% / 0.8);
+    --shadow-glow: 0 0 40px hsl(15 85% 58% / 0.6);
+    --shadow-progress: 0 0 20px hsl(15 85% 58% / 0.5);
+
+    --sidebar-background: 20 50% 10%;
+    --sidebar-foreground: 25 50% 80%;
+    --sidebar-primary: 15 85% 58%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 18 40% 18%;
+    --sidebar-accent-foreground: 25 50% 80%;
+    --sidebar-border: 20 40% 20%;
+    --sidebar-ring: 15 85% 58%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  /* 123PrepFox brand styling classes */
+  .bg-gradient-primary {
+    background: var(--gradient-primary);
+  }
+  
+  .bg-gradient-secondary {
+    background: var(--gradient-secondary);
+  }
+  
+  .bg-gradient-accent {
+    background: var(--gradient-accent);
+  }
+  
+  .bg-gradient-success {
+    background: var(--gradient-success);
+  }
+  
+  .shadow-elegant {
+    box-shadow: var(--shadow-elegant);
+  }
+  
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+  
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+  
+  .transition-smooth {
+    transition: var(--transition-smooth);
+  }
+
+  /* PrepFox Orange-dominant interactive elements */
+  .prep-fox-button {
+    @apply bg-gradient-primary text-primary-foreground hover:shadow-glow transition-smooth;
+  }
+  
+  .prep-fox-card {
+    @apply bg-card shadow-card border border-border rounded-lg transition-smooth hover:shadow-elegant;
+  }
+}
+
+/* Fox Digging Animation - keeping the fun element */
+.fox-digging-animation {
+  display: inline-block;
+  animation: fox-digging 1s ease-in-out infinite;
+  transform-origin: center;
+}
+
+@keyframes fox-digging {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-2px) rotate(-5deg);
+  }
+  50% {
+    transform: translateY(1px) rotate(0deg);
+  }
+  75% {
+    transform: translateY(-1px) rotate(5deg);
+  }
+}
